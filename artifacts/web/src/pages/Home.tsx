@@ -70,7 +70,7 @@ export default function Home() {
         <div className="absolute inset-0 z-0">
           <img 
             src={`${import.meta.env.BASE_URL}images/hero-bg.png`} 
-            alt="Mabeton Construction" 
+            alt="MSBETON Construction" 
             className="w-full h-full object-cover object-center"
           />
           <div className="absolute inset-0 bg-secondary/80 mix-blend-multiply"></div>
@@ -135,7 +135,7 @@ export default function Home() {
                 KVALITA, NA KTORÚ SA MÔŽETE <span className="text-gradient">SPOĽAHNÚŤ</span>
               </motion.h3>
               <motion.p variants={fadeInUp} className="text-muted-foreground text-lg mb-6 leading-relaxed">
-                Spoločnosť MABETON s.r.o. pôsobí na slovenskom trhu už viac ako 15 rokov. Našou hlavnou činnosťou je <strong>výroba, doprava a ukladanie betónových zmesí</strong> pre všetky typy stavebných projektov - od rodinných domov až po rozsiahle priemyselné haly.
+                Spoločnosť MSBETON s.r.o. pôsobí na slovenskom trhu už viac ako 15 rokov. Našou hlavnou činnosťou je <strong>výroba, doprava a ukladanie betónových zmesí</strong> pre všetky typy stavebných projektov - od rodinných domov až po rozsiahle priemyselné haly.
               </motion.p>
               <motion.ul variants={staggerContainer} className="space-y-4 mb-8">
                 {[
@@ -168,7 +168,7 @@ export default function Home() {
               <div className="absolute -inset-4 bg-primary/10 rounded-xl transform -rotate-3 border border-primary/20"></div>
               <img 
                 src={`${import.meta.env.BASE_URL}images/about-mixer.png`} 
-                alt="Mabeton domiešavače" 
+                alt="MSBETON domiešavače" 
                 className="relative rounded-xl shadow-2xl object-cover w-full h-[500px]"
               />
               {/* Floating badge */}
@@ -410,8 +410,8 @@ export default function Home() {
                     <div>
                       <h5 className="font-bold text-lg mb-1">Email</h5>
                       <p className="text-white/70 leading-relaxed">
-                        info@mabeton.sk<br />
-                        objednavky@mabeton.sk
+                        info@msbeton.sk<br />
+                        objednavky@msbeton.sk
                       </p>
                     </div>
                   </div>
