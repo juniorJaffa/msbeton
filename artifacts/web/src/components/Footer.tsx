@@ -13,7 +13,7 @@ export function Footer() {
                 <span className="font-display font-bold text-white text-2xl">M</span>
               </div>
               <span className="font-display font-bold text-3xl tracking-wide text-white">
-                MABETON
+                MAVETON
               </span>
             </div>
             <p className="max-w-xs text-sm leading-relaxed">
@@ -60,7 +60,7 @@ export function Footer() {
         </div>
 
         <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between text-sm text-white/50">
-          <p>© {new Date().getFullYear()} MABETON s.r.o. Všetky práva vyhradené.</p>
+          <p>© {new Date().getFullYear()} MAVETON s.r.o. Všetky práva vyhradené.</p>
           <div className="flex gap-4 mt-4 md:mt-0">
             <a href="#" className="hover:text-white transition-colors">Ochrana osobných údajov</a>
             <a href="#" className="hover:text-white transition-colors">Obchodné podmienky</a>

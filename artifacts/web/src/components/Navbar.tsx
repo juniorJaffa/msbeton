@@ -41,7 +41,7 @@ export function Navbar() {
               "font-display font-bold text-3xl tracking-wide",
               isScrolled ? "text-secondary" : "text-white"
             )}>
-              MABETON
+              MAVETON
             </span>
           </a>
 
