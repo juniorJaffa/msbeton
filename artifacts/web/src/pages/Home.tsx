@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { ConcreteCalculator } from "@/components/Calculator";
 
 // Animation variants
 const fadeInUp = {
@@ -31,20 +32,6 @@ const staggerContainer = {
 };
 
 export default function Home() {
-  // Calculator State
-  const [calcLength, setCalcLength] = useState<number | "">("");
-  const [calcWidth, setCalcWidth] = useState<number | "">("");
-  const [calcDepth, setCalcDepth] = useState<number | "">("");
-
-  // Volume in cubic meters (L * W * D)
-  const volume = 
-    typeof calcLength === "number" && typeof calcWidth === "number" && typeof calcDepth === "number"
-      ? (calcLength * calcWidth * calcDepth).toFixed(2)
-      : 0;
-
-  // Assuming 2000kg per m³, and 25kg bags: (Volume * 2000) / 25 = Volume * 80 bags
-  const bags = volume !== 0 ? Math.ceil(Number(volume) * 80) : 0;
-
   // Contact Form State
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -256,104 +243,25 @@ export default function Home() {
 
       {/* CALCULATOR SECTION */}
       <section id="calculator" className="py-24 bg-white relative overflow-hidden">
-        {/* Decorative background element */}
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-gray-50 rounded-l-[100px] -z-10"></div>
-        
+        <div className="absolute top-0 right-0 w-1/3 h-full bg-gray-50/60 -z-10" />
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            
-            {/* Form Side */}
-            <motion.div 
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="glass-panel p-8 md:p-12 rounded-3xl relative z-10"
-            >
-              <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
-                <Calculator className="w-8 h-8 text-primary" />
-              </div>
-              <h3 className="text-3xl font-display font-bold text-secondary mb-2">Kalkulačka Objemu Betónu</h3>
-              <p className="text-muted-foreground mb-8">
-                Zadajte rozmery vašej plochy (v metroch) pre odhad potrebného množstva betónu a zmesí v suchom stave (25kg vrecia).
-              </p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-sm font-bold text-primary tracking-widest mb-2">KALKULAČKA</h2>
+            <h3 className="text-4xl md:text-5xl font-bold text-secondary mb-4 uppercase">
+              Kalkulačka Betónu
+            </h3>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Vyberte typ konštrukcie, zadajte rozmery a okamžite zistíte potrebný objem, hmotnosť, počet vozidiel aj vriec.
+            </p>
+          </motion.div>
 
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-bold text-secondary mb-2 uppercase tracking-wide">Dĺžka (m)</label>
-                  <input 
-                    type="number" 
-                    min="0" step="0.1"
-                    value={calcLength}
-                    onChange={(e) => setCalcLength(e.target.value ? Number(e.target.value) : "")}
-                    className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-semibold text-lg"
-                    placeholder="Napr. 5.5"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-secondary mb-2 uppercase tracking-wide">Šírka (m)</label>
-                  <input 
-                    type="number" 
-                    min="0" step="0.1"
-                    value={calcWidth}
-                    onChange={(e) => setCalcWidth(e.target.value ? Number(e.target.value) : "")}
-                    className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-semibold text-lg"
-                    placeholder="Napr. 3.2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-secondary mb-2 uppercase tracking-wide">Hĺbka / Hrúbka (m)</label>
-                  <input 
-                    type="number" 
-                    min="0" step="0.01"
-                    value={calcDepth}
-                    onChange={(e) => setCalcDepth(e.target.value ? Number(e.target.value) : "")}
-                    className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-semibold text-lg"
-                    placeholder="Napr. 0.15"
-                  />
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Result Side */}
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              className="bg-secondary rounded-3xl p-8 md:p-12 text-white shadow-2xl relative overflow-hidden"
-            >
-              {/* abstract graphic */}
-              <div className="absolute -right-20 -top-20 w-64 h-64 bg-primary/20 rounded-full blur-3xl"></div>
-              
-              <h4 className="text-xl font-bold mb-8 text-white/80">Odhadovaný Výsledok</h4>
-              
-              <div className="space-y-8">
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-widest text-primary mb-1">Celkový objem</p>
-                  <div className="flex items-end gap-2 border-b border-white/20 pb-4">
-                    <span className="text-6xl font-display font-bold leading-none">{volume}</span>
-                    <span className="text-2xl text-white/60 font-semibold mb-1">m³</span>
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-widest text-primary mb-1">Ekvivalent v suchom stave (Suchý betón)</p>
-                  <div className="flex items-end gap-2 border-b border-white/20 pb-4">
-                    <span className="text-6xl font-display font-bold leading-none">{bags}</span>
-                    <span className="text-2xl text-white/60 font-semibold mb-1">vriec (25kg)</span>
-                  </div>
-                  <p className="text-xs text-white/40 mt-2">* Výpočet je len orientačný (počítané pre 2000kg/m³). Pre presnú cenovú ponuku nás kontaktujte.</p>
-                </div>
-                
-                <a 
-                  href="#contact"
-                  className="block w-full text-center px-6 py-4 bg-primary text-white font-bold text-lg rounded-xl hover:bg-white hover:text-secondary transition-colors duration-300"
-                >
-                  Vyžiadať presnú cenovú ponuku
-                </a>
-              </div>
-            </motion.div>
-
-          </div>
+          <ConcreteCalculator />
         </div>
       </section>
 
