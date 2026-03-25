@@ -54,6 +54,10 @@ export function Footer() {
                 <Mail className="w-5 h-5 text-primary shrink-0" />
                 <span>info@msbeton.sk</span>
               </li>
+              <li className="flex items-center gap-3">
+                <HardHat className="w-5 h-5 text-primary shrink-0" />
+                <a href="https://www.msbeton.sk" className="hover:text-primary transition-colors">www.msbeton.sk</a>
+              </li>
             </ul>
           </div>
 

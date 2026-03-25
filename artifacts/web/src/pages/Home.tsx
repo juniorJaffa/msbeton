@@ -411,7 +411,8 @@ export default function Home() {
                       <h5 className="font-bold text-lg mb-1">Email</h5>
                       <p className="text-white/70 leading-relaxed">
                         info@msbeton.sk<br />
-                        objednavky@msbeton.sk
+                        objednavky@msbeton.sk<br />
+                        <span className="text-primary font-semibold">www.msbeton.sk</span>
                       </p>
                     </div>
                   </div>
