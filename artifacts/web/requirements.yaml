@@ -1,0 +1,27 @@
+packages:
+  "framer-motion": "For premium scroll reveal animations and smooth transitions"
+  "clsx": "For conditional class name joining"
+  "tailwind-merge": "For merging tailwind classes safely"
+
+images:
+  - path: "artifacts/web/public/images/hero-bg.png"
+    description: "Modern construction site with concrete pumping, dramatic lighting, dark navy and industrial orange tones, high quality architectural photography"
+    aspect_ratio: "16:9"
+  - path: "artifacts/web/public/images/about-mixer.png"
+    description: "Professional fleet of modern concrete mixer trucks aligned at a clean industrial facility, bright daylight, high quality"
+    aspect_ratio: "16:9"
+  - path: "artifacts/web/public/images/prod-concrete.png"
+    description: "Close up of smooth freshly poured wet concrete texture, high resolution, industrial feel"
+    aspect_ratio: "4:3"
+  - path: "artifacts/web/public/images/prod-sand.png"
+    description: "Pile of fine golden building sand, industrial construction setting, high resolution"
+    aspect_ratio: "4:3"
+  - path: "artifacts/web/public/images/prod-gravel.png"
+    description: "Clean grey construction gravel and aggregates, macro texture, sharp focus"
+    aspect_ratio: "4:3"
+  - path: "artifacts/web/public/images/prod-masonry.png"
+    description: "Stack of clean grey concrete masonry blocks neatly arranged on a wooden pallet, construction site background"
+    aspect_ratio: "4:3"
+
+notes:
+  - The website is a single-page scrolling layout for the primary sections as requested, utilizing React state for the calculator and contact form UI.
