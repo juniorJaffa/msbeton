@@ -75,7 +75,7 @@ export default function VozovyPark() {
                 </div>
 
                 {/* Info */}
-                <div className="p-6">
+                <div className="p-6 text-center">
                   <h2 className="font-display font-black text-2xl text-secondary mb-1 tracking-tight">
                     {v.model}
                   </h2>
@@ -84,7 +84,7 @@ export default function VozovyPark() {
                   {/* Specs */}
                   <div className="grid grid-cols-2 gap-3 mb-5">
                     {v.specs.map((s) => (
-                      <div key={s.label} className="bg-gray-50 border border-gray-100 px-4 py-3">
+                      <div key={s.label} className="bg-gray-50 border border-gray-100 px-4 py-3 text-center">
                         <div className="text-xs text-gray-400 uppercase tracking-wide font-bold mb-0.5">{s.label}</div>
                         <div className="font-black text-secondary text-lg">{s.value}</div>
                       </div>
