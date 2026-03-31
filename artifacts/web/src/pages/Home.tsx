@@ -57,11 +57,11 @@ export default function Home() {
         <div className="absolute inset-0 z-0">
           <img 
             src={`${import.meta.env.BASE_URL}images/hero-bg.png`} 
-            alt="MSBETON Construction" 
+            alt="MS-BETON Construction" 
             className="w-full h-full object-cover object-center"
           />
-          <div className="absolute inset-0 bg-secondary/80 mix-blend-multiply"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-secondary via-secondary/50 to-transparent"></div>
+          <div className="absolute inset-0 bg-secondary/75 mix-blend-multiply"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-secondary/90 via-secondary/60 to-secondary/30"></div>
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
@@ -71,33 +71,36 @@ export default function Home() {
             variants={staggerContainer}
             className="max-w-3xl"
           >
-            <motion.div variants={fadeInUp} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-primary mb-6">
-              <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-              <span className="font-semibold text-sm tracking-wider text-white">LÍDER NA TRHU S BETÓNOM</span>
+            <motion.div variants={fadeInUp} className="inline-flex items-center gap-3 mb-5">
+              <span className="h-[2px] w-8 bg-primary block"></span>
+              <span className="font-semibold text-xs tracking-[0.2em] text-white/70 uppercase">Žilina betón, na ktorý sa môžete spoľahnúť</span>
             </motion.div>
-            
-            <motion.h1 variants={fadeInUp} className="text-5xl md:text-7xl font-bold text-white leading-[1.1] mb-6 drop-shadow-lg">
-              PEVNÉ ZÁKLADY PRE VAŠE <span className="text-primary">PROJEKTY</span>
+
+            <motion.p variants={fadeInUp} className="text-xl md:text-2xl font-bold text-white/90 mb-2 uppercase tracking-wide">
+              Staviame na pevných základoch, volíme
+            </motion.p>
+
+            <motion.h1 variants={fadeInUp} className="text-6xl md:text-8xl font-black text-primary leading-none mb-6 drop-shadow-lg tracking-tight">
+              MS-BETON
             </motion.h1>
             
-            <motion.p variants={fadeInUp} className="text-lg md:text-xl text-white/80 mb-10 max-w-2xl leading-relaxed">
-              Výroba, transport a čerpanie certifikovaných betónových zmesí špičkovej kvality. 
-              Garantujeme spoľahlivosť, rýchlosť a profesionálny prístup pre stavby každého rozsahu.
+            <motion.p variants={fadeInUp} className="text-base md:text-lg text-white/70 mb-10 max-w-xl leading-relaxed">
+              Sme váš spoľahlivý dopravca betónu v Žiline a okolí. Základ každej kvalitnej stavby je v pevnosti a spoľahlivosti betónu, ktorý používate – a práve ten vám dodávame my.
             </motion.p>
             
             <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-4">
               <a 
-                href="#products" 
-                className="inline-flex justify-center items-center gap-2 px-8 py-4 bg-primary text-white font-bold text-lg rounded-md hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 hover:-translate-y-1"
+                href="#about" 
+                className="inline-flex justify-center items-center gap-2 px-8 py-4 bg-secondary text-white font-bold text-sm tracking-widest uppercase hover:bg-secondary/80 transition-all hover:-translate-y-1"
               >
-                Naše Produkty
-                <ArrowRight className="w-5 h-5" />
+                Zistiť viac
+                <ArrowRight className="w-4 h-4" />
               </a>
               <a 
                 href="#calculator" 
-                className="inline-flex justify-center items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm border border-white/20 text-white font-bold text-lg rounded-md hover:bg-white/20 transition-all hover:-translate-y-1"
+                className="inline-flex justify-center items-center gap-2 px-8 py-4 bg-primary text-secondary font-bold text-sm tracking-widest uppercase hover:bg-primary/90 transition-all hover:-translate-y-1 shadow-lg shadow-primary/30"
               >
-                Kalkulačka objemu
+                Výpočet ceny
               </a>
             </motion.div>
           </motion.div>
@@ -108,7 +111,7 @@ export default function Home() {
       </section>
 
       {/* ABOUT SECTION */}
-      <section id="about" className="py-24 bg-white">
+      <section id="about" className="py-24 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <motion.div 
@@ -122,7 +125,7 @@ export default function Home() {
                 KVALITA, NA KTORÚ SA MÔŽETE <span className="text-gradient">SPOĽAHNÚŤ</span>
               </motion.h3>
               <motion.p variants={fadeInUp} className="text-muted-foreground text-lg mb-6 leading-relaxed">
-                Spoločnosť MSBETON s.r.o. pôsobí na slovenskom trhu už viac ako 15 rokov. Našou hlavnou činnosťou je <strong>výroba, doprava a ukladanie betónových zmesí</strong> pre všetky typy stavebných projektov - od rodinných domov až po rozsiahle priemyselné haly.
+                Spoločnosť MS-BETON s.r.o. patrí medzi popredných poskytovateľov riešení pre dovoz betónu v Žiline. Vďaka modernému vozovému parku – od betónových mixérov až po pumpy – zvládame projekty všetkých veľkostí. Zabezpečujeme kvalitný betón presne tam, kde a kedy ho potrebujete.
               </motion.p>
               <motion.ul variants={staggerContainer} className="space-y-4 mb-8">
                 {[
@@ -155,7 +158,7 @@ export default function Home() {
               <div className="absolute -inset-4 bg-primary/10 rounded-xl transform -rotate-3 border border-primary/20"></div>
               <img 
                 src={`${import.meta.env.BASE_URL}images/about-mixer.png`} 
-                alt="MSBETON domiešavače" 
+                alt="MS-BETON domiešavače" 
                 className="relative rounded-xl shadow-2xl object-cover w-full h-[500px]"
               />
               {/* Floating badge */}
@@ -169,7 +172,7 @@ export default function Home() {
       </section>
 
       {/* TRUST SIGNALS */}
-      <section className="py-16 bg-secondary text-white">
+      <section className="py-16 concrete-navy text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
@@ -290,11 +293,15 @@ export default function Home() {
                       <MapPin className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                      <h5 className="font-bold text-lg mb-1">Sídlo a Výroba</h5>
+                      <h5 className="font-bold text-lg mb-1">Prevádzka spoločnosti</h5>
                       <p className="text-white/70 leading-relaxed">
-                        Priemyselná zóna 1234/5<br />
-                        821 09 Bratislava<br />
-                        Slovensko
+                        Kamenná 3<br />
+                        010 01 Žilina
+                      </p>
+                      <h5 className="font-bold text-lg mt-4 mb-1">Sídlo spoločnosti</h5>
+                      <p className="text-white/70 leading-relaxed">
+                        Turie 468<br />
+                        013 12 Turie
                       </p>
                     </div>
                   </div>

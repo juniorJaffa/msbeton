@@ -23,17 +23,17 @@ export function Navbar() {
 
   return (
     <>
-      {/* Top info bar */}
+      {/* ── Top info bar ── */}
       <div className="fixed top-0 left-0 right-0 z-[60] bg-secondary border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-9">
-            <div className="hidden md:flex items-center gap-6 text-white/60 text-xs">
-              <span>Váš spoľahlivý partner pre betón na Slovensku</span>
-            </div>
-            <div className="flex items-center gap-4 ml-auto">
+            <span className="hidden md:block text-white/50 text-xs">
+              Žilina betón, na ktorý sa môžete spoľahnúť
+            </span>
+            <div className="flex items-center gap-5 ml-auto">
               <a
                 href="mailto:info@msbeton.sk"
-                className="hidden sm:flex items-center gap-1.5 text-white/60 hover:text-white transition-colors text-xs"
+                className="hidden sm:flex items-center gap-1.5 text-white/55 hover:text-white transition-colors text-xs"
               >
                 <Mail className="w-3 h-3" />
                 info@msbeton.sk
@@ -50,71 +50,81 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Main nav (pushed down by top bar) */}
+      {/* ── Main navbar ── */}
       <header
         className={cn(
           "fixed top-9 left-0 right-0 z-50 transition-all duration-300",
           isScrolled
-            ? "bg-secondary/98 backdrop-blur-md shadow-lg shadow-black/30 py-3"
-            : "bg-secondary/75 backdrop-blur-sm py-4"
+            ? "bg-secondary/98 backdrop-blur-md shadow-lg shadow-black/40 py-2"
+            : "bg-secondary/85 backdrop-blur-sm py-3"
         )}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
 
-            {/* Logo: MS-BETON */}
+            {/* ── Logo: MS-BETON with shimmer ── */}
             <a href="#home" className="flex items-center select-none" aria-label="MS-BETON">
-              {/* MS — pulse + glow */}
-              <motion.span
-                className="font-display font-black text-4xl leading-none tracking-tighter text-primary"
-                style={{ textShadow: "0 0 0px #f97316" }}
-                animate={{
-                  textShadow: [
-                    "0 0 4px rgba(249,115,22,0.3)",
-                    "0 0 18px rgba(249,115,22,0.8)",
-                    "0 0 4px rgba(249,115,22,0.3)",
-                  ],
-                  scale: [1, 1.04, 1],
-                }}
-                transition={{ duration: 2.2, repeat: Infinity, repeatDelay: 3, ease: "easeInOut" }}
-              >
-                MS
-              </motion.span>
-              {/* dash */}
-              <span className="font-display font-black text-4xl leading-none text-white/30 mx-0.5">-</span>
-              {/* BETON — concrete engraved effect */}
-              <span
-                className="font-display font-black text-4xl leading-none tracking-tighter text-white"
-                style={{
-                  textShadow: "1px 1px 0px rgba(0,0,0,0.6), -1px -1px 0px rgba(255,255,255,0.08), 0 2px 8px rgba(0,0,0,0.4)",
-                  letterSpacing: "-0.02em",
-                }}
-              >
-                BETON
+              <span className="relative inline-flex items-center">
+                {/* MS — gold with shimmer sweep */}
+                <motion.span
+                  className="font-display font-black text-[2.1rem] leading-none tracking-tighter text-primary relative overflow-hidden"
+                  style={{ display: "inline-block" }}
+                >
+                  MS
+                  {/* Shimmer overlay */}
+                  <motion.span
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.65) 50%, transparent 70%)",
+                      display: "block",
+                    }}
+                    animate={{ x: ["-150%", "250%"] }}
+                    transition={{
+                      duration: 1.2,
+                      repeat: Infinity,
+                      repeatDelay: 3.8,
+                      ease: "easeInOut",
+                    }}
+                  />
+                </motion.span>
+
+                {/* Dash */}
+                <span className="font-display font-black text-[2.1rem] leading-none text-primary/40 mx-[2px]">-</span>
+
+                {/* BETON — white with engraved concrete shadow */}
+                <span
+                  className="font-display font-black text-[2.1rem] leading-none tracking-tighter text-white"
+                  style={{
+                    textShadow:
+                      "0 2px 4px rgba(0,0,0,0.6), 0 -1px 0 rgba(255,255,255,0.08), inset 0 1px 2px rgba(0,0,0,0.5)",
+                  }}
+                >
+                  BETON
+                </span>
               </span>
             </a>
 
-            {/* Desktop Nav */}
+            {/* ── Desktop Nav ── */}
             <nav className="hidden md:flex items-center gap-7">
               {navLinks.map((link) => (
                 <a
                   key={link.name}
                   href={link.href}
-                  className="font-semibold text-sm tracking-wide uppercase text-white/70 hover:text-primary transition-colors duration-200 relative after:absolute after:bottom-[-3px] after:left-0 after:h-[2px] after:w-0 after:bg-primary after:transition-all hover:after:w-full"
+                  className="font-semibold text-xs tracking-widest uppercase text-white/65 hover:text-primary transition-colors duration-200 relative after:absolute after:bottom-[-3px] after:left-0 after:h-[2px] after:w-0 after:bg-primary after:transition-all hover:after:w-full"
                 >
                   {link.name}
                 </a>
               ))}
               <a
                 href="tel:+421909205205"
-                className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-bold rounded-sm hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 hover:-translate-y-0.5 whitespace-nowrap"
+                className="flex items-center gap-2 px-5 py-2.5 bg-primary text-secondary font-bold text-sm rounded-none hover:bg-primary/85 transition-all shadow-lg shadow-primary/20 hover:-translate-y-0.5 whitespace-nowrap"
               >
                 <Phone className="w-4 h-4" />
-                <span>+421 909 205 205</span>
+                <span>ZAVOLAŤ</span>
               </a>
             </nav>
 
-            {/* Mobile button */}
+            {/* ── Mobile button ── */}
             <button
               className="md:hidden p-2 text-white"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -124,7 +134,7 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* ── Mobile Menu ── */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
@@ -157,7 +167,7 @@ export function Navbar() {
         </AnimatePresence>
       </header>
 
-      {/* Spacer for fixed header (top bar 36px + nav ~64px) */}
+      {/* Spacer for fixed header */}
       <div className="h-[100px]" />
     </>
   );
