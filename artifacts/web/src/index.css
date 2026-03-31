@@ -62,36 +62,61 @@
   --border: 215 50% 20%;
 }
 
-/* Concrete texture background — light version (sections) */
+/* Real concrete texture — light (using cropped MS-BETON site concrete panels) */
 .concrete-bg {
-  background-color: #c9c9c9;
-  background-image:
-    repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.03) 3px, rgba(0,0,0,0.03) 4px),
-    repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(0,0,0,0.02) 3px, rgba(0,0,0,0.02) 4px),
-    radial-gradient(ellipse at 15% 40%, rgba(80,80,80,0.12) 0%, transparent 55%),
-    radial-gradient(ellipse at 75% 65%, rgba(180,180,180,0.15) 0%, transparent 55%),
-    radial-gradient(ellipse at 50% 30%, rgba(60,60,60,0.08) 0%, transparent 50%);
+  background-image: url('/images/concrete-tile.jpg');
+  background-size: 960px auto;
+  background-repeat: repeat;
+  background-color: #b8b8b8;
 }
 
-/* Concrete dark — for navy sections with texture */
+/* Concrete dark — navy overlay on real concrete */
 .concrete-navy {
-  background-color: #001D3D;
-  background-image:
-    radial-gradient(ellipse at 20% 80%, rgba(237,197,49,0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 20%, rgba(237,197,49,0.04) 0%, transparent 50%);
+  background-image: url('/images/concrete-tile.jpg');
+  background-size: 960px auto;
+  background-repeat: repeat;
+  background-color: #b8b8b8;
+  position: relative;
+}
+.concrete-navy::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 29, 61, 0.88);
+  pointer-events: none;
+}
+.concrete-navy > * {
+  position: relative;
+  z-index: 1;
 }
 
-/* Concrete light — for alt sections */
+/* Concrete light — same texture, lighter overlay */
 .concrete-light {
-  background-color: #EFEFEF;
-  background-image:
-    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.02) 2px, rgba(0,0,0,0.02) 3px),
-    radial-gradient(ellipse at 30% 50%, rgba(100,100,100,0.08) 0%, transparent 60%);
+  background-image: url('/images/concrete-tile.jpg');
+  background-size: 960px auto;
+  background-repeat: repeat;
+  background-color: #b8b8b8;
+  position: relative;
+}
+.concrete-light::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: rgba(235, 235, 235, 0.72);
+  pointer-events: none;
+}
+.concrete-light > * {
+  position: relative;
+  z-index: 1;
 }
 
 @layer base {
   body {
-    @apply bg-background text-foreground antialiased font-sans overflow-x-hidden selection:bg-primary selection:text-secondary;
+    @apply text-foreground antialiased font-sans overflow-x-hidden selection:bg-primary selection:text-secondary;
+    background-image: url('/images/concrete-tile.jpg');
+    background-size: 960px auto;
+    background-repeat: repeat;
+    background-color: #b8b8b8;
   }
 
   h1, h2, h3, h4, h5, h6 {
