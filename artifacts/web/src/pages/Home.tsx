@@ -53,15 +53,20 @@ export default function Home() {
 
       {/* HERO SECTION */}
       <section id="home" className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden">
-        {/* Background Image with Overlay */}
+        {/* Video background with overlay */}
         <div className="absolute inset-0 z-0">
-          <img
-            src={`${import.meta.env.BASE_URL}images/hero-bg.png`}
-            alt="MS-BETON Construction"
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
             className="w-full h-full object-cover object-center"
-          />
-          <div className="absolute inset-0 bg-secondary/75 mix-blend-multiply"></div>
-          <div className="absolute inset-0 bg-gradient-to-r from-secondary/90 via-secondary/60 to-secondary/30"></div>
+            poster={`${import.meta.env.BASE_URL}images/hero-bg.png`}
+          >
+            <source src={`${import.meta.env.BASE_URL}videos/hero-video.mp4`} type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 bg-secondary/70"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-secondary/85 via-secondary/50 to-secondary/20"></div>
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
