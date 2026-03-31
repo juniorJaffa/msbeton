@@ -22,6 +22,8 @@ export interface DeliveryZone {
 export interface Service {
   id: string;
   name: string;
+  unit: string;
+  price: number;
   description: string;
   active: boolean;
 }
@@ -36,69 +38,143 @@ export interface Client {
   note: string;
 }
 
+export interface TransportPricingZone {
+  id: string;
+  fromKm: number;
+  toKm: number;
+  ratePerM3: number;
+}
+
+export interface TransportSettings {
+  minimumFee: number;
+  winterSurcharge: number;
+  waitingRatePer15min: number;
+  minimumLoadM3: number;
+}
+
 const DEFAULT_CATEGORIES: ConcreteCategory[] = [
   {
-    id: "dmax8", name: "DRVENÉ KAMENIVO Dmax8",
+    id: "dmax16d", name: "DRVENÉ KAMENIVO Dmax16",
     types: [
-      { id: "c1", label: "Betón C12/15", price: 76.5 },
-      { id: "c2", label: "Betón C16/20D", price: 80.0 },
-      { id: "c3", label: "Betón C20/25", price: 85.0 },
+      { id: "c1", label: "Betón CBGM, C8/10", price: 66.67 },
+      { id: "c2", label: "Betón C12/15D", price: 81.25 },
+      { id: "c3", label: "Betón C16/20D", price: 85.42 },
+      { id: "c4", label: "Betón C20/25D", price: 89.58 },
+      { id: "c5", label: "Betón C25/30D", price: 93.75 },
+      { id: "c6", label: "Betón C30/37D", price: 97.92 },
     ]
   },
   {
-    id: "dmax16", name: "DRVENÉ KAMENIVO Dmax16",
+    id: "dmax8d", name: "DRVENÉ KAMENIVO Dmax8",
     types: [
-      { id: "c4", label: "Betón C12/15", price: 78.0 },
-      { id: "c5", label: "Betón C16/20D", price: 83.33 },
-      { id: "c6", label: "Betón C20/25", price: 88.5 },
-      { id: "c7", label: "Betón C25/30", price: 94.0 },
-      { id: "c8", label: "Betón C30/37", price: 102.0 },
+      { id: "c7", label: "Betón C16/20D", price: 88.54 },
+      { id: "c8", label: "Betón C20/25D", price: 93.75 },
+      { id: "c9", label: "Betón C25/30D", price: 98.96 },
     ]
   },
   {
-    id: "dmax22", name: "DRVENÉ KAMENIVO Dmax22",
+    id: "dmax4d", name: "DRVENÉ KAMENIVO Dmax4",
     types: [
-      { id: "c9", label: "Betón C16/20D", price: 82.0 },
-      { id: "c10", label: "Betón C20/25", price: 88.0 },
-      { id: "c11", label: "Betón C25/30", price: 92.0 },
+      { id: "c10", label: "Betón C16/20D", price: 90.63 },
+      { id: "c11", label: "Betón C20/25D", price: 95.63 },
+      { id: "c12", label: "Betón C25/30D", price: 100.63 },
     ]
   },
   {
-    id: "dmax32", name: "DRVENÉ KAMENIVO Dmax32",
+    id: "dmax16r", name: "RIEČNE KAMENIVO Dmax16",
     types: [
-      { id: "c12", label: "Betón C16/20D", price: 80.0 },
-      { id: "c13", label: "Betón C20/25", price: 85.0 },
-      { id: "c14", label: "Betón C25/30", price: 92.0 },
+      { id: "c13", label: "Betón C12/15R", price: 95.83 },
+      { id: "c14", label: "Betón C16/20R", price: 98.96 },
+      { id: "c15", label: "Betón C20/25R", price: 102.08 },
+      { id: "c16", label: "Betón C25/30R", price: 107.29 },
+      { id: "c17", label: "Betón C25/30R vodostavebný", price: 109.38 },
+      { id: "c18", label: "Betón C25/30R podlahový", price: 110.42 },
+      { id: "c19", label: "Betón C30/37R", price: 111.46 },
+      { id: "c20", label: "Betón C30/37R vodostavebný", price: 114.58 },
+      { id: "c21", label: "Betón C30/37R podlahový", price: 116.67 },
+      { id: "c22", label: "Betón C30/37R XF4", price: 120.83 },
+      { id: "c23", label: "Betón C37/45R", price: 129.17 },
+      { id: "c24", label: "Betón C45/55R", price: 143.75 },
+      { id: "c25", label: "Betón CB3", price: 116.67 },
     ]
   },
   {
-    id: "okr16", name: "OKRÚHLE KAMENIVO Dmax16",
+    id: "dmax8r", name: "RIEČNE KAMENIVO Dmax8",
     types: [
-      { id: "c15", label: "Betón C12/15", price: 79.0 },
-      { id: "c16", label: "Betón C20/25", price: 89.0 },
-      { id: "c17", label: "Betón C25/30", price: 95.0 },
+      { id: "c26", label: "Betón C16/20R", price: 100.00 },
+      { id: "c27", label: "Betón C20/25R", price: 105.21 },
+      { id: "c28", label: "Betón C25/30R", price: 110.42 },
     ]
   },
   {
-    id: "okr32", name: "OKRÚHLE KAMENIVO Dmax32",
+    id: "dmax4r", name: "RIEČNE KAMENIVO Dmax4",
     types: [
-      { id: "c18", label: "Betón C16/20D", price: 81.0 },
-      { id: "c19", label: "Betón C20/25", price: 87.0 },
-      { id: "c20", label: "Betón C30/37", price: 104.0 },
+      { id: "c29", label: "Betón C16/20R", price: 102.08 },
+      { id: "c30", label: "Betón C20/25R", price: 107.29 },
+      { id: "c31", label: "Betón C25/30R", price: 112.50 },
+    ]
+  },
+  {
+    id: "anhydrit", name: "Anhydrit",
+    types: [
+      { id: "c32", label: "Anhydrit 20", price: 234.38 },
+      { id: "c33", label: "Anhydrit 25", price: 244.80 },
+    ]
+  },
+  {
+    id: "prisady", name: "Dodatočné prísady",
+    types: [
+      { id: "c34", label: "Vlákna 0,8–1 kg", price: 9.38 },
+      { id: "c35", label: "Drôtiky 1 Bal – 20 kg/m³", price: 32.50 },
     ]
   },
 ];
 
 const DEFAULT_DELIVERY: DeliveryZone[] = [
-  { id: "z1", name: "Štandardná zóna", ratePerKm: 1.8, truckCapacity: 7, pumpHourlyRate: 180, waitingRatePer15min: 8 },
+  { id: "z1", name: "Štandardná zóna", ratePerKm: 1.8, truckCapacity: 7, pumpHourlyRate: 112.50, waitingRatePer15min: 10 },
 ];
 
 const DEFAULT_SERVICES: Service[] = [
-  { id: "s1", name: "PUMPA – Čerpanie betónu", description: "Čerpanie betónu pumpou s nastaviteľným časom", active: true },
-  { id: "s2", name: "MIX – Mixér (autodomiesavač)", description: "Dodávka betónu autodomiesavačom (7m³/ks)", active: true },
-  { id: "s3", name: "Hadica – predĺženie hadice", description: "Príplatok za predĺženie hadice (+15 €)", active: true },
-  { id: "s4", name: "Vonkajšie umytie pumpy", description: "Umytie pumpy mimo prevádzky (+45 €)", active: true },
+  { id: "s1", name: "Čerpanie betónu", unit: "1 hod.", price: 112.50, description: "Čerpanie betónu pumpou, od príjazdu do odjazdu zo stavby", active: true },
+  { id: "s2", name: "Rozbehová chémia", unit: "1 ks", price: 31.25, description: "Chemická prísada pre spustenie betónpumpy", active: true },
+  { id: "s3", name: "Umývanie mimo stavby", unit: "1 x", price: 56.25, description: "Umytie betónpumpy mimo miesta prevádzky", active: true },
+  { id: "s4", name: "Čakačka mixéra", unit: "15 min.", price: 10.00, description: "Čakanie nad 30 min sa účtuje každých začatých 15 min", active: true },
+  { id: "s5", name: "Prídavné hadice", unit: "1 m", price: 10.00, description: "Príplatok za každý meter predĺženia výložníkovej hadice", active: true },
 ];
+
+const DEFAULT_TRANSPORT_ZONES: TransportPricingZone[] = [
+  { id: "tz1",  fromKm: 0,  toKm: 6,  ratePerM3: 7.50 },
+  { id: "tz2",  fromKm: 6,  toKm: 8,  ratePerM3: 8.13 },
+  { id: "tz3",  fromKm: 8,  toKm: 10, ratePerM3: 9.38 },
+  { id: "tz4",  fromKm: 10, toKm: 12, ratePerM3: 10.00 },
+  { id: "tz5",  fromKm: 12, toKm: 14, ratePerM3: 10.63 },
+  { id: "tz6",  fromKm: 14, toKm: 16, ratePerM3: 11.25 },
+  { id: "tz7",  fromKm: 16, toKm: 18, ratePerM3: 11.88 },
+  { id: "tz8",  fromKm: 18, toKm: 20, ratePerM3: 12.50 },
+  { id: "tz9",  fromKm: 20, toKm: 22, ratePerM3: 13.75 },
+  { id: "tz10", fromKm: 22, toKm: 24, ratePerM3: 15.00 },
+  { id: "tz11", fromKm: 24, toKm: 26, ratePerM3: 15.63 },
+  { id: "tz12", fromKm: 26, toKm: 28, ratePerM3: 16.25 },
+  { id: "tz13", fromKm: 28, toKm: 30, ratePerM3: 16.88 },
+  { id: "tz14", fromKm: 30, toKm: 32, ratePerM3: 17.50 },
+  { id: "tz15", fromKm: 32, toKm: 34, ratePerM3: 18.75 },
+  { id: "tz16", fromKm: 34, toKm: 36, ratePerM3: 20.00 },
+  { id: "tz17", fromKm: 36, toKm: 38, ratePerM3: 21.25 },
+  { id: "tz18", fromKm: 38, toKm: 40, ratePerM3: 22.50 },
+  { id: "tz19", fromKm: 40, toKm: 44, ratePerM3: 23.75 },
+  { id: "tz20", fromKm: 44, toKm: 48, ratePerM3: 25.00 },
+  { id: "tz21", fromKm: 48, toKm: 52, ratePerM3: 27.50 },
+  { id: "tz22", fromKm: 52, toKm: 56, ratePerM3: 30.00 },
+  { id: "tz23", fromKm: 56, toKm: 60, ratePerM3: 32.50 },
+  { id: "tz24", fromKm: 60, toKm: 70, ratePerM3: 35.00 },
+];
+
+const DEFAULT_TRANSPORT_SETTINGS: TransportSettings = {
+  minimumFee: 62.50,
+  winterSurcharge: 5.00,
+  waitingRatePer15min: 8.33,
+  minimumLoadM3: 5,
+};
 
 const DEFAULT_CLIENTS: Client[] = [
   { id: "cl1", name: "ZAPA Beton SK", logo: "", contact: "Peter Novák", phone: "+421 900 111 222", email: "info@zapa.sk", note: "Dlhodobý partner" },
@@ -134,6 +210,12 @@ export const adminData = {
 
   getClients: (): Client[] => loadData("msbeton_clients", DEFAULT_CLIENTS),
   saveClients: (data: Client[]) => saveData("msbeton_clients", data),
+
+  getTransportZones: (): TransportPricingZone[] => loadData("msbeton_transport_zones", DEFAULT_TRANSPORT_ZONES),
+  saveTransportZones: (data: TransportPricingZone[]) => saveData("msbeton_transport_zones", data),
+
+  getTransportSettings: (): TransportSettings => loadData("msbeton_transport_settings", DEFAULT_TRANSPORT_SETTINGS),
+  saveTransportSettings: (data: TransportSettings) => saveData("msbeton_transport_settings", data),
 
   generateId: () => Math.random().toString(36).slice(2, 10),
 };

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { LogOut, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers } from "lucide-react";
 import { isLoggedIn, logout } from "@/lib/adminAuth";
-import { adminData, ConcreteCategory, ConcreteType, DeliveryZone, Service, Client } from "@/lib/adminData";
+import { adminData, ConcreteCategory, ConcreteType, DeliveryZone, Service, Client, TransportPricingZone, TransportSettings } from "@/lib/adminData";
 
 type Tab = "betony" | "sluzby" | "doprava" | "klienti";
 
@@ -146,6 +146,24 @@ function DopravaTab() {
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ name: "", ratePerKm: "", truckCapacity: "", pumpHourlyRate: "", waitingRatePer15min: "" });
 
+  const [pZones, setPZones] = useState<TransportPricingZone[]>(adminData.getTransportZones());
+  const [ts, setTs] = useState<TransportSettings>(adminData.getTransportSettings());
+  const [addingPZ, setAddingPZ] = useState(false);
+  const [pzForm, setPzForm] = useState({ fromKm: "", toKm: "", ratePerM3: "" });
+
+  const savePZ = (data: TransportPricingZone[]) => { setPZones(data); adminData.saveTransportZones(data); };
+  const saveTs = (data: TransportSettings) => { setTs(data); adminData.saveTransportSettings(data); };
+  const updatePZ = (id: string, field: keyof TransportPricingZone, value: string) =>
+    savePZ(pZones.map(z => z.id === id ? { ...z, [field]: parseFloat(value) } : z));
+  const removePZ = (id: string) => { if (confirm("Vymazať zónu?")) savePZ(pZones.filter(z => z.id !== id)); };
+  const addPZ = () => {
+    if (!pzForm.fromKm || !pzForm.toKm || !pzForm.ratePerM3) return;
+    const sorted = [...pZones, { id: adminData.generateId(), fromKm: parseFloat(pzForm.fromKm), toKm: parseFloat(pzForm.toKm), ratePerM3: parseFloat(pzForm.ratePerM3) }]
+      .sort((a, b) => a.fromKm - b.fromKm);
+    savePZ(sorted);
+    setPzForm({ fromKm: "", toKm: "", ratePerM3: "" }); setAddingPZ(false);
+  };
+
   const save = (data: DeliveryZone[]) => { setZones(data); adminData.saveDelivery(data); };
   const update = (id: string, field: keyof DeliveryZone, value: string) =>
     save(zones.map(z => z.id === id ? { ...z, [field]: ["name"].includes(field) ? value : parseFloat(value) } : z));
@@ -222,6 +240,72 @@ function DopravaTab() {
           <Plus className="w-4 h-4" /> Pridať dopravnú zónu
         </button>
       )}
+
+      {/* ── Cenník – Nastavenia dopravy ── */}
+      <div className="mt-8 border-t border-gray-200 pt-6">
+        <h3 className="font-black text-secondary text-sm uppercase tracking-widest mb-1">Nastavenia cenníka dopravy</h3>
+        <div className="h-0.5 w-10 bg-primary mb-4" />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+          {[
+            { label: "Min. cena / auto (€)", field: "minimumFee" as keyof TransportSettings },
+            { label: "Zimný príplatok (€/m³)", field: "winterSurcharge" as keyof TransportSettings },
+            { label: "Čakačka (€/15 min)", field: "waitingRatePer15min" as keyof TransportSettings },
+            { label: "Min. objednávka (m³)", field: "minimumLoadM3" as keyof TransportSettings },
+          ].map(({ label, field }) => (
+            <div key={field} className="bg-white border border-gray-200 p-3">
+              <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">{label}</div>
+              <div className="font-bold text-secondary">
+                <EditableField value={ts[field]} type="number" onSave={v => saveTs({ ...ts, [field]: parseFloat(v) || 0 })} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Cenník – Zóny km / cena ── */}
+      <div className="mt-2">
+        <h3 className="font-black text-secondary text-sm uppercase tracking-widest mb-1">Zóny dopravy (cenník)</h3>
+        <div className="h-0.5 w-10 bg-primary mb-3" />
+        <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-100">
+                <th className="text-left px-4 py-2.5 text-xs font-bold text-gray-400 uppercase tracking-wide">Od km</th>
+                <th className="text-left px-4 py-2.5 text-xs font-bold text-gray-400 uppercase tracking-wide">Do km</th>
+                <th className="text-right px-4 py-2.5 text-xs font-bold text-gray-400 uppercase tracking-wide">€/m³</th>
+                <th className="w-8" />
+              </tr>
+            </thead>
+            <tbody>
+              {pZones.map((z, i) => (
+                <tr key={z.id} className={`border-b border-gray-50 hover:bg-primary/5 ${i % 2 === 0 ? "" : "bg-gray-50/40"}`}>
+                  <td className="px-4 py-2 text-secondary"><EditableField value={z.fromKm} type="number" onSave={v => updatePZ(z.id, "fromKm", v)} /></td>
+                  <td className="px-4 py-2 text-secondary"><EditableField value={z.toKm} type="number" onSave={v => updatePZ(z.id, "toKm", v)} /></td>
+                  <td className="px-4 py-2 text-right font-bold text-secondary"><EditableField value={z.ratePerM3.toFixed(2)} type="number" onSave={v => updatePZ(z.id, "ratePerM3", v)} /></td>
+                  <td className="px-2 py-2 text-right"><button onClick={() => removePZ(z.id)} className="p-1 text-red-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {addingPZ ? (
+          <div className="flex gap-2 mt-2">
+            <input placeholder="Od km" type="number" value={pzForm.fromKm} onChange={e => setPzForm({ ...pzForm, fromKm: e.target.value })}
+              className="w-24 border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" autoFocus />
+            <input placeholder="Do km" type="number" value={pzForm.toKm} onChange={e => setPzForm({ ...pzForm, toKm: e.target.value })}
+              className="w-24 border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+            <input placeholder="€/m³" type="number" step="0.01" value={pzForm.ratePerM3} onChange={e => setPzForm({ ...pzForm, ratePerM3: e.target.value })}
+              className="w-28 border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+            <button onClick={addPZ} className="px-3 py-2 bg-primary text-secondary font-bold text-sm hover:bg-primary/90"><Check className="w-4 h-4" /></button>
+            <button onClick={() => setAddingPZ(false)} className="px-3 py-2 bg-gray-100 text-gray-500 hover:bg-gray-200"><X className="w-4 h-4" /></button>
+          </div>
+        ) : (
+          <button onClick={() => setAddingPZ(true)}
+            className="flex items-center gap-1 text-xs text-primary font-bold hover:text-secondary transition-colors mt-2">
+            <Plus className="w-3.5 h-3.5" /> Pridať zónu
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -230,42 +314,72 @@ function DopravaTab() {
 function SluzbyTab() {
   const [services, setServices] = useState<Service[]>(adminData.getServices());
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ name: "", description: "" });
+  const [form, setForm] = useState({ name: "", unit: "", price: "", description: "" });
 
   const save = (data: Service[]) => { setServices(data); adminData.saveServices(data); };
   const toggle = (id: string) => save(services.map(s => s.id === id ? { ...s, active: !s.active } : s));
   const remove = (id: string) => { if (confirm("Vymazať službu?")) save(services.filter(s => s.id !== id)); };
-  const update = (id: string, field: keyof Service, value: string) => save(services.map(s => s.id === id ? { ...s, [field]: value } : s));
+  const update = (id: string, field: keyof Service, value: string) =>
+    save(services.map(s => s.id === id ? { ...s, [field]: field === "price" ? parseFloat(value) || 0 : value } : s));
   const add = () => {
     if (!form.name) return;
-    save([...services, { id: adminData.generateId(), name: form.name, description: form.description, active: true }]);
-    setForm({ name: "", description: "" }); setAdding(false);
+    save([...services, { id: adminData.generateId(), name: form.name, unit: form.unit, price: parseFloat(form.price) || 0, description: form.description, active: true }]);
+    setForm({ name: "", unit: "", price: "", description: "" }); setAdding(false);
   };
 
   return (
     <div className="space-y-3">
-      {services.map(s => (
-        <div key={s.id} className={`bg-white border shadow-sm p-5 flex items-start justify-between gap-4 ${s.active ? "border-gray-200" : "border-gray-100 opacity-60"}`}>
-          <div className="flex-1">
-            <div className="font-bold text-secondary text-base mb-1"><EditableField value={s.name} onSave={v => update(s.id, "name", v)} /></div>
-            <div className="text-sm text-gray-500"><EditableField value={s.description} onSave={v => update(s.id, "description", v)} /></div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button onClick={() => toggle(s.id)}
-              className={`px-3 py-1 text-xs font-bold uppercase tracking-wide transition-colors ${s.active ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
-              {s.active ? "Aktívna" : "Neaktívna"}
-            </button>
-            <button onClick={() => remove(s.id)} className="p-1.5 bg-secondary text-primary hover:bg-secondary/80 rounded-sm"><Trash2 className="w-4 h-4" /></button>
-          </div>
-        </div>
-      ))}
+      <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-gray-50 border-b border-gray-100">
+              <th className="text-left px-5 py-3 text-xs font-bold text-gray-400 uppercase tracking-wide">Názov služby</th>
+              <th className="text-center px-3 py-3 text-xs font-bold text-gray-400 uppercase tracking-wide hidden sm:table-cell">Jednotka</th>
+              <th className="text-right px-3 py-3 text-xs font-bold text-gray-400 uppercase tracking-wide">Cena bez DPH</th>
+              <th className="text-center px-3 py-3 text-xs font-bold text-gray-400 uppercase tracking-wide w-24">Stav</th>
+              <th className="w-10" />
+            </tr>
+          </thead>
+          <tbody>
+            {services.map((s, i) => (
+              <tr key={s.id} className={`border-b border-gray-50 ${s.active ? "" : "opacity-50"} ${i % 2 === 0 ? "" : "bg-gray-50/40"}`}>
+                <td className="px-5 py-3">
+                  <div className="font-semibold text-secondary"><EditableField value={s.name} onSave={v => update(s.id, "name", v)} /></div>
+                  <div className="text-xs text-gray-400 mt-0.5"><EditableField value={s.description || "—"} onSave={v => update(s.id, "description", v)} /></div>
+                </td>
+                <td className="px-3 py-3 text-center text-gray-500 hidden sm:table-cell">
+                  <EditableField value={s.unit || "—"} onSave={v => update(s.id, "unit", v)} />
+                </td>
+                <td className="px-3 py-3 text-right font-bold text-secondary">
+                  <EditableField value={(s.price ?? 0).toFixed(2)} type="number" onSave={v => update(s.id, "price", v)} /> €
+                </td>
+                <td className="px-3 py-3 text-center">
+                  <button onClick={() => toggle(s.id)}
+                    className={`px-2 py-1 text-xs font-bold uppercase tracking-wide transition-colors ${s.active ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
+                    {s.active ? "Aktívna" : "Neaktívna"}
+                  </button>
+                </td>
+                <td className="px-2 py-3 text-right">
+                  <button onClick={() => remove(s.id)} className="p-1 text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {adding ? (
-        <div className="bg-white border-2 border-primary p-5 space-y-3">
-          <input placeholder="Názov služby" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-            className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" autoFocus />
-          <input placeholder="Popis služby" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
-            className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+        <div className="bg-white border-2 border-primary p-5">
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <input placeholder="Názov služby *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
+              className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary col-span-2" autoFocus />
+            <input placeholder="Jednotka (napr. 1 hod.)" value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })}
+              className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+            <input placeholder="Cena bez DPH (€)" type="number" step="0.01" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })}
+              className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+            <input placeholder="Popis (nepovinné)" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
+              className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary col-span-2" />
+          </div>
           <div className="flex gap-2">
             <button onClick={add} className="px-4 py-2 bg-primary text-secondary font-bold text-sm hover:bg-primary/90">Pridať</button>
             <button onClick={() => setAdding(false)} className="px-4 py-2 bg-gray-100 text-gray-500 text-sm">Zrušiť</button>

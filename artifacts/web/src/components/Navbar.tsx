@@ -14,11 +14,12 @@ export function Navbar() {
   }, []);
 
   const navLinks = [
-    { name: "Domov", href: "#home" },
-    { name: "O Nás", href: "#about" },
-    { name: "Produkty", href: "#products" },
-    { name: "Kalkulačka", href: "#calculator" },
-    { name: "Kontakt", href: "#contact" },
+    { name: "Domov", href: "/" },
+    { name: "O Nás", href: "/#about" },
+    { name: "Produkty", href: "/#products" },
+    { name: "Kalkulačka", href: "/#calculator" },
+    { name: "Cenník", href: "/cennik" },
+    { name: "Kontakt", href: "/#contact" },
   ];
 
   return (
@@ -71,7 +72,7 @@ export function Navbar() {
           <div className="flex items-center justify-between">
 
             {/* ── Logo: MS-BETON with shimmer ── */}
-            <a href="#home" className="flex items-center select-none" aria-label="MS-BETON">
+            <a href="/" className="flex items-center select-none" aria-label="MS-BETON">
               <span className="relative inline-flex items-center">
                 {/* MS — gold with shimmer sweep */}
                 <motion.span
