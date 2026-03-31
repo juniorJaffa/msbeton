@@ -64,7 +64,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-t from-secondary via-secondary/50 to-transparent"></div>
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full mt-20">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <motion.div 
             initial="hidden"
             animate="visible"
@@ -266,7 +266,7 @@ export default function Home() {
       </section>
 
       {/* CONTACT SECTION */}
-      <section id="contact" className="py-24 bg-gray-50">
+      <section id="contact" className="py-24 concrete-light">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-sm font-bold text-primary tracking-widest mb-2">KONTAKT</h2>
@@ -305,9 +305,9 @@ export default function Home() {
                     </div>
                     <div>
                       <h5 className="font-bold text-lg mb-1">Telefón (Dispečing)</h5>
-                      <p className="text-white/70 leading-relaxed text-xl">
-                        +421 900 111 222
-                      </p>
+                      <a href="tel:+421909205205" className="text-primary font-bold text-xl hover:underline">
+                        +421 909 205 205
+                      </a>
                     </div>
                   </div>
 

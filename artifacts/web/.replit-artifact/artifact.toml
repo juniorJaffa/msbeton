@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "Mabeton"
+title = "MS-BETON"
 version = "1.0.0"
 id = "artifacts/web"
 router = "path"
