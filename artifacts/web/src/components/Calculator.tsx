@@ -193,13 +193,47 @@ export function ConcreteCalculator() {
               key={t}
               onClick={() => { setTab(t); setShowResult(false); }}
               className={cn(
-                "py-5 font-bold text-lg tracking-widest transition-all cursor-pointer",
+                "relative overflow-hidden transition-all cursor-pointer group",
                 tab === t
-                  ? "bg-primary text-white border-b-4 border-primary/70"
-                  : "bg-white text-secondary/60 hover:bg-gray-50 border-b-4 border-gray-200"
+                  ? "border-b-4 border-primary"
+                  : "border-b-4 border-transparent"
               )}
             >
-              {t === "pumpa" ? "PUMPA" : "MIX"}
+              {/* Truck image */}
+              <div className="relative h-32 w-full overflow-hidden">
+                <img
+                  src={t === "pumpa"
+                    ? `${import.meta.env.BASE_URL}images/pump-truck.jpg`
+                    : `${import.meta.env.BASE_URL}images/mixer-truck.jpg`}
+                  alt={t === "pumpa" ? "Betón pumpa" : "Domiesavač betónu"}
+                  className={cn(
+                    "w-full h-full object-cover transition-all duration-300",
+                    tab === t ? "scale-105 brightness-90" : "brightness-50 group-hover:brightness-70"
+                  )}
+                />
+                {/* Overlay */}
+                <div className={cn(
+                  "absolute inset-0 transition-all duration-300",
+                  tab === t
+                    ? "bg-secondary/40"
+                    : "bg-secondary/65 group-hover:bg-secondary/50"
+                )} />
+                {/* Label */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+                  <span className={cn(
+                    "font-black text-xl tracking-widest transition-colors",
+                    tab === t ? "text-primary" : "text-white/70 group-hover:text-white"
+                  )}>
+                    {t === "pumpa" ? "PUMPA" : "MIX"}
+                  </span>
+                  <span className={cn(
+                    "text-xs font-medium transition-colors",
+                    tab === t ? "text-white/90" : "text-white/40 group-hover:text-white/60"
+                  )}>
+                    {t === "pumpa" ? "Betón pumpa 28m" : "Domiešavač 9m³"}
+                  </span>
+                </div>
+              </div>
             </button>
           ))}
         </div>
