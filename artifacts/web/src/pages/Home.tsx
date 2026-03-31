@@ -111,7 +111,7 @@ export default function Home() {
       </section>
 
       {/* ABOUT SECTION */}
-      <section id="about" className="py-24 bg-background">
+      <section id="about" className="py-24 concrete-light">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <motion.div 
@@ -194,7 +194,7 @@ export default function Home() {
       </section>
 
       {/* PRODUCTS SECTION */}
-      <section id="products" className="py-24 bg-gray-50">
+      <section id="products" className="py-24 concrete-light">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-sm font-bold text-primary tracking-widest mb-2">NAŠE PRODUKTY</h2>
@@ -245,8 +245,7 @@ export default function Home() {
       </section>
 
       {/* CALCULATOR SECTION */}
-      <section id="calculator" className="py-24 bg-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-1/3 h-full bg-gray-50/60 -z-10" />
+      <section id="calculator" className="py-24 concrete-light relative overflow-hidden">
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
