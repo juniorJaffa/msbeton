@@ -90,6 +90,93 @@ function SelectField({
   );
 }
 
+function RadioGroup({
+  label, value, onChange, options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-white/80 mb-2">{label}</label>
+      <div className="grid grid-cols-2 gap-1.5">
+        {options.map((o) => {
+          const selected = value === o;
+          return (
+            <button
+              key={o}
+              type="button"
+              onClick={() => onChange(o)}
+              className={cn(
+                "flex items-center gap-2.5 px-3 py-2.5 text-left transition-all rounded-sm border text-xs font-semibold tracking-wide",
+                selected
+                  ? "border-primary bg-primary/15 text-white"
+                  : "border-white/10 bg-white/5 text-white/55 hover:border-white/25 hover:text-white/80"
+              )}
+            >
+              <span className={cn(
+                "w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all",
+                selected ? "border-primary" : "border-white/30"
+              )}>
+                {selected && <span className="w-1.5 h-1.5 rounded-full bg-primary block" />}
+              </span>
+              {o}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function TypeRadioGroup({
+  label, value, onChange, options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { label: string; price: number }[];
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-white/80 mb-2">{label}</label>
+      <div className="flex flex-col gap-1">
+        {options.map((o) => {
+          const selected = value === o.label;
+          return (
+            <button
+              key={o.label}
+              type="button"
+              onClick={() => onChange(o.label)}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 text-left transition-all rounded-sm border",
+                selected
+                  ? "border-primary bg-primary/15"
+                  : "border-white/10 bg-white/5 hover:border-white/25"
+              )}
+            >
+              <span className={cn(
+                "w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all",
+                selected ? "border-primary" : "border-white/30"
+              )}>
+                {selected && <span className="w-1.5 h-1.5 rounded-full bg-primary block" />}
+              </span>
+              <span className={cn("flex-1 text-sm font-medium", selected ? "text-white" : "text-white/60")}>
+                {o.label.replace(/ – [\d.]+ € \/ m³/, "")}
+              </span>
+              <span className={cn("text-sm font-bold flex-shrink-0", selected ? "text-primary" : "text-white/40")}>
+                {o.price.toFixed(2)} €/m³
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function CheckboxField({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <label className="flex items-center gap-3 cursor-pointer group">
@@ -309,7 +396,7 @@ export function ConcreteCalculator() {
           </div>
 
           {/* Category */}
-          <SelectField
+          <RadioGroup
             label="Kategória betónu"
             value={category}
             onChange={handleCategoryChange}
@@ -317,7 +404,7 @@ export function ConcreteCalculator() {
           />
 
           {/* Type */}
-          <SelectField
+          <TypeRadioGroup
             label="Typ betónu"
             value={selectedType?.label ?? ""}
             onChange={(v) => {
@@ -325,7 +412,7 @@ export function ConcreteCalculator() {
               setConcreteTypeIdx(idx >= 0 ? idx : 0);
               setShowResult(false);
             }}
-            options={types.map((t) => t.label)}
+            options={types}
           />
 
           {/* Quantity */}
