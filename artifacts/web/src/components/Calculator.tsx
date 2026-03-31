@@ -369,13 +369,27 @@ export function ConcreteCalculator() {
                 className="w-full bg-white/10 border-b-2 border-b-primary text-white px-4 py-3 focus:outline-none placeholder:text-white/30 text-sm font-medium rounded-sm"
               />
             ) : (
-              <input
-                type="text"
-                value={address}
-                onChange={(e) => { setAddress(e.target.value); setShowResult(false); }}
-                placeholder="Zadajte adresu stavby"
-                className="w-full bg-white/10 border-b-2 border-b-primary text-white px-4 py-3 focus:outline-none placeholder:text-white/30 text-sm font-medium rounded-sm"
-              />
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={address}
+                  onChange={(e) => { setAddress(e.target.value); setShowResult(false); }}
+                  placeholder="Zadajte adresu stavby"
+                  className="w-full bg-white/10 border-b-2 border-b-primary text-white px-4 py-3 focus:outline-none placeholder:text-white/30 text-sm font-medium rounded-sm"
+                />
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={distance}
+                    onChange={(e) => { setDistance(e.target.value); setShowResult(false); }}
+                    placeholder="Vzdialenosť od Žiliny (km)"
+                    className="flex-1 bg-white/10 border-b-2 border-b-primary/60 text-white px-4 py-2.5 focus:outline-none focus:border-b-primary placeholder:text-white/30 text-sm font-medium rounded-sm"
+                  />
+                  <span className="text-xs text-white/40 flex-shrink-0">km (pre výpočet dopravy)</span>
+                </div>
+              </div>
             )}
             <div className="flex items-center gap-6 pt-1">
               {(["distance", "address"] as const).map((m) => (
