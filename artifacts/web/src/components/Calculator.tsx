@@ -200,7 +200,7 @@ export function ConcreteCalculator() {
               )}
             >
               {t === "pumpa" ? (
-                <svg viewBox="0 0 130 48" className={cn("w-28 h-[43px] transition-colors", tab === t ? "text-primary" : "text-white/40 group-hover:text-white/70")} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <svg viewBox="0 0 130 48" className={cn("w-28 h-[43px] mx-auto transition-colors", tab === t ? "text-primary" : "text-white/40 group-hover:text-white/70")} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   {/* Cab */}
                   <rect x="2" y="27" width="14" height="15" rx="1" />
                   <rect x="3" y="22" width="9" height="6" rx="1" />
