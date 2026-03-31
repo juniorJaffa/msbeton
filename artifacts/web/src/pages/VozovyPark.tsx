@@ -1,4 +1,5 @@
 import { Phone, ArrowRight } from "lucide-react";
+import { SEOHead } from "@/components/SEOHead";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 
@@ -32,6 +33,11 @@ const vehicles = [
 export default function VozovyPark() {
   return (
     <div className="min-h-screen bg-white">
+      <SEOHead
+        title="Vozový park"
+        description="Vozový park MS-BETON s.r.o. – betón pumpa MAN s dosahom 28 m a domiešavač 9 m³. Moderná technika pre spoľahlivú dopravu betónu v Žilinskom kraji."
+        canonical="/vozovy-park"
+      />
       <Navbar />
 
       {/* ── HERO ── */}

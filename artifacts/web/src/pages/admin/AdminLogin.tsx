@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
+import { SEOHead } from "@/components/SEOHead";
 import { Eye, EyeOff, Lock, User, AlertCircle, Clock } from "lucide-react";
 import { checkCredentials, login, isLoggedIn, getAttemptInfo, recordFailedAttempt } from "@/lib/adminAuth";
 

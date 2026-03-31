@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp, Phone, Info } from "lucide-react";
+import { SEOHead } from "@/components/SEOHead";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { adminData } from "@/lib/adminData";
@@ -66,6 +67,11 @@ export default function Cennik() {
 
   return (
     <div className="min-h-screen bg-white">
+      <SEOHead
+        title="Cenník betónu"
+        description="Aktuálny cenník betónu MS-BETON s.r.o. – drvené a okrúhle kamenivo, všetky triedy pevnosti. Ceny dopravy a čerpania betónu pumpa Žilina."
+        canonical="/cennik"
+      />
       <Navbar />
 
       {/* ── HERO ── */}
