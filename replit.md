@@ -94,3 +94,44 @@ Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHea
 ### `scripts` (`@workspace/scripts`)
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+
+---
+
+## MS-BETON Project
+
+**Company**: MS-BETON s.r.o. (concrete company, Žilina region, Slovakia)
+**Language**: Slovak throughout (all UI text)
+
+### artifacts/web (`@workspace/web`)
+
+React + Vite public website. Pages:
+- `/` — Home with hero, product highlights
+- `/cennik` — Cenník (price list, reads from admin data)
+- `/vozovy-park` — Vozový park (fleet, static)
+- `/admin/login` — Admin login (credentials: `msbeton` / `Msbeton2023`)
+- `/admin/dashboard` — Admin panel (tabs: Betóny, Služby, Doprava, Klienti)
+
+**Design**: Primary gold `#EDC531`, Secondary navy `#001D3D`, Font: Montserrat  
+**CSS classes**: `.concrete-bg` (no overlay), `.concrete-navy` (navy overlay), `.concrete-light` (light overlay)
+
+### Admin Data Architecture
+
+Admin data is stored in **PostgreSQL** (via the api-server) with **localStorage as a write-through cache**:
+- On app load: `syncFromServer()` in `App.tsx` fetches all data from API → updates localStorage
+- On save: writes to localStorage immediately (sync) + calls API (fire and forget)
+- When server data arrives: dispatches `admin-data-synced` event → AdminDashboard re-keys tabs
+
+**DB table**: `admin_config` — key/value JSONB store  
+**Admin API routes** (in api-server): `GET/PUT /api/admin/{categories,delivery,services,clients,transport-zones,transport-settings}`
+
+**Frontend files**:
+- `artifacts/web/src/lib/adminData.ts` — data access + sync logic
+- `artifacts/web/src/lib/api.ts` — fetch wrappers for admin API
+- `artifacts/web/src/lib/adminAuth.ts` — btoa auth check
+
+### Key Constants
+
+- Betónpumpa hourly rate: **112.50 €/hod**
+- Čakačka mixéra: **8 €/15 min**
+- Min. objednávka: **5 m³**
+- Dosah výložníka pumpy: **28 m**

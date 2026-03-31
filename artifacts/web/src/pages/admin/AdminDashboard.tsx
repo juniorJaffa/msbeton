@@ -499,10 +499,17 @@ function KlientiTab() {
 export default function AdminDashboard() {
   const [, navigate] = useLocation();
   const [tab, setTab] = useState<Tab>("betony");
+  const [syncKey, setSyncKey] = useState(0);
 
   useEffect(() => {
     if (!isLoggedIn()) navigate("/admin/login");
   }, [navigate]);
+
+  useEffect(() => {
+    const handler = () => setSyncKey(k => k + 1);
+    window.addEventListener("admin-data-synced", handler);
+    return () => window.removeEventListener("admin-data-synced", handler);
+  }, []);
 
   const handleLogout = () => { logout(); navigate("/admin/login"); };
 
@@ -561,10 +568,10 @@ export default function AdminDashboard() {
 
         {/* Tab content */}
         <div>
-          {tab === "betony" && <BetonTab />}
-          {tab === "sluzby" && <SluzbyTab />}
-          {tab === "doprava" && <DopravaTab />}
-          {tab === "klienti" && <KlientiTab />}
+          {tab === "betony" && <BetonTab key={syncKey} />}
+          {tab === "sluzby" && <SluzbyTab key={syncKey} />}
+          {tab === "doprava" && <DopravaTab key={syncKey} />}
+          {tab === "klienti" && <KlientiTab key={syncKey} />}
         </div>
       </div>
     </div>

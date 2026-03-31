@@ -1,3 +1,5 @@
+import { adminApi } from "./api";
+
 export interface ConcreteType {
   id: string;
   label: string;
@@ -188,7 +190,7 @@ const DEFAULT_CLIENTS: Client[] = [
 function loadData<T>(key: string, defaults: T): T {
   try {
     const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : defaults;
+    return raw ? (JSON.parse(raw) as T) : defaults;
   } catch {
     return defaults;
   }
@@ -198,24 +200,65 @@ function saveData<T>(key: string, data: T): void {
   localStorage.setItem(key, JSON.stringify(data));
 }
 
+export async function syncFromServer(): Promise<void> {
+  try {
+    const [cats, delivery, services, clients, tzones, tsettings] = await Promise.all([
+      adminApi.getCategories(),
+      adminApi.getDelivery(),
+      adminApi.getServices(),
+      adminApi.getClients(),
+      adminApi.getTransportZones(),
+      adminApi.getTransportSettings(),
+    ]);
+    const hasData = (v: unknown) => v !== null && v !== undefined && !(Array.isArray(v) && v.length === 0);
+    let updated = false;
+    if (hasData(cats?.data)) { saveData("msbeton_categories", cats!.data); updated = true; }
+    if (hasData(delivery?.data)) { saveData("msbeton_delivery", delivery!.data); updated = true; }
+    if (hasData(services?.data)) { saveData("msbeton_services", services!.data); updated = true; }
+    if (hasData(clients?.data)) { saveData("msbeton_clients", clients!.data); updated = true; }
+    if (hasData(tzones?.data)) { saveData("msbeton_transport_zones", tzones!.data); updated = true; }
+    if (hasData(tsettings?.data)) { saveData("msbeton_transport_settings", tsettings!.data); updated = true; }
+    if (updated) window.dispatchEvent(new Event("admin-data-synced"));
+  } catch {
+  }
+}
+
 export const adminData = {
   getCategories: (): ConcreteCategory[] => loadData("msbeton_categories", DEFAULT_CATEGORIES),
-  saveCategories: (data: ConcreteCategory[]) => saveData("msbeton_categories", data),
+  saveCategories: (data: ConcreteCategory[]) => {
+    saveData("msbeton_categories", data);
+    adminApi.saveCategories(data);
+  },
 
   getDelivery: (): DeliveryZone[] => loadData("msbeton_delivery", DEFAULT_DELIVERY),
-  saveDelivery: (data: DeliveryZone[]) => saveData("msbeton_delivery", data),
+  saveDelivery: (data: DeliveryZone[]) => {
+    saveData("msbeton_delivery", data);
+    adminApi.saveDelivery(data);
+  },
 
   getServices: (): Service[] => loadData("msbeton_services", DEFAULT_SERVICES),
-  saveServices: (data: Service[]) => saveData("msbeton_services", data),
+  saveServices: (data: Service[]) => {
+    saveData("msbeton_services", data);
+    adminApi.saveServices(data);
+  },
 
   getClients: (): Client[] => loadData("msbeton_clients", DEFAULT_CLIENTS),
-  saveClients: (data: Client[]) => saveData("msbeton_clients", data),
+  saveClients: (data: Client[]) => {
+    saveData("msbeton_clients", data);
+    adminApi.saveClients(data);
+  },
 
   getTransportZones: (): TransportPricingZone[] => loadData("msbeton_transport_zones", DEFAULT_TRANSPORT_ZONES),
-  saveTransportZones: (data: TransportPricingZone[]) => saveData("msbeton_transport_zones", data),
+  saveTransportZones: (data: TransportPricingZone[]) => {
+    saveData("msbeton_transport_zones", data);
+    adminApi.saveTransportZones(data);
+  },
 
   getTransportSettings: (): TransportSettings => loadData("msbeton_transport_settings", DEFAULT_TRANSPORT_SETTINGS),
-  saveTransportSettings: (data: TransportSettings) => saveData("msbeton_transport_settings", data),
+  saveTransportSettings: (data: TransportSettings) => {
+    saveData("msbeton_transport_settings", data);
+    adminApi.saveTransportSettings(data);
+  },
 
   generateId: () => Math.random().toString(36).slice(2, 10),
 };
