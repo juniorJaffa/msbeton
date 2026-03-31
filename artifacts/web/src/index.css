@@ -59,6 +59,54 @@
   --border: 215 50% 20%;
 }
 
+/* Concrete texture — raw tile */
+.concrete-bg {
+  background-image: url('/images/concrete-tile.jpg');
+  background-size: 960px auto;
+  background-repeat: repeat;
+  background-color: #b8b8b8;
+}
+
+/* Concrete dark — navy overlay on concrete */
+.concrete-navy {
+  background-image: url('/images/concrete-tile.jpg');
+  background-size: 960px auto;
+  background-repeat: repeat;
+  background-color: #b8b8b8;
+  position: relative;
+}
+.concrete-navy::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 29, 61, 0.88);
+  pointer-events: none;
+}
+.concrete-navy > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Concrete light — same texture, lighter overlay */
+.concrete-light {
+  background-image: url('/images/concrete-tile.jpg');
+  background-size: 960px auto;
+  background-repeat: repeat;
+  background-color: #b8b8b8;
+  position: relative;
+}
+.concrete-light::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: rgba(240, 240, 240, 0.82);
+  pointer-events: none;
+}
+.concrete-light > * {
+  position: relative;
+  z-index: 1;
+}
+
 @layer base {
   body {
     @apply bg-background text-foreground antialiased font-sans overflow-x-hidden selection:bg-primary selection:text-secondary;
