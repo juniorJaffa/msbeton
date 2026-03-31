@@ -24,9 +24,7 @@
 }
 
 :root {
-  /* Concrete light background */
-  --background: 0 0% 96%;
-  /* Dark navy text */
+  --background: 0 0% 100%;
   --foreground: 215 100% 12%;
 
   /* MS-BETON Gold/Yellow — #EDC531 */
@@ -37,17 +35,16 @@
   --secondary: 215 100% 12%;
   --secondary-foreground: 0 0% 97%;
 
-  /* Muted concrete grays */
-  --muted: 0 0% 90%;
+  --muted: 0 0% 94%;
   --muted-foreground: 215 15% 45%;
 
-  --accent: 0 0% 90%;
+  --accent: 0 0% 94%;
   --accent-foreground: 215 100% 12%;
 
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 98%;
 
-  --border: 215 15% 85%;
+  --border: 215 15% 88%;
   --ring: 47 83% 56%;
 
   --card: 0 0% 100%;
@@ -62,61 +59,9 @@
   --border: 215 50% 20%;
 }
 
-/* Real concrete texture — light (using cropped MS-BETON site concrete panels) */
-.concrete-bg {
-  background-image: url('/images/concrete-tile.jpg');
-  background-size: 960px auto;
-  background-repeat: repeat;
-  background-color: #b8b8b8;
-}
-
-/* Concrete dark — navy overlay on real concrete */
-.concrete-navy {
-  background-image: url('/images/concrete-tile.jpg');
-  background-size: 960px auto;
-  background-repeat: repeat;
-  background-color: #b8b8b8;
-  position: relative;
-}
-.concrete-navy::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-color: rgba(0, 29, 61, 0.88);
-  pointer-events: none;
-}
-.concrete-navy > * {
-  position: relative;
-  z-index: 1;
-}
-
-/* Concrete light — same texture, lighter overlay */
-.concrete-light {
-  background-image: url('/images/concrete-tile.jpg');
-  background-size: 960px auto;
-  background-repeat: repeat;
-  background-color: #b8b8b8;
-  position: relative;
-}
-.concrete-light::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-color: rgba(235, 235, 235, 0.72);
-  pointer-events: none;
-}
-.concrete-light > * {
-  position: relative;
-  z-index: 1;
-}
-
 @layer base {
   body {
-    @apply text-foreground antialiased font-sans overflow-x-hidden selection:bg-primary selection:text-secondary;
-    background-image: url('/images/concrete-tile.jpg');
-    background-size: 960px auto;
-    background-repeat: repeat;
-    background-color: #b8b8b8;
+    @apply bg-background text-foreground antialiased font-sans overflow-x-hidden selection:bg-primary selection:text-secondary;
   }
 
   h1, h2, h3, h4, h5, h6 {

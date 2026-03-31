@@ -95,15 +95,14 @@ export default function AdminLogin() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center py-12 px-4"
+      className="min-h-screen flex items-center justify-center py-12 px-4 bg-secondary relative"
       style={{
-        backgroundImage: "url('/images/concrete-clean.jpg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
+        background: "linear-gradient(135deg, #001D3D 0%, #00305f 60%, #001D3D 100%)",
       }}
     >
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-[#001D3D]/50" />
+      {/* Subtle dot pattern */}
+      <div className="absolute inset-0 opacity-[0.04]"
+        style={{ backgroundImage: "radial-gradient(circle, #ffffff 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
 
       <div className="relative z-10 w-full max-w-md">
         {/* Logo */}
