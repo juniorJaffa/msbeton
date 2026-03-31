@@ -52,22 +52,9 @@ export default function Home() {
       <Navbar />
 
       {/* HERO SECTION */}
-      <section id="home" className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden">
-        {/* Video background with overlay */}
-        <div className="absolute inset-0 z-0">
-          <video
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="w-full h-full object-cover object-center"
-            poster={`${import.meta.env.BASE_URL}images/hero-bg.png`}
-          >
-            <source src={`${import.meta.env.BASE_URL}videos/hero-video.mp4`} type="video/mp4" />
-          </video>
-          <div className="absolute inset-0 bg-secondary/70"></div>
-          <div className="absolute inset-0 bg-gradient-to-r from-secondary/85 via-secondary/50 to-secondary/20"></div>
-        </div>
+      <section id="home" className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden concrete-bg">
+        {/* Subtle light overlay so text is readable on the concrete */}
+        <div className="absolute inset-0 z-0 bg-white/30"></div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <motion.div 
@@ -78,18 +65,18 @@ export default function Home() {
           >
             <motion.div variants={fadeInUp} className="inline-flex items-center gap-3 mb-5">
               <span className="h-[2px] w-8 bg-primary block"></span>
-              <span className="font-semibold text-xs tracking-[0.2em] text-white/70 uppercase">Žilina betón, na ktorý sa môžete spoľahnúť</span>
+              <span className="font-semibold text-xs tracking-[0.2em] text-secondary/60 uppercase">Žilina betón, na ktorý sa môžete spoľahnúť</span>
             </motion.div>
 
-            <motion.p variants={fadeInUp} className="text-xl md:text-2xl font-bold text-white/90 mb-2 uppercase tracking-wide">
+            <motion.p variants={fadeInUp} className="text-xl md:text-2xl font-bold text-secondary mb-2 uppercase tracking-wide">
               Staviame na pevných základoch, volíme
             </motion.p>
 
-            <motion.h1 variants={fadeInUp} className="text-6xl md:text-8xl font-black text-primary leading-none mb-6 drop-shadow-lg tracking-tight">
+            <motion.h1 variants={fadeInUp} className="text-6xl md:text-8xl font-black text-primary leading-none mb-6 tracking-tight">
               MS-BETON
             </motion.h1>
             
-            <motion.p variants={fadeInUp} className="text-base md:text-lg text-white/70 mb-10 max-w-xl leading-relaxed">
+            <motion.p variants={fadeInUp} className="text-base md:text-lg text-secondary/70 mb-10 max-w-xl leading-relaxed">
               Sme váš spoľahlivý dopravca betónu v Žiline a okolí. Základ každej kvalitnej stavby je v pevnosti a spoľahlivosti betónu, ktorý používate – a práve ten vám dodávame my.
             </motion.p>
             
@@ -111,8 +98,8 @@ export default function Home() {
           </motion.div>
         </div>
         
-        {/* Decorative architectural shapes */}
-        <div className="absolute bottom-0 right-0 w-1/3 h-32 bg-primary/20 backdrop-blur-2xl" style={{ clipPath: 'polygon(100% 0, 100% 100%, 0 100%)' }}></div>
+        {/* Decorative gold accent corner */}
+        <div className="absolute bottom-0 right-0 w-1/3 h-32 bg-primary/15" style={{ clipPath: 'polygon(100% 0, 100% 100%, 0 100%)' }}></div>
       </section>
 
       {/* ABOUT SECTION */}
