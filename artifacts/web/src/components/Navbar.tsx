@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Menu, X, Phone, Mail } from "lucide-react";
+import { Menu, X, Phone, Mail, LogIn } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -44,6 +44,14 @@ export function Navbar() {
               >
                 <Phone className="w-3 h-3" />
                 +421 909 205 205
+              </a>
+              <span className="text-white/20">|</span>
+              <a
+                href="/admin/login"
+                className="flex items-center gap-1 text-white/40 hover:text-white/80 transition-colors text-xs"
+              >
+                <LogIn className="w-3 h-3" />
+                Prihlásiť sa
               </a>
             </div>
           </div>
