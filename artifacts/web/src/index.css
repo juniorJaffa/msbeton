@@ -64,7 +64,7 @@
   background-image: url('/images/concrete-pure.jpg');
   background-size: cover;
   background-repeat: no-repeat;
-  background-position: center;
+  background-position: top center;
   background-color: #b2b2b2;
 }
 
@@ -73,7 +73,7 @@
   background-image: url('/images/concrete-pure.jpg');
   background-size: cover;
   background-repeat: no-repeat;
-  background-position: center;
+  background-position: top center;
   background-color: #b2b2b2;
   position: relative;
 }
@@ -94,7 +94,7 @@
   background-image: url('/images/concrete-pure.jpg');
   background-size: cover;
   background-repeat: no-repeat;
-  background-position: center;
+  background-position: top center;
   background-color: #b2b2b2;
   position: relative;
 }

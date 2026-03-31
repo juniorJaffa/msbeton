@@ -35,8 +35,8 @@ export default function VozovyPark() {
       <Navbar />
 
       {/* ── HERO ── */}
-      <section className="concrete-navy relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-secondary/70 via-secondary/50 to-transparent pointer-events-none" />
+      <section className="concrete-bg relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-secondary/90 via-secondary/75 to-secondary/20 pointer-events-none" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
           <div className="max-w-xl">
             <div className="flex items-center gap-3 mb-5">
