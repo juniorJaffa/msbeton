@@ -115,8 +115,7 @@ export default function Home() {
           </motion.div>
         </div>
         
-        {/* Decorative architectural shapes */}
-        <div className="absolute bottom-0 right-0 w-1/3 h-32 bg-primary/20 backdrop-blur-2xl" style={{ clipPath: 'polygon(100% 0, 100% 100%, 0 100%)' }}></div>
+
       </section>
 
       {/* ABOUT SECTION */}
