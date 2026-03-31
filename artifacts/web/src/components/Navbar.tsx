@@ -14,9 +14,10 @@ export function Navbar() {
   }, []);
 
   const navLinks = [
-    { name: "Domov", href: "/" },
+    { name: "O nás", href: "/#about" },
     { name: "Produkty", href: "/#products" },
     { name: "Kalkulačka", href: "/#calculator" },
+    { name: "Vozový park", href: "/vozovy-park" },
     { name: "Cenník", href: "/cennik" },
     { name: "Kontakt", href: "/#contact" },
   ];
@@ -113,7 +114,7 @@ export function Navbar() {
             </a>
 
             {/* ── Desktop Nav ── */}
-            <nav className="hidden md:flex items-center gap-7">
+            <nav className="hidden md:flex items-center gap-5">
               {navLinks.map((link) => (
                 <a
                   key={link.name}
