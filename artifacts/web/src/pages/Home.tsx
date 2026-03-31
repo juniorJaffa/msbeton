@@ -53,10 +53,15 @@ export default function Home() {
 
       {/* HERO SECTION */}
       <section id="home" className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden">
-        {/* Clean navy gradient background */}
-        <div className="absolute inset-0 z-0 bg-secondary">
-          <div className="absolute inset-0 bg-gradient-to-br from-secondary via-secondary to-[#00305f]"></div>
-          <div className="absolute inset-0 bg-gradient-to-r from-secondary/90 via-secondary/60 to-transparent"></div>
+        {/* Background Image with Overlay */}
+        <div className="absolute inset-0 z-0">
+          <img
+            src={`${import.meta.env.BASE_URL}images/hero-bg.png`}
+            alt="MS-BETON Construction"
+            className="w-full h-full object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-secondary/75 mix-blend-multiply"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-secondary/90 via-secondary/60 to-secondary/30"></div>
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
@@ -106,7 +111,7 @@ export default function Home() {
       </section>
 
       {/* ABOUT SECTION */}
-      <section id="about" className="py-24 concrete-light">
+      <section id="about" className="py-24 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <motion.div 
@@ -189,7 +194,7 @@ export default function Home() {
       </section>
 
       {/* PRODUCTS SECTION */}
-      <section id="products" className="py-24 concrete-light">
+      <section id="products" className="py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-sm font-bold text-primary tracking-widest mb-2">NAŠE PRODUKTY</h2>
@@ -240,7 +245,8 @@ export default function Home() {
       </section>
 
       {/* CALCULATOR SECTION */}
-      <section id="calculator" className="py-24 concrete-light relative overflow-hidden">
+      <section id="calculator" className="py-24 bg-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-1/3 h-full bg-gray-50/60 -z-10" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
