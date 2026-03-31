@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import Home from "@/pages/Home";
 import Cennik from "@/pages/Cennik";
+import VozovyPark from "@/pages/VozovyPark";
 import NotFound from "@/pages/not-found";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
@@ -16,6 +17,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/cennik" component={Cennik} />
+      <Route path="/vozovy-park" component={VozovyPark} />
       <Route path="/admin">
         {() => <Redirect to="/admin/login" />}
       </Route>

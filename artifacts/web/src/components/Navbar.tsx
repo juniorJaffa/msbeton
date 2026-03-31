@@ -18,6 +18,7 @@ export function Navbar() {
     { name: "O Nás", href: "/#about" },
     { name: "Produkty", href: "/#products" },
     { name: "Kalkulačka", href: "/#calculator" },
+    { name: "Vozový park", href: "/vozovy-park" },
     { name: "Cenník", href: "/cennik" },
     { name: "Kontakt", href: "/#contact" },
   ];
