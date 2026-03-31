@@ -61,18 +61,20 @@
 
 /* Concrete texture — raw tile */
 .concrete-bg {
-  background-image: url('/images/concrete-tile.jpg');
-  background-size: 960px auto;
-  background-repeat: repeat;
-  background-color: #b8b8b8;
+  background-image: url('/images/concrete-pure.jpg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-color: #b2b2b2;
 }
 
 /* Concrete dark — navy overlay on concrete */
 .concrete-navy {
-  background-image: url('/images/concrete-tile.jpg');
-  background-size: 960px auto;
-  background-repeat: repeat;
-  background-color: #b8b8b8;
+  background-image: url('/images/concrete-pure.jpg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-color: #b2b2b2;
   position: relative;
 }
 .concrete-navy::before {
@@ -89,10 +91,11 @@
 
 /* Concrete light — same texture, lighter overlay */
 .concrete-light {
-  background-image: url('/images/concrete-tile.jpg');
-  background-size: 960px auto;
-  background-repeat: repeat;
-  background-color: #b8b8b8;
+  background-image: url('/images/concrete-pure.jpg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-color: #b2b2b2;
   position: relative;
 }
 .concrete-light::before {
