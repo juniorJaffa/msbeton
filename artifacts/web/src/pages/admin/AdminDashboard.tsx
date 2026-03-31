@@ -278,7 +278,7 @@ function KlientiTab() {
   const [clients, setClients] = useState<Client[]>(adminData.getClients());
   const [adding, setAdding] = useState(false);
   const [search, setSearch] = useState("");
-  const [form, setForm] = useState({ name: "", contact: "", phone: "", email: "", note: "" });
+  const [form, setForm] = useState({ name: "", logo: "", contact: "", phone: "", email: "", note: "" });
 
   const save = (data: Client[]) => { setClients(data); adminData.saveClients(data); };
   const remove = (id: string) => { if (confirm("Vymazať klienta?")) save(clients.filter(c => c.id !== id)); };
@@ -286,7 +286,7 @@ function KlientiTab() {
   const add = () => {
     if (!form.name) return;
     save([...clients, { id: adminData.generateId(), ...form }]);
-    setForm({ name: "", contact: "", phone: "", email: "", note: "" }); setAdding(false);
+    setForm({ name: "", logo: "", contact: "", phone: "", email: "", note: "" }); setAdding(false);
   };
 
   const filtered = clients.filter(c =>
@@ -308,6 +308,8 @@ function KlientiTab() {
           <div className="grid grid-cols-2 gap-3 mb-3">
             <input placeholder="Názov firmy *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
               className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary col-span-2" autoFocus />
+            <input placeholder="URL loga (https://...)" value={form.logo} onChange={e => setForm({ ...form, logo: e.target.value })}
+              className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary col-span-2" />
             <input placeholder="Kontaktná osoba" value={form.contact} onChange={e => setForm({ ...form, contact: e.target.value })}
               className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
             <input placeholder="Telefón" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}
@@ -328,29 +330,40 @@ function KlientiTab() {
         {filtered.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">Žiadni klienti.</p>}
         {filtered.map(c => (
           <div key={c.id} className="bg-white border border-gray-200 shadow-sm px-5 py-4 flex items-start justify-between gap-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-1 flex-1 text-sm">
-              <div>
-                <div className="text-xs text-gray-400 uppercase tracking-wide">Firma</div>
-                <div className="font-bold text-secondary"><EditableField value={c.name} onSave={v => update(c.id, "name", v)} /></div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-400 uppercase tracking-wide">Kontakt</div>
-                <div><EditableField value={c.contact || "—"} onSave={v => update(c.id, "contact", v)} /></div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-400 uppercase tracking-wide">Telefón</div>
-                <div><EditableField value={c.phone || "—"} onSave={v => update(c.id, "phone", v)} /></div>
-              </div>
-              <div className="sm:col-span-2">
-                <div className="text-xs text-gray-400 uppercase tracking-wide">E-mail</div>
-                <div><EditableField value={c.email || "—"} onSave={v => update(c.id, "email", v)} /></div>
-              </div>
-              {c.note && (
-                <div>
-                  <div className="text-xs text-gray-400 uppercase tracking-wide">Poznámka</div>
-                  <div className="text-gray-500 italic"><EditableField value={c.note} onSave={v => update(c.id, "note", v)} /></div>
-                </div>
+            <div className="flex items-start gap-4 flex-1 min-w-0">
+              {c.logo ? (
+                <img src={c.logo} alt={c.name} className="w-16 h-12 object-contain border border-gray-100 rounded shrink-0 bg-gray-50 p-1" />
+              ) : (
+                <div className="w-16 h-12 border border-dashed border-gray-200 rounded shrink-0 bg-gray-50 flex items-center justify-center text-gray-300 text-xs text-center leading-tight p-1">bez loga</div>
               )}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-1 flex-1 text-sm">
+                <div className="sm:col-span-3">
+                  <div className="text-xs text-gray-400 uppercase tracking-wide">Firma</div>
+                  <div className="font-bold text-secondary"><EditableField value={c.name} onSave={v => update(c.id, "name", v)} /></div>
+                </div>
+                <div className="sm:col-span-3">
+                  <div className="text-xs text-gray-400 uppercase tracking-wide">URL loga</div>
+                  <div className="text-xs text-gray-500 break-all"><EditableField value={c.logo || "—"} onSave={v => update(c.id, "logo", v)} /></div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400 uppercase tracking-wide">Kontakt</div>
+                  <div><EditableField value={c.contact || "—"} onSave={v => update(c.id, "contact", v)} /></div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400 uppercase tracking-wide">Telefón</div>
+                  <div><EditableField value={c.phone || "—"} onSave={v => update(c.id, "phone", v)} /></div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400 uppercase tracking-wide">E-mail</div>
+                  <div><EditableField value={c.email || "—"} onSave={v => update(c.id, "email", v)} /></div>
+                </div>
+                {c.note && (
+                  <div className="sm:col-span-3">
+                    <div className="text-xs text-gray-400 uppercase tracking-wide">Poznámka</div>
+                    <div className="text-gray-500 italic"><EditableField value={c.note} onSave={v => update(c.id, "note", v)} /></div>
+                  </div>
+                )}
+              </div>
             </div>
             <button onClick={() => remove(c.id)} className="p-1.5 bg-secondary text-primary hover:bg-secondary/80 rounded-sm shrink-0"><Trash2 className="w-4 h-4" /></button>
           </div>

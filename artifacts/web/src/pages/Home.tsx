@@ -16,6 +16,7 @@ import {
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { ConcreteCalculator } from "@/components/Calculator";
+import { adminData, Client } from "@/lib/adminData";
 
 // Animation variants
 const fadeInUp = {
@@ -35,6 +36,9 @@ export default function Home() {
   // Contact Form State
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  // Partners/Clients data
+  const clients: Client[] = adminData.getClients();
 
   const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -413,6 +417,63 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* PARTNERS SECTION */}
+      {clients.length > 0 && (
+        <section className="py-14 bg-white border-t border-gray-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-80px" }}
+              variants={fadeInUp}
+              className="text-center mb-10"
+            >
+              <p className="text-xs font-bold text-gray-400 tracking-[0.25em] uppercase mb-1">Naši partneri</p>
+              <h2 className="text-2xl md:text-3xl font-bold text-secondary uppercase tracking-tight">
+                Spoločnosti, s ktorými spolupracujeme
+              </h2>
+              <div className="mt-3 mx-auto w-16 h-1 bg-primary rounded-full" />
+            </motion.div>
+
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-60px" }}
+              variants={staggerContainer}
+              className="flex flex-wrap justify-center items-center gap-4 md:gap-6"
+            >
+              {clients.map(client => (
+                <motion.div
+                  key={client.id}
+                  variants={fadeInUp}
+                  className="group relative flex items-center justify-center w-44 h-24 bg-gray-50 border border-gray-100 rounded-xl overflow-hidden cursor-default transition-all duration-300 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-1"
+                >
+                  {client.logo ? (
+                    <img
+                      src={client.logo}
+                      alt={client.name}
+                      className="w-full h-full object-contain p-4 filter grayscale opacity-60 transition-all duration-500 group-hover:grayscale-0 group-hover:opacity-100"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center w-full h-full p-3 transition-all duration-300">
+                      <div className="w-10 h-10 rounded-full bg-gray-200 group-hover:bg-primary/20 flex items-center justify-center mb-2 transition-colors duration-300">
+                        <span className="text-lg font-black text-gray-400 group-hover:text-primary transition-colors duration-300">
+                          {client.name.charAt(0)}
+                        </span>
+                      </div>
+                      <span className="text-xs font-bold text-gray-400 group-hover:text-secondary text-center leading-tight transition-colors duration-300 uppercase tracking-wide">
+                        {client.name}
+                      </span>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 rounded-xl ring-1 ring-inset ring-transparent group-hover:ring-primary/20 transition-all duration-300 pointer-events-none" />
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+      )}
 
       <Footer />
     </div>
