@@ -8,12 +8,12 @@ export function Footer() {
           
           {/* Brand */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-primary rounded-sm flex items-center justify-center">
-                <span className="font-display font-bold text-white text-2xl">M</span>
-              </div>
-              <span className="font-display font-bold text-3xl tracking-wide text-white">
-                MSBETON
+            <div className="flex items-center gap-1">
+              <span className="font-display font-black text-3xl tracking-tight text-primary">
+                MS
+              </span>
+              <span className="font-display font-black text-3xl tracking-tight text-white">
+                BETON
               </span>
             </div>
             <p className="max-w-xs text-sm leading-relaxed">

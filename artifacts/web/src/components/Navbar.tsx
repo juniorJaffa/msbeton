@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Menu, X, Phone } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useAnimationControls } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 export function Navbar() {
@@ -33,15 +33,19 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <a href="#home" className="flex items-center gap-2 group">
-            <div className="w-10 h-10 bg-primary rounded-sm flex items-center justify-center transform group-hover:-rotate-6 transition-transform duration-300">
-              <span className="font-display font-bold text-white text-2xl">M</span>
-            </div>
+          <a href="#home" className="flex items-center gap-1 group select-none">
+            <motion.span
+              className="font-display font-black text-3xl tracking-tight text-primary"
+              animate={{ x: [0, 2, -2, 2, 0] }}
+              transition={{ duration: 2.4, repeat: Infinity, repeatDelay: 4, ease: "easeInOut" }}
+            >
+              MS
+            </motion.span>
             <span className={cn(
-              "font-display font-bold text-3xl tracking-wide",
+              "font-display font-black text-3xl tracking-tight transition-colors duration-300",
               isScrolled ? "text-secondary" : "text-white"
             )}>
-              MSBETON
+              BETON
             </span>
           </a>
 
