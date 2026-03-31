@@ -261,7 +261,7 @@ export function ConcreteCalculator() {
                 "text-[10px] font-medium transition-colors",
                 tab === t ? "text-white/70" : "text-white/30 group-hover:text-white/50"
               )}>
-                {t === "pumpa" ? "Betón pumpa 56m" : "Domiešavač 9m³"}
+                {t === "pumpa" ? "Betón pumpa 28m" : "Domiešavač 9m³"}
               </span>
             </button>
           ))}
