@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { ChevronDown, MapPin, Truck, Zap } from "lucide-react";
+import { ChevronDown, Truck } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { adminData } from "@/lib/adminData";
 
 type Tab = "pumpa" | "mix";
 
@@ -51,6 +52,8 @@ const CONCRETE_TYPES: Record<string, { label: string; price: number }[]> = {
 
 const PUMP_HOURS = ["1 h", "2 h", "3 h", "4 h", "5 h", "6 h", "7 h", "8 h"];
 const PUMP_MINS = ["0 min", "15 min", "30 min", "45 min"];
+const WAIT_HOURS = ["0 h", "1 h", "2 h", "3 h", "4 h", "5 h", "6 h", "7 h", "8 h"];
+const WAIT_MINS = ["0 min", "15 min", "30 min", "45 min"];
 
 const TRANSPORT_RATE = 1.8;
 const PUMP_HOUR_RATE = 120;
@@ -114,6 +117,8 @@ export function ConcreteCalculator() {
   const [quantity, setQuantity] = useState("");
   const [pumpHour, setPumpHour] = useState("1 h");
   const [pumpMin, setPumpMin] = useState("0 min");
+  const [waitHour, setWaitHour] = useState("0 h");
+  const [waitMin, setWaitMin] = useState("0 min");
   const [extraHoses, setExtraHoses] = useState(false);
   const [washing, setWashing] = useState(false);
   const [showResult, setShowResult] = useState(false);
@@ -121,11 +126,20 @@ export function ConcreteCalculator() {
   const types = CONCRETE_TYPES[category] ?? [];
   const selectedType = types[concreteTypeIdx] ?? types[0];
 
+  const zones = adminData.getDelivery();
+  const waitingRatePer15min = (zones[0]?.waitingRatePer15min) ?? 8;
+
   const handleCategoryChange = (cat: string) => {
     setCategory(cat);
     setConcreteTypeIdx(0);
     setShowResult(false);
   };
+
+  const waitTotalMins = useMemo(() => {
+    const wh = parseInt(waitHour) || 0;
+    const wm = parseInt(waitMin) || 0;
+    return wh * 60 + wm;
+  }, [waitHour, waitMin]);
 
   const result = useMemo(() => {
     const qty = parseFloat(quantity) || 0;
@@ -138,21 +152,35 @@ export function ConcreteCalculator() {
     if (tab === "mix") {
       const trucks = Math.ceil(qty / MIX_TRUCK_CAPACITY);
       const total = concreteCost + transportCost;
-      return { concreteCost, transportCost, total, trucks, pumpCost: 0, extras: 0 };
+      return { concreteCost, transportCost, total, trucks, pumpCost: 0, waitingCost: 0, extras: 0 };
     }
 
     const hours = parseInt(pumpHour) || 1;
     const mins = parseInt(pumpMin) || 0;
     const pumpCost = PUMP_SETUP_FEE + hours * PUMP_HOUR_RATE + (mins > 0 ? PUMP_MIN_RATE : 0);
     const extras = (extraHoses ? EXTRA_HOSE_RATE : 0) + (washing ? WASHING_RATE : 0);
-    const total = concreteCost + transportCost + pumpCost + extras;
+
+    const waitIntervals = Math.ceil(waitTotalMins / 15);
+    const waitingCost = waitIntervals * waitingRatePer15min;
+
+    const total = concreteCost + transportCost + pumpCost + waitingCost + extras;
     const trucks = Math.ceil(qty / MIX_TRUCK_CAPACITY);
-    return { concreteCost, transportCost, pumpCost, extras, total, trucks };
-  }, [tab, quantity, distance, selectedType, pumpHour, pumpMin, extraHoses, washing]);
+    return { concreteCost, transportCost, pumpCost, waitingCost, extras, total, trucks };
+  }, [tab, quantity, distance, selectedType, pumpHour, pumpMin, waitTotalMins, waitingRatePer15min, extraHoses, washing]);
 
   const handleCalculate = () => {
     if (parseFloat(quantity) > 0) setShowResult(true);
   };
+
+  const waitLabel = useMemo(() => {
+    const wh = parseInt(waitHour) || 0;
+    const wm = parseInt(waitMin) || 0;
+    if (wh === 0 && wm === 0) return null;
+    const parts = [];
+    if (wh > 0) parts.push(`${wh} h`);
+    if (wm > 0) parts.push(`${wm} min`);
+    return parts.join(" ");
+  }, [waitHour, waitMin]);
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -254,10 +282,45 @@ export function ConcreteCalculator() {
           {/* PUMPA extras */}
           {tab === "pumpa" && (
             <>
+              {/* Pump time */}
               <div className="grid grid-cols-2 gap-4">
                 <SelectField label="Čerpanie v /h" value={pumpHour} onChange={(v) => { setPumpHour(v); setShowResult(false); }} options={PUMP_HOURS} />
                 <SelectField label="Čerpanie v /min" value={pumpMin} onChange={(v) => { setPumpMin(v); setShowResult(false); }} options={PUMP_MINS} />
               </div>
+
+              {/* Waiting time */}
+              <div className="border border-white/10 rounded-lg p-4 space-y-3 bg-white/5">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-white/80">
+                    Čakačky
+                    <span className="ml-2 text-xs font-normal text-white/40">{waitingRatePer15min} € / 15 min</span>
+                  </span>
+                  {waitLabel && (
+                    <span className="text-xs text-primary font-bold">{waitLabel}</span>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <SelectField
+                    label="Hodiny čakania"
+                    value={waitHour}
+                    onChange={(v) => { setWaitHour(v); setShowResult(false); }}
+                    options={WAIT_HOURS}
+                  />
+                  <SelectField
+                    label="Minúty čakania"
+                    value={waitMin}
+                    onChange={(v) => { setWaitMin(v); setShowResult(false); }}
+                    options={WAIT_MINS}
+                  />
+                </div>
+                {waitTotalMins > 0 && (
+                  <div className="text-xs text-white/50 text-right">
+                    {Math.ceil(waitTotalMins / 15)} × {waitingRatePer15min} € = <span className="text-primary font-bold">{(Math.ceil(waitTotalMins / 15) * waitingRatePer15min).toFixed(2)} €</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Other extras */}
               <div className="space-y-3 pt-1">
                 <CheckboxField label="Počet prídavných hadíc - bežné metre (+15 €)" checked={extraHoses} onChange={(v) => { setExtraHoses(v); setShowResult(false); }} />
                 <CheckboxField label="Umývanie mimo stavby (+45 €)" checked={washing} onChange={(v) => { setWashing(v); setShowResult(false); }} />
@@ -297,6 +360,12 @@ export function ConcreteCalculator() {
                   <div className="flex justify-between text-white/70">
                     <span>Pumpa ({pumpHour} {pumpMin !== "0 min" ? `+ ${pumpMin}` : ""} + nastavenie)</span>
                     <span className="font-semibold text-white">{result.pumpCost.toFixed(2)} €</span>
+                  </div>
+                )}
+                {tab === "pumpa" && result.waitingCost > 0 && (
+                  <div className="flex justify-between text-white/70">
+                    <span>Čakačky ({waitLabel} = {Math.ceil(waitTotalMins / 15)} × {waitingRatePer15min} €)</span>
+                    <span className="font-semibold text-white">{result.waitingCost.toFixed(2)} €</span>
                   </div>
                 )}
                 {result.extras > 0 && (

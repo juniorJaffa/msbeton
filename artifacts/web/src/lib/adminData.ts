@@ -16,6 +16,7 @@ export interface DeliveryZone {
   ratePerKm: number;
   truckCapacity: number;
   pumpHourlyRate: number;
+  waitingRatePer15min: number;
 }
 
 export interface Service {
@@ -89,7 +90,7 @@ const DEFAULT_CATEGORIES: ConcreteCategory[] = [
 ];
 
 const DEFAULT_DELIVERY: DeliveryZone[] = [
-  { id: "z1", name: "Štandardná zóna", ratePerKm: 1.8, truckCapacity: 7, pumpHourlyRate: 180 },
+  { id: "z1", name: "Štandardná zóna", ratePerKm: 1.8, truckCapacity: 7, pumpHourlyRate: 180, waitingRatePer15min: 8 },
 ];
 
 const DEFAULT_SERVICES: Service[] = [

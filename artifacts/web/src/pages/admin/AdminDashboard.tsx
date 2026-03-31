@@ -144,7 +144,7 @@ function BetonTab() {
 function DopravaTab() {
   const [zones, setZones] = useState<DeliveryZone[]>(adminData.getDelivery());
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ name: "", ratePerKm: "", truckCapacity: "", pumpHourlyRate: "" });
+  const [form, setForm] = useState({ name: "", ratePerKm: "", truckCapacity: "", pumpHourlyRate: "", waitingRatePer15min: "" });
 
   const save = (data: DeliveryZone[]) => { setZones(data); adminData.saveDelivery(data); };
   const update = (id: string, field: keyof DeliveryZone, value: string) =>
@@ -152,8 +152,8 @@ function DopravaTab() {
   const remove = (id: string) => { if (confirm("Vymazať zónu?")) save(zones.filter(z => z.id !== id)); };
   const add = () => {
     if (!form.name || !form.ratePerKm) return;
-    save([...zones, { id: adminData.generateId(), name: form.name, ratePerKm: parseFloat(form.ratePerKm), truckCapacity: parseFloat(form.truckCapacity) || 7, pumpHourlyRate: parseFloat(form.pumpHourlyRate) || 180 }]);
-    setForm({ name: "", ratePerKm: "", truckCapacity: "", pumpHourlyRate: "" }); setAdding(false);
+    save([...zones, { id: adminData.generateId(), name: form.name, ratePerKm: parseFloat(form.ratePerKm), truckCapacity: parseFloat(form.truckCapacity) || 7, pumpHourlyRate: parseFloat(form.pumpHourlyRate) || 180, waitingRatePer15min: parseFloat(form.waitingRatePer15min) || 8 }]);
+    setForm({ name: "", ratePerKm: "", truckCapacity: "", pumpHourlyRate: "", waitingRatePer15min: "" }); setAdding(false);
   };
 
   return (
@@ -167,7 +167,7 @@ function DopravaTab() {
               </div>
               <button onClick={() => remove(z.id)} className="p-1.5 bg-secondary text-primary hover:bg-secondary/80 rounded-sm"><Trash2 className="w-4 h-4" /></button>
             </div>
-            <div className="grid grid-cols-3 gap-4 text-sm">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
               <div className="bg-gray-50 p-3 border border-gray-100">
                 <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Sadzba za km</div>
                 <div className="font-bold text-secondary">
@@ -186,6 +186,12 @@ function DopravaTab() {
                   <EditableField value={z.pumpHourlyRate} type="number" onSave={v => update(z.id, "pumpHourlyRate", v)} /> €/hod
                 </div>
               </div>
+              <div className="bg-yellow-50 p-3 border border-yellow-100">
+                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Čakačka / 15 min</div>
+                <div className="font-bold text-secondary">
+                  <EditableField value={z.waitingRatePer15min ?? 8} type="number" onSave={v => update(z.id, "waitingRatePer15min", v)} /> €
+                </div>
+              </div>
             </div>
           </div>
         ))}
@@ -201,7 +207,9 @@ function DopravaTab() {
             <input placeholder="Kapacita mixéra (m³)" type="number" value={form.truckCapacity} onChange={e => setForm({ ...form, truckCapacity: e.target.value })}
               className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
             <input placeholder="Sadzba pumpy (€/hod)" type="number" value={form.pumpHourlyRate} onChange={e => setForm({ ...form, pumpHourlyRate: e.target.value })}
-              className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary col-span-2" />
+              className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+            <input placeholder="Čakačka (€/15 min, napr. 8)" type="number" step="0.5" value={form.waitingRatePer15min} onChange={e => setForm({ ...form, waitingRatePer15min: e.target.value })}
+              className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
           </div>
           <div className="flex gap-2">
             <button onClick={add} className="px-4 py-2 bg-primary text-secondary font-bold text-sm hover:bg-primary/90">Pridať</button>
