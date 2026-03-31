@@ -200,33 +200,33 @@ export function ConcreteCalculator() {
               )}
             >
               {t === "pumpa" ? (
-                <svg viewBox="0 0 108 48" className={cn("w-24 h-[44px] transition-colors", tab === t ? "text-primary" : "text-white/40 group-hover:text-white/70")} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <svg viewBox="0 0 130 48" className={cn("w-28 h-[43px] transition-colors", tab === t ? "text-primary" : "text-white/40 group-hover:text-white/70")} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   {/* Cab */}
-                  <rect x="2" y="26" width="16" height="16" rx="1" />
-                  <rect x="3" y="21" width="10" height="6" rx="1" />
+                  <rect x="2" y="27" width="14" height="15" rx="1" />
+                  <rect x="3" y="22" width="9" height="6" rx="1" />
                   {/* Chassis */}
-                  <line x1="18" y1="32" x2="52" y2="32" />
-                  <line x1="18" y1="42" x2="52" y2="42" />
-                  <line x1="52" y1="32" x2="52" y2="42" />
-                  {/* Boom base column (vertical mast on truck) */}
-                  <line x1="28" y1="32" x2="28" y2="22" strokeWidth="2.5" />
-                  <line x1="24" y1="22" x2="32" y2="22" strokeWidth="2" />
-                  {/* Boom arm — steep rise then long reach far right */}
-                  <line x1="28" y1="22" x2="20" y2="8" strokeWidth="2.8" />
-                  <line x1="20" y1="8" x2="100" y2="3" strokeWidth="2.4" />
-                  {/* Support cable / strut */}
-                  <line x1="28" y1="22" x2="60" y2="6" strokeWidth="1" strokeDasharray="2 2" />
-                  {/* Boom tip — pipe hanging down */}
-                  <line x1="100" y1="3" x2="105" y2="3" strokeWidth="2" />
-                  <line x1="104" y1="3" x2="104" y2="18" strokeWidth="1.8" />
-                  {/* Outriggers */}
-                  <line x1="22" y1="42" x2="22" y2="48" />
-                  <line x1="18" y1="48" x2="26" y2="48" />
-                  <line x1="46" y1="42" x2="46" y2="48" />
-                  <line x1="42" y1="48" x2="50" y2="48" />
+                  <line x1="16" y1="33" x2="44" y2="33" />
+                  <line x1="16" y1="42" x2="44" y2="42" />
+                  <line x1="44" y1="33" x2="44" y2="42" />
+                  {/* Boom mast (vertical base) */}
+                  <line x1="26" y1="33" x2="26" y2="21" strokeWidth="2.5" />
+                  <line x1="22" y1="21" x2="30" y2="21" strokeWidth="1.8" />
+                  {/* Boom arm — rises sharply then extends very far right (56 m reach) */}
+                  <line x1="26" y1="21" x2="16" y2="6" strokeWidth="3" />
+                  <line x1="16" y1="6" x2="122" y2="2" strokeWidth="2.5" />
+                  {/* Support strut (dashed cable) */}
+                  <line x1="26" y1="21" x2="72" y2="4" strokeWidth="1" strokeDasharray="2 2" />
+                  {/* Boom tip + hanging pipe */}
+                  <line x1="122" y1="2" x2="127" y2="2" strokeWidth="2" />
+                  <line x1="126" y1="2" x2="126" y2="17" strokeWidth="1.8" />
+                  {/* Outriggers (4 stabilizers) */}
+                  <line x1="20" y1="42" x2="20" y2="48" />
+                  <line x1="16" y1="48" x2="24" y2="48" />
+                  <line x1="40" y1="42" x2="40" y2="48" />
+                  <line x1="36" y1="48" x2="44" y2="48" />
                   {/* Wheels */}
-                  <circle cx="9" cy="42" r="4" strokeWidth="2" />
-                  <circle cx="44" cy="42" r="4" strokeWidth="2" />
+                  <circle cx="8" cy="42" r="4" strokeWidth="2" />
+                  <circle cx="36" cy="42" r="4" strokeWidth="2" />
                 </svg>
               ) : (
                 <svg viewBox="0 0 80 44" className={cn("w-20 h-11 transition-colors", tab === t ? "text-primary" : "text-white/40 group-hover:text-white/70")} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
