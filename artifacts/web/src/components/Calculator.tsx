@@ -193,47 +193,70 @@ export function ConcreteCalculator() {
               key={t}
               onClick={() => { setTab(t); setShowResult(false); }}
               className={cn(
-                "relative overflow-hidden transition-all cursor-pointer group",
+                "flex flex-col items-center justify-center gap-2 py-5 transition-all cursor-pointer group",
                 tab === t
-                  ? "border-b-4 border-primary"
-                  : "border-b-4 border-transparent"
+                  ? "bg-secondary border-b-4 border-primary"
+                  : "bg-white/5 border-b-4 border-transparent hover:bg-white/10"
               )}
             >
-              {/* Truck image */}
-              <div className="relative h-32 w-full overflow-hidden">
-                <img
-                  src={t === "pumpa"
-                    ? `${import.meta.env.BASE_URL}images/pump-truck.jpg`
-                    : `${import.meta.env.BASE_URL}images/mixer-truck.jpg`}
-                  alt={t === "pumpa" ? "Betón pumpa" : "Domiesavač betónu"}
-                  className={cn(
-                    "w-full h-full object-cover transition-all duration-300",
-                    tab === t ? "scale-105 brightness-90" : "brightness-50 group-hover:brightness-70"
-                  )}
-                />
-                {/* Overlay */}
-                <div className={cn(
-                  "absolute inset-0 transition-all duration-300",
-                  tab === t
-                    ? "bg-secondary/40"
-                    : "bg-secondary/65 group-hover:bg-secondary/50"
-                )} />
-                {/* Label */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-                  <span className={cn(
-                    "font-black text-xl tracking-widest transition-colors",
-                    tab === t ? "text-primary" : "text-white/70 group-hover:text-white"
-                  )}>
-                    {t === "pumpa" ? "PUMPA" : "MIX"}
-                  </span>
-                  <span className={cn(
-                    "text-xs font-medium transition-colors",
-                    tab === t ? "text-white/90" : "text-white/40 group-hover:text-white/60"
-                  )}>
-                    {t === "pumpa" ? "Betón pumpa 28m" : "Domiešavač 9m³"}
-                  </span>
-                </div>
-              </div>
+              {t === "pumpa" ? (
+                <svg viewBox="0 0 80 44" className={cn("w-20 h-11 transition-colors", tab === t ? "text-primary" : "text-white/40 group-hover:text-white/70")} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  {/* Truck cab */}
+                  <rect x="2" y="22" width="18" height="16" rx="1" />
+                  <rect x="3" y="18" width="10" height="6" rx="1" />
+                  {/* Windshield */}
+                  <line x1="4" y1="18" x2="13" y2="18" />
+                  {/* Truck body / chassis */}
+                  <line x1="20" y1="30" x2="58" y2="30" />
+                  <line x1="20" y1="38" x2="58" y2="38" />
+                  <line x1="58" y1="30" x2="58" y2="38" />
+                  {/* Boom arm - long extending */}
+                  <line x1="30" y1="30" x2="22" y2="8" strokeWidth="3" />
+                  <line x1="22" y1="8" x2="72" y2="4" strokeWidth="2.5" />
+                  {/* Boom tip / pipe end */}
+                  <line x1="72" y1="4" x2="76" y2="12" strokeWidth="2" />
+                  {/* Outrigger */}
+                  <line x1="40" y1="38" x2="40" y2="44" />
+                  <line x1="36" y1="44" x2="44" y2="44" />
+                  {/* Wheels */}
+                  <circle cx="10" cy="38" r="4" strokeWidth="2" />
+                  <circle cx="50" cy="38" r="4" strokeWidth="2" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 80 44" className={cn("w-20 h-11 transition-colors", tab === t ? "text-primary" : "text-white/40 group-hover:text-white/70")} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  {/* Truck cab */}
+                  <rect x="2" y="22" width="18" height="16" rx="1" />
+                  <rect x="3" y="18" width="10" height="6" rx="1" />
+                  {/* Chassis */}
+                  <line x1="20" y1="30" x2="62" y2="30" />
+                  <line x1="20" y1="38" x2="62" y2="38" />
+                  <line x1="62" y1="30" x2="62" y2="38" />
+                  {/* Mixer drum - ellipse body */}
+                  <ellipse cx="44" cy="22" rx="18" ry="12" />
+                  {/* Drum spiral lines */}
+                  <path d="M30 26 Q44 18 58 26" strokeWidth="1.5" />
+                  <path d="M30 20 Q44 12 58 20" strokeWidth="1.5" />
+                  {/* Drum mount front */}
+                  <line x1="26" y1="22" x2="30" y2="30" strokeWidth="1.5" />
+                  {/* Drum mount rear */}
+                  <line x1="60" y1="22" x2="62" y2="30" strokeWidth="1.5" />
+                  {/* Wheels */}
+                  <circle cx="10" cy="38" r="4" strokeWidth="2" />
+                  <circle cx="52" cy="38" r="4" strokeWidth="2" />
+                </svg>
+              )}
+              <span className={cn(
+                "font-black text-sm tracking-widest transition-colors",
+                tab === t ? "text-primary" : "text-white/50 group-hover:text-white/80"
+              )}>
+                {t === "pumpa" ? "PUMPA" : "MIX"}
+              </span>
+              <span className={cn(
+                "text-[10px] font-medium transition-colors",
+                tab === t ? "text-white/70" : "text-white/30 group-hover:text-white/50"
+              )}>
+                {t === "pumpa" ? "Betón pumpa 28m" : "Domiešavač 9m³"}
+              </span>
             </button>
           ))}
         </div>
