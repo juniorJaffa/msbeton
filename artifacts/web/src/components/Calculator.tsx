@@ -200,33 +200,32 @@ export function ConcreteCalculator() {
               )}
             >
               {t === "pumpa" ? (
-                <svg viewBox="0 0 130 48" className={cn("w-28 h-[43px] mx-auto transition-colors", tab === t ? "text-primary" : "text-white/40 group-hover:text-white/70")} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <svg viewBox="0 0 120 46" className={cn("w-28 h-[43px] mx-auto transition-colors", tab === t ? "text-primary" : "text-white/40 group-hover:text-white/70")} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   {/* Cab */}
-                  <rect x="2" y="27" width="14" height="15" rx="1" />
-                  <rect x="3" y="22" width="9" height="6" rx="1" />
+                  <rect x="2" y="25" width="13" height="14" rx="1" />
+                  <rect x="3" y="20" width="9" height="6" rx="1" />
                   {/* Chassis */}
-                  <line x1="16" y1="33" x2="44" y2="33" />
-                  <line x1="16" y1="42" x2="44" y2="42" />
-                  <line x1="44" y1="33" x2="44" y2="42" />
-                  {/* Boom mast (vertical base) */}
-                  <line x1="26" y1="33" x2="26" y2="21" strokeWidth="2.5" />
-                  <line x1="22" y1="21" x2="30" y2="21" strokeWidth="1.8" />
-                  {/* Boom arm — rises sharply then extends very far right (56 m reach) */}
-                  <line x1="26" y1="21" x2="16" y2="6" strokeWidth="3" />
-                  <line x1="16" y1="6" x2="122" y2="2" strokeWidth="2.5" />
-                  {/* Support strut (dashed cable) */}
-                  <line x1="26" y1="21" x2="72" y2="4" strokeWidth="1" strokeDasharray="2 2" />
-                  {/* Boom tip + hanging pipe */}
-                  <line x1="122" y1="2" x2="127" y2="2" strokeWidth="2" />
-                  <line x1="126" y1="2" x2="126" y2="17" strokeWidth="1.8" />
-                  {/* Outriggers (4 stabilizers) */}
-                  <line x1="20" y1="42" x2="20" y2="48" />
-                  <line x1="16" y1="48" x2="24" y2="48" />
-                  <line x1="40" y1="42" x2="40" y2="48" />
-                  <line x1="36" y1="48" x2="44" y2="48" />
+                  <line x1="15" y1="31" x2="42" y2="31" />
+                  <line x1="15" y1="39" x2="42" y2="39" />
+                  <line x1="42" y1="31" x2="42" y2="39" />
+                  {/* Vertical mast */}
+                  <line x1="27" y1="31" x2="27" y2="19" strokeWidth="2.5" />
+                  <line x1="23" y1="19" x2="31" y2="19" />
+                  {/* Boom — straight diagonal from mast top up-right to far tip */}
+                  <line x1="27" y1="19" x2="110" y2="4" strokeWidth="2.5" />
+                  {/* Support cable (dashed) from mast mid to boom mid */}
+                  <line x1="27" y1="25" x2="70" y2="11" strokeWidth="1" strokeDasharray="2 2" />
+                  {/* Hanging output pipe at boom tip */}
+                  <line x1="110" y1="4" x2="110" y2="18" strokeWidth="2" />
+                  <line x1="107" y1="18" x2="113" y2="18" strokeWidth="1.5" />
+                  {/* Outriggers */}
+                  <line x1="20" y1="39" x2="20" y2="45" />
+                  <line x1="16" y1="45" x2="24" y2="45" />
+                  <line x1="38" y1="39" x2="38" y2="45" />
+                  <line x1="34" y1="45" x2="42" y2="45" />
                   {/* Wheels */}
-                  <circle cx="8" cy="42" r="4" strokeWidth="2" />
-                  <circle cx="36" cy="42" r="4" strokeWidth="2" />
+                  <circle cx="8" cy="39" r="4" strokeWidth="2" />
+                  <circle cx="34" cy="39" r="4" strokeWidth="2" />
                 </svg>
               ) : (
                 <svg viewBox="0 0 80 44" className={cn("w-20 h-11 transition-colors", tab === t ? "text-primary" : "text-white/40 group-hover:text-white/70")} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
