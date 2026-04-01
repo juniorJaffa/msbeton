@@ -8,6 +8,7 @@ import { syncFromServer } from "@/lib/adminData";
 import Home from "@/pages/Home";
 import Cennik from "@/pages/Cennik";
 import VozovyPark from "@/pages/VozovyPark";
+import ClientLogin from "@/pages/ClientLogin";
 import NotFound from "@/pages/not-found";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/cennik" component={Cennik} />
       <Route path="/vozovy-park" component={VozovyPark} />
+      <Route path="/prihlasenie" component={ClientLogin} />
       <Route path="/admin">
         {() => <Redirect to="/admin/login" />}
       </Route>

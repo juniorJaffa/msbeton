@@ -19,10 +19,12 @@ export const clientAuth = {
     if (!result) return { ok: false, error: "Chyba servera, skúste znova" };
     if (!result.ok || !result.client) return { ok: false, error: result.error ?? "Nesprávne údaje" };
     localStorage.setItem(SESSION_KEY, JSON.stringify(result.client));
+    window.dispatchEvent(new Event("client-session-changed"));
     return { ok: true, client: result.client };
   },
 
   logout(): void {
     localStorage.removeItem(SESSION_KEY);
+    window.dispatchEvent(new Event("client-session-changed"));
   },
 };

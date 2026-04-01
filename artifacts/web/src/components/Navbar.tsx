@@ -1,16 +1,24 @@
 import { useState, useEffect } from "react";
-import { Menu, X, Phone, Mail, LogIn } from "lucide-react";
+import { Menu, X, Phone, Mail, LogIn, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { clientAuth, type LoggedClient } from "@/lib/clientAuth";
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [loggedClient, setLoggedClient] = useState<LoggedClient | null>(() => clientAuth.getLoggedClient());
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const onSessionChange = () => setLoggedClient(clientAuth.getLoggedClient());
+    window.addEventListener("client-session-changed", onSessionChange);
+    return () => window.removeEventListener("client-session-changed", onSessionChange);
   }, []);
 
   const navLinks = [
@@ -47,13 +55,29 @@ export function Navbar() {
                 +421 909 205 205
               </a>
               <span className="text-white/20">|</span>
-              <a
-                href="/admin/login"
-                className="flex items-center gap-1 text-white/40 hover:text-white/80 transition-colors text-xs"
-              >
-                <LogIn className="w-3 h-3" />
-                Prihlásiť sa
-              </a>
+              {loggedClient ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-white/60 text-xs hidden sm:block">{loggedClient.name}</span>
+                  <span className="px-1.5 py-0.5 bg-primary text-secondary text-[10px] font-black rounded-sm">
+                    Zľava {loggedClient.discountPct}%
+                  </span>
+                  <button
+                    onClick={() => { clientAuth.logout(); setLoggedClient(null); }}
+                    className="flex items-center gap-1 text-white/40 hover:text-white/70 transition-colors text-xs cursor-pointer ml-1"
+                  >
+                    <LogOut className="w-3 h-3" />
+                    <span className="hidden sm:block">Odhlásiť</span>
+                  </button>
+                </div>
+              ) : (
+                <a
+                  href="/prihlasenie"
+                  className="flex items-center gap-1 text-white/40 hover:text-white/80 transition-colors text-xs"
+                >
+                  <LogIn className="w-3 h-3" />
+                  Prihlásiť sa
+                </a>
+              )}
             </div>
           </div>
         </div>
