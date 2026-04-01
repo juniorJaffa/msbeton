@@ -17,7 +17,15 @@ import {
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { ConcreteCalculator } from "@/components/Calculator";
-import { adminData, Client } from "@/lib/adminData";
+// Spoločnosti, s ktorými spolupracujeme (partnerský zoznam – oddelené od klientov kalkulačky)
+const PARTNERS = [
+  { id: "p1", name: "ZAPA Beton SK", logo: "" },
+  { id: "p2", name: "2BH s.r.o.", logo: "" },
+  { id: "p3", name: "STRABAG s.r.o.", logo: "" },
+  { id: "p4", name: "VÁHOSTAV – SK a.s.", logo: "" },
+  { id: "p5", name: "Eurovia SK a.s.", logo: "" },
+  { id: "p6", name: "SKANSKA SK a.s.", logo: "" },
+];
 
 // Animation variants
 const fadeInUp = {
@@ -38,8 +46,6 @@ export default function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  // Partners/Clients data
-  const clients: Client[] = adminData.getClients();
 
   const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -445,7 +451,7 @@ export default function Home() {
               variants={staggerContainer}
               className="flex flex-wrap justify-center items-center gap-4 md:gap-6"
             >
-              {clients.map(client => (
+              {PARTNERS.map(client => (
                 <motion.div
                   key={client.id}
                   variants={fadeInUp}

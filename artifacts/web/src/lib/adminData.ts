@@ -198,14 +198,8 @@ const DEFAULT_CLIENT_ACCOUNTS: ClientAccount[] = [
   { id: "ca1", clientId: "20", password: "1234", name: "Testovací klient", discountPct: 20, discountGroup: "B", active: true },
 ];
 
-const DEFAULT_CLIENTS: Client[] = [
-  { id: "cl1", name: "ZAPA Beton SK", logo: "", contact: "Peter Novák", phone: "+421 900 111 222", email: "info@zapa.sk", note: "Dlhodobý partner", loginId: "20", password: "1234", discountPct: 20, discountGroup: "B", active: true },
-  { id: "cl2", name: "2BH s.r.o.", logo: "", contact: "Martin Kováč", phone: "+421 911 222 333", email: "info@2bh.sk", note: "", loginId: "", password: "", discountPct: 0, discountGroup: "", active: false },
-  { id: "cl3", name: "STRABAG s.r.o.", logo: "", contact: "", phone: "", email: "", note: "", loginId: "", password: "", discountPct: 0, discountGroup: "", active: false },
-  { id: "cl4", name: "VÁHOSTAV – SK a.s.", logo: "", contact: "", phone: "", email: "", note: "", loginId: "", password: "", discountPct: 0, discountGroup: "", active: false },
-  { id: "cl5", name: "Eurovia SK a.s.", logo: "", contact: "", phone: "", email: "", note: "", loginId: "", password: "", discountPct: 0, discountGroup: "", active: false },
-  { id: "cl6", name: "SKANSKA SK a.s.", logo: "", contact: "", phone: "", email: "", note: "", loginId: "", password: "", discountPct: 0, discountGroup: "", active: false },
-];
+// Klienti s prístupom do kalkulačky (login + zľava) – nie partnerské spoločnosti
+const DEFAULT_CLIENTS: Client[] = [];
 
 function loadData<T>(key: string, defaults: T): T {
   try {
@@ -231,11 +225,12 @@ export async function syncFromServer(): Promise<void> {
       adminApi.getTransportSettings(),
     ]);
     const hasData = (v: unknown) => v !== null && v !== undefined && !(Array.isArray(v) && v.length === 0);
+    const hasDataOrEmpty = (v: unknown) => v !== null && v !== undefined && Array.isArray(v);
     let updated = false;
     if (hasData(cats?.data)) { saveData("msbeton_categories", cats!.data); updated = true; }
     if (hasData(delivery?.data)) { saveData("msbeton_delivery", delivery!.data); updated = true; }
     if (hasData(services?.data)) { saveData("msbeton_services", services!.data); updated = true; }
-    if (hasData(clients?.data)) { saveData("msbeton_clients", clients!.data); updated = true; }
+    if (hasDataOrEmpty(clients?.data)) { saveData("msbeton_clients", clients!.data); updated = true; }
     if (hasData(tzones?.data)) { saveData("msbeton_transport_zones", tzones!.data); updated = true; }
     if (hasData(tsettings?.data)) { saveData("msbeton_transport_settings", tsettings!.data); updated = true; }
     if (updated) window.dispatchEvent(new Event("admin-data-synced"));
