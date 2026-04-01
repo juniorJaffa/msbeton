@@ -7,7 +7,7 @@ import { clientAuth, type LoggedClient } from "@/lib/clientAuth";
 import jsPDF from "jspdf";
 
 type Tab = "pumpa" | "mix";
-type PriceMode = "faktura" | "hotovost";
+type PriceMode = "faktura" | "hotovost" | "vlastnadoprava";
 
 const VAT = 0.23;
 const MIX_TRUCK_CAPACITY = 9;
@@ -219,6 +219,12 @@ export function ConcreteCalculator() {
     const hotovostDiscItems = Object.fromEntries(Object.entries(hotovostBaseItems).map(([k, v]) => [k, v * discountFactor])) as typeof items;
     const hotovostTotal = totalBezDph * (1 + VAT) * discountFactor;
 
+    const vlastnaItems = { ...items, transport: 0 };
+    const vlastnaBaseItems = Object.fromEntries(Object.entries(vlastnaItems).map(([k, v]) => [k, v * (1 + VAT)])) as typeof items;
+    const vlastnaDiscItems = Object.fromEntries(Object.entries(vlastnaBaseItems).map(([k, v]) => [k, v * discountFactor])) as typeof items;
+    const vlastnaTotalBezDph = Object.values(vlastnaItems).reduce((a, b) => a + b, 0);
+    const vlastnaTotal = vlastnaTotalBezDph * (1 + VAT) * discountFactor;
+
     const waitLabel = (() => {
       const wh = parseInt(waitHour) || 0;
       const wm = parseInt(waitMin) || 0;
@@ -232,6 +238,7 @@ export function ConcreteCalculator() {
       trucks, items, totalBezDph, totalSDph: totalBezDph * (1 + VAT),
       discountedItems, totalDiscBezDph, totalDiscSDph,
       hotovostBaseItems, hotovostDiscItems, hotovostTotal,
+      vlastnaItems, vlastnaBaseItems, vlastnaDiscItems, vlastnaTotalBezDph, vlastnaTotal,
       qty, km, waitIntervals, waitLabel, pumpHrs, pumpMs,
     };
   }, [tab, quantity, distance, selectedType, pumpHour, pumpMin, waitTotalMins, hoseMeters, washing, rozbehovaChemia, discountFactor, pumpServicePrice, chemServicePrice, washServicePrice, waitServicePrice, hoseServicePrice, tzones, tsettings]);
@@ -292,8 +299,9 @@ export function ConcreteCalculator() {
 
     let y = loggedClient ? (hasDiscount ? 66 : 60) : 54;
     const isFaktura = priceMode === "faktura";
-    const baseItems = isFaktura ? result.discountedItems : result.hotovostDiscItems;
-    const origItems = isFaktura ? result.items : result.hotovostBaseItems;
+    const isVlastnaPdf = priceMode === "vlastnadoprava";
+    const baseItems = isFaktura ? result.discountedItems : isVlastnaPdf ? result.vlastnaDiscItems : result.hotovostDiscItems;
+    const origItems = isFaktura ? result.items : isVlastnaPdf ? result.vlastnaBaseItems : result.hotovostBaseItems;
 
     const drawSection = (title: string) => {
       doc.setFillColor(0, 29, 61);
@@ -349,7 +357,29 @@ export function ConcreteCalculator() {
     doc.text("Celková cena", 16, y + 0.5);
     y += 12;
 
-    if (isFaktura) {
+    if (isVlastnaPdf) {
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100, 100, 100);
+      doc.text("Odber na prevádzke – zákazník zabezpečuje dopravu vlastným vozidlom.", 16, y);
+      y += 7;
+      doc.setFontSize(9);
+      doc.setTextColor(60, 60, 60);
+      doc.text("Cena spolu bez DPH:", 16, y);
+      doc.setFont("helvetica", "bold");
+      doc.text(fmt(result.vlastnaTotalBezDph * discountFactor), 196, y, { align: "right" });
+      y += 8;
+      doc.setFont("helvetica", "normal");
+      doc.text("DPH 23%:", 16, y);
+      doc.setFont("helvetica", "bold");
+      doc.text(fmt(result.vlastnaTotalBezDph * discountFactor * VAT), 196, y, { align: "right" });
+      y += 8;
+      doc.setFontSize(12);
+      doc.setTextColor(0, 29, 61);
+      doc.text("Cena spolu s DPH:", 16, y);
+      doc.setTextColor(237, 197, 49);
+      doc.text(fmt(result.vlastnaTotal), 196, y, { align: "right" });
+    } else if (isFaktura) {
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(60, 60, 60);
@@ -388,15 +418,24 @@ export function ConcreteCalculator() {
   function exportSMS() {
     if (!result) return;
     const isFaktura = priceMode === "faktura";
+    const isVlastnaSms = priceMode === "vlastnadoprava";
     const lines = ["MS-BETON cenová ponuka:"];
     lines.push(`Betón ${selectedType?.label.replace(/ – [\d.]+ € \/ m³/, "") ?? ""} ${result.qty}m³`);
-    if (result.hotovostDiscItems.transport > 0) lines.push(`Doprava: ${fmt(isFaktura ? result.discountedItems.transport : result.hotovostDiscItems.transport)}`);
-    if (tab === "pumpa") {
-      if (result.hotovostDiscItems.pump > 0) lines.push(`Pumpa: ${fmt(isFaktura ? result.discountedItems.pump : result.hotovostDiscItems.pump)}`);
-      if (result.hotovostDiscItems.hoses > 0) lines.push(`Hadice ${hoseMeters}m: ${fmt(isFaktura ? result.discountedItems.hoses : result.hotovostDiscItems.hoses)}`);
-      if (result.hotovostDiscItems.washing > 0) lines.push(`Umývanie: ${fmt(isFaktura ? result.discountedItems.washing : result.hotovostDiscItems.washing)}`);
+    if (isVlastnaSms) {
+      lines.push("Doprava: vlastná (odber na prevádzke)");
+    } else if (result.hotovostDiscItems.transport > 0) {
+      lines.push(`Doprava: ${fmt(isFaktura ? result.discountedItems.transport : result.hotovostDiscItems.transport)}`);
     }
-    if (isFaktura) {
+    if (tab === "pumpa") {
+      const smsItems = isVlastnaSms ? result.vlastnaDiscItems : isFaktura ? result.discountedItems : result.hotovostDiscItems;
+      if (smsItems.pump > 0) lines.push(`Pumpa: ${fmt(smsItems.pump)}`);
+      if (smsItems.hoses > 0) lines.push(`Hadice ${hoseMeters}m: ${fmt(smsItems.hoses)}`);
+      if (smsItems.washing > 0) lines.push(`Umývanie: ${fmt(smsItems.washing)}`);
+    }
+    if (isVlastnaSms) {
+      lines.push(`SPOLU bez DPH: ${fmt(result.vlastnaTotalBezDph * discountFactor)}`);
+      lines.push(`SPOLU s DPH: ${fmt(result.vlastnaTotal)}`);
+    } else if (isFaktura) {
       lines.push(`SPOLU bez DPH: ${fmt(result.totalDiscBezDph)}`);
       lines.push(`SPOLU s DPH: ${fmt(result.totalDiscSDph)}`);
     } else {
@@ -411,8 +450,9 @@ export function ConcreteCalculator() {
   }
 
   const isFaktura = priceMode === "faktura";
-  const displayItems = isFaktura ? result?.discountedItems : result?.hotovostDiscItems;
-  const origDisplayItems = isFaktura ? result?.items : result?.hotovostBaseItems;
+  const isVlastna = priceMode === "vlastnadoprava";
+  const displayItems = isFaktura ? result?.discountedItems : isVlastna ? result?.vlastnaDiscItems : result?.hotovostDiscItems;
+  const origDisplayItems = isFaktura ? result?.items : isVlastna ? result?.vlastnaBaseItems : result?.hotovostBaseItems;
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -643,14 +683,14 @@ export function ConcreteCalculator() {
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
               className="rounded-xl border border-primary/30 overflow-hidden">
 
-              {/* FAKTÚRA / HOTOVOSŤ tabs */}
-              <div className="grid grid-cols-2 border-b border-primary/30">
-                {(["hotovost", "faktura"] as PriceMode[]).map((mode) => (
+              {/* HOTOVOSŤ / FAKTÚRA / VLASTNÁ DOPRAVA tabs */}
+              <div className="grid grid-cols-3 border-b border-primary/30">
+                {(["hotovost", "faktura", "vlastnadoprava"] as PriceMode[]).map((mode) => (
                   <button key={mode} onClick={() => setPriceMode(mode)}
-                    className={cn("py-3 text-sm font-black tracking-widest transition-all cursor-pointer",
+                    className={cn("py-3 text-xs font-black tracking-wide transition-all cursor-pointer",
                       priceMode === mode ? "bg-primary text-secondary" : "bg-white/5 text-white/50 hover:text-white/80"
                     )}>
-                    {mode === "hotovost" ? "HOTOVOSŤ" : "FAKTÚRA"}
+                    {mode === "hotovost" ? "HOTOVOSŤ" : mode === "faktura" ? "FAKTÚRA" : "VL. DOPRAVA"}
                   </button>
                 ))}
               </div>
@@ -684,7 +724,30 @@ export function ConcreteCalculator() {
                 {/* Total */}
                 <div className="border-t border-white/20 pt-3 space-y-1.5">
                   <h4 className="text-primary font-bold text-xs uppercase tracking-widest mb-2">Celková cena</h4>
-                  {isFaktura ? (
+
+                  {isVlastna ? (
+                    <>
+                      <div className="flex items-start gap-2 bg-primary/10 border border-primary/20 rounded px-3 py-2 mb-2">
+                        <Truck className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                        <span className="text-xs text-white/70">Odber na prevádzke – zákazník zabezpečuje dopravu vlastným vozidlom. Doprava nie je zahrnutá v cene.</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-white">Cena spolu (s DPH 23%)</span>
+                        <div className="text-right">
+                          {hasDiscount && <span className="line-through text-white/35 text-xs block">{fmt(result.vlastnaTotalBezDph * (1 + VAT))}</span>}
+                          <span className="text-2xl font-bold text-primary">{fmt(result.vlastnaTotal)}</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between text-sm text-white/50">
+                        <span>Bez DPH</span>
+                        <span>{fmt(result.vlastnaTotalBezDph * discountFactor)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm text-white/50">
+                        <span>DPH 23%</span>
+                        <span>{fmt(result.vlastnaTotalBezDph * discountFactor * VAT)}</span>
+                      </div>
+                    </>
+                  ) : isFaktura ? (
                     <>
                       <div className="flex justify-between text-sm text-white/70">
                         <span>Cena spolu bez DPH</span>
@@ -710,10 +773,13 @@ export function ConcreteCalculator() {
                       </div>
                     </div>
                   )}
-                  <div className="flex items-center gap-2 text-white/50 text-xs pt-1">
-                    <Truck className="w-3.5 h-3.5" />
-                    <span>{result.trucks} domiešavač{result.trucks > 4 ? "ov" : result.trucks > 1 ? "e" : ""} (9 m³/vozidlo)</span>
-                  </div>
+
+                  {!isVlastna && (
+                    <div className="flex items-center gap-2 text-white/50 text-xs pt-1">
+                      <Truck className="w-3.5 h-3.5" />
+                      <span>{result.trucks} domiešavač{result.trucks > 4 ? "ov" : result.trucks > 1 ? "e" : ""} (9 m³/vozidlo)</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Export buttons */}
