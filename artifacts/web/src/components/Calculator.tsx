@@ -276,6 +276,17 @@ export function ConcreteCalculator() {
     const doc = new jsPDF({ unit: "mm", format: "a4" });
     const today = new Date().toLocaleDateString("sk-SK");
 
+    // jsPDF Helvetica uses Windows-1252 — replace chars missing from that encoding
+    const T = (s: string) => s
+      .replace(/Č/g, "C").replace(/č/g, "c")
+      .replace(/Ď/g, "D").replace(/ď/g, "d")
+      .replace(/Ĺ/g, "L").replace(/ĺ/g, "l")
+      .replace(/Ľ/g, "L").replace(/ľ/g, "l")
+      .replace(/Ň/g, "N").replace(/ň/g, "n")
+      .replace(/Ŕ/g, "R").replace(/ŕ/g, "r")
+      .replace(/Ť/g, "T").replace(/ť/g, "t")
+      .replace(/ä/g, "a").replace(/Ä/g, "A");
+
     doc.setFillColor(0, 29, 61);
     doc.rect(0, 0, 210, 30, "F");
     doc.setTextColor(255, 255, 255);
@@ -284,22 +295,22 @@ export function ConcreteCalculator() {
     doc.text("MS-BETON s.r.o.", 14, 14);
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    doc.text("Žilina betón – doprava a čerpanie", 14, 21);
+    doc.text(T("Žilina betón – doprava a čerpanie"), 14, 21);
     doc.text(`+421 909 205 205  |  info@msbeton.sk`, 14, 27);
 
     doc.setTextColor(237, 197, 49);
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text("CENOVÁ PONUKA", 14, 44);
+    doc.text(T("CENOVÁ PONUKA"), 14, 44);
 
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(80, 80, 80);
-    doc.text(`Dátum: ${today}`, 150, 44);
-    if (loggedClient) doc.text(`Klient: ${loggedClient.name} (ID: ${loggedClient.clientId})`, 14, 52);
+    doc.text(T(`Dátum: ${today}`), 150, 44);
+    if (loggedClient) doc.text(T(`Klient: ${loggedClient.name} (ID: ${loggedClient.clientId})`), 14, 52);
     if (hasDiscount) {
       doc.setTextColor(237, 197, 49);
-      doc.text(`Aplikovaná zľava: ${discountPct}%`, 14, loggedClient ? 58 : 52);
+      doc.text(T(`Aplikovaná zľava: ${discountPct}%`), 14, loggedClient ? 58 : 52);
     }
 
     let y = loggedClient ? (hasDiscount ? 66 : 60) : 54;
@@ -313,7 +324,7 @@ export function ConcreteCalculator() {
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text(title, 16, y + 0.5);
+      doc.text(T(title), 16, y + 0.5);
       y += 10;
     };
 
@@ -322,7 +333,7 @@ export function ConcreteCalculator() {
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(40, 40, 40);
-      doc.text(label, 16, y);
+      doc.text(T(label), 16, y);
       if (hasDiscount && orig !== disc) {
         doc.setTextColor(160, 160, 160);
         doc.text(fmt(orig), 145, y, { align: "right" });
@@ -340,21 +351,21 @@ export function ConcreteCalculator() {
 
     if (result.isOwn) {
       doc.setFontSize(8); doc.setFont("helvetica", "italic"); doc.setTextColor(120, 120, 120);
-      doc.text("Vlastná doprava – zákazník zabezpečuje dopravu vlastným vozidlom", 14, y); y += 6;
+      doc.text(T("Vlastná doprava – zákazník zabezpecuje dopravu vlastným vozidlom"), 14, y); y += 6;
     }
     drawSection("Produkty");
-    drawRow(`Betón ${selectedType?.label.replace(/ – [\d.]+ € \/ m³/, "") ?? ""} – ${result.qty} m³`, origItems.concrete, baseItems.concrete);
+    drawRow(`${selectedType?.label.replace(/ – [\d.]+ € \/ m³/, "") ?? ""} – ${result.qty} m³`, origItems.concrete, baseItems.concrete);
     if (origItems.transport > 0) drawRow(`Minimálna doprava – ${result.trucks}× auto`, origItems.transport, baseItems.transport);
     if (origItems.zimne > 0) drawRow(`Zimné opatrenia – ${result.qty} m³ × ${zimneServicePrice.toFixed(2)} €`, origItems.zimne, baseItems.zimne);
 
     if (tab === "pumpa") {
       y += 2;
       drawSection("Služby");
-      if (origItems.pump > 0) drawRow(`Čerpanie betónu – ${result.pumpHrs} h${result.pumpMs > 0 ? ` ${result.pumpMs} min` : ""}`, origItems.pump, baseItems.pump);
+      if (origItems.pump > 0) drawRow(`Cerpanie betónu – ${result.pumpHrs} h${result.pumpMs > 0 ? ` ${result.pumpMs} min` : ""}`, origItems.pump, baseItems.pump);
       if (origItems.hoses > 0) drawRow(`Prídavné hadice – ${hoseMeters} m`, origItems.hoses, baseItems.hoses);
       if (origItems.washing > 0) drawRow("Umývanie mimo stavby", origItems.washing, baseItems.washing);
       if (origItems.chem > 0) drawRow("Rozbehová chémia", origItems.chem, baseItems.chem);
-      if (origItems.waiting > 0) drawRow(`Čakačky – ${result.waitLabel} (${result.waitIntervals}× ${waitServicePrice.toFixed(2)} €)`, origItems.waiting, baseItems.waiting);
+      if (origItems.waiting > 0) drawRow(`Cakacky – ${result.waitLabel} (${result.waitIntervals}× ${waitServicePrice.toFixed(2)} €)`, origItems.waiting, baseItems.waiting);
     }
 
     y += 2;
@@ -370,7 +381,7 @@ export function ConcreteCalculator() {
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(60, 60, 60);
-      doc.text("Cena spolu bez DPH:", 16, y);
+      doc.text(T("Cena spolu bez DPH:"), 16, y);
       doc.setFont("helvetica", "bold");
       doc.text(fmt(result.totalDiscBezDph), 196, y, { align: "right" });
       y += 8;
@@ -381,7 +392,7 @@ export function ConcreteCalculator() {
       y += 8;
       doc.setFontSize(12);
       doc.setTextColor(0, 29, 61);
-      doc.text("Cena spolu s DPH:", 16, y);
+      doc.text(T("Cena spolu s DPH:"), 16, y);
       doc.setTextColor(237, 197, 49);
       doc.text(fmt(result.totalDiscSDph), 196, y, { align: "right" });
     } else {
@@ -396,7 +407,7 @@ export function ConcreteCalculator() {
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(140, 140, 140);
-    doc.text("* Cena je orientačná. Závisí od aktuálneho cenníka a dostupnosti. Kontaktujte nás pre presnú ponuku.", 14, y);
+    doc.text(T("* Cena je orientacná. Závisí od aktuálneho cenníka a dostupnosti. Kontaktujte nás pre presnú ponuku."), 14, y);
     doc.text("MS-BETON s.r.o.  |  +421 909 205 205  |  info@msbeton.sk  |  msbeton.sk", 14, y + 5);
 
     doc.save(`cenova-ponuka-msbeton-${today.replace(/\./g, "-")}.pdf`);
