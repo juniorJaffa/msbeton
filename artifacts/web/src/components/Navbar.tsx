@@ -71,7 +71,7 @@ export function Navbar() {
                 </div>
               ) : (
                 <a
-                  href="/prihlasenie"
+                  href="/admin/login"
                   className="flex items-center gap-1 text-white/40 hover:text-white/80 transition-colors text-xs"
                 >
                   <LogIn className="w-3 h-3" />
