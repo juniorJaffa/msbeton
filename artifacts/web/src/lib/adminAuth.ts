@@ -1,7 +1,7 @@
 const AUTH_KEY = "msbeton_admin_auth";
 const ATTEMPTS_KEY = "msbeton_login_attempts";
 const MAX_ATTEMPTS = 5;
-const LOCKOUT_DURATION = 15 * 60 * 1000;
+const LOCKOUT_DURATION = 5 * 60 * 1000;
 
 const ADMIN_USER = "msbeton";
 const ADMIN_PASS_HASH = btoa("Msbeton2023");
