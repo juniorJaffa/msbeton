@@ -6,8 +6,8 @@ import { adminData } from "@/lib/adminData";
 import { clientAuth, type LoggedClient } from "@/lib/clientAuth";
 import jsPDF from "jspdf";
 
-type Tab = "pumpa" | "mix";
-type PriceMode = "faktura" | "hotovost" | "vlastnadoprava";
+type Tab = "pumpa" | "mix" | "vlastnadoprava";
+type PriceMode = "faktura" | "hotovost";
 
 const VAT = 0.23;
 const MIX_TRUCK_CAPACITY = 9;
@@ -145,6 +145,10 @@ export function ConcreteCalculator() {
   const [loginErr, setLoginErr] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
   const [smsCopied, setSmsCopied] = useState(false);
+  const [zimneOpatrenia, setZimneOpatrenia] = useState(() => {
+    const now = new Date(); const m = now.getMonth() + 1; const d = now.getDate();
+    return (m === 11 && d >= 15) || m === 12 || m === 1 || m === 2 || (m === 3 && d <= 15);
+  });
   const [revision, setRevision] = useState(0);
 
   useEffect(() => {
@@ -167,6 +171,12 @@ export function ConcreteCalculator() {
   const washServicePrice = allServices.find((s) => s.name.toLowerCase().includes("umýv"))?.price ?? 56.25;
   const waitServicePrice = allServices.find((s) => s.name.toLowerCase().includes("čakačk") || s.name.toLowerCase().includes("čakania"))?.price ?? 8.00;
   const hoseServicePrice = allServices.find((s) => s.name.toLowerCase().includes("hadice"))?.price ?? 10.00;
+  const zimneServicePrice = allServices.find((s) => s.name.toLowerCase().includes("zimn"))?.price ?? 10.00;
+
+  const isWinterSeason = (() => {
+    const now = new Date(); const m = now.getMonth() + 1; const d = now.getDate();
+    return (m === 11 && d >= 15) || m === 12 || m === 1 || m === 2 || (m === 3 && d <= 15);
+  })();
 
   const discountPct = loggedClient?.discountPct ?? 0;
   const hasDiscount = discountPct > 0;
@@ -200,14 +210,16 @@ export function ConcreteCalculator() {
     const pumpCost = tab === "pumpa" ? pumpHrs * pumpServicePrice + (pumpMs > 0 ? pumpServicePrice * 0.5 : 0) : 0;
     const waitIntervals = Math.ceil(waitTotalMins / 15);
 
+    const isOwn = tab === "vlastnadoprava";
     const items = {
       concrete: qty * selectedType.price,
-      transport: calcTransport(km, qty),
-      pump: pumpCost,
-      hoses: hoseMeters > 0 ? hoseMeters * hoseServicePrice : 0,
-      washing: washing ? washServicePrice : 0,
+      transport: isOwn ? 0 : calcTransport(km, qty),
+      pump: tab === "pumpa" ? pumpCost : 0,
+      hoses: tab === "pumpa" && hoseMeters > 0 ? hoseMeters * hoseServicePrice : 0,
+      washing: tab === "pumpa" && washing ? washServicePrice : 0,
       chem: tab === "pumpa" && rozbehovaChemia ? chemServicePrice : 0,
       waiting: tab === "pumpa" ? waitIntervals * waitServicePrice : 0,
+      zimne: zimneOpatrenia ? qty * zimneServicePrice : 0,
     };
 
     const totalBezDph = Object.values(items).reduce((a, b) => a + b, 0);
@@ -218,12 +230,6 @@ export function ConcreteCalculator() {
     const hotovostBaseItems = Object.fromEntries(Object.entries(items).map(([k, v]) => [k, v * (1 + VAT)])) as typeof items;
     const hotovostDiscItems = Object.fromEntries(Object.entries(hotovostBaseItems).map(([k, v]) => [k, v * discountFactor])) as typeof items;
     const hotovostTotal = totalBezDph * (1 + VAT) * discountFactor;
-
-    const vlastnaItems = { ...items, transport: 0 };
-    const vlastnaBaseItems = Object.fromEntries(Object.entries(vlastnaItems).map(([k, v]) => [k, v * (1 + VAT)])) as typeof items;
-    const vlastnaDiscItems = Object.fromEntries(Object.entries(vlastnaBaseItems).map(([k, v]) => [k, v * discountFactor])) as typeof items;
-    const vlastnaTotalBezDph = Object.values(vlastnaItems).reduce((a, b) => a + b, 0);
-    const vlastnaTotal = vlastnaTotalBezDph * (1 + VAT) * discountFactor;
 
     const waitLabel = (() => {
       const wh = parseInt(waitHour) || 0;
@@ -238,10 +244,9 @@ export function ConcreteCalculator() {
       trucks, items, totalBezDph, totalSDph: totalBezDph * (1 + VAT),
       discountedItems, totalDiscBezDph, totalDiscSDph,
       hotovostBaseItems, hotovostDiscItems, hotovostTotal,
-      vlastnaItems, vlastnaBaseItems, vlastnaDiscItems, vlastnaTotalBezDph, vlastnaTotal,
-      qty, km, waitIntervals, waitLabel, pumpHrs, pumpMs,
+      qty, km, waitIntervals, waitLabel, pumpHrs, pumpMs, isOwn,
     };
-  }, [tab, quantity, distance, selectedType, pumpHour, pumpMin, waitTotalMins, hoseMeters, washing, rozbehovaChemia, discountFactor, pumpServicePrice, chemServicePrice, washServicePrice, waitServicePrice, hoseServicePrice, tzones, tsettings]);
+  }, [tab, quantity, distance, selectedType, pumpHour, pumpMin, waitTotalMins, hoseMeters, washing, rozbehovaChemia, zimneOpatrenia, discountFactor, pumpServicePrice, chemServicePrice, washServicePrice, waitServicePrice, hoseServicePrice, zimneServicePrice, tzones, tsettings]);
 
   async function handleLogin() {
     if (!loginId || !loginPwd) return;
@@ -299,9 +304,8 @@ export function ConcreteCalculator() {
 
     let y = loggedClient ? (hasDiscount ? 66 : 60) : 54;
     const isFaktura = priceMode === "faktura";
-    const isVlastnaPdf = priceMode === "vlastnadoprava";
-    const baseItems = isFaktura ? result.discountedItems : isVlastnaPdf ? result.vlastnaDiscItems : result.hotovostDiscItems;
-    const origItems = isFaktura ? result.items : isVlastnaPdf ? result.vlastnaBaseItems : result.hotovostBaseItems;
+    const baseItems = isFaktura ? result.discountedItems : result.hotovostDiscItems;
+    const origItems = isFaktura ? result.items : result.hotovostBaseItems;
 
     const drawSection = (title: string) => {
       doc.setFillColor(0, 29, 61);
@@ -334,9 +338,14 @@ export function ConcreteCalculator() {
       y += 8;
     };
 
+    if (result.isOwn) {
+      doc.setFontSize(8); doc.setFont("helvetica", "italic"); doc.setTextColor(120, 120, 120);
+      doc.text("Vlastná doprava – zákazník zabezpečuje dopravu vlastným vozidlom", 14, y); y += 6;
+    }
     drawSection("Produkty");
     drawRow(`Betón ${selectedType?.label.replace(/ – [\d.]+ € \/ m³/, "") ?? ""} – ${result.qty} m³`, origItems.concrete, baseItems.concrete);
     if (origItems.transport > 0) drawRow(`Minimálna doprava – ${result.trucks}× auto`, origItems.transport, baseItems.transport);
+    if (origItems.zimne > 0) drawRow(`Zimné opatrenia – ${result.qty} m³ × ${zimneServicePrice.toFixed(2)} €`, origItems.zimne, baseItems.zimne);
 
     if (tab === "pumpa") {
       y += 2;
@@ -357,29 +366,7 @@ export function ConcreteCalculator() {
     doc.text("Celková cena", 16, y + 0.5);
     y += 12;
 
-    if (isVlastnaPdf) {
-      doc.setFontSize(8);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(100, 100, 100);
-      doc.text("Odber na prevádzke – zákazník zabezpečuje dopravu vlastným vozidlom.", 16, y);
-      y += 7;
-      doc.setFontSize(9);
-      doc.setTextColor(60, 60, 60);
-      doc.text("Cena spolu bez DPH:", 16, y);
-      doc.setFont("helvetica", "bold");
-      doc.text(fmt(result.vlastnaTotalBezDph * discountFactor), 196, y, { align: "right" });
-      y += 8;
-      doc.setFont("helvetica", "normal");
-      doc.text("DPH 23%:", 16, y);
-      doc.setFont("helvetica", "bold");
-      doc.text(fmt(result.vlastnaTotalBezDph * discountFactor * VAT), 196, y, { align: "right" });
-      y += 8;
-      doc.setFontSize(12);
-      doc.setTextColor(0, 29, 61);
-      doc.text("Cena spolu s DPH:", 16, y);
-      doc.setTextColor(237, 197, 49);
-      doc.text(fmt(result.vlastnaTotal), 196, y, { align: "right" });
-    } else if (isFaktura) {
+    if (isFaktura) {
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(60, 60, 60);
@@ -418,24 +405,18 @@ export function ConcreteCalculator() {
   function exportSMS() {
     if (!result) return;
     const isFaktura = priceMode === "faktura";
-    const isVlastnaSms = priceMode === "vlastnadoprava";
+    const smsItems = isFaktura ? result.discountedItems : result.hotovostDiscItems;
     const lines = ["MS-BETON cenová ponuka:"];
+    if (result.isOwn) lines.push("Vlastná doprava – odber na prevádzke");
     lines.push(`Betón ${selectedType?.label.replace(/ – [\d.]+ € \/ m³/, "") ?? ""} ${result.qty}m³`);
-    if (isVlastnaSms) {
-      lines.push("Doprava: vlastná (odber na prevádzke)");
-    } else if (result.hotovostDiscItems.transport > 0) {
-      lines.push(`Doprava: ${fmt(isFaktura ? result.discountedItems.transport : result.hotovostDiscItems.transport)}`);
-    }
+    if (smsItems.transport > 0) lines.push(`Doprava: ${fmt(smsItems.transport)}`);
+    if (smsItems.zimne > 0) lines.push(`Zimné opatrenia ${result.qty}m³: ${fmt(smsItems.zimne)}`);
     if (tab === "pumpa") {
-      const smsItems = isVlastnaSms ? result.vlastnaDiscItems : isFaktura ? result.discountedItems : result.hotovostDiscItems;
       if (smsItems.pump > 0) lines.push(`Pumpa: ${fmt(smsItems.pump)}`);
       if (smsItems.hoses > 0) lines.push(`Hadice ${hoseMeters}m: ${fmt(smsItems.hoses)}`);
       if (smsItems.washing > 0) lines.push(`Umývanie: ${fmt(smsItems.washing)}`);
     }
-    if (isVlastnaSms) {
-      lines.push(`SPOLU bez DPH: ${fmt(result.vlastnaTotalBezDph * discountFactor)}`);
-      lines.push(`SPOLU s DPH: ${fmt(result.vlastnaTotal)}`);
-    } else if (isFaktura) {
+    if (isFaktura) {
       lines.push(`SPOLU bez DPH: ${fmt(result.totalDiscBezDph)}`);
       lines.push(`SPOLU s DPH: ${fmt(result.totalDiscSDph)}`);
     } else {
@@ -450,23 +431,22 @@ export function ConcreteCalculator() {
   }
 
   const isFaktura = priceMode === "faktura";
-  const isVlastna = priceMode === "vlastnadoprava";
-  const displayItems = isFaktura ? result?.discountedItems : isVlastna ? result?.vlastnaDiscItems : result?.hotovostDiscItems;
-  const origDisplayItems = isFaktura ? result?.items : isVlastna ? result?.vlastnaBaseItems : result?.hotovostBaseItems;
+  const displayItems = isFaktura ? result?.discountedItems : result?.hotovostDiscItems;
+  const origDisplayItems = isFaktura ? result?.items : result?.hotovostBaseItems;
 
   return (
     <div className="max-w-3xl mx-auto">
       <div className="rounded-2xl overflow-hidden shadow-2xl" style={{ background: "#2d3748" }}>
 
         {/* Tabs */}
-        <div className="grid grid-cols-2">
-          {(["pumpa", "mix"] as Tab[]).map((t) => (
+        <div className="grid grid-cols-3">
+          {(["pumpa", "mix", "vlastnadoprava"] as Tab[]).map((t) => (
             <button key={t} onClick={() => { setTab(t); setShowResult(false); }}
-              className={cn("flex flex-col items-center justify-center gap-2 py-5 transition-all cursor-pointer group",
+              className={cn("flex flex-col items-center justify-center gap-2 py-4 transition-all cursor-pointer group",
                 tab === t ? "bg-secondary border-b-4 border-primary" : "bg-white/5 border-b-4 border-transparent hover:bg-white/10"
               )}>
               {t === "pumpa" ? (
-                <svg viewBox="0 0 130 48" className={cn("w-28 h-[43px] mx-auto transition-colors", tab === t ? "text-primary" : "text-white/40 group-hover:text-white/70")} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <svg viewBox="0 0 130 48" className={cn("w-20 h-[31px] mx-auto transition-colors", tab === t ? "text-primary" : "text-white/40 group-hover:text-white/70")} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="27" width="14" height="15" rx="1" /><rect x="3" y="22" width="9" height="6" rx="1" />
                   <line x1="16" y1="33" x2="44" y2="33" /><line x1="16" y1="42" x2="44" y2="42" /><line x1="44" y1="33" x2="44" y2="42" />
                   <line x1="26" y1="33" x2="26" y2="21" strokeWidth="2.5" /><line x1="22" y1="21" x2="30" y2="21" strokeWidth="1.8" />
@@ -477,8 +457,8 @@ export function ConcreteCalculator() {
                   <line x1="40" y1="42" x2="40" y2="48" /><line x1="36" y1="48" x2="44" y2="48" />
                   <circle cx="8" cy="42" r="4" strokeWidth="2" /><circle cx="36" cy="42" r="4" strokeWidth="2" />
                 </svg>
-              ) : (
-                <svg viewBox="0 0 80 44" className={cn("w-20 h-11 transition-colors", tab === t ? "text-primary" : "text-white/40 group-hover:text-white/70")} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              ) : t === "mix" ? (
+                <svg viewBox="0 0 80 44" className={cn("w-14 h-[31px] transition-colors", tab === t ? "text-primary" : "text-white/40 group-hover:text-white/70")} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="22" width="18" height="16" rx="1" /><rect x="3" y="18" width="10" height="6" rx="1" />
                   <line x1="20" y1="30" x2="62" y2="30" /><line x1="20" y1="38" x2="62" y2="38" /><line x1="62" y1="30" x2="62" y2="38" />
                   <ellipse cx="44" cy="22" rx="18" ry="12" />
@@ -486,12 +466,19 @@ export function ConcreteCalculator() {
                   <line x1="26" y1="22" x2="30" y2="30" strokeWidth="1.5" /><line x1="60" y1="22" x2="62" y2="30" strokeWidth="1.5" />
                   <circle cx="10" cy="38" r="4" strokeWidth="2" /><circle cx="52" cy="38" r="4" strokeWidth="2" />
                 </svg>
+              ) : (
+                <svg viewBox="0 0 80 40" className={cn("w-14 h-[31px] transition-colors", tab === t ? "text-primary" : "text-white/40 group-hover:text-white/70")} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="18" width="52" height="16" rx="2" />
+                  <path d="M54 26 L68 26 L76 20 L76 34 L54 34" />
+                  <rect x="10" y="10" width="28" height="10" rx="1" />
+                  <circle cx="14" cy="36" r="4" strokeWidth="2" /><circle cx="46" cy="36" r="4" strokeWidth="2" /><circle cx="66" cy="36" r="4" strokeWidth="2" />
+                </svg>
               )}
-              <span className={cn("font-black text-sm tracking-widest transition-colors", tab === t ? "text-primary" : "text-white/50 group-hover:text-white/80")}>
-                {t === "pumpa" ? "PUMPA" : "MIX"}
+              <span className={cn("font-black text-xs tracking-widest transition-colors", tab === t ? "text-primary" : "text-white/50 group-hover:text-white/80")}>
+                {t === "pumpa" ? "PUMPA" : t === "mix" ? "MIX" : "VL. DOPRAVA"}
               </span>
-              <span className={cn("text-[10px] font-medium transition-colors", tab === t ? "text-white/70" : "text-white/30 group-hover:text-white/50")}>
-                {t === "pumpa" ? "Betón pumpa 28m" : "Domiešavač 9m³"}
+              <span className={cn("text-[10px] font-medium transition-colors text-center px-1", tab === t ? "text-white/70" : "text-white/30 group-hover:text-white/50")}>
+                {t === "pumpa" ? "Pumpa 28m" : t === "mix" ? "Domiešavač 9m³" : "Vlastná doprava"}
               </span>
             </button>
           ))}
@@ -546,8 +533,19 @@ export function ConcreteCalculator() {
             )}
           </div>
 
+          {/* Vlastná doprava info banner */}
+          {tab === "vlastnadoprava" && (
+            <div className="flex items-start gap-3 bg-primary/10 border border-primary/20 rounded-lg px-4 py-3">
+              <Truck className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-white">Vlastná doprava</p>
+                <p className="text-xs text-white/60 mt-0.5">Zákazník si betón vyzdvihne vlastným vozidlom na prevádzke. Doprava sa nepočíta.</p>
+              </div>
+            </div>
+          )}
+
           {/* Delivery */}
-          <div className="space-y-2">
+          {tab !== "vlastnadoprava" && <div className="space-y-2">
             <label className="block text-sm font-semibold text-white/80">Adresa doručenia</label>
             {deliveryMode === "distance" ? (
               <input type="number" min="0" step="0.1" value={distance}
@@ -580,7 +578,7 @@ export function ConcreteCalculator() {
                 </label>
               ))}
             </div>
-          </div>
+          </div>}
 
           {/* Category */}
           <RadioGroup
@@ -605,6 +603,28 @@ export function ConcreteCalculator() {
               onChange={(e) => { setQuantity(e.target.value); setShowResult(false); }}
               placeholder="Zadajte množstvo"
               className="w-full bg-white/10 border-b-2 border-b-primary text-white px-4 py-3 focus:outline-none placeholder:text-white/30 text-sm font-medium rounded-sm" />
+          </div>
+
+          {/* Zimné opatrenia */}
+          <div className={cn("border rounded-lg px-4 py-3 transition-all", zimneOpatrenia ? "border-blue-400/40 bg-blue-400/5" : "border-white/10 bg-white/5")}>
+            <label className="flex items-center gap-3 cursor-pointer group" onClick={() => { setZimneOpatrenia(!zimneOpatrenia); setShowResult(false); }}>
+              <div className={cn("w-5 h-5 border-2 flex items-center justify-center transition-all flex-shrink-0",
+                zimneOpatrenia ? "bg-blue-400 border-blue-400" : "bg-white/10 border-white/30 group-hover:border-blue-300/50")}>
+                {zimneOpatrenia && <span className="text-white text-xs font-bold">✓</span>}
+              </div>
+              <div className="flex-1">
+                <span className="text-sm font-semibold text-white">Zimné opatrenia</span>
+                <span className="ml-2 text-xs text-white/40">(+{zimneServicePrice.toFixed(2)} €/m³, platí 15.11.–15.3.)</span>
+              </div>
+              {isWinterSeason && (
+                <span className="text-[10px] font-bold text-blue-300 bg-blue-400/15 px-2 py-0.5 rounded tracking-wide">ZIMNÁ SEZÓNA</span>
+              )}
+            </label>
+            {zimneOpatrenia && parseFloat(quantity) > 0 && (
+              <p className="text-xs text-blue-300/70 mt-2 ml-8">
+                {parseFloat(quantity)} m³ betónu × {zimneServicePrice.toFixed(2)} € = <span className="font-semibold text-blue-300">{(parseFloat(quantity) * zimneServicePrice).toFixed(2)} € bez DPH</span>
+              </p>
+            )}
           </div>
 
           {/* PUMPA extras */}
@@ -683,19 +703,27 @@ export function ConcreteCalculator() {
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
               className="rounded-xl border border-primary/30 overflow-hidden">
 
-              {/* HOTOVOSŤ / FAKTÚRA / VLASTNÁ DOPRAVA tabs */}
-              <div className="grid grid-cols-3 border-b border-primary/30">
-                {(["hotovost", "faktura", "vlastnadoprava"] as PriceMode[]).map((mode) => (
+              {/* HOTOVOSŤ / FAKTÚRA tabs */}
+              <div className="grid grid-cols-2 border-b border-primary/30">
+                {(["hotovost", "faktura"] as PriceMode[]).map((mode) => (
                   <button key={mode} onClick={() => setPriceMode(mode)}
-                    className={cn("py-3 text-xs font-black tracking-wide transition-all cursor-pointer",
+                    className={cn("py-3 text-sm font-black tracking-widest transition-all cursor-pointer",
                       priceMode === mode ? "bg-primary text-secondary" : "bg-white/5 text-white/50 hover:text-white/80"
                     )}>
-                    {mode === "hotovost" ? "HOTOVOSŤ" : mode === "faktura" ? "FAKTÚRA" : "VL. DOPRAVA"}
+                    {mode === "hotovost" ? "HOTOVOSŤ" : "FAKTÚRA"}
                   </button>
                 ))}
               </div>
 
               <div className="p-5 space-y-4 bg-white/5">
+
+                {/* Vlastná doprava note */}
+                {result.isOwn && (
+                  <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded px-3 py-2">
+                    <Truck className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span className="text-xs text-white/70">Vlastná doprava – zákazník zabezpečuje dopravu vlastným vozidlom</span>
+                  </div>
+                )}
 
                 {/* Produkty */}
                 <div>
@@ -704,6 +732,10 @@ export function ConcreteCalculator() {
                     original={origDisplayItems.concrete} discounted={displayItems.concrete} hasDiscount={hasDiscount} />
                   <PriceRow label={`Minimálna doprava – ${result.trucks}× auto`}
                     original={origDisplayItems.transport} discounted={displayItems.transport} hasDiscount={hasDiscount} />
+                  {displayItems.zimne > 0 && (
+                    <PriceRow label={`Zimné opatrenia – ${result.qty} m³`}
+                      original={origDisplayItems.zimne} discounted={displayItems.zimne} hasDiscount={hasDiscount} />
+                  )}
                 </div>
 
                 {/* Služby */}
@@ -725,29 +757,7 @@ export function ConcreteCalculator() {
                 <div className="border-t border-white/20 pt-3 space-y-1.5">
                   <h4 className="text-primary font-bold text-xs uppercase tracking-widest mb-2">Celková cena</h4>
 
-                  {isVlastna ? (
-                    <>
-                      <div className="flex items-start gap-2 bg-primary/10 border border-primary/20 rounded px-3 py-2 mb-2">
-                        <Truck className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                        <span className="text-xs text-white/70">Odber na prevádzke – zákazník zabezpečuje dopravu vlastným vozidlom. Doprava nie je zahrnutá v cene.</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-white">Cena spolu (s DPH 23%)</span>
-                        <div className="text-right">
-                          {hasDiscount && <span className="line-through text-white/35 text-xs block">{fmt(result.vlastnaTotalBezDph * (1 + VAT))}</span>}
-                          <span className="text-2xl font-bold text-primary">{fmt(result.vlastnaTotal)}</span>
-                        </div>
-                      </div>
-                      <div className="flex justify-between text-sm text-white/50">
-                        <span>Bez DPH</span>
-                        <span>{fmt(result.vlastnaTotalBezDph * discountFactor)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm text-white/50">
-                        <span>DPH 23%</span>
-                        <span>{fmt(result.vlastnaTotalBezDph * discountFactor * VAT)}</span>
-                      </div>
-                    </>
-                  ) : isFaktura ? (
+                  {isFaktura ? (
                     <>
                       <div className="flex justify-between text-sm text-white/70">
                         <span>Cena spolu bez DPH</span>
@@ -774,7 +784,7 @@ export function ConcreteCalculator() {
                     </div>
                   )}
 
-                  {!isVlastna && (
+                  {!result.isOwn && (
                     <div className="flex items-center gap-2 text-white/50 text-xs pt-1">
                       <Truck className="w-3.5 h-3.5" />
                       <span>{result.trucks} domiešavač{result.trucks > 4 ? "ov" : result.trucks > 1 ? "e" : ""} (9 m³/vozidlo)</span>

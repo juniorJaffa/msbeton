@@ -152,6 +152,7 @@ const DEFAULT_SERVICES: Service[] = [
   { id: "s3", name: "Umývanie mimo stavby", unit: "1 x", price: 56.25, description: "Umytie betónpumpy mimo miesta prevádzky", active: true },
   { id: "s4", name: "Čakačka mixéra", unit: "15 min.", price: 8.00, description: "Čakanie nad 30 min sa účtuje každých začatých 15 min", active: true },
   { id: "s5", name: "Prídavné hadice", unit: "1 m", price: 10.00, description: "Príplatok za každý meter predĺženia výložníkovej hadice", active: true },
+  { id: "s6", name: "Zimné opatrenia", unit: "m³", price: 10.00, description: "Príplatok za zimné opatrenia betónu (15.11.–15.3.), účtuje sa za každý m³ betónu", active: true },
 ];
 
 const DEFAULT_TRANSPORT_ZONES: TransportPricingZone[] = [
