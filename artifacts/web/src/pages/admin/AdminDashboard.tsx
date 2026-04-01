@@ -521,7 +521,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-100" style={{ fontFamily: "Montserrat, sans-serif" }}>
+    <div className="min-h-screen bg-gray-100 overflow-x-hidden" style={{ fontFamily: "Montserrat, sans-serif" }}>
       {/* Top nav */}
       <header className="bg-secondary shadow-lg sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
@@ -541,12 +541,12 @@ export default function AdminDashboard() {
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         {/* Tab bar */}
-        <div className="flex gap-1 mb-6 bg-white border border-gray-200 p-1 shadow-sm w-fit">
+        <div className="flex gap-1 mb-6 bg-white border border-gray-200 p-1 shadow-sm overflow-x-auto">
           {tabs.map(t => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 px-5 py-2.5 text-sm font-black uppercase tracking-widest transition-all ${
+              className={`flex items-center gap-1.5 px-3 sm:px-5 py-2.5 text-xs sm:text-sm font-black uppercase tracking-wide sm:tracking-widest transition-all shrink-0 ${
                 tab === t.id
                   ? "bg-secondary text-white"
                   : "text-gray-500 hover:text-secondary hover:bg-gray-50"

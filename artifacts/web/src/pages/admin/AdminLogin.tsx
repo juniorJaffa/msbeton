@@ -100,7 +100,7 @@ export default function AdminLogin() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center py-12 px-4 bg-secondary relative"
+      className="min-h-screen flex items-center justify-center py-12 px-4 bg-secondary relative overflow-x-hidden"
       style={{
         background: "linear-gradient(135deg, #001D3D 0%, #00305f 60%, #001D3D 100%)",
       }}

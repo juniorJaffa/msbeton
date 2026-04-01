@@ -468,17 +468,21 @@ export function ConcreteCalculator() {
                 </svg>
               ) : (
                 <svg viewBox="0 0 64 46" className={cn("w-14 h-[31px] transition-colors", tab === t ? "text-primary" : "text-white/40 group-hover:text-white/70")} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="32" cy="6" r="4.5" />
-                  <line x1="32" y1="11" x2="32" y2="21" />
-                  <line x1="25" y1="15" x2="39" y2="15" />
-                  <line x1="32" y1="21" x2="26" y2="28" />
-                  <line x1="32" y1="21" x2="38" y2="28" />
-                  <rect x="2" y="30" width="60" height="11" rx="2" />
-                  <path d="M13 30 L18 22 L46 22 L51 30" />
-                  <rect x="20" y="23" width="9" height="7" rx="1" />
-                  <rect x="35" y="23" width="9" height="7" rx="1" />
-                  <circle cx="14" cy="42" r="3.5" strokeWidth="1.8" />
-                  <circle cx="50" cy="42" r="3.5" strokeWidth="1.8" />
+                  {/* Car body */}
+                  <rect x="1" y="26" width="62" height="13" rx="2" />
+                  {/* Car roof */}
+                  <path d="M10 26 L19 14 L48 14 L56 26" />
+                  {/* Rear window */}
+                  <rect x="20" y="15" width="11" height="10" rx="1" />
+                  {/* Front window */}
+                  <rect x="33" y="15" width="12" height="10" rx="1" />
+                  {/* Driver head — filled silhouette in rear window */}
+                  <circle cx="25.5" cy="19.5" r="3.2" fill="currentColor" stroke="none" />
+                  {/* Door line */}
+                  <line x1="32" y1="26" x2="32" y2="39" strokeWidth="1.5" />
+                  {/* Wheels */}
+                  <circle cx="15" cy="40" r="4.5" strokeWidth="1.8" />
+                  <circle cx="49" cy="40" r="4.5" strokeWidth="1.8" />
                 </svg>
               )}
               <span className={cn("font-black text-xs tracking-widest transition-colors", tab === t ? "text-primary" : "text-white/50 group-hover:text-white/80")}>
