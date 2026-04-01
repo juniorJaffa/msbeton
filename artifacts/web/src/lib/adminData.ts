@@ -38,6 +38,11 @@ export interface Client {
   phone: string;
   email: string;
   note: string;
+  loginId: string;
+  password: string;
+  discountPct: number;
+  discountGroup: string;
+  active: boolean;
 }
 
 export interface ClientAccount {
@@ -194,12 +199,12 @@ const DEFAULT_CLIENT_ACCOUNTS: ClientAccount[] = [
 ];
 
 const DEFAULT_CLIENTS: Client[] = [
-  { id: "cl1", name: "ZAPA Beton SK", logo: "", contact: "Peter Novák", phone: "+421 900 111 222", email: "info@zapa.sk", note: "Dlhodobý partner" },
-  { id: "cl2", name: "2BH s.r.o.", logo: "", contact: "Martin Kováč", phone: "+421 911 222 333", email: "info@2bh.sk", note: "" },
-  { id: "cl3", name: "STRABAG s.r.o.", logo: "", contact: "", phone: "", email: "", note: "" },
-  { id: "cl4", name: "VÁHOSTAV – SK a.s.", logo: "", contact: "", phone: "", email: "", note: "" },
-  { id: "cl5", name: "Eurovia SK a.s.", logo: "", contact: "", phone: "", email: "", note: "" },
-  { id: "cl6", name: "SKANSKA SK a.s.", logo: "", contact: "", phone: "", email: "", note: "" },
+  { id: "cl1", name: "ZAPA Beton SK", logo: "", contact: "Peter Novák", phone: "+421 900 111 222", email: "info@zapa.sk", note: "Dlhodobý partner", loginId: "20", password: "1234", discountPct: 20, discountGroup: "B", active: true },
+  { id: "cl2", name: "2BH s.r.o.", logo: "", contact: "Martin Kováč", phone: "+421 911 222 333", email: "info@2bh.sk", note: "", loginId: "", password: "", discountPct: 0, discountGroup: "", active: false },
+  { id: "cl3", name: "STRABAG s.r.o.", logo: "", contact: "", phone: "", email: "", note: "", loginId: "", password: "", discountPct: 0, discountGroup: "", active: false },
+  { id: "cl4", name: "VÁHOSTAV – SK a.s.", logo: "", contact: "", phone: "", email: "", note: "", loginId: "", password: "", discountPct: 0, discountGroup: "", active: false },
+  { id: "cl5", name: "Eurovia SK a.s.", logo: "", contact: "", phone: "", email: "", note: "", loginId: "", password: "", discountPct: 0, discountGroup: "", active: false },
+  { id: "cl6", name: "SKANSKA SK a.s.", logo: "", contact: "", phone: "", email: "", note: "", loginId: "", password: "", discountPct: 0, discountGroup: "", active: false },
 ];
 
 function loadData<T>(key: string, defaults: T): T {
