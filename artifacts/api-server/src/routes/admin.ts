@@ -11,6 +11,7 @@ const KEYS = {
   clients: "clients",
   transportZones: "transport_zones",
   transportSettings: "transport_settings",
+  clientAccounts: "client_accounts",
 } as const;
 
 async function getConfig(key: string): Promise<unknown | null> {
@@ -29,123 +30,66 @@ async function setConfig(key: string, data: unknown): Promise<void> {
 }
 
 router.get("/categories", async (req, res) => {
-  try {
-    const data = await getConfig(KEYS.categories);
-    res.json({ data });
-  } catch (err) {
-    req.log.error({ err }, "Failed to get categories");
-    res.status(500).json({ error: "Internal server error" });
-  }
+  try { res.json({ data: await getConfig(KEYS.categories) }); }
+  catch (err) { req.log.error({ err }, "Failed to get categories"); res.status(500).json({ error: "Internal server error" }); }
 });
-
 router.put("/categories", async (req, res) => {
-  try {
-    await setConfig(KEYS.categories, req.body);
-    res.json({ ok: true });
-  } catch (err) {
-    req.log.error({ err }, "Failed to save categories");
-    res.status(500).json({ error: "Internal server error" });
-  }
+  try { await setConfig(KEYS.categories, req.body); res.json({ ok: true }); }
+  catch (err) { req.log.error({ err }, "Failed to save categories"); res.status(500).json({ error: "Internal server error" }); }
 });
 
 router.get("/delivery", async (req, res) => {
-  try {
-    const data = await getConfig(KEYS.delivery);
-    res.json({ data });
-  } catch (err) {
-    req.log.error({ err }, "Failed to get delivery");
-    res.status(500).json({ error: "Internal server error" });
-  }
+  try { res.json({ data: await getConfig(KEYS.delivery) }); }
+  catch (err) { req.log.error({ err }, "Failed to get delivery"); res.status(500).json({ error: "Internal server error" }); }
 });
-
 router.put("/delivery", async (req, res) => {
-  try {
-    await setConfig(KEYS.delivery, req.body);
-    res.json({ ok: true });
-  } catch (err) {
-    req.log.error({ err }, "Failed to save delivery");
-    res.status(500).json({ error: "Internal server error" });
-  }
+  try { await setConfig(KEYS.delivery, req.body); res.json({ ok: true }); }
+  catch (err) { req.log.error({ err }, "Failed to save delivery"); res.status(500).json({ error: "Internal server error" }); }
 });
 
 router.get("/services", async (req, res) => {
-  try {
-    const data = await getConfig(KEYS.services);
-    res.json({ data });
-  } catch (err) {
-    req.log.error({ err }, "Failed to get services");
-    res.status(500).json({ error: "Internal server error" });
-  }
+  try { res.json({ data: await getConfig(KEYS.services) }); }
+  catch (err) { req.log.error({ err }, "Failed to get services"); res.status(500).json({ error: "Internal server error" }); }
 });
-
 router.put("/services", async (req, res) => {
-  try {
-    await setConfig(KEYS.services, req.body);
-    res.json({ ok: true });
-  } catch (err) {
-    req.log.error({ err }, "Failed to save services");
-    res.status(500).json({ error: "Internal server error" });
-  }
+  try { await setConfig(KEYS.services, req.body); res.json({ ok: true }); }
+  catch (err) { req.log.error({ err }, "Failed to save services"); res.status(500).json({ error: "Internal server error" }); }
 });
 
 router.get("/clients", async (req, res) => {
-  try {
-    const data = await getConfig(KEYS.clients);
-    res.json({ data });
-  } catch (err) {
-    req.log.error({ err }, "Failed to get clients");
-    res.status(500).json({ error: "Internal server error" });
-  }
+  try { res.json({ data: await getConfig(KEYS.clients) }); }
+  catch (err) { req.log.error({ err }, "Failed to get clients"); res.status(500).json({ error: "Internal server error" }); }
 });
-
 router.put("/clients", async (req, res) => {
-  try {
-    await setConfig(KEYS.clients, req.body);
-    res.json({ ok: true });
-  } catch (err) {
-    req.log.error({ err }, "Failed to save clients");
-    res.status(500).json({ error: "Internal server error" });
-  }
+  try { await setConfig(KEYS.clients, req.body); res.json({ ok: true }); }
+  catch (err) { req.log.error({ err }, "Failed to save clients"); res.status(500).json({ error: "Internal server error" }); }
 });
 
 router.get("/transport-zones", async (req, res) => {
-  try {
-    const data = await getConfig(KEYS.transportZones);
-    res.json({ data });
-  } catch (err) {
-    req.log.error({ err }, "Failed to get transport zones");
-    res.status(500).json({ error: "Internal server error" });
-  }
+  try { res.json({ data: await getConfig(KEYS.transportZones) }); }
+  catch (err) { req.log.error({ err }, "Failed to get transport zones"); res.status(500).json({ error: "Internal server error" }); }
 });
-
 router.put("/transport-zones", async (req, res) => {
-  try {
-    await setConfig(KEYS.transportZones, req.body);
-    res.json({ ok: true });
-  } catch (err) {
-    req.log.error({ err }, "Failed to save transport zones");
-    res.status(500).json({ error: "Internal server error" });
-  }
+  try { await setConfig(KEYS.transportZones, req.body); res.json({ ok: true }); }
+  catch (err) { req.log.error({ err }, "Failed to save transport zones"); res.status(500).json({ error: "Internal server error" }); }
 });
 
 router.get("/transport-settings", async (req, res) => {
-  try {
-    const data = await getConfig(KEYS.transportSettings);
-    res.json({ data });
-  } catch (err) {
-    req.log.error({ err }, "Failed to get transport settings");
-    res.status(500).json({ error: "Internal server error" });
-  }
+  try { res.json({ data: await getConfig(KEYS.transportSettings) }); }
+  catch (err) { req.log.error({ err }, "Failed to get transport settings"); res.status(500).json({ error: "Internal server error" }); }
+});
+router.put("/transport-settings", async (req, res) => {
+  try { await setConfig(KEYS.transportSettings, req.body); res.json({ ok: true }); }
+  catch (err) { req.log.error({ err }, "Failed to save transport settings"); res.status(500).json({ error: "Internal server error" }); }
 });
 
-router.put("/transport-settings", async (req, res) => {
-  try {
-    await setConfig(KEYS.transportSettings, req.body);
-    res.json({ ok: true });
-  } catch (err) {
-    req.log.error({ err }, "Failed to save transport settings");
-    res.status(500).json({ error: "Internal server error" });
-  }
+router.get("/client-accounts", async (req, res) => {
+  try { res.json({ data: await getConfig(KEYS.clientAccounts) }); }
+  catch (err) { req.log.error({ err }, "Failed to get client accounts"); res.status(500).json({ error: "Internal server error" }); }
+});
+router.put("/client-accounts", async (req, res) => {
+  try { await setConfig(KEYS.clientAccounts, req.body); res.json({ ok: true }); }
+  catch (err) { req.log.error({ err }, "Failed to save client accounts"); res.status(500).json({ error: "Internal server error" }); }
 });
 
 export default router;

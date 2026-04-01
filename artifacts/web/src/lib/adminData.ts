@@ -40,6 +40,16 @@ export interface Client {
   note: string;
 }
 
+export interface ClientAccount {
+  id: string;
+  clientId: string;
+  password: string;
+  name: string;
+  discountPct: number;
+  discountGroup: string;
+  active: boolean;
+}
+
 export interface TransportPricingZone {
   id: string;
   fromKm: number;
@@ -178,6 +188,10 @@ const DEFAULT_TRANSPORT_SETTINGS: TransportSettings = {
   minimumLoadM3: 5,
 };
 
+const DEFAULT_CLIENT_ACCOUNTS: ClientAccount[] = [
+  { id: "ca1", clientId: "20", password: "1234", name: "Testovací klient", discountPct: 20, discountGroup: "B", active: true },
+];
+
 const DEFAULT_CLIENTS: Client[] = [
   { id: "cl1", name: "ZAPA Beton SK", logo: "", contact: "Peter Novák", phone: "+421 900 111 222", email: "info@zapa.sk", note: "Dlhodobý partner" },
   { id: "cl2", name: "2BH s.r.o.", logo: "", contact: "Martin Kováč", phone: "+421 911 222 333", email: "info@2bh.sk", note: "" },
@@ -258,6 +272,12 @@ export const adminData = {
   saveTransportSettings: (data: TransportSettings) => {
     saveData("msbeton_transport_settings", data);
     adminApi.saveTransportSettings(data);
+  },
+
+  getClientAccounts: (): ClientAccount[] => loadData("msbeton_client_accounts", DEFAULT_CLIENT_ACCOUNTS),
+  saveClientAccounts: (data: ClientAccount[]) => {
+    saveData("msbeton_client_accounts", data);
+    adminApi.saveClientAccounts(data);
   },
 
   generateId: () => Math.random().toString(36).slice(2, 10),

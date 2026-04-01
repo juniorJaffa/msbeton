@@ -122,16 +122,33 @@ Admin data is stored in **PostgreSQL** (via the api-server) with **localStorage 
 - When server data arrives: dispatches `admin-data-synced` event → AdminDashboard re-keys tabs
 
 **DB table**: `admin_config` — key/value JSONB store  
-**Admin API routes** (in api-server): `GET/PUT /api/admin/{categories,delivery,services,clients,transport-zones,transport-settings}`
+**Admin API routes** (in api-server): `GET/PUT /api/admin/{categories,delivery,services,clients,transport-zones,transport-settings,client-accounts}`
+
+**Client API routes**: `POST /api/client/login`
 
 **Frontend files**:
-- `artifacts/web/src/lib/adminData.ts` — data access + sync logic
-- `artifacts/web/src/lib/api.ts` — fetch wrappers for admin API
+- `artifacts/web/src/lib/adminData.ts` — data access + sync logic (includes `ClientAccount`)
+- `artifacts/web/src/lib/api.ts` — fetch wrappers for admin + client API
 - `artifacts/web/src/lib/adminAuth.ts` — btoa auth check
+- `artifacts/web/src/lib/clientAuth.ts` — client session (localStorage) + login via API
+
+### Calculator Features
+
+- **PUMPA / MIX tabs** with custom vehicle SVG icons
+- **Client login widget**: ID + password, stored in localStorage, shows `Zľava X%` badge
+- **Default test client**: ID `20` / password `1234`, 20% discount, group B
+- **Prídavné hadice**: +/− counter + range slider, 0–100 m
+- **Rozbehová chémia**: checkbox service
+- **Výsledok tabs**: HOTOVOSŤ (cash, s DPH) / FAKTÚRA (bez DPH + s DPH)
+- **Discount**: crossed-out original → discounted on every line item
+- **Export PDF**: jsPDF-generated branded invoice (navy/gold header, A4)
+- **Export SMS**: plain-text summary copied to clipboard
+- Transport: zone-based from adminData + minimum fee (trucks × minimumFee)
 
 ### Key Constants
 
-- Betónpumpa hourly rate: **112.50 €/hod**
-- Čakačka mixéra: **8 €/15 min**
-- Min. objednávka: **5 m³**
-- Dosah výložníka pumpy: **28 m**
+- Betónpumpa hourly rate: **112.50 €/hod** (from adminData services)
+- Čakačka mixéra: **8 €/15 min** (from adminData services)
+- Min. objednávka: **5 m³**; Dosah výložníka pumpy: **28 m**
+- DPH (VAT): **23%** (Slovakia 2025)
+- Truck capacity (mix): **9 m³/vozidlo**; Minimum fee: **62.50 €/vozidlo**
