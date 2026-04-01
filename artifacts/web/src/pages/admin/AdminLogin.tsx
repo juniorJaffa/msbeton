@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { SEOHead } from "@/components/SEOHead";
 import { Eye, EyeOff, Lock, User, AlertCircle, Clock } from "lucide-react";
-import { checkCredentials, login, isLoggedIn, getAttemptInfo, recordFailedAttempt } from "@/lib/adminAuth";
+import { checkCredentials, login, isLoggedIn, getAttemptInfo, recordFailedAttempt, resetAttempts } from "@/lib/adminAuth";
 
 function generateCaptcha() {
   const a = Math.floor(Math.random() * 9) + 1;
@@ -24,6 +24,10 @@ export default function AdminLogin() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    if (new URLSearchParams(window.location.search).has("reset")) {
+      resetAttempts();
+      window.history.replaceState({}, "", window.location.pathname);
+    }
     if (isLoggedIn()) navigate("/admin/dashboard");
   }, [navigate]);
 
