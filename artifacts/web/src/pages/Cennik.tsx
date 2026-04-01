@@ -43,7 +43,7 @@ function CategoryAccordion() {
                   </tr>
                 </thead>
                 <tbody>
-                  {cat.types.map((t, i) => (
+                  {cat.types.filter(t => t.price > 0 && t.label.trim()).map((t, i) => (
                     <tr key={t.id} className={`border-b border-gray-50 hover:bg-primary/5 transition-colors ${i % 2 === 0 ? "" : "bg-gray-50/40"}`}>
                       <td className="px-5 py-3 font-medium text-secondary">{t.label}</td>
                       <td className="px-4 py-3 text-center text-gray-400 hidden sm:table-cell">1 m³</td>

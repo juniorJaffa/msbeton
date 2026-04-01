@@ -395,26 +395,36 @@ function SluzbyTab() {
   );
 }
 
-// ── Discount group presets ─────────────────────────────────────────────────────
-const DISCOUNT_GROUPS = [
-  { label: "A", pct: 5 },
-  { label: "B", pct: 10 },
-  { label: "C", pct: 15 },
-  { label: "D", pct: 20 },
-];
-
 function genPassword() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
 }
 
 // ── KLIENTI tab ───────────────────────────────────────────────────────────────
+function DiscountInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <label className="text-xs text-gray-500 block mb-1">{label}</label>
+      <div className="flex items-center gap-1">
+        <input type="number" min="0" max="100" value={value} onChange={e => onChange(e.target.value)}
+          className="border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:border-primary w-full text-center" />
+        <span className="text-xs text-gray-400 shrink-0">%</span>
+      </div>
+    </div>
+  );
+}
+
 function KlientiTab() {
   const [clients, setClients] = useState<Client[]>(adminData.getClients());
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showPass, setShowPass] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [adding, setAdding] = useState(false);
-  const emptyForm = { name: "", logo: "", contact: "", phone: "", email: "", note: "", loginId: "", password: "", discountPct: "0", discountGroup: "", active: true };
+  const emptyForm = {
+    firstName: "", lastName: "", company: "", email: "", phone: "",
+    loginId: "", password: "",
+    discountBeton: "0", discountDoprava: "0", discountSluzby: "0", discountCelkovo: "0",
+    canHotovost: true, canPridatBeton: true, active: true,
+  };
   const [form, setForm] = useState(emptyForm);
   const [showFormPass, setShowFormPass] = useState(false);
 
@@ -424,20 +434,25 @@ function KlientiTab() {
   const togglePassVis = (id: string) => setShowPass(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
 
   const add = () => {
-    if (!form.name.trim()) return;
+    if (!form.firstName.trim() && !form.lastName.trim() && !form.company.trim()) return;
     save([...clients, {
       id: adminData.generateId(),
-      name: form.name.trim(), logo: form.logo.trim(), contact: form.contact.trim(),
-      phone: form.phone.trim(), email: form.email.trim(), note: form.note.trim(),
+      firstName: form.firstName.trim(), lastName: form.lastName.trim(),
+      company: form.company.trim(), email: form.email.trim(), phone: form.phone.trim(),
       loginId: form.loginId.trim(), password: form.password.trim(),
-      discountPct: parseFloat(form.discountPct) || 0,
-      discountGroup: form.discountGroup, active: form.active,
+      discountBeton:   parseFloat(form.discountBeton)   || 0,
+      discountDoprava: parseFloat(form.discountDoprava) || 0,
+      discountSluzby:  parseFloat(form.discountSluzby)  || 0,
+      discountCelkovo: parseFloat(form.discountCelkovo) || 0,
+      canHotovost: form.canHotovost, canPridatBeton: form.canPridatBeton,
+      active: form.active,
     }]);
     setForm(emptyForm); setAdding(false);
   };
 
   const filtered = clients.filter(c =>
-    [c.name, c.contact, c.email, c.phone, c.loginId].some(f => (f ?? "").toLowerCase().includes(search.toLowerCase()))
+    [c.firstName, c.lastName, c.company, c.email, c.phone, c.loginId]
+      .some(f => (f ?? "").toLowerCase().includes(search.toLowerCase()))
   );
 
   return (
@@ -456,29 +471,30 @@ function KlientiTab() {
       {adding && (
         <div className="bg-white border-2 border-primary shadow-md">
           <div className="bg-primary/10 border-b border-primary/20 px-5 py-3 flex items-center justify-between">
-            <span className="font-black text-secondary text-sm uppercase tracking-widest">Nový klient</span>
+            <span className="font-black text-secondary text-sm uppercase tracking-widest">Pridať užívateľa</span>
             <button onClick={() => setAdding(false)} className="text-gray-400 hover:text-red-500"><X className="w-4 h-4" /></button>
           </div>
-          <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Company info */}
-            <div className="sm:col-span-2">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Firemné info</p>
+          <div className="p-5 space-y-5">
+            {/* Osobné info */}
+            <div>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Osobné info</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input placeholder="Názov firmy *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-                  className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary sm:col-span-2" autoFocus />
-                <input placeholder="Kontaktná osoba" value={form.contact} onChange={e => setForm({ ...form, contact: e.target.value })}
+                <input placeholder="Meno *" value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })}
+                  className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" autoFocus />
+                <input placeholder="Priezvisko" value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })}
                   className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-                <input placeholder="Telefón" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}
+                <input placeholder="E-Mail" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
                   className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-                <input placeholder="E-mail" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
-                  className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary sm:col-span-2" />
-                <input placeholder="Poznámka (interná)" value={form.note} onChange={e => setForm({ ...form, note: e.target.value })}
+                <input placeholder="Tel. číslo" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}
+                  className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+                <input placeholder="Spoločnosť" value={form.company} onChange={e => setForm({ ...form, company: e.target.value })}
                   className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary sm:col-span-2" />
               </div>
             </div>
-            {/* Login & discount */}
-            <div className="sm:col-span-2 border-t border-gray-100 pt-4">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Prístup do kalkulačky</p>
+
+            {/* Prístup */}
+            <div className="border-t border-gray-100 pt-4">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Prístup do kalkulačky</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input placeholder="Prihlasovacie ID (napr. 101)" value={form.loginId} onChange={e => setForm({ ...form, loginId: e.target.value })}
                   className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
@@ -495,34 +511,42 @@ function KlientiTab() {
                     <RefreshCw className="w-4 h-4" />
                   </button>
                 </div>
-                <div className="sm:col-span-2">
-                  <p className="text-xs text-gray-400 mb-1.5">Zľavová kategória</p>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {DISCOUNT_GROUPS.map(g => (
-                      <button key={g.label} type="button"
-                        onClick={() => setForm({ ...form, discountGroup: g.label, discountPct: String(g.pct) })}
-                        className={`px-3 py-1.5 text-xs font-black uppercase tracking-widest border transition-colors ${form.discountGroup === g.label ? "bg-secondary text-white border-secondary" : "border-gray-200 text-gray-500 hover:border-secondary hover:text-secondary"}`}>
-                        Sk. {g.label} — {g.pct}%
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-400">Vlastná zľava:</span>
-                    <input type="number" min="0" max="100" value={form.discountPct} onChange={e => setForm({ ...form, discountPct: e.target.value, discountGroup: "" })}
-                      className="border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:border-primary w-20 text-center" />
-                    <span className="text-xs text-gray-400">%</span>
-                    <label className="flex items-center gap-1.5 ml-4 text-sm text-gray-600 cursor-pointer select-none">
-                      <input type="checkbox" checked={form.active} onChange={e => setForm({ ...form, active: e.target.checked })} className="accent-green-600" />
-                      Prístup aktívny
-                    </label>
-                  </div>
-                </div>
+              </div>
+            </div>
+
+            {/* Zľavy */}
+            <div className="border-t border-gray-100 pt-4">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Zľavy</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <DiscountInput label="Zľava/Betón" value={form.discountBeton} onChange={v => setForm({ ...form, discountBeton: v })} />
+                <DiscountInput label="Zľava/Doprava" value={form.discountDoprava} onChange={v => setForm({ ...form, discountDoprava: v })} />
+                <DiscountInput label="Zľava/Služby" value={form.discountSluzby} onChange={v => setForm({ ...form, discountSluzby: v })} />
+                <DiscountInput label="Zľava/Celkovo" value={form.discountCelkovo} onChange={v => setForm({ ...form, discountCelkovo: v })} />
+              </div>
+            </div>
+
+            {/* Možnosti */}
+            <div className="border-t border-gray-100 pt-4">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Možnosti</p>
+              <div className="flex flex-wrap gap-4">
+                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
+                  <input type="checkbox" checked={form.canHotovost} onChange={e => setForm({ ...form, canHotovost: e.target.checked })} className="accent-secondary w-4 h-4" />
+                  Možnosť – Hotovosť
+                </label>
+                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
+                  <input type="checkbox" checked={form.canPridatBeton} onChange={e => setForm({ ...form, canPridatBeton: e.target.checked })} className="accent-secondary w-4 h-4" />
+                  Možnosť – Pridať betón
+                </label>
+                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
+                  <input type="checkbox" checked={form.active} onChange={e => setForm({ ...form, active: e.target.checked })} className="accent-green-600 w-4 h-4" />
+                  Prístup aktívny
+                </label>
               </div>
             </div>
           </div>
           <div className="px-5 pb-5 flex gap-2">
-            <button onClick={add} className="px-5 py-2 bg-primary text-secondary font-bold text-sm hover:bg-primary/90">Uložiť klienta</button>
-            <button onClick={() => setAdding(false)} className="px-4 py-2 bg-gray-100 text-gray-500 text-sm">Zrušiť</button>
+            <button onClick={() => setAdding(false)} className="px-4 py-2 bg-gray-100 text-gray-500 text-sm font-bold uppercase tracking-wide">Zrušiť</button>
+            <button onClick={add} className="px-6 py-2 bg-primary text-secondary font-bold text-sm uppercase tracking-wide hover:bg-primary/90">Pridať</button>
           </div>
         </div>
       )}
@@ -533,24 +557,24 @@ function KlientiTab() {
         {filtered.map(c => {
           const isExpanded = expanded === c.id;
           const hasLogin = !!(c.loginId && c.password);
+          const fullName = [c.firstName, c.lastName].filter(Boolean).join(" ") || "—";
+          const maxDisc = Math.max(c.discountBeton ?? 0, c.discountDoprava ?? 0, c.discountSluzby ?? 0, c.discountCelkovo ?? 0);
           return (
             <div key={c.id} className="bg-white border border-gray-200 shadow-sm overflow-hidden">
               {/* Card header */}
               <div className="flex items-center gap-3 px-4 py-3">
-                {c.logo ? (
-                  <img src={c.logo} alt={c.name} className="w-10 h-8 object-contain border border-gray-100 shrink-0 bg-gray-50 p-0.5" />
-                ) : (
-                  <div className="w-10 h-8 border border-dashed border-gray-200 shrink-0 bg-gray-50 flex items-center justify-center text-gray-300 text-[9px]">logo</div>
-                )}
+                <div className="w-9 h-9 rounded-full bg-secondary/10 flex items-center justify-center shrink-0">
+                  <span className="text-secondary font-black text-sm">{(c.firstName || c.company || "?").charAt(0).toUpperCase()}</span>
+                </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-bold text-secondary text-sm truncate">{c.name}</div>
-                  {c.contact && <div className="text-xs text-gray-400 truncate">{c.contact}</div>}
+                  <div className="font-bold text-secondary text-sm truncate">{fullName}</div>
+                  {c.company && <div className="text-xs text-gray-400 truncate">{c.company}</div>}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   {hasLogin ? (
                     <span className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase rounded-sm ${c.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
                       {c.active ? <ShieldCheck className="w-3 h-3" /> : <ShieldOff className="w-3 h-3" />}
-                      {c.active ? `Sk. ${c.discountGroup || "?"} −${c.discountPct}%` : "Neaktívny"}
+                      {c.active ? (maxDisc > 0 ? `−${maxDisc}%` : "Aktívny") : "Neaktívny"}
                     </span>
                   ) : (
                     <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase rounded-sm bg-gray-100 text-gray-400">
@@ -568,77 +592,79 @@ function KlientiTab() {
 
               {/* Expanded detail */}
               {isExpanded && (
-                <div className="border-t border-gray-100 px-4 py-4 grid grid-cols-1 sm:grid-cols-2 gap-5 bg-gray-50/60">
-                  {/* Left: company info */}
-                  <div>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Firemné info</p>
-                    <div className="space-y-1.5 text-sm">
-                      {[
-                        { label: "Firma", field: "name" as keyof Client },
-                        { label: "Kontakt", field: "contact" as keyof Client },
-                        { label: "Telefón", field: "phone" as keyof Client },
-                        { label: "E-mail", field: "email" as keyof Client },
-                        { label: "URL loga", field: "logo" as keyof Client },
-                        { label: "Poznámka", field: "note" as keyof Client },
-                      ].map(({ label, field }) => (
-                        <div key={field} className="flex gap-2 items-start">
-                          <span className="text-gray-400 text-xs w-16 shrink-0 pt-0.5">{label}</span>
-                          <EditableField value={(c[field] as string) || "—"} onSave={v => update(c.id, { [field]: v })} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Right: login & discount */}
-                  <div>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Prístup do kalkulačky</p>
-                    <div className="space-y-3 text-sm">
-                      {/* Login ID */}
-                      <div>
-                        <label className="text-xs text-gray-400 block mb-1">Prihlasovacie ID</label>
-                        <EditableField value={c.loginId || "—"} onSave={v => update(c.id, { loginId: v })} />
+                <div className="border-t border-gray-100 px-4 py-4 space-y-4 bg-gray-50/60">
+                  {/* Osobné info */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Osobné info</p>
+                      <div className="space-y-1.5 text-sm">
+                        {([
+                          { label: "Meno", field: "firstName" },
+                          { label: "Priezvisko", field: "lastName" },
+                          { label: "Spoločnosť", field: "company" },
+                          { label: "E-mail", field: "email" },
+                          { label: "Telefón", field: "phone" },
+                        ] as { label: string; field: keyof Client }[]).map(({ label, field }) => (
+                          <div key={field} className="flex gap-2 items-start">
+                            <span className="text-gray-400 text-xs w-20 shrink-0 pt-0.5">{label}</span>
+                            <EditableField value={(c[field] as string) || "—"} onSave={v => update(c.id, { [field]: v })} />
+                          </div>
+                        ))}
                       </div>
-                      {/* Password */}
-                      <div>
-                        <label className="text-xs text-gray-400 block mb-1">Heslo</label>
-                        <div className="flex items-center gap-2">
+                    </div>
+
+                    {/* Login + zľavy */}
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Prístup do kalkulačky</p>
+                      <div className="space-y-2 text-sm mb-3">
+                        <div className="flex gap-2 items-center">
+                          <span className="text-gray-400 text-xs w-20 shrink-0">Login ID</span>
+                          <EditableField value={c.loginId || "—"} onSave={v => update(c.id, { loginId: v })} />
+                        </div>
+                        <div className="flex gap-2 items-center">
+                          <span className="text-gray-400 text-xs w-20 shrink-0">Heslo</span>
                           <span className="font-mono text-secondary">
                             {showPass.has(c.id) ? (c.password || "—") : (c.password ? "••••••" : "—")}
                           </span>
                           <button onClick={() => togglePassVis(c.id)} className="text-gray-400 hover:text-secondary">
                             {showPass.has(c.id) ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                           </button>
-                          <button onClick={() => update(c.id, { password: genPassword() })} title="Vygenerovať nové heslo"
-                            className="text-gray-400 hover:text-secondary">
+                          <button onClick={() => update(c.id, { password: genPassword() })} title="Vygenerovať nové heslo" className="text-gray-400 hover:text-secondary">
                             <RefreshCw className="w-3.5 h-3.5" />
                           </button>
-                          <EditableField value={c.password || ""} onSave={v => update(c.id, { password: v })} />
                         </div>
                       </div>
-                      {/* Discount group */}
-                      <div>
-                        <label className="text-xs text-gray-400 block mb-1.5">Zľavová kategória</label>
-                        <div className="flex flex-wrap gap-1.5 mb-2">
-                          {DISCOUNT_GROUPS.map(g => (
-                            <button key={g.label}
-                              onClick={() => update(c.id, { discountGroup: g.label, discountPct: g.pct })}
-                              className={`px-2.5 py-1 text-xs font-black uppercase border transition-colors ${c.discountGroup === g.label ? "bg-secondary text-white border-secondary" : "border-gray-200 text-gray-500 hover:border-secondary hover:text-secondary"}`}>
-                              {g.label} — {g.pct}%
-                            </button>
-                          ))}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-400">Zľava:</span>
-                          <input type="number" min="0" max="100" value={c.discountPct ?? 0}
-                            onChange={e => update(c.id, { discountPct: parseFloat(e.target.value) || 0, discountGroup: "" })}
-                            className="border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:border-primary w-16 text-center" />
-                          <span className="text-xs text-gray-400">%</span>
-                        </div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Zľavy</p>
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        {([
+                          { label: "Zľava/Betón",   field: "discountBeton" },
+                          { label: "Zľava/Doprava", field: "discountDoprava" },
+                          { label: "Zľava/Služby",  field: "discountSluzby" },
+                          { label: "Zľava/Celkovo", field: "discountCelkovo" },
+                        ] as { label: string; field: keyof Client }[]).map(({ label, field }) => (
+                          <div key={field}>
+                            <label className="text-xs text-gray-400 block mb-1">{label}</label>
+                            <div className="flex items-center gap-1">
+                              <input type="number" min="0" max="100" value={(c[field] as number) ?? 0}
+                                onChange={e => update(c.id, { [field]: parseFloat(e.target.value) || 0 })}
+                                className="border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:border-primary w-full text-center" />
+                              <span className="text-xs text-gray-400 shrink-0">%</span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      {/* Active toggle */}
-                      <div className="flex items-center gap-3 pt-1">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Možnosti</p>
+                      <div className="space-y-1.5">
+                        <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                          <input type="checkbox" checked={c.canHotovost ?? true} onChange={e => update(c.id, { canHotovost: e.target.checked })} className="accent-secondary" />
+                          Možnosť – Hotovosť
+                        </label>
+                        <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                          <input type="checkbox" checked={c.canPridatBeton ?? true} onChange={e => update(c.id, { canPridatBeton: e.target.checked })} className="accent-secondary" />
+                          Možnosť – Pridať betón
+                        </label>
                         <button onClick={() => update(c.id, { active: !c.active })}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase border transition-colors ${c.active ? "bg-green-50 border-green-300 text-green-700 hover:bg-green-100" : "bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100"}`}>
+                          className={`mt-2 flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase border transition-colors ${c.active ? "bg-green-50 border-green-300 text-green-700 hover:bg-green-100" : "bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100"}`}>
                           {c.active ? <ShieldCheck className="w-3.5 h-3.5" /> : <ShieldOff className="w-3.5 h-3.5" />}
                           {c.active ? "Prístup aktívny" : "Prístup neaktívny"}
                         </button>

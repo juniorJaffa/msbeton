@@ -59,7 +59,7 @@ export function Navbar() {
                 <div className="flex items-center gap-2">
                   <span className="text-white/60 text-xs hidden sm:block">{loggedClient.name}</span>
                   <span className="px-1.5 py-0.5 bg-primary text-secondary text-[10px] font-black rounded-sm">
-                    Zľava {loggedClient.discountPct}%
+                    Zľava aktívna
                   </span>
                   <button
                     onClick={() => { clientAuth.logout(); setLoggedClient(null); }}

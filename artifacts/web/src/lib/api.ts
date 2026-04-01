@@ -41,8 +41,13 @@ export interface LoggedClient {
   id: string;
   clientId: string;
   name: string;
-  discountPct: number;
-  discountGroup: string;
+  company: string;
+  discountBeton: number;
+  discountDoprava: number;
+  discountSluzby: number;
+  discountCelkovo: number;
+  canHotovost: boolean;
+  canPridatBeton: boolean;
 }
 
 export const clientApi = {

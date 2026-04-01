@@ -32,16 +32,19 @@ export interface Service {
 
 export interface Client {
   id: string;
-  name: string;
-  logo: string;
-  contact: string;
-  phone: string;
+  firstName: string;
+  lastName: string;
+  company: string;
   email: string;
-  note: string;
+  phone: string;
   loginId: string;
   password: string;
-  discountPct: number;
-  discountGroup: string;
+  discountBeton: number;
+  discountDoprava: number;
+  discountSluzby: number;
+  discountCelkovo: number;
+  canHotovost: boolean;
+  canPridatBeton: boolean;
   active: boolean;
 }
 

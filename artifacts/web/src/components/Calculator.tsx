@@ -178,9 +178,15 @@ export function ConcreteCalculator() {
     return (m === 11 && d >= 15) || m === 12 || m === 1 || m === 2 || (m === 3 && d <= 15);
   })();
 
-  const discountPct = loggedClient?.discountPct ?? 0;
-  const hasDiscount = discountPct > 0;
-  const discountFactor = 1 - discountPct / 100;
+  const discountBeton   = loggedClient?.discountBeton   ?? 0;
+  const discountDoprava = loggedClient?.discountDoprava ?? 0;
+  const discountSluzby  = loggedClient?.discountSluzby  ?? 0;
+  const discountCelkovo = loggedClient?.discountCelkovo ?? 0;
+  const hasDiscount = discountBeton > 0 || discountDoprava > 0 || discountSluzby > 0 || discountCelkovo > 0;
+  const betonFactor   = 1 - discountBeton   / 100;
+  const dopravaFactor = 1 - discountDoprava / 100;
+  const sluzbyFactor  = 1 - discountSluzby  / 100;
+  const celkovoFactor = 1 - discountCelkovo / 100;
 
   const waitTotalMins = useMemo(() => (parseInt(waitHour) || 0) * 60 + (parseInt(waitMin) || 0), [waitHour, waitMin]);
 
@@ -223,13 +229,31 @@ export function ConcreteCalculator() {
     };
 
     const totalBezDph = Object.values(items).reduce((a, b) => a + b, 0);
-    const discountedItems = Object.fromEntries(Object.entries(items).map(([k, v]) => [k, v * discountFactor])) as typeof items;
-    const totalDiscBezDph = totalBezDph * discountFactor;
+    const discountedItems: typeof items = {
+      concrete: items.concrete * betonFactor,
+      transport: items.transport * dopravaFactor,
+      pump: items.pump * sluzbyFactor,
+      hoses: items.hoses * sluzbyFactor,
+      washing: items.washing * sluzbyFactor,
+      chem: items.chem * sluzbyFactor,
+      waiting: items.waiting * sluzbyFactor,
+      zimne: items.zimne * betonFactor,
+    };
+    const totalDiscBezDph = Object.values(discountedItems).reduce((a, b) => a + b, 0) * celkovoFactor;
     const totalDiscSDph = totalDiscBezDph * (1 + VAT);
 
     const hotovostBaseItems = Object.fromEntries(Object.entries(items).map(([k, v]) => [k, v * (1 + VAT)])) as typeof items;
-    const hotovostDiscItems = Object.fromEntries(Object.entries(hotovostBaseItems).map(([k, v]) => [k, v * discountFactor])) as typeof items;
-    const hotovostTotal = totalBezDph * (1 + VAT) * discountFactor;
+    const hotovostDiscItems: typeof items = {
+      concrete: hotovostBaseItems.concrete * betonFactor,
+      transport: hotovostBaseItems.transport * dopravaFactor,
+      pump: hotovostBaseItems.pump * sluzbyFactor,
+      hoses: hotovostBaseItems.hoses * sluzbyFactor,
+      washing: hotovostBaseItems.washing * sluzbyFactor,
+      chem: hotovostBaseItems.chem * sluzbyFactor,
+      waiting: hotovostBaseItems.waiting * sluzbyFactor,
+      zimne: hotovostBaseItems.zimne * betonFactor,
+    };
+    const hotovostTotal = Object.values(hotovostDiscItems).reduce((a, b) => a + b, 0) * celkovoFactor;
 
     const waitLabel = (() => {
       const wh = parseInt(waitHour) || 0;
@@ -246,7 +270,7 @@ export function ConcreteCalculator() {
       hotovostBaseItems, hotovostDiscItems, hotovostTotal,
       qty, km, waitIntervals, waitLabel, pumpHrs, pumpMs, isOwn,
     };
-  }, [tab, quantity, distance, selectedType, pumpHour, pumpMin, waitTotalMins, hoseMeters, washing, rozbehovaChemia, zimneOpatrenia, discountFactor, pumpServicePrice, chemServicePrice, washServicePrice, waitServicePrice, hoseServicePrice, zimneServicePrice, tzones, tsettings]);
+  }, [tab, quantity, distance, selectedType, pumpHour, pumpMin, waitTotalMins, hoseMeters, washing, rozbehovaChemia, zimneOpatrenia, betonFactor, dopravaFactor, sluzbyFactor, celkovoFactor, pumpServicePrice, chemServicePrice, washServicePrice, waitServicePrice, hoseServicePrice, zimneServicePrice, tzones, tsettings]);
 
   async function handleLogin() {
     if (!loginId || !loginPwd) return;
@@ -309,8 +333,13 @@ export function ConcreteCalculator() {
     doc.text(T(`Dátum: ${today}`), 150, 44);
     if (loggedClient) doc.text(T(`Klient: ${loggedClient.name} (ID: ${loggedClient.clientId})`), 14, 52);
     if (hasDiscount) {
+      const dp: string[] = [];
+      if (discountBeton   > 0) dp.push(`Betón ${discountBeton}%`);
+      if (discountDoprava > 0) dp.push(`Doprava ${discountDoprava}%`);
+      if (discountSluzby  > 0) dp.push(`Služby ${discountSluzby}%`);
+      if (discountCelkovo > 0) dp.push(`Celkovo ${discountCelkovo}%`);
       doc.setTextColor(237, 197, 49);
-      doc.text(T(`Aplikovaná zľava: ${discountPct}%`), 14, loggedClient ? 58 : 52);
+      doc.text(T(`Zľavy: ${dp.join(", ")}`), 14, loggedClient ? 58 : 52);
     }
 
     let y = loggedClient ? (hasDiscount ? 66 : 60) : 54;
@@ -433,7 +462,14 @@ export function ConcreteCalculator() {
     } else {
       lines.push(`SPOLU: ${fmt(result.hotovostTotal)}`);
     }
-    if (hasDiscount) lines.push(`(zľava ${discountPct}% aplikovaná)`);
+    if (hasDiscount) {
+      const dp: string[] = [];
+      if (discountBeton   > 0) dp.push(`betón ${discountBeton}%`);
+      if (discountDoprava > 0) dp.push(`doprava ${discountDoprava}%`);
+      if (discountSluzby  > 0) dp.push(`služby ${discountSluzby}%`);
+      if (discountCelkovo > 0) dp.push(`celkovo ${discountCelkovo}%`);
+      lines.push(`(zľavy: ${dp.join(", ")})`);
+    }
     lines.push("Tel: +421 909 205 205");
     navigator.clipboard.writeText(lines.join("\n")).then(() => {
       setSmsCopied(true);
@@ -515,9 +551,10 @@ export function ConcreteCalculator() {
                 <div className="flex items-center gap-2 flex-1">
                   <span className="text-white/60 text-xs">Prihlásený:</span>
                   <span className="text-white text-sm font-semibold">{loggedClient.name}</span>
+                  {loggedClient.company && <span className="text-white/50 text-xs">({loggedClient.company})</span>}
                   {hasDiscount && (
                     <span className="ml-1 px-2 py-0.5 bg-primary text-secondary text-xs font-black rounded-sm tracking-wide">
-                      Zľava {discountPct}%
+                      Zľava aktívna
                     </span>
                   )}
                 </div>
