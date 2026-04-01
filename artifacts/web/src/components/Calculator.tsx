@@ -467,11 +467,18 @@ export function ConcreteCalculator() {
                   <circle cx="10" cy="38" r="4" strokeWidth="2" /><circle cx="52" cy="38" r="4" strokeWidth="2" />
                 </svg>
               ) : (
-                <svg viewBox="0 0 80 40" className={cn("w-14 h-[31px] transition-colors", tab === t ? "text-primary" : "text-white/40 group-hover:text-white/70")} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="18" width="52" height="16" rx="2" />
-                  <path d="M54 26 L68 26 L76 20 L76 34 L54 34" />
-                  <rect x="10" y="10" width="28" height="10" rx="1" />
-                  <circle cx="14" cy="36" r="4" strokeWidth="2" /><circle cx="46" cy="36" r="4" strokeWidth="2" /><circle cx="66" cy="36" r="4" strokeWidth="2" />
+                <svg viewBox="0 0 64 46" className={cn("w-14 h-[31px] transition-colors", tab === t ? "text-primary" : "text-white/40 group-hover:text-white/70")} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="32" cy="6" r="4.5" />
+                  <line x1="32" y1="11" x2="32" y2="21" />
+                  <line x1="25" y1="15" x2="39" y2="15" />
+                  <line x1="32" y1="21" x2="26" y2="28" />
+                  <line x1="32" y1="21" x2="38" y2="28" />
+                  <rect x="2" y="30" width="60" height="11" rx="2" />
+                  <path d="M13 30 L18 22 L46 22 L51 30" />
+                  <rect x="20" y="23" width="9" height="7" rx="1" />
+                  <rect x="35" y="23" width="9" height="7" rx="1" />
+                  <circle cx="14" cy="42" r="3.5" strokeWidth="1.8" />
+                  <circle cx="50" cy="42" r="3.5" strokeWidth="1.8" />
                 </svg>
               )}
               <span className={cn("font-black text-xs tracking-widest transition-colors", tab === t ? "text-primary" : "text-white/50 group-hover:text-white/80")}>
