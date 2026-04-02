@@ -11,7 +11,7 @@ git lfs pull
 pnpm install --frozen-lockfile
 
 # 3. Build frontendu
-pnpm --filter @workspace/web run build
+PORT=3001 BASE_PATH=/ pnpm --filter @workspace/web run build
 
 # 4. Build API servera
 pnpm --filter @workspace/api-server run build
