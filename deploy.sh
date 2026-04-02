@@ -3,7 +3,8 @@ set -e
 cd /var/www/msbeton
 
 echo "==> Git pull..."
-git pull origin main
+git fetch origin main
+git reset --hard origin/main
 
 echo "==> Inštalácia závislostí..."
 pnpm install --frozen-lockfile
