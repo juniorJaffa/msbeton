@@ -48,14 +48,6 @@ export function Navbar() {
                 info@msbeton.sk
               </a>
               <a
-                href="/#calculator"
-                className="flex items-center gap-1.5 text-white/55 hover:text-primary transition-colors text-xs font-bold tracking-wide"
-                title="Kalkulačka betónu"
-              >
-                <Calculator className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Kalkulačka</span>
-              </a>
-              <a
                 href="tel:+421909205205"
                 className="flex items-center gap-1.5 text-primary hover:text-primary/80 transition-colors text-xs font-bold tracking-wide"
               >
@@ -63,6 +55,14 @@ export function Navbar() {
                 +421 909 205 205
               </a>
               <span className="text-white/20">|</span>
+              <a
+                href="/#calculator"
+                className="flex items-center gap-1.5 text-white/55 hover:text-primary transition-colors text-xs font-bold tracking-wide"
+                title="Kalkulačka betónu"
+              >
+                <Calculator className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Kalkulačka</span>
+              </a>
               {loggedClient ? (
                 <div className="flex items-center gap-2">
                   <span className="text-white/60 text-xs hidden sm:block">{loggedClient.name}</span>
