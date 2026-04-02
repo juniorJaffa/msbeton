@@ -1,0 +1,29 @@
+#!/bin/bash
+set -e
+cd /var/www/msbeton
+
+echo "==> Git pull..."
+git pull origin main
+
+echo "==> Inštalácia závislostí..."
+pnpm install --frozen-lockfile
+
+echo "==> Build API servera..."
+pnpm --filter @workspace/api-server run build
+
+echo "==> Build frontendu..."
+PORT=3001 BASE_PATH=/ pnpm --filter @workspace/web run build
+
+echo "==> DB migrácia..."
+source /var/www/msbeton/artifacts/api-server/.env
+pnpm --filter @workspace/db run push
+
+echo "==> Reštart API servera..."
+pm2 restart msbeton-api
+
+echo "==> Aktualizácia Nginx konfigurácie..."
+cp /var/www/msbeton/nginx/msbeton.conf /etc/nginx/sites-available/msbeton
+nginx -t && systemctl reload nginx
+
+echo "==> Deploy hotový!"
+pm2 status
