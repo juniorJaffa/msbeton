@@ -18,3 +18,13 @@ jobs:
           script: |
             cd /var/www/msbeton
             ./deploy.sh
+
+      - name: Health check
+        run: |
+          sleep 5
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://demo.msbeton.sk)
+          if [ "$STATUS" != "200" ]; then
+            echo "Health check FAILED — HTTP $STATUS"
+            exit 1
+          fi
+          echo "Health check OK — HTTP $STATUS"
