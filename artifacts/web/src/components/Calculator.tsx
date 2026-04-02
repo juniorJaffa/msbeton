@@ -4,7 +4,6 @@ import { ChevronDown, Truck, LogIn, LogOut, FileText, MessageSquare, Minus, Plus
 import { cn } from "@/lib/utils";
 import { adminData } from "@/lib/adminData";
 import { clientAuth, type LoggedClient } from "@/lib/clientAuth";
-import jsPDF from "jspdf";
 
 type Tab = "pumpa" | "mix" | "vlastnadoprava";
 type PriceMode = "faktura" | "hotovost";
@@ -297,149 +296,100 @@ export function ConcreteCalculator() {
 
   function exportPDF() {
     if (!result) return;
-    const doc = new jsPDF({ unit: "mm", format: "a4" });
     const today = new Date().toLocaleDateString("sk-SK");
+    const isFaktura = priceMode === "faktura";
+    const baseItems = isFaktura ? result.discountedItems : result.hotovostDiscItems;
+    const origItems = isFaktura ? result.items : result.hotovostBaseItems;
 
-    // jsPDF Helvetica uses Windows-1252 — replace chars missing from that encoding
-    const T = (s: string) => s
-      .replace(/Č/g, "C").replace(/č/g, "c")
-      .replace(/Ď/g, "D").replace(/ď/g, "d")
-      .replace(/Ĺ/g, "L").replace(/ĺ/g, "l")
-      .replace(/Ľ/g, "L").replace(/ľ/g, "l")
-      .replace(/Ň/g, "N").replace(/ň/g, "n")
-      .replace(/Ŕ/g, "R").replace(/ŕ/g, "r")
-      .replace(/Ť/g, "T").replace(/ť/g, "t")
-      .replace(/ä/g, "a").replace(/Ä/g, "A");
+    const fmtH = (n: number) => n.toFixed(2).replace(".", ",") + "&nbsp;€";
+    const row = (label: string, orig: number, disc: number) => {
+      if (orig === 0) return "";
+      const crossed = hasDiscount && Math.abs(orig - disc) > 0.001
+        ? `<span style="color:#aaa;text-decoration:line-through;font-size:8pt;margin-right:6px">${fmtH(orig)}</span>` : "";
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 8px;border-bottom:1px solid #eee;font-size:9pt">
+        <span style="color:#222;flex:1">${label}</span>
+        <span style="font-weight:bold">${crossed}${fmtH(disc)}</span></div>`;
+    };
+    const section = (title: string) =>
+      `<div style="background:#001D3D;color:#fff;font-weight:bold;font-size:10pt;padding:4px 8px;margin-top:8px">${title}</div>`;
 
-    doc.setFillColor(0, 29, 61);
-    doc.rect(0, 0, 210, 30, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(20);
-    doc.setFont("helvetica", "bold");
-    doc.text("MS-BETON s.r.o.", 14, 14);
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.text(T("Žilina betón – doprava a čerpanie"), 14, 21);
-    doc.text(`+421 909 205 205  |  info@msbeton.sk`, 14, 27);
-
-    doc.setTextColor(237, 197, 49);
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "bold");
-    doc.text(T("CENOVÁ PONUKA"), 14, 44);
-
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(80, 80, 80);
-    doc.text(T(`Dátum: ${today}`), 150, 44);
-    if (loggedClient) doc.text(T(`Klient: ${loggedClient.name} (ID: ${loggedClient.clientId})`), 14, 52);
-    if (hasDiscount) {
+    const discountInfo = (() => {
+      if (!hasDiscount) return "";
       const dp: string[] = [];
       if (discountBeton   > 0) dp.push(`Betón ${discountBeton}%`);
       if (discountDoprava > 0) dp.push(`Doprava ${discountDoprava}%`);
       if (discountSluzby  > 0) dp.push(`Služby ${discountSluzby}%`);
       if (discountCelkovo > 0) dp.push(`Celkovo ${discountCelkovo}%`);
-      doc.setTextColor(237, 197, 49);
-      doc.text(T(`Zľavy: ${dp.join(", ")}`), 14, loggedClient ? 58 : 52);
-    }
+      return `<div style="color:#EDC531;font-size:8.5pt;margin-top:2px">Zľavy: ${dp.join(", ")}</div>`;
+    })();
 
-    let y = loggedClient ? (hasDiscount ? 66 : 60) : 54;
-    const isFaktura = priceMode === "faktura";
-    const baseItems = isFaktura ? result.discountedItems : result.hotovostDiscItems;
-    const origItems = isFaktura ? result.items : result.hotovostBaseItems;
+    const clientInfo = loggedClient
+      ? `<div style="font-size:8.5pt;color:#555;margin-top:4px">Klient: <strong>${loggedClient.name}</strong>${loggedClient.company ? ` – ${loggedClient.company}` : ""} (ID: ${loggedClient.clientId})</div>${discountInfo}`
+      : discountInfo;
 
-    const drawSection = (title: string) => {
-      doc.setFillColor(0, 29, 61);
-      doc.rect(14, y - 4, 182, 7, "F");
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "bold");
-      doc.text(T(title), 16, y + 0.5);
-      y += 10;
-    };
+    const ownNote = result.isOwn
+      ? `<div style="font-style:italic;color:#888;font-size:8.5pt;padding:4px 8px;margin-top:4px">Vlastná doprava – zákazník zabezpečuje dopravu vlastným vozidlom</div>` : "";
 
-    const drawRow = (label: string, orig: number, disc: number) => {
-      if (orig === 0) return;
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(40, 40, 40);
-      doc.text(T(label), 16, y);
-      if (hasDiscount && orig !== disc) {
-        doc.setTextColor(160, 160, 160);
-        doc.text(fmt(orig), 145, y, { align: "right" });
-        doc.setDrawColor(160, 160, 160);
-        doc.line(130, y - 0.5, 143, y - 0.5);
-      }
-      doc.setTextColor(0, 0, 0);
-      doc.setFont("helvetica", "bold");
-      doc.text(fmt(disc), 196, y, { align: "right" });
-      doc.setFont("helvetica", "normal");
-      doc.setDrawColor(220, 220, 220);
-      doc.line(14, y + 2, 196, y + 2);
-      y += 8;
-    };
+    const betonLabel = `${selectedType?.label.replace(/ – [\d.]+ € \/ m³/, "").replace(/ – [\d,.]+ €\/m³/, "") ?? ""} – ${result.qty} m³`;
 
-    if (result.isOwn) {
-      doc.setFontSize(8); doc.setFont("helvetica", "italic"); doc.setTextColor(120, 120, 120);
-      doc.text(T("Vlastná doprava – zákazník zabezpecuje dopravu vlastným vozidlom"), 14, y); y += 6;
-    }
-    drawSection("Produkty");
-    drawRow(`${selectedType?.label.replace(/ – [\d.]+ € \/ m³/, "") ?? ""} – ${result.qty} m³`, origItems.concrete, baseItems.concrete);
-    if (origItems.transport > 0) drawRow(`Minimálna doprava – ${result.trucks}× auto`, origItems.transport, baseItems.transport);
-    if (origItems.zimne > 0) drawRow(`Zimné opatrenia – ${result.qty} m³ × ${zimneServicePrice.toFixed(2)} €`, origItems.zimne, baseItems.zimne);
+    const sluzbySec = tab === "pumpa" && (origItems.pump + origItems.hoses + origItems.washing + origItems.chem + origItems.waiting) > 0
+      ? section("Služby") +
+        row(`Čerpanie betónu – ${result.pumpHrs} h${result.pumpMs > 0 ? ` ${result.pumpMs} min` : ""}`, origItems.pump, baseItems.pump) +
+        row(`Prídavné hadice – ${hoseMeters} m`, origItems.hoses, baseItems.hoses) +
+        row("Umývanie mimo stavby", origItems.washing, baseItems.washing) +
+        row("Rozbehová chémia", origItems.chem, baseItems.chem) +
+        row(`Čakačky – ${result.waitLabel} (${result.waitIntervals}× ${waitServicePrice.toFixed(2)} €)`, origItems.waiting, baseItems.waiting)
+      : "";
 
-    if (tab === "pumpa") {
-      y += 2;
-      drawSection("Služby");
-      if (origItems.pump > 0) drawRow(`Cerpanie betónu – ${result.pumpHrs} h${result.pumpMs > 0 ? ` ${result.pumpMs} min` : ""}`, origItems.pump, baseItems.pump);
-      if (origItems.hoses > 0) drawRow(`Prídavné hadice – ${hoseMeters} m`, origItems.hoses, baseItems.hoses);
-      if (origItems.washing > 0) drawRow("Umývanie mimo stavby", origItems.washing, baseItems.washing);
-      if (origItems.chem > 0) drawRow("Rozbehová chémia", origItems.chem, baseItems.chem);
-      if (origItems.waiting > 0) drawRow(`Cakacky – ${result.waitLabel} (${result.waitIntervals}× ${waitServicePrice.toFixed(2)} €)`, origItems.waiting, baseItems.waiting);
-    }
+    const totalRows = isFaktura
+      ? `<div style="display:flex;justify-content:space-between;padding:4px 8px;font-size:9pt"><span style="color:#555">Cena spolu bez DPH:</span><span style="font-weight:bold">${fmtH(result.totalDiscBezDph)}</span></div>
+         <div style="display:flex;justify-content:space-between;padding:4px 8px;font-size:9pt"><span style="color:#555">DPH 23%:</span><span style="font-weight:bold">${fmtH(result.totalDiscBezDph * VAT)}</span></div>
+         <div style="display:flex;justify-content:space-between;padding:8px 8px 4px;font-size:12pt;font-weight:bold;color:#001D3D;border-top:1px solid #ddd;margin-top:4px"><span>Cena spolu s DPH:</span><span style="color:#c9a800">${fmtH(result.totalDiscSDph)}</span></div>`
+      : `<div style="display:flex;justify-content:space-between;padding:8px 8px 4px;font-size:12pt;font-weight:bold;color:#001D3D"><span>Cena spolu:</span><span>${fmtH(result.hotovostTotal)}</span></div>`;
 
-    y += 2;
-    doc.setFillColor(237, 197, 49);
-    doc.rect(14, y - 4, 182, 8, "F");
-    doc.setTextColor(0, 29, 61);
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.text("Celková cena", 16, y + 0.5);
-    y += 12;
+    const html = `<!DOCTYPE html><html lang="sk"><head>
+<meta charset="utf-8">
+<title>Cenová ponuka – MS-BETON</title>
+<style>
+  @page { size: A4; margin: 15mm 14mm 15mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 9pt; color: #222; }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head><body>
+<div style="background:#001D3D;color:#fff;padding:10mm 8mm 8mm;margin:-15mm -14mm 0;display:flex;justify-content:space-between;align-items:flex-end">
+  <div>
+    <div style="font-size:20pt;font-weight:bold;letter-spacing:-0.5px">MS-BETON s.r.o.</div>
+    <div style="font-size:9pt;margin-top:3px;opacity:0.8">Žilina betón – doprava a čerpanie</div>
+    <div style="font-size:9pt;margin-top:2px;opacity:0.7">+421 909 205 205 &nbsp;|&nbsp; info@msbeton.sk</div>
+  </div>
+</div>
+<div style="margin-top:10mm">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6mm">
+    <div style="color:#EDC531;font-size:16pt;font-weight:bold;letter-spacing:1px">CENOVÁ PONUKA</div>
+    <div style="font-size:9pt;color:#555">Dátum: ${today}</div>
+  </div>
+  ${clientInfo}
+  <div style="margin-top:${clientInfo ? "6mm" : "0"}">
+    ${ownNote}
+    ${section("Produkty")}
+    ${row(betonLabel, origItems.concrete, baseItems.concrete)}
+    ${origItems.transport > 0 ? row(`Minimálna doprava – ${result.trucks}× auto`, origItems.transport, baseItems.transport) : ""}
+    ${origItems.zimne > 0 ? row(`Zimné opatrenia – ${result.qty} m³ × ${zimneServicePrice.toFixed(2)} €`, origItems.zimne, baseItems.zimne) : ""}
+    ${sluzbySec}
+    <div style="background:#EDC531;color:#001D3D;font-weight:bold;font-size:11pt;padding:5px 8px;margin-top:10px">Celková cena</div>
+    ${totalRows}
+  </div>
+  <div style="margin-top:14mm;padding-top:4mm;border-top:1px solid #eee;font-size:7.5pt;color:#888;line-height:1.5">
+    * Cena je orientačná. Závisí od aktuálneho cenníka a dostupnosti. Kontaktujte nás pre presnú ponuku.<br>
+    MS-BETON s.r.o. &nbsp;|&nbsp; +421 909 205 205 &nbsp;|&nbsp; info@msbeton.sk &nbsp;|&nbsp; msbeton.sk
+  </div>
+</div>
+<script>window.onload=function(){window.print();}</script>
+</body></html>`;
 
-    if (isFaktura) {
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(60, 60, 60);
-      doc.text(T("Cena spolu bez DPH:"), 16, y);
-      doc.setFont("helvetica", "bold");
-      doc.text(fmt(result.totalDiscBezDph), 196, y, { align: "right" });
-      y += 8;
-      doc.setFont("helvetica", "normal");
-      doc.text("DPH 23%:", 16, y);
-      doc.setFont("helvetica", "bold");
-      doc.text(fmt(result.totalDiscBezDph * VAT), 196, y, { align: "right" });
-      y += 8;
-      doc.setFontSize(12);
-      doc.setTextColor(0, 29, 61);
-      doc.text(T("Cena spolu s DPH:"), 16, y);
-      doc.setTextColor(237, 197, 49);
-      doc.text(fmt(result.totalDiscSDph), 196, y, { align: "right" });
-    } else {
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(0, 29, 61);
-      doc.text("Cena spolu:", 16, y);
-      doc.text(fmt(result.hotovostTotal), 196, y, { align: "right" });
-    }
-
-    y += 14;
-    doc.setFontSize(7);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(140, 140, 140);
-    doc.text(T("* Cena je orientacná. Závisí od aktuálneho cenníka a dostupnosti. Kontaktujte nás pre presnú ponuku."), 14, y);
-    doc.text("MS-BETON s.r.o.  |  +421 909 205 205  |  info@msbeton.sk  |  msbeton.sk", 14, y + 5);
-
-    doc.save(`cenova-ponuka-msbeton-${today.replace(/\./g, "-")}.pdf`);
+    const win = window.open("", "_blank");
+    if (win) { win.document.write(html); win.document.close(); }
   }
 
   function exportSMS() {
