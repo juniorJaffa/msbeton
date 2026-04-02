@@ -11,7 +11,7 @@ export function Navbar() {
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -31,33 +31,34 @@ export function Navbar() {
   ];
 
   return (
-    <>
+    <div className="sticky top-0 z-[60]" style={{ willChange: "transform" }}>
       {/* ── Top info bar ── */}
-      <div className="fixed top-0 left-0 right-0 z-[60] bg-secondary border-b border-white/10">
+      <div className="bg-secondary border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-9">
-            <span className="hidden md:block text-white/50 text-xs">
+            <span className="hidden md:block text-white/50 text-xs truncate mr-4">
               Žilina betón, na ktorý sa môžete spoľahnúť
             </span>
-            <div className="flex items-center gap-5 ml-auto">
+            <div className="flex items-center gap-3 sm:gap-5 ml-auto min-w-0">
               <a
                 href="mailto:info@msbeton.sk"
                 className="hidden sm:flex items-center gap-1.5 text-white/55 hover:text-white transition-colors text-xs"
               >
-                <Mail className="w-3 h-3" />
+                <Mail className="w-3 h-3 shrink-0" />
                 info@msbeton.sk
               </a>
               <a
                 href="tel:+421909205205"
-                className="flex items-center gap-1.5 text-primary hover:text-primary/80 transition-colors text-xs font-bold tracking-wide"
+                className="flex items-center gap-1.5 text-primary hover:text-primary/80 transition-colors text-xs font-bold tracking-wide shrink-0"
               >
-                <Phone className="w-3 h-3" />
-                +421 909 205 205
+                <Phone className="w-3 h-3 shrink-0" />
+                <span className="hidden xs:inline sm:inline">+421 909 205 205</span>
+                <span className="xs:hidden sm:hidden">205 205</span>
               </a>
               <span className="text-white/20">|</span>
               <a
                 href="/#calculator"
-                className="relative flex items-center gap-1.5 text-white/55 hover:text-primary transition-colors text-xs font-bold tracking-wide group"
+                className="relative flex items-center gap-1.5 text-white/55 hover:text-primary transition-colors text-xs font-bold tracking-wide group shrink-0"
                 title="Kalkulačka betónu"
               >
                 <span className="relative inline-flex">
@@ -67,7 +68,7 @@ export function Navbar() {
                 <span className="hidden sm:inline">Kalkulačka</span>
               </a>
               {loggedClient ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <span className="text-white/60 text-xs hidden sm:block">{loggedClient.name}</span>
                   <span className="px-1.5 py-0.5 bg-primary text-secondary text-[10px] font-black rounded-sm">
                     Zľava aktívna
@@ -76,17 +77,17 @@ export function Navbar() {
                     onClick={() => { clientAuth.logout(); setLoggedClient(null); }}
                     className="flex items-center gap-1 text-white/40 hover:text-white/70 transition-colors text-xs cursor-pointer ml-1"
                   >
-                    <LogOut className="w-3 h-3" />
+                    <LogOut className="w-3 h-3 shrink-0" />
                     <span className="hidden sm:block">Odhlásiť</span>
                   </button>
                 </div>
               ) : (
                 <a
-                  href="/admin/login"
-                  className="flex items-center gap-1 text-white/40 hover:text-white/80 transition-colors text-xs"
+                  href="/prihlasenie"
+                  className="flex items-center gap-1 text-white/40 hover:text-white/80 transition-colors text-xs shrink-0"
                 >
-                  <LogIn className="w-3 h-3" />
-                  Prihlásiť sa
+                  <LogIn className="w-3 h-3 shrink-0" />
+                  <span className="hidden sm:inline">Prihlásiť sa</span>
                 </a>
               )}
             </div>
@@ -97,25 +98,21 @@ export function Navbar() {
       {/* ── Main navbar ── */}
       <header
         className={cn(
-          "fixed top-9 left-0 right-0 z-50 transition-all duration-300",
-          isScrolled
-            ? "bg-secondary/98 backdrop-blur-md shadow-lg shadow-black/40 py-2"
-            : "bg-secondary/85 backdrop-blur-sm py-3"
+          "transition-all duration-300 bg-secondary",
+          isScrolled ? "shadow-lg shadow-black/40 py-2" : "py-3"
         )}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
 
-            {/* ── Logo: MS-BETON with shimmer ── */}
+            {/* ── Logo ── */}
             <a href="/" className="flex items-center select-none" aria-label="MS-BETON">
               <span className="relative inline-flex items-center">
-                {/* MS — gold with shimmer sweep */}
                 <motion.span
                   className="font-display font-black text-[2.1rem] leading-none tracking-tighter text-primary relative overflow-hidden"
                   style={{ display: "inline-block" }}
                 >
                   MS
-                  {/* Shimmer overlay */}
                   <motion.span
                     className="absolute inset-0 pointer-events-none"
                     style={{
@@ -123,25 +120,13 @@ export function Navbar() {
                       display: "block",
                     }}
                     animate={{ x: ["-150%", "250%"] }}
-                    transition={{
-                      duration: 1.2,
-                      repeat: Infinity,
-                      repeatDelay: 3.8,
-                      ease: "easeInOut",
-                    }}
+                    transition={{ duration: 1.2, repeat: Infinity, repeatDelay: 3.8, ease: "easeInOut" }}
                   />
                 </motion.span>
-
-                {/* Dash */}
                 <span className="font-display font-black text-[2.1rem] leading-none text-primary/40 mx-[2px]">-</span>
-
-                {/* BETON — white with engraved concrete shadow */}
                 <span
                   className="font-display font-black text-[2.1rem] leading-none tracking-tighter text-white"
-                  style={{
-                    textShadow:
-                      "0 2px 4px rgba(0,0,0,0.6), 0 -1px 0 rgba(255,255,255,0.08), inset 0 1px 2px rgba(0,0,0,0.5)",
-                  }}
+                  style={{ textShadow: "0 2px 4px rgba(0,0,0,0.6), 0 -1px 0 rgba(255,255,255,0.08)" }}
                 >
                   BETON
                 </span>
@@ -210,9 +195,6 @@ export function Navbar() {
           )}
         </AnimatePresence>
       </header>
-
-      {/* Spacer for fixed header */}
-      <div className="h-[100px]" />
-    </>
+    </div>
   );
 }

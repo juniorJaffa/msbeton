@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { SEOHead, LocalBusinessSchema } from "@/components/SEOHead";
 import { 
@@ -42,6 +42,22 @@ const staggerContainer = {
 };
 
 export default function Home() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = true;
+    const tryPlay = () => {
+      video.play().catch(() => {});
+    };
+    if (video.readyState >= 2) {
+      tryPlay();
+    } else {
+      video.addEventListener("canplay", tryPlay, { once: true });
+    }
+  }, []);
+
   // Contact Form State
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -69,14 +85,17 @@ export default function Home() {
         {/* Video background with overlay */}
         <div className="absolute inset-0 z-0">
           <video
+            ref={videoRef}
             autoPlay
             muted
             loop
             playsInline
+            preload="auto"
             className="w-full h-full object-cover object-center"
             poster={`${import.meta.env.BASE_URL}images/hero-bg.png`}
           >
             <source src={`${import.meta.env.BASE_URL}videos/hero-video.mp4`} type="video/mp4" />
+            <source src={`${import.meta.env.BASE_URL}videos/hero-video.webm`} type="video/webm" />
           </video>
           <div className="absolute inset-0 bg-secondary/70"></div>
           <div className="absolute inset-0 bg-gradient-to-r from-secondary/85 via-secondary/50 to-secondary/20"></div>

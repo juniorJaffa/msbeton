@@ -1,1 +1,2 @@
 artifacts/web/public/videos/hero-video.mp4 filter=lfs diff=lfs merge=lfs -text
+attached_assets/ms-betom-video-a-snovou-animaciou_1775164444126.mp4 filter=lfs diff=lfs merge=lfs -text
