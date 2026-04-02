@@ -83,11 +83,11 @@ export function Navbar() {
                 </div>
               ) : (
                 <a
-                  href="/prihlasenie"
+                  href="/admin/login"
                   className="flex items-center gap-1 text-white/40 hover:text-white/80 transition-colors text-xs shrink-0"
+                  title="Administrácia"
                 >
                   <LogIn className="w-3 h-3 shrink-0" />
-                  <span className="hidden sm:inline">Prihlásiť sa</span>
                 </a>
               )}
             </div>
