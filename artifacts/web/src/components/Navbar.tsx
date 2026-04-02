@@ -42,18 +42,17 @@ export function Navbar() {
             <div className="flex items-center gap-3 sm:gap-5 ml-auto min-w-0">
               <a
                 href="mailto:info@msbeton.sk"
-                className="hidden sm:flex items-center gap-1.5 text-white/55 hover:text-white transition-colors text-xs"
+                className="flex items-center gap-1.5 text-white/55 hover:text-white transition-colors text-xs shrink-0"
               >
                 <Mail className="w-3 h-3 shrink-0" />
-                info@msbeton.sk
+                <span className="hidden sm:inline">info@msbeton.sk</span>
               </a>
               <a
                 href="tel:+421909205205"
                 className="flex items-center gap-1.5 text-primary hover:text-primary/80 transition-colors text-xs font-bold tracking-wide shrink-0"
               >
                 <Phone className="w-3 h-3 shrink-0" />
-                <span className="hidden xs:inline sm:inline">+421 909 205 205</span>
-                <span className="xs:hidden sm:hidden">205 205</span>
+                +421 909 205 205
               </a>
               <span className="text-white/20">|</span>
               <a
