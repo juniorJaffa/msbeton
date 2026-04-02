@@ -4,6 +4,13 @@ import { ChevronDown, Truck, LogIn, LogOut, FileText, MessageSquare, Minus, Plus
 import { cn } from "@/lib/utils";
 import { adminData } from "@/lib/adminData";
 import { clientAuth, type LoggedClient } from "@/lib/clientAuth";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type Tab = "pumpa" | "mix" | "vlastnadoprava";
 type PriceMode = "faktura" | "hotovost";
@@ -21,13 +28,18 @@ function SelectField({ label, value, onChange, options }: {
   return (
     <div>
       <label className="block text-sm font-semibold text-white/80 mb-2">{label}</label>
-      <div className="relative">
-        <select value={value} onChange={(e) => onChange(e.target.value)}
-          className="w-full appearance-none bg-white/10 border border-white/10 border-b-2 border-b-primary text-white px-4 py-3 pr-10 focus:outline-none text-sm font-medium cursor-pointer rounded-sm">
-          {options.map((o) => <option key={o} value={o} className="bg-[#1e293b] text-white">{o}</option>)}
-        </select>
-        <ChevronDown className="absolute right-3 top-3.5 w-4 h-4 text-primary pointer-events-none" />
-      </div>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="w-full bg-white/10 border border-white/10 border-b-2 border-b-primary text-white px-4 py-3 text-sm font-medium rounded-sm focus:ring-0 focus:ring-offset-0 h-auto">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent className="bg-[#1e293b] border border-white/10 text-white z-[200]" side="bottom" position="popper" sideOffset={4}>
+          {options.map((o) => (
+            <SelectItem key={o} value={o} className="text-white focus:bg-white/10 focus:text-primary cursor-pointer">
+              {o}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }
