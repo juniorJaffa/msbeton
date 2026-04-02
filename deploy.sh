@@ -27,9 +27,5 @@ pnpm --filter @workspace/db run push
 echo "==> Reštart API servera..."
 pm2 restart msbeton-api
 
-echo "==> Aktualizácia Nginx konfigurácie..."
-cp /var/www/msbeton/nginx/msbeton.conf /etc/nginx/sites-available/msbeton
-nginx -t && systemctl reload nginx
-
 echo "==> Deploy hotový!"
 pm2 status
