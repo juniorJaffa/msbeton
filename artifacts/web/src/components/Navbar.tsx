@@ -57,10 +57,13 @@ export function Navbar() {
               <span className="text-white/20">|</span>
               <a
                 href="/#calculator"
-                className="flex items-center gap-1.5 text-white/55 hover:text-primary transition-colors text-xs font-bold tracking-wide"
+                className="relative flex items-center gap-1.5 text-white/55 hover:text-primary transition-colors text-xs font-bold tracking-wide group"
                 title="Kalkulačka betónu"
               >
-                <Calculator className="w-3.5 h-3.5" />
+                <span className="relative inline-flex">
+                  <span className="absolute inset-0 rounded-full animate-ping opacity-60" style={{ background: "#EDC531" }} />
+                  <Calculator className="relative w-3.5 h-3.5 group-hover:text-primary" />
+                </span>
                 <span className="hidden sm:inline">Kalkulačka</span>
               </a>
               {loggedClient ? (
