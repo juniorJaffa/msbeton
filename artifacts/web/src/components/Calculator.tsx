@@ -499,19 +499,17 @@ export function ConcreteCalculator() {
           {/* Client login bar */}
           <div className="flex items-center justify-between py-2 border-b border-white/10">
             {loggedClient ? (
-              <div className="flex items-center gap-3 w-full">
-                <div className="flex items-center gap-2 flex-1">
-                  <span className="text-white/60 text-xs">Prihlásený:</span>
-                  <span className="text-white text-sm font-semibold">{loggedClient.name}</span>
-                  {loggedClient.company && <span className="text-white/50 text-xs">({loggedClient.company})</span>}
-                  {hasDiscount && (
-                    <span className="ml-1 px-2 py-0.5 bg-primary text-secondary text-xs font-black rounded-sm tracking-wide">
-                      Zľava aktívna
-                    </span>
-                  )}
-                </div>
-                <button onClick={handleLogout} className="flex items-center gap-1 text-white/40 hover:text-white/70 text-xs transition-colors cursor-pointer shrink-0 ml-2">
-                  <LogOut className="w-3.5 h-3.5 shrink-0" /><span className="whitespace-nowrap">Odhlásiť</span>
+              <div className="flex items-center gap-2 w-full min-w-0">
+                <span className="text-white/60 text-xs shrink-0">Prihlásený:</span>
+                <span className="text-white text-sm font-semibold truncate min-w-0">{loggedClient.name}</span>
+                {hasDiscount && (
+                  <span className="shrink-0 px-1.5 py-0.5 bg-primary text-secondary text-xs font-black rounded-sm tracking-wide">
+                    Zľava
+                  </span>
+                )}
+                <span className="flex-1" />
+                <button onClick={handleLogout} className="shrink-0 flex items-center gap-1 text-white/40 hover:text-white/70 text-xs transition-colors cursor-pointer">
+                  <LogOut className="w-3.5 h-3.5" /><span className="whitespace-nowrap">Odhlásiť</span>
                 </button>
               </div>
             ) : (

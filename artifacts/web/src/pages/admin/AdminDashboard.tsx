@@ -406,6 +406,7 @@ function DiscountInput({ label, value, onChange }: { label: string; value: strin
       <label className="text-xs text-gray-500 block mb-1">{label}</label>
       <div className="flex items-center gap-1">
         <input type="number" min="0" max="100" value={value} onChange={e => onChange(e.target.value)}
+          onFocus={e => e.target.select()}
           className="border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:border-primary w-full text-center" />
         <span className="text-xs text-gray-400 shrink-0">%</span>
       </div>
@@ -647,6 +648,7 @@ function KlientiTab() {
                             <div className="flex items-center gap-1">
                               <input type="number" min="0" max="100" value={(c[field] as number) ?? 0}
                                 onChange={e => update(c.id, { [field]: parseFloat(e.target.value) || 0 })}
+                                onFocus={e => e.target.select()}
                                 className="border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:border-primary w-full text-center" />
                               <span className="text-xs text-gray-400 shrink-0">%</span>
                             </div>
@@ -684,7 +686,7 @@ function KlientiTab() {
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
   const [, navigate] = useLocation();
-  const [tab, setTab] = useState<Tab>("betony");
+  const [tab, setTab] = useState<Tab>("klienti");
   const [syncKey, setSyncKey] = useState(0);
 
   useEffect(() => {
@@ -700,10 +702,10 @@ export default function AdminDashboard() {
   const handleLogout = () => { logout(); navigate("/admin/login"); };
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
+    { id: "klienti", label: "KLIENTI", icon: <Users className="w-4 h-4" /> },
     { id: "betony", label: "BETÓNY", icon: <Layers className="w-4 h-4" /> },
     { id: "sluzby", label: "SLUŽBY", icon: <Wrench className="w-4 h-4" /> },
     { id: "doprava", label: "DOPRAVA", icon: <Truck className="w-4 h-4" /> },
-    { id: "klienti", label: "KLIENTI", icon: <Users className="w-4 h-4" /> },
   ];
 
   return (

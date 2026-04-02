@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Menu, X, Phone, Mail, LogIn, LogOut } from "lucide-react";
+import { Menu, X, Phone, Mail, LogIn, LogOut, Calculator } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { clientAuth, type LoggedClient } from "@/lib/clientAuth";
@@ -46,6 +46,14 @@ export function Navbar() {
               >
                 <Mail className="w-3 h-3" />
                 info@msbeton.sk
+              </a>
+              <a
+                href="/#calculator"
+                className="flex items-center gap-1.5 text-white/55 hover:text-primary transition-colors text-xs font-bold tracking-wide"
+                title="Kalkulačka betónu"
+              >
+                <Calculator className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Kalkulačka</span>
               </a>
               <a
                 href="tel:+421909205205"
