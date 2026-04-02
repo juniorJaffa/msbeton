@@ -12,7 +12,8 @@ export default function ClientLogin() {
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleLogin() {
+  async function handleLogin(e?: React.FormEvent) {
+    if (e) e.preventDefault();
     if (!id.trim() || !pwd.trim()) {
       setErr("Vyplňte ID klienta a heslo");
       return;
@@ -48,7 +49,7 @@ export default function ClientLogin() {
             </div>
 
             {/* Form */}
-            <div className="px-8 py-7 space-y-4">
+            <form onSubmit={handleLogin} className="px-8 py-7 space-y-4" noValidate>
               <div>
                 <label className="block text-xs font-semibold text-white/60 mb-2 tracking-wider uppercase">ID klienta</label>
                 <input
@@ -67,7 +68,6 @@ export default function ClientLogin() {
                   onChange={(e) => setPwd(e.target.value)}
                   placeholder="••••"
                   autoComplete="current-password"
-                  onKeyDown={(e) => e.key === "Enter" && handleLogin()}
                   className="w-full bg-white/8 border-b-2 border-b-primary/60 focus:border-b-primary text-white px-4 py-3 focus:outline-none placeholder:text-white/25 text-sm font-medium rounded-sm transition-colors"
                 />
               </div>
@@ -79,7 +79,7 @@ export default function ClientLogin() {
               )}
 
               <button
-                onClick={handleLogin}
+                type="submit"
                 disabled={loading}
                 className="w-full mt-2 py-3.5 bg-primary text-white font-black text-sm tracking-widest hover:bg-primary/85 transition-all disabled:opacity-50 disabled:cursor-not-allowed rounded-sm cursor-pointer"
               >
@@ -89,7 +89,7 @@ export default function ClientLogin() {
               <p className="text-center text-white/30 text-xs pt-2">
                 Prihlasovacie údaje vám poskytne MS-BETON
               </p>
-            </div>
+            </form>
           </div>
 
           <div className="mt-6 text-center">

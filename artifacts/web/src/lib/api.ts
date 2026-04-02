@@ -7,8 +7,10 @@ async function apiFetch<T>(base: string, path: string, options?: RequestInit): P
       headers: { "Content-Type": "application/json" },
       ...options,
     });
-    if (!res.ok) return null;
-    return res.json() as Promise<T>;
+    // Return JSON body even for non-ok responses (e.g. 401, 400) so callers get the error message
+    const data = await res.json().catch(() => null);
+    if (!res.ok) return data as T | null;
+    return data as T;
   } catch {
     return null;
   }
