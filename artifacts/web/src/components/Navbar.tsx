@@ -31,7 +31,8 @@ export function Navbar() {
   ];
 
   return (
-    <div className="sticky top-0 z-[60]">
+    <>
+    <div className="fixed top-0 left-0 right-0 z-[60]">
       {/* ── Top info bar ── */}
       <div className="bg-secondary border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -195,5 +196,8 @@ export function Navbar() {
         </AnimatePresence>
       </header>
     </div>
+    {/* Spacer — pushes page content below fixed navbar (topbar 36px + main nav ~60px) */}
+    <div className="h-[96px]" aria-hidden="true" />
+    </>
   );
 }
