@@ -351,36 +351,32 @@ export function ConcreteCalculator() {
 <meta charset="utf-8">
 <title>Cenová ponuka – MS-BETON</title>
 <style>
-  @page { size: A4; margin: 15mm 14mm 15mm; }
+  @page { size: A4; margin: 0; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: Arial, Helvetica, sans-serif; font-size: 9pt; color: #222; }
   @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 </style>
 </head><body>
-<div style="background:#001D3D;color:#fff;padding:10mm 8mm 8mm;margin:-15mm -14mm 0;display:flex;justify-content:space-between;align-items:flex-end">
-  <div>
-    <div style="font-size:20pt;font-weight:bold;letter-spacing:-0.5px">MS-BETON s.r.o.</div>
-    <div style="font-size:9pt;margin-top:3px;opacity:0.8">Žilina betón – doprava a čerpanie</div>
-    <div style="font-size:9pt;margin-top:2px;opacity:0.7">+421 909 205 205 &nbsp;|&nbsp; info@msbeton.sk</div>
-  </div>
+<div style="background:#001D3D;color:#fff;padding:12mm 14mm 10mm;">
+  <div style="font-size:22pt;font-weight:bold;letter-spacing:-0.5px;margin-bottom:3px">MS-BETON s.r.o.</div>
+  <div style="font-size:9pt;margin-bottom:2px;opacity:0.85">Žilina betón – doprava a čerpanie</div>
+  <div style="font-size:9pt;opacity:0.7">+421 909 205 205 &nbsp;|&nbsp; info@msbeton.sk</div>
 </div>
-<div style="margin-top:10mm">
-  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6mm">
-    <div style="color:#EDC531;font-size:16pt;font-weight:bold;letter-spacing:1px">CENOVÁ PONUKA</div>
+<div style="padding:8mm 14mm 14mm">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5mm">
+    <div style="color:#EDC531;font-size:17pt;font-weight:bold;letter-spacing:1px">CENOVÁ PONUKA</div>
     <div style="font-size:9pt;color:#555">Dátum: ${today}</div>
   </div>
-  ${clientInfo}
-  <div style="margin-top:${clientInfo ? "6mm" : "0"}">
-    ${ownNote}
-    ${section("Produkty")}
-    ${row(betonLabel, origItems.concrete, baseItems.concrete)}
-    ${origItems.transport > 0 ? row(`Minimálna doprava – ${result.trucks}× auto`, origItems.transport, baseItems.transport) : ""}
-    ${origItems.zimne > 0 ? row(`Zimné opatrenia – ${result.qty} m³ × ${zimneServicePrice.toFixed(2)} €`, origItems.zimne, baseItems.zimne) : ""}
-    ${sluzbySec}
-    <div style="background:#EDC531;color:#001D3D;font-weight:bold;font-size:11pt;padding:5px 8px;margin-top:10px">Celková cena</div>
-    ${totalRows}
-  </div>
-  <div style="margin-top:14mm;padding-top:4mm;border-top:1px solid #eee;font-size:7.5pt;color:#888;line-height:1.5">
+  ${clientInfo ? `<div style="margin-bottom:5mm">${clientInfo}</div>` : ""}
+  ${ownNote}
+  ${section("Produkty")}
+  ${row(betonLabel, origItems.concrete, baseItems.concrete)}
+  ${origItems.transport > 0 ? row(`Minimálna doprava – ${result.trucks}× auto`, origItems.transport, baseItems.transport) : ""}
+  ${origItems.zimne > 0 ? row(`Zimné opatrenia – ${result.qty} m³ × ${zimneServicePrice.toFixed(2)} €`, origItems.zimne, baseItems.zimne) : ""}
+  ${sluzbySec}
+  <div style="background:#EDC531;color:#001D3D;font-weight:bold;font-size:11pt;padding:5px 8px;margin-top:10px">Celková cena</div>
+  ${totalRows}
+  <div style="margin-top:14mm;padding-top:4mm;border-top:1px solid #eee;font-size:7.5pt;color:#888;line-height:1.6">
     * Cena je orientačná. Závisí od aktuálneho cenníka a dostupnosti. Kontaktujte nás pre presnú ponuku.<br>
     MS-BETON s.r.o. &nbsp;|&nbsp; +421 909 205 205 &nbsp;|&nbsp; info@msbeton.sk &nbsp;|&nbsp; msbeton.sk
   </div>
@@ -388,8 +384,14 @@ export function ConcreteCalculator() {
 <script>window.onload=function(){window.print();}</script>
 </body></html>`;
 
-    const win = window.open("", "_blank");
-    if (win) { win.document.write(html); win.document.close(); }
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, "_blank");
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    if (!win) {
+      const a = document.createElement("a");
+      a.href = url; a.target = "_blank"; a.rel = "noopener"; a.click();
+    }
   }
 
   function exportSMS() {
@@ -508,8 +510,8 @@ export function ConcreteCalculator() {
                     </span>
                   )}
                 </div>
-                <button onClick={handleLogout} className="flex items-center gap-1.5 text-white/40 hover:text-white/70 text-xs transition-colors cursor-pointer">
-                  <LogOut className="w-3.5 h-3.5" /> Odhlásiť
+                <button onClick={handleLogout} className="flex items-center gap-1 text-white/40 hover:text-white/70 text-xs transition-colors cursor-pointer shrink-0 ml-2">
+                  <LogOut className="w-3.5 h-3.5 shrink-0" /><span className="whitespace-nowrap">Odhlásiť</span>
                 </button>
               </div>
             ) : (
