@@ -14,6 +14,9 @@ pnpm --filter @workspace/api-server run build
 
 echo "==> Build frontendu..."
 PORT=3001 BASE_PATH=/ pnpm --filter @workspace/web run build
+# Skopírovanie videa z public/ do dist/ (LFS súbor, vite ho nekopíruje)
+mkdir -p artifacts/web/dist/public/videos
+cp artifacts/web/public/videos/hero-video.mp4 artifacts/web/dist/public/videos/hero-video.mp4
 
 echo "==> DB migrácia..."
 set -a
