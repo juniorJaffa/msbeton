@@ -1,33 +1,37 @@
 #!/bin/bash
 set -e
-cd /var/www/msbeton
 
-echo "==> Git pull..."
-git fetch origin main
-git reset --hard origin/main
+echo "=== MS-BETON deploy ==="
+
+# 1. Stiahni zmeny vrátane LFS súborov (video)
+git pull origin main
 git lfs pull
 
-echo "==> Inštalácia závislostí..."
+# 2. Inštalácia závislostí (len ak sa zmenili)
 pnpm install --frozen-lockfile
 
-echo "==> Build API servera..."
-pnpm --filter @workspace/api-server run build
-
-echo "==> Build frontendu..."
+# 3. Build frontendu
 PORT=3001 BASE_PATH=/ pnpm --filter @workspace/web run build
 
-# Skopírovanie videa z public/ do dist/ (LFS súbor, vite ho nekopíruje)
-mkdir -p artifacts/web/dist/public/videos
-cp artifacts/web/public/videos/hero-video.mp4 artifacts/web/dist/public/videos/hero-video.mp4
+# 4. Build API servera
+pnpm --filter @workspace/api-server run build
 
-echo "==> DB migrácia..."
-set -a
-source /var/www/msbeton/artifacts/api-server/.env
-set +a
-pnpm --filter @workspace/db run push
+# 5. Skopíruj video do dist/ ak tam ešte nie je
+VIDEO_SRC="artifacts/web/public/videos/hero-video.mp4"
+VIDEO_DST="artifacts/web/dist/videos/hero-video.mp4"
 
-echo "==> Reštart API servera..."
-pm2 restart msbeton-api
+if [ -f "$VIDEO_SRC" ] && [ ! -f "$VIDEO_DST" ]; then
+  mkdir -p "$(dirname "$VIDEO_DST")"
+  cp "$VIDEO_SRC" "$VIDEO_DST"
+  echo "Video skopírované do dist/"
+elif [ -f "$VIDEO_SRC" ] && [ "$VIDEO_SRC" -nt "$VIDEO_DST" ]; then
+  cp "$VIDEO_SRC" "$VIDEO_DST"
+  echo "Video aktualizované v dist/"
+else
+  echo "Video je aktuálne, preskakujem."
+fi
 
-echo "==> Deploy hotový!"
-pm2 status
+# 6. Reštart API cez PM2
+pm2 restart msbeton-api 2>/dev/null || pm2 start artifacts/api-server/dist/index.mjs --name msbeton-api
+
+echo "=== Deploy dokončený ==="
