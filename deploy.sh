@@ -15,7 +15,9 @@ echo "==> Build frontendu..."
 PORT=3001 BASE_PATH=/ pnpm --filter @workspace/web run build
 
 echo "==> DB migrácia..."
+set -a
 source /var/www/msbeton/artifacts/api-server/.env
+set +a
 pnpm --filter @workspace/db run push
 
 echo "==> Reštart API servera..."
