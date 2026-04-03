@@ -16,8 +16,19 @@ jobs:
           username: ${{ secrets.HETZNER_USER }}
           key: ${{ secrets.HETZNER_SSH_KEY }}
           script: |
+            set -e
             cd /var/www/msbeton
-            ./deploy.sh
+            git fetch origin main
+            git reset --hard origin/main
+            git lfs pull
+            pnpm install --frozen-lockfile
+            pnpm --filter @workspace/api-server run build
+            PORT=3001 BASE_PATH=/ pnpm --filter @workspace/web run build
+            mkdir -p artifacts/web/dist/public/videos
+            cp artifacts/web/public/videos/hero-video.mp4 artifacts/web/dist/public/videos/hero-video.mp4
+            set -a && source artifacts/api-server/.env && set +a
+            pnpm --filter @workspace/db run push
+            pm2 restart msbeton-api
 
       - name: Health check
         run: |
