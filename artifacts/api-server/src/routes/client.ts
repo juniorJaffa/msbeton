@@ -1,6 +1,50 @@
 import { Router } from "express";
 import { db, adminConfig } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { createHash } from "crypto";
+import bcrypt from "bcryptjs";
+
+const ITOA64 = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+function encode64wp(buf: Buffer, count: number): string {
+  let out = "", i = 0;
+  do {
+    let v = buf[i++];
+    out += ITOA64[v & 0x3f];
+    if (i < count) v |= buf[i] << 8;
+    out += ITOA64[(v >> 6) & 0x3f];
+    if (i++ >= count) break;
+    if (i < count) v |= buf[i] << 16;
+    out += ITOA64[(v >> 12) & 0x3f];
+    if (i++ >= count) break;
+    out += ITOA64[(v >> 18) & 0x3f];
+  } while (i < count);
+  return out;
+}
+
+function verifyWpPhpass(password: string, hash: string): boolean {
+  if (!hash.startsWith("$P$") && !hash.startsWith("$H$")) return false;
+  const countLog2 = ITOA64.indexOf(hash[3]);
+  if (countLog2 < 7 || countLog2 > 30) return false;
+  let count = 1 << countLog2;
+  const salt = hash.slice(4, 12);
+  if (salt.length !== 8) return false;
+  let h = createHash("md5").update(salt + password, "binary").digest();
+  do { h = createHash("md5").update(Buffer.concat([h, Buffer.from(password, "binary")])).digest(); } while (--count);
+  return hash.slice(0, 12) + encode64wp(h, 16) === hash;
+}
+
+async function verifyPassword(plain: string, stored: string): Promise<boolean> {
+  // WP môže mať prefix $wp$ pred štandardným bcrypt hashom
+  const hash = stored.startsWith("$wp$") ? stored.slice(4) : stored;
+  if (hash.startsWith("$2y$") || hash.startsWith("$2b$") || hash.startsWith("$2a$")) {
+    return bcrypt.compare(plain, hash.replace(/^\$2y\$/, "$2b$"));
+  }
+  if (hash.startsWith("$P$") || hash.startsWith("$H$")) {
+    return verifyWpPhpass(plain, hash);
+  }
+  return plain === stored;
+}
 
 const router = Router();
 
@@ -73,9 +117,14 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ ok: false, error: "Chýba ID alebo heslo" });
     }
     const accounts = await getClientAccounts();
-    const account = accounts.find(
-      (a) => a.loginId === String(clientId) && a.password === String(password) && a.active !== false
+    // Viacero účtov môže zdieľať rovnaký loginId (šablónové zľavové účty) — skúš všetky
+    const candidates = accounts.filter(
+      (a) => a.loginId === String(clientId) && a.active !== false
     );
+    let account: UnifiedClient | null = null;
+    for (const c of candidates) {
+      if (await verifyPassword(String(password), c.password ?? "")) { account = c; break; }
+    }
     if (!account) {
       return res.status(401).json({ ok: false, error: "Nesprávne prihlasovacie údaje" });
     }
