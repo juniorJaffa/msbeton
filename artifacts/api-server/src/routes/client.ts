@@ -129,7 +129,7 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ ok: false, error: "Nesprávne prihlasovacie údaje" });
     }
     const fullName = [account.firstName, account.lastName].filter(Boolean).join(" ") || account.name || "Klient";
-    res.json({
+    return res.json({
       ok: true,
       client: {
         id: account.id,
@@ -146,7 +146,7 @@ router.post("/login", async (req, res) => {
     });
   } catch (err) {
     req.log.error({ err }, "Client login failed");
-    res.status(500).json({ ok: false, error: "Internal server error" });
+    return res.status(500).json({ ok: false, error: "Internal server error" });
   }
 });
 
