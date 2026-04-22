@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { LogOut, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2 } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { isLoggedIn, logout } from "@/lib/adminAuth";
-import { adminData, ConcreteCategory, ConcreteType, DeliveryZone, Service, Client, TransportPricingZone, TransportSettings } from "@/lib/adminData";
+import { adminData, syncFromServer, ConcreteCategory, ConcreteType, DeliveryZone, Service, Client, TransportPricingZone, TransportSettings } from "@/lib/adminData";
 
 type Tab = "betony" | "sluzby" | "doprava" | "klienti";
 
@@ -716,6 +716,10 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!isLoggedIn()) navigate("/admin/login");
   }, [navigate]);
+
+  useEffect(() => {
+    syncFromServer().then(() => setSyncKey(k => k + 1));
+  }, []);
 
   useEffect(() => {
     const handler = () => setSyncKey(k => k + 1);
