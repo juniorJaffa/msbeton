@@ -14,9 +14,10 @@ import {
   Mail,
   Clock
 } from "lucide-react";
+import { lazy, Suspense } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { ConcreteCalculator } from "@/components/Calculator";
+const ConcreteCalculator = lazy(() => import("@/components/Calculator").then(m => ({ default: m.ConcreteCalculator })));
 // Spoločnosti, s ktorými spolupracujeme (partnerský zoznam – oddelené od klientov kalkulačky)
 const PARTNERS = [
   { id: "p1", name: "ZAPA Beton SK", logo: "" },
@@ -281,7 +282,9 @@ export default function Home() {
       {/* CALCULATOR SECTION */}
       <section id="calculator" className="py-12 concrete-light relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <ConcreteCalculator />
+          <Suspense fallback={<div className="h-64" />}>
+            <ConcreteCalculator />
+          </Suspense>
         </div>
       </section>
 

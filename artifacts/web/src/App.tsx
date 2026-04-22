@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -6,30 +6,32 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { syncFromServer } from "@/lib/adminData";
 
 import Home from "@/pages/Home";
-import Cennik from "@/pages/Cennik";
-import VozovyPark from "@/pages/VozovyPark";
-import ClientLogin from "@/pages/ClientLogin";
-import NotFound from "@/pages/not-found";
-import AdminLogin from "@/pages/admin/AdminLogin";
-import AdminDashboard from "@/pages/admin/AdminDashboard";
+const Cennik = lazy(() => import("@/pages/Cennik"));
+const VozovyPark = lazy(() => import("@/pages/VozovyPark"));
+const ClientLogin = lazy(() => import("@/pages/ClientLogin"));
+const NotFound = lazy(() => import("@/pages/not-found"));
+const AdminLogin = lazy(() => import("@/pages/admin/AdminLogin"));
+const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard"));
 import { CookieBanner } from "@/components/CookieBanner";
 
 const queryClient = new QueryClient();
 
 function Router() {
   return (
-    <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/cennik" component={Cennik} />
-      <Route path="/vozovy-park" component={VozovyPark} />
-      <Route path="/prihlasenie" component={ClientLogin} />
-      <Route path="/admin">
-        {() => <Redirect to="/admin/login" />}
-      </Route>
-      <Route path="/admin/login" component={AdminLogin} />
-      <Route path="/admin/dashboard" component={AdminDashboard} />
-      <Route component={NotFound} />
-    </Switch>
+    <Suspense fallback={null}>
+      <Switch>
+        <Route path="/" component={Home} />
+        <Route path="/cennik" component={Cennik} />
+        <Route path="/vozovy-park" component={VozovyPark} />
+        <Route path="/prihlasenie" component={ClientLogin} />
+        <Route path="/admin">
+          {() => <Redirect to="/admin/login" />}
+        </Route>
+        <Route path="/admin/login" component={AdminLogin} />
+        <Route path="/admin/dashboard" component={AdminDashboard} />
+        <Route component={NotFound} />
+      </Switch>
+    </Suspense>
   );
 }
 
