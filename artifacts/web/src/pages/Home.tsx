@@ -173,7 +173,7 @@ export default function Home() {
                 ))}
               </motion.ul>
               <motion.div variants={fadeInUp}>
-                <a href="#contact" className="text-primary font-bold hover:underline underline-offset-4 flex items-center gap-1">
+                <a href="#contact" className="text-primary font-bold hover:underline underline-offset-4 flex items-center gap-1 [text-shadow:0_1px_3px_rgba(0,0,0,0.35)]">
                   Zistiť viac o nás <ArrowRight className="w-4 h-4" />
                 </a>
               </motion.div>
@@ -289,7 +289,7 @@ export default function Home() {
       <section id="contact" className="py-14 concrete-light">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-8">
-            <h2 className="text-sm font-bold text-primary tracking-widest mb-2">KONTAKT</h2>
+            <h2 className="text-sm font-bold text-primary tracking-widest mb-2 [text-shadow:0_1px_3px_rgba(0,0,0,0.35)]">KONTAKT</h2>
             <h3 className="text-3xl md:text-4xl font-bold text-secondary uppercase">
               Máte otázky? Napíšte nám
             </h3>
