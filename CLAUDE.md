@@ -1,0 +1,168 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Kontext projektu
+
+Tento repozitár je **moderný redesign** existujúcej WordPress stránky [msbeton.sk](https://msbeton.sk/). Cieľom je zachovať všetku funkcionalitu pôvodnej stránky v novom tech stacku, nie len vizuálny redesign.
+
+### Pôvodná stránka
+
+- **Zdrojový kód starej stránky** (WordPress + vlastný PHP plugin): `/Applications/MAMP/htdocs/bokovky/msbeton/public_html`
+- Kalkulačka: `/Applications/MAMP/htdocs/bokovky/msbeton/public_html/wp-content/plugins/kalkulacka-beton/`
+- Kľúčové súbory starej kalkulačky: `calculator-pump.php`, `calculator-mixer.php`, `calculator-utils.php`, `concrete-calculator-script.js`
+
+**Hlavné funkcie pôvodnej stránky, ktoré musí nová replikovať:**
+
+1. **Kalkulačka betónu** — hlavná funkcia stránky. Tri režimy: pumpa, mix (domiešavač), vlastná doprava. Počíta cenu betónu + dopravy + služieb s/bez DPH, s/bez zľavy klienta.
+2. **Správa klientov v admin UI** — vytváranie a editácia klientov s ich zľavami
+3. **Prihlásenie klienta do kalkulačky** — klient sa prihlási, kalkulačka automaticky aplikuje jeho zľavy
+4. **Admin dashboard** — správa: Betóny (kategórie + typy + ceny), Doprava (zónové sadzby), Služby (čerpanie, umývanie, čakačky…), Klienti
+
+### Logika zliav (zhodná so starou WP kalkulačkou)
+
+Referencia: `calculator-utils.php`, funkcia `get_discount_with_type()`:
+- Každý klient má 4 zľavy: `discountBeton`, `discountDoprava`, `discountSluzby`, `discountCelkovo`
+- Fallback **per kategóriu**: ak `discountBeton = 0`, použije sa `discountCelkovo` (nie globálne na celok)
+- `effectiveX = discountX > 0 ? discountX : discountCelkovo`
+- V UI sa zobrazujú **raw nakonfigurované hodnoty** (nie odvodené efektívne), aby admin videl čo reálne nastavil
+
+### Transportná logika (fill-up pravidlo, zhodné so starou kalkulačkou)
+
+- Pumpa: prvé auto 7 m³, každé ďalšie 9 m³ (domiešavač)
+- Fill-up: ak `qty < 5`, doplní sa na 5 m³; ak `qty > 7 && qty < 10` (pumpa) alebo `qty > 9 && qty < 10` (mix), doplní sa na 10 m³
+- Cena dopravy = zóna (podľa km) × celkový objem vrátane fill-up; ak priemer na auto < minimálna sadzba, použije sa minimum × počet áut
+
+### Testovacie prihlasovacie údaje
+
+| Rola | Login ID | Heslo | Poznámka |
+|------|----------|-------|----------|
+| Admin | `msbeton` | `Msbeton2023` | `/admin/login` — client-side `btoa` kontrola |
+| Klient | `20` | `1234` | 20% zľava na betón (discountBeton=20, ostatné 0) |
+
+---
+
+## Príkazy
+
+### Lokálny vývoj
+
+Oba servery musia bežať súčasne. Vite **vyhodí chybu** ak chýba `PORT` alebo `BASE_PATH`.
+
+```bash
+# API server (terminál 1)
+PORT=3000 DATABASE_URL="postgresql://junior@localhost:5432/msbeton" pnpm --filter @workspace/api-server dev
+
+# Web dev server (terminál 2)
+PORT=5173 BASE_PATH=/ pnpm --filter @workspace/web dev
+```
+
+Vite proxuje `/api` → `http://localhost:3000`, takže web automaticky komunikuje s lokálnym API.
+
+### Zostavenie a typová kontrola
+
+```bash
+pnpm run build          # plný build (typecheck + všetky balíky)
+pnpm run typecheck      # TypeScript project references check cez všetky balíky
+pnpm --filter @workspace/web build        # iba web (vyžaduje PORT + BASE_PATH)
+pnpm --filter @workspace/api-server build # iba API (esbuild → dist/index.mjs)
+```
+
+### Databáza
+
+```bash
+pnpm --filter @workspace/db push          # aplikuj schému do DB (vyžaduje DATABASE_URL)
+pnpm --filter @workspace/db push-force    # force push (zmaže konflikty)
+```
+
+### API Codegen (pri zmene openapi.yaml)
+
+```bash
+pnpm --filter @workspace/api-spec codegen  # regeneruje api-zod + api-client-react
+```
+
+---
+
+## Architektúra
+
+### Monorepo štruktúra
+
+```
+artifacts/
+  api-server/   Express 5 API — číta/zapisuje PostgreSQL cez @workspace/db
+  web/          React 19 + Vite frontend — proxuje /api na api-server v dev
+
+lib/
+  db/           Drizzle ORM schéma + klient (exportuje db, adminConfig, Pool)
+  api-spec/     OpenAPI 3.1 zdroj (openapi.yaml) + Orval codegen konfig
+  api-zod/      Generované Zod schémy (z openapi.yaml cez Orval)
+  api-client-react/  Generované React Query hooky + fetch klient
+```
+
+### Databáza: jediná JSONB tabuľka
+
+Celý stav aplikácie je v jednej tabuľke:
+
+```sql
+admin_config(key TEXT PRIMARY KEY, data JSONB, updated_at TIMESTAMP)
+```
+
+Kľúče: `categories`, `delivery`, `services`, `clients`, `transport_zones`, `transport_settings`, `client_accounts` (legacy).
+
+Všetky operácie používajú `INSERT … ON CONFLICT DO UPDATE` — pri zmenách dát nie sú potrebné migrácie.
+
+### Dátový tok frontendu
+
+1. **Štart aplikácie** (`App.tsx` → `syncFromServer()`): načíta všetkých 6 admin kľúčov paralelne, uloží do localStorage (`msbeton_*`). Ak kľúč v DB chýba ale je v localStorage, automaticky ho odošle na server (prvotné naplnenie DB).
+
+2. **Kalkulačka** (`Calculator.tsx`): číta výlučne z localStorage cez `adminData.*` gettery — žiadne API volania počas výpočtu. Celá logika (zóny, fill-up, pumpa, zľavy) je client-side.
+
+3. **Admin dashboard**: číta z localStorage, zapisuje do localStorage + `PUT` na API na pozadí (bez čakania). Zlyhania sú tiché (bez vrátenia zmien).
+
+### Autentifikácia
+
+- **Admin**: iba client-side, `btoa`-enkódovaná kontrola prihlasovacích údajov v `adminAuth.ts`, session v localStorage. Žiadne API volania.
+- **Klient**: `POST /api/client/login` → server overí voči `clients` kľúču v DB → vráti session objekt uložený pod `msbeton_client_session`. `clientAuth.ts` používa výlučne PostgreSQL (žiadny localStorage fallback).
+
+### Kľúčové API routy
+
+| Metóda | Cesta | Účel |
+|--------|-------|------|
+| GET | `/api/healthz` | Kontrola dostupnosti |
+| GET/PUT | `/api/admin/clients` | Zoznam klientov |
+| GET/PUT | `/api/admin/categories` | Typy betónu + ceny |
+| GET/PUT | `/api/admin/transport-zones` | Zónové sadzby dopravy |
+| GET/PUT | `/api/admin/transport-settings` | Min. poplatok, zimný príplatok… |
+| GET/PUT | `/api/admin/services` | Služby (čerpanie, umývanie, čakačky…) |
+| POST | `/api/client/login` | Prihlásenie klienta |
+
+### Štýlovanie
+
+- Primárna farba: `#EDC531` (zlatá), Sekundárna: `#001D3D` (navy)
+- Betónové textúry v `src/index.css`: `.concrete-bg` (raw), `.concrete-navy` (tmavé sekcie s navy overlay), `.concrete-light` (svetlé sekcie — overlay `rgba(234,231,226,0.58)` pre viditeľnú textúru)
+- Tailwind v4 (Oxide compiler) — konfig je vo `vite.config.ts` cez `@tailwindcss/vite`, žiadny `tailwind.config.js`
+
+### Produkčný deployment
+
+Push na `main` → GitHub Actions (`.github/workflows/deploy.yml`) → SSH na Hetzner VPS:
+
+```bash
+ssh -i ~/.ssh/id_ed25519_claude root@178.104.62.115
+```
+
+SSH kľúč: `id_ed25519_claude` (názov v GitHub Secrets: `itikon-claude-code`, fingerprint: `b3:9e:3f:d1:6f:10:20:84:cc:e0:78:13:50:78:fa:11`)
+
+Workflow: `git pull` → build web + API → `db push` → `pm2 restart msbeton-api` → health check. `BASE_PATH` pre produkciu je nastavený v deploy workflow.
+
+Na serveri beží PostgreSQL — `DATABASE_URL` je nastavená ako environment variable pre pm2.
+
+---
+
+## TypeScript projektové referencie
+
+`tsconfig.json` v roote používa zložené projektové referencie. Každý balík má vlastný `tsconfig.json` s `"composite": true`. `tsc -b` z rootu typuje všetko v poradí závislostí.
+
+`pnpm-workspace.yaml` prepisuje všetky Replit-špecifické natívne binárky (rollup, lightningcss, tailwindcss oxide) na `"-"`. Na macOS/Linux dev strojoch ich treba nainštalovať explicitne:
+
+```bash
+pnpm add -Dw @rollup/rollup-darwin-arm64 lightningcss-darwin-arm64 @tailwindcss/oxide-darwin-arm64
+```
