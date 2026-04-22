@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { LogOut, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff } from "lucide-react";
+import { LogOut, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2 } from "lucide-react";
+import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { isLoggedIn, logout } from "@/lib/adminAuth";
 import { adminData, ConcreteCategory, ConcreteType, DeliveryZone, Service, Client, TransportPricingZone, TransportSettings } from "@/lib/adminData";
 
@@ -418,6 +419,7 @@ function KlientiTab() {
   const [clients, setClients] = useState<Client[]>(adminData.getClients());
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showPass, setShowPass] = useState<Set<string>>(new Set());
+  const [showTableFor, setShowTableFor] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [adding, setAdding] = useState(false);
   const emptyForm = {
@@ -563,7 +565,7 @@ function KlientiTab() {
           return (
             <div key={c.id} className="bg-white border border-gray-200 shadow-sm overflow-hidden">
               {/* Card header */}
-              <div className="flex items-center gap-3 px-4 py-3">
+              <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => setExpanded(isExpanded ? null : c.id)}>
                 <div className="w-9 h-9 rounded-full bg-secondary/10 flex items-center justify-center shrink-0">
                   <span className="text-secondary font-black text-sm">{(c.firstName || c.company || "?").charAt(0).toUpperCase()}</span>
                 </div>
@@ -582,10 +584,10 @@ function KlientiTab() {
                       <LogIn className="w-3 h-3" /> Bez prístupu
                     </span>
                   )}
-                  <button onClick={() => setExpanded(isExpanded ? null : c.id)} className="p-1 text-gray-400 hover:text-secondary transition-colors">
+                  <span className="p-1 text-gray-400">
                     {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  </button>
-                  <button onClick={() => remove(c.id)} className="p-1 text-gray-300 hover:text-red-500 transition-colors">
+                  </span>
+                  <button onClick={(e) => { e.stopPropagation(); remove(c.id); }} className="p-1 text-gray-300 hover:text-red-500 transition-colors">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -673,6 +675,28 @@ function KlientiTab() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Zľavové tabuľky */}
+                  <div className="border-t border-gray-100 pt-3">
+                    <button
+                      onClick={() => setShowTableFor(showTableFor === c.id ? null : c.id)}
+                      className="flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-secondary transition-colors cursor-pointer"
+                    >
+                      <Table2 className="w-3.5 h-3.5" />
+                      {showTableFor === c.id ? "Skryť zľavové tabuľky" : "Zobraziť zľavové tabuľky klienta"}
+                    </button>
+                    {showTableFor === c.id && (
+                      <div className="mt-3">
+                        <ClientPriceTable
+                          discountBeton={c.discountBeton ?? 0}
+                          discountDoprava={c.discountDoprava ?? 0}
+                          discountSluzby={c.discountSluzby ?? 0}
+                          discountCelkovo={c.discountCelkovo ?? 0}
+                          variant="light"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -703,9 +727,9 @@ export default function AdminDashboard() {
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "klienti", label: "KLIENTI", icon: <Users className="w-4 h-4" /> },
-    { id: "betony", label: "BETÓNY", icon: <Layers className="w-4 h-4" /> },
-    { id: "sluzby", label: "SLUŽBY", icon: <Wrench className="w-4 h-4" /> },
     { id: "doprava", label: "DOPRAVA", icon: <Truck className="w-4 h-4" /> },
+    { id: "sluzby", label: "SLUŽBY", icon: <Wrench className="w-4 h-4" /> },
+    { id: "betony", label: "BETÓNY", icon: <Layers className="w-4 h-4" /> },
   ];
 
   return (

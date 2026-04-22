@@ -64,8 +64,8 @@
   background-image: url('/images/concrete-pure.jpg');
   background-size: cover;
   background-repeat: no-repeat;
-  background-position: top center;
-  background-color: #b2b2b2;
+  background-position: center;
+  background-color: #8c8c8c;
 }
 
 /* Concrete dark — navy overlay on concrete */
@@ -73,15 +73,15 @@
   background-image: url('/images/concrete-pure.jpg');
   background-size: cover;
   background-repeat: no-repeat;
-  background-position: top center;
-  background-color: #b2b2b2;
+  background-position: center;
+  background-color: #8c8c8c;
   position: relative;
 }
 .concrete-navy::before {
   content: '';
   position: absolute;
   inset: 0;
-  background-color: rgba(0, 29, 61, 0.88);
+  background-color: rgba(0, 29, 61, 0.82);
   pointer-events: none;
 }
 .concrete-navy > * {
@@ -89,20 +89,20 @@
   z-index: 1;
 }
 
-/* Concrete light — same texture, lighter overlay */
+/* Concrete light — warm grey overlay, texture prominently visible */
 .concrete-light {
   background-image: url('/images/concrete-pure.jpg');
   background-size: cover;
   background-repeat: no-repeat;
-  background-position: top center;
-  background-color: #b2b2b2;
+  background-position: center;
+  background-color: #8c8c8c;
   position: relative;
 }
 .concrete-light::before {
   content: '';
   position: absolute;
   inset: 0;
-  background-color: rgba(240, 240, 240, 0.82);
+  background-color: rgba(234, 231, 226, 0.58);
   pointer-events: none;
 }
 .concrete-light > * {

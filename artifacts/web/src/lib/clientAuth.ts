@@ -16,7 +16,7 @@ export const clientAuth = {
 
   async login(clientId: string, password: string): Promise<{ ok: boolean; error?: string; client?: LoggedClient }> {
     const result = await clientApi.login(clientId, password);
-    if (!result) return { ok: false, error: "Nepodarilo sa pripojiť k serveru. Skúste znova." };
+    if (!result) return { ok: false, error: "Server nedostupný" };
     if (!result.ok || !result.client) return { ok: false, error: result.error ?? "Nesprávne prihlasovacie údaje" };
     localStorage.setItem(SESSION_KEY, JSON.stringify(result.client));
     window.dispatchEvent(new Event("client-session-changed"));

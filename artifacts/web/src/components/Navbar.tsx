@@ -23,7 +23,6 @@ export function Navbar() {
 
   const navLinks = [
     { name: "O nás", href: "/#about" },
-    { name: "Produkty", href: "/#products" },
     { name: "Kalkulačka", href: "/#calculator" },
     { name: "Vozový park", href: "/vozovy-park" },
     { name: "Cenník", href: "/cennik" },
@@ -109,19 +108,21 @@ export function Navbar() {
             <a href="/" className="flex items-center select-none" aria-label="MS-BETON">
               <span className="relative inline-flex items-center">
                 <motion.span
-                  className="font-display font-black text-[2.1rem] leading-none tracking-tighter text-primary relative overflow-hidden"
+                  className="font-display font-black text-[2.1rem] leading-none tracking-tighter text-primary relative"
                   style={{ display: "inline-block" }}
                 >
                   MS
-                  <motion.span
-                    className="absolute inset-0 pointer-events-none"
-                    style={{
-                      background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.65) 50%, transparent 70%)",
-                      display: "block",
-                    }}
-                    animate={{ x: ["-150%", "250%"] }}
-                    transition={{ duration: 1.2, repeat: Infinity, repeatDelay: 3.8, ease: "easeInOut" }}
-                  />
+                  <span className="absolute inset-0 overflow-hidden pointer-events-none">
+                    <motion.span
+                      className="absolute inset-0"
+                      style={{
+                        background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.65) 50%, transparent 70%)",
+                        display: "block",
+                      }}
+                      animate={{ x: ["-150%", "250%"] }}
+                      transition={{ duration: 1.2, repeat: Infinity, repeatDelay: 3.8, ease: "easeInOut" }}
+                    />
+                  </span>
                 </motion.span>
                 <span className="font-display font-black text-[2.1rem] leading-none text-primary/40 mx-[2px]">-</span>
                 <span

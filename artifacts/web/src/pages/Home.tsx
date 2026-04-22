@@ -48,14 +48,10 @@ export default function Home() {
     const video = videoRef.current;
     if (!video) return;
     video.muted = true;
-    const tryPlay = () => {
-      video.play().catch(() => {});
-    };
-    if (video.readyState >= 2) {
-      tryPlay();
-    } else {
-      video.addEventListener("canplay", tryPlay, { once: true });
-    }
+    video.play().catch(() => {
+      const retry = () => { video.play().catch(() => {}); };
+      video.addEventListener("canplaythrough", retry, { once: true });
+    });
   }, []);
 
   // Contact Form State
@@ -81,7 +77,7 @@ export default function Home() {
       <Navbar />
 
       {/* HERO SECTION */}
-      <section id="home" className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden">
+      <section id="home" className="relative h-[80vh] min-h-[480px] max-h-[750px] flex items-center justify-center overflow-hidden">
         {/* Video background with overlay */}
         <div className="absolute inset-0 z-0">
           <video
@@ -97,8 +93,8 @@ export default function Home() {
             <source src={`${import.meta.env.BASE_URL}videos/hero-video.mp4`} type="video/mp4" />
             <source src={`${import.meta.env.BASE_URL}videos/hero-video.webm`} type="video/webm" />
           </video>
-          <div className="absolute inset-0 bg-secondary/70"></div>
-          <div className="absolute inset-0 bg-gradient-to-r from-secondary/85 via-secondary/50 to-secondary/20"></div>
+          <div className="absolute inset-0 bg-secondary/45"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-secondary/70 via-secondary/30 to-transparent"></div>
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
@@ -147,7 +143,7 @@ export default function Home() {
       </section>
 
       {/* ABOUT SECTION */}
-      <section id="about" className="py-24 concrete-light">
+      <section id="about" className="py-14 concrete-light">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <motion.div 
@@ -192,10 +188,11 @@ export default function Home() {
             >
               <div className="absolute -inset-4 bg-gray-100 rounded-xl transform rotate-3"></div>
               <div className="absolute -inset-4 bg-primary/10 rounded-xl transform -rotate-3 border border-primary/20"></div>
-              <img 
-                src={`${import.meta.env.BASE_URL}images/about-mixer.png`} 
-                alt="MS-BETON domiešavače" 
-                className="relative rounded-xl shadow-2xl object-cover w-full h-[500px]"
+              <img
+                src={`${import.meta.env.BASE_URL}images/about-mixer.png`}
+                alt="MS-BETON domiešavače"
+                loading="lazy"
+                className="relative rounded-xl shadow-2xl object-cover w-full h-[400px]"
               />
               {/* Floating badge */}
               <div className="absolute -bottom-8 -left-8 bg-secondary text-white p-6 rounded-xl shadow-xl max-w-[200px] border-l-4 border-primary">
@@ -208,7 +205,7 @@ export default function Home() {
       </section>
 
       {/* TRUST SIGNALS */}
-      <section className="py-16 concrete-navy text-white">
+      <section className="py-10 concrete-navy text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
@@ -229,8 +226,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* PRODUCTS SECTION */}
-      <section id="products" className="py-24 concrete-light">
+      {/* PRODUCTS SECTION — skryté pre skrátenie stránky ku kalkulačke */}
+      <section id="products" className="py-24 concrete-light hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-sm font-bold text-primary tracking-widest mb-2">NAŠE PRODUKTY</h2>
@@ -259,9 +256,10 @@ export default function Home() {
               >
                 <div className="relative h-56 overflow-hidden">
                   <div className="absolute inset-0 bg-secondary/20 group-hover:bg-transparent transition-colors duration-500 z-10"></div>
-                  <img 
-                    src={`${import.meta.env.BASE_URL}images/${prod.img}`} 
-                    alt={prod.title} 
+                  <img
+                    src={`${import.meta.env.BASE_URL}images/${prod.img}`}
+                    alt={prod.title}
+                    loading="lazy"
                     className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
                   />
                 </div>
@@ -281,35 +279,19 @@ export default function Home() {
       </section>
 
       {/* CALCULATOR SECTION */}
-      <section id="calculator" className="py-24 concrete-light relative overflow-hidden">
-
+      <section id="calculator" className="py-12 concrete-light relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-sm font-bold text-primary tracking-widest mb-2">KALKULAČKA</h2>
-            <h3 className="text-4xl md:text-5xl font-bold text-secondary mb-4 uppercase">
-              Kalkulačka Betónu
-            </h3>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Vyberte typ konštrukcie, zadajte rozmery a okamžite zistíte potrebný objem, hmotnosť, počet vozidiel aj vriec.
-            </p>
-          </motion.div>
-
           <ConcreteCalculator />
         </div>
       </section>
 
       {/* CONTACT SECTION */}
-      <section id="contact" className="py-24 concrete-light">
+      <section id="contact" className="py-14 concrete-light">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16">
+          <div className="text-center max-w-3xl mx-auto mb-8">
             <h2 className="text-sm font-bold text-primary tracking-widest mb-2">KONTAKT</h2>
-            <h3 className="text-4xl md:text-5xl font-bold text-secondary mb-6 uppercase">
-              Máte Otázky? <br/>Napíšte Nám
+            <h3 className="text-3xl md:text-4xl font-bold text-secondary uppercase">
+              Máte otázky? Napíšte nám
             </h3>
           </div>
 
@@ -447,14 +429,14 @@ export default function Home() {
 
       {/* PARTNERS SECTION */}
       {PARTNERS.length > 0 && (
-        <section className="py-14 bg-white border-t border-gray-100">
+        <section className="py-10 bg-white border-t border-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, margin: "-80px" }}
               variants={fadeInUp}
-              className="text-center mb-10"
+              className="text-center mb-6"
             >
               <p className="text-xs font-bold text-gray-400 tracking-[0.25em] uppercase mb-1">Naši partneri</p>
               <h2 className="text-2xl md:text-3xl font-bold text-secondary uppercase tracking-tight">

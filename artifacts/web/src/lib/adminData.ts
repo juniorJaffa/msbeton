@@ -231,11 +231,17 @@ export async function syncFromServer(): Promise<void> {
     const hasDataOrEmpty = (v: unknown) => v !== null && v !== undefined && Array.isArray(v);
     let updated = false;
     if (hasData(cats?.data)) { saveData("msbeton_categories", cats!.data); updated = true; }
+    else { const local = loadData<unknown>("msbeton_categories", null); if (local) adminApi.saveCategories(local); }
     if (hasData(delivery?.data)) { saveData("msbeton_delivery", delivery!.data); updated = true; }
+    else { const local = loadData<unknown>("msbeton_delivery", null); if (local) adminApi.saveDelivery(local); }
     if (hasData(services?.data)) { saveData("msbeton_services", services!.data); updated = true; }
+    else { const local = loadData<unknown>("msbeton_services", null); if (local) adminApi.saveServices(local); }
     if (hasDataOrEmpty(clients?.data)) { saveData("msbeton_clients", clients!.data); updated = true; }
+    else { const local = loadData<Client[]>("msbeton_clients", []); if (local.length > 0) adminApi.saveClients(local); }
     if (hasData(tzones?.data)) { saveData("msbeton_transport_zones", tzones!.data); updated = true; }
+    else { const local = loadData<unknown>("msbeton_transport_zones", null); if (local) adminApi.saveTransportZones(local); }
     if (hasData(tsettings?.data)) { saveData("msbeton_transport_settings", tsettings!.data); updated = true; }
+    else { const local = loadData<unknown>("msbeton_transport_settings", null); if (local) adminApi.saveTransportSettings(local); }
     if (updated) window.dispatchEvent(new Event("admin-data-synced"));
   } catch {
   }
