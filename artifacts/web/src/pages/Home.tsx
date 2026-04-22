@@ -86,9 +86,9 @@ export default function Home() {
             muted
             loop
             playsInline
-            preload="auto"
+            preload="none"
             className="w-full h-full object-cover object-center"
-            poster={`${import.meta.env.BASE_URL}images/hero-bg.png`}
+            poster={`${import.meta.env.BASE_URL}images/hero-bg.jpg`}
           >
             <source src={`${import.meta.env.BASE_URL}videos/hero-video.mp4`} type="video/mp4" />
             <source src={`${import.meta.env.BASE_URL}videos/hero-video.webm`} type="video/webm" />
@@ -189,7 +189,7 @@ export default function Home() {
               <div className="absolute -inset-4 bg-gray-100 rounded-xl transform rotate-3"></div>
               <div className="absolute -inset-4 bg-primary/10 rounded-xl transform -rotate-3 border border-primary/20"></div>
               <img
-                src={`${import.meta.env.BASE_URL}images/about-mixer.png`}
+                src={`${import.meta.env.BASE_URL}images/about-mixer.jpg`}
                 alt="MS-BETON domiešavače"
                 loading="lazy"
                 className="relative rounded-xl shadow-2xl object-cover w-full h-[400px]"
