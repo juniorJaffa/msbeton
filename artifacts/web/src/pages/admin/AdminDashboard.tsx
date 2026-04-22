@@ -554,8 +554,20 @@ function KlientiTab() {
         </div>
       )}
 
+      {/* Table header */}
+      <div className="hidden sm:flex items-center gap-3 px-4 py-2 bg-secondary text-white text-xs font-black uppercase tracking-widest">
+        <div className="w-8 shrink-0" />
+        <div className="w-36 shrink-0">Klient</div>
+        <div className="flex flex-1">
+          {["Betón", "Doprava", "Služby", "Celkovo"].map(l => (
+            <div key={l} className="flex-1 text-center text-primary">{l}</div>
+          ))}
+        </div>
+        <div className="w-28 shrink-0" />
+      </div>
+
       {/* Client cards */}
-      <div className="space-y-2">
+      <div className="space-y-px">
         {filtered.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">Žiadni klienti.</p>}
         {filtered.map(c => {
           const isExpanded = expanded === c.id;
@@ -566,18 +578,33 @@ function KlientiTab() {
             <div key={c.id} className="bg-white border border-gray-200 shadow-sm overflow-hidden">
               {/* Card header */}
               <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => setExpanded(isExpanded ? null : c.id)}>
-                <div className="w-9 h-9 rounded-full bg-secondary/10 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center shrink-0">
                   <span className="text-secondary font-black text-sm">{(c.firstName || c.company || "?").charAt(0).toUpperCase()}</span>
                 </div>
-                <div className="flex-1 min-w-0">
+                {/* Meno */}
+                <div className="w-36 min-w-0 shrink-0">
                   <div className="font-bold text-secondary text-sm truncate">{fullName}</div>
                   {c.company && <div className="text-xs text-gray-400 truncate">{c.company}</div>}
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                {/* Zľavy — skryté na mobile, viditeľné od sm */}
+                <div className="hidden sm:flex flex-1 items-center">
+                  {[
+                    { label: "Betón",   val: c.discountBeton   ?? 0 },
+                    { label: "Doprava", val: c.discountDoprava ?? 0 },
+                    { label: "Služby",  val: c.discountSluzby  ?? 0 },
+                    { label: "Celkovo", val: c.discountCelkovo ?? 0 },
+                  ].map(({ label, val }) => (
+                    <div key={label} className="flex-1 text-center">
+                      <div className="text-[10px] text-gray-400 uppercase tracking-wide">{label}</div>
+                      <div className={`text-sm font-bold ${val > 0 ? "text-primary" : "text-gray-300"}`}>{val} %</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
                   {hasLogin ? (
                     <span className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase rounded-sm ${c.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
                       {c.active ? <ShieldCheck className="w-3 h-3" /> : <ShieldOff className="w-3 h-3" />}
-                      {c.active ? (maxDisc > 0 ? `−${maxDisc}%` : "Aktívny") : "Neaktívny"}
+                      {c.active ? "Aktívny" : "Neaktívny"}
                     </span>
                   ) : (
                     <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase rounded-sm bg-gray-100 text-gray-400">
