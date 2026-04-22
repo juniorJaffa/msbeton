@@ -101,7 +101,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background-color: rgba(234, 231, 226, 0.72);
+  background-color: rgba(234, 231, 226, 0.58);
   pointer-events: none;
 }
 .concrete-light > * {

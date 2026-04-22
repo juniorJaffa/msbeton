@@ -24,7 +24,7 @@ interface ExtraItem {
 }
 
 const VAT = 0.23;
-const VAT_HOTOVOST = 0.23;
+const VAT_HOTOVOST = 0.20;
 const PUMP_TRUCK_CAPACITY = 7;
 const MIX_TRUCK_CAPACITY = 9;
 const PUMP_HOURS = ["1 h", "2 h", "3 h", "4 h", "5 h", "6 h", "7 h", "8 h"];
@@ -356,7 +356,7 @@ export function ConcreteCalculator() {
     const totalDiscBezDph = Object.values(discountedItems).reduce((a, b) => a + b, 0);
     const totalDiscSDph = totalDiscBezDph * (1 + VAT);
 
-    // Hotovosť = 23% DPH
+    // Hotovosť = 20% DPH (dph_spec = 1.20 — pôvodná WP kalkulačka)
     const hotovostBaseItems = Object.fromEntries(Object.entries(items).map(([k, v]) => [k, v * (1 + VAT_HOTOVOST)])) as typeof items;
     const hotovostDiscItems: typeof items = {
       concrete: hotovostBaseItems.concrete * betonFactor,
@@ -1068,7 +1068,7 @@ export function ConcreteCalculator() {
                     </>
                   ) : (
                     <div className="flex justify-between items-center">
-                      <span className="font-bold text-white">Cena spolu (vr. 23% DPH)</span>
+                      <span className="font-bold text-white">Cena spolu (vr. 20% DPH)</span>
                       <div className="text-right">
                         {hasDiscount && <span className="line-through text-white/35 text-xs block">{fmt(result.hotovostOrigTotal)}</span>}
                         <span className="text-2xl font-bold text-primary">{fmt(result.hotovostTotal)}</span>

@@ -94,8 +94,8 @@ export default function Home() {
             <source src={`${import.meta.env.BASE_URL}videos/hero-video.mp4`} type="video/mp4" />
             <source src={`${import.meta.env.BASE_URL}videos/hero-video.webm`} type="video/webm" />
           </video>
-          <div className="absolute inset-0 bg-secondary/25"></div>
-          <div className="absolute inset-0 bg-gradient-to-r from-secondary/55 via-secondary/20 to-transparent"></div>
+          <div className="absolute inset-0 bg-secondary/45"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-secondary/70 via-secondary/30 to-transparent"></div>
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
