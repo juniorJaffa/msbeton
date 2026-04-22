@@ -212,6 +212,7 @@ export default function AdminLogin() {
                       type="number"
                       value={captchaInput}
                       onChange={e => setCaptchaInput(e.target.value)}
+                      onWheel={e => (e.target as HTMLInputElement).blur()}
                       disabled={lockInfo.locked || loading}
                       className="w-20 bg-[#32334a] text-white border border-white/10 px-3 py-2 text-sm text-center focus:outline-none focus:border-primary transition-colors disabled:opacity-50"
                       placeholder="?"

@@ -152,7 +152,7 @@ export default function Home() {
               viewport={{ once: true, margin: "-100px" }}
               variants={staggerContainer}
             >
-              <motion.h2 variants={fadeInUp} className="text-sm font-bold text-primary tracking-widest mb-2">O SPOLOČNOSTI</motion.h2>
+              <motion.h2 variants={fadeInUp} className="text-sm font-bold text-primary tracking-widest mb-2 [text-shadow:0_1px_3px_rgba(0,0,0,0.35)]">O SPOLOČNOSTI</motion.h2>
               <motion.h3 variants={fadeInUp} className="text-4xl md:text-5xl font-bold text-secondary mb-6">
                 KVALITA, NA KTORÚ SA MÔŽETE <span className="text-gradient">SPOĽAHNÚŤ</span>
               </motion.h3>
