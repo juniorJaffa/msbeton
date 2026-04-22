@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { LogOut, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2 } from "lucide-react";
+import { LogOut, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { isLoggedIn, logout } from "@/lib/adminAuth";
 import { adminData, syncFromServer, ConcreteCategory, ConcreteType, DeliveryZone, Service, Client, TransportPricingZone, TransportSettings } from "@/lib/adminData";
 
-type Tab = "betony" | "sluzby" | "doprava" | "klienti";
+type Tab = "betony" | "sluzby" | "doprava" | "klienti" | "stav";
 
 // ── Inline editable cell ──────────────────────────────────────────────────────
 function EditableField({ value, onSave, type = "text" }: { value: string | number; onSave: (v: string) => void; type?: string }) {
@@ -734,6 +734,44 @@ function KlientiTab() {
   );
 }
 
+// ── Status Tab ────────────────────────────────────────────────────────────────
+const STATUS_ITEMS = [
+  { section: "WEB", label: "Modrá nad videom zoslabená", done: true },
+  { section: "WEB", label: "Betón pozadie zosilnené", done: true },
+  { section: "Kalkulačka", label: "DPH hotovosť 23% (nie 20%)", done: true },
+  { section: "Kalkulačka", label: "Discount fallback logika (bez stackingu)", done: true },
+  { section: "Kalkulačka", label: "Pumpa formula: 1×7m³ + n×9m³", done: true },
+  { section: "Kalkulačka", label: "Fill-up pravidlo (min 5m³, gap 10m³)", done: true },
+  { section: "Kalkulačka", label: "Zónové sadzby dopravy podľa km", done: true },
+  { section: "Kalkulačka", label: "Prihlásenie klienta + aplikácia zliav", done: true },
+];
+
+function StatusTab() {
+  const sections = [...new Set(STATUS_ITEMS.map(i => i.section))];
+  return (
+    <div className="space-y-6">
+      {sections.map(sec => (
+        <div key={sec}>
+          <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-2">{sec}</h3>
+          <div className="bg-white border border-gray-200 divide-y divide-gray-100 shadow-sm">
+            {STATUS_ITEMS.filter(i => i.section === sec).map((item, idx) => (
+              <div key={idx} className="flex items-center gap-3 px-4 py-3">
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${item.done ? "bg-green-100 text-green-600" : "bg-red-100 text-red-500"}`}>
+                  {item.done ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                </span>
+                <span className={`text-sm ${item.done ? "text-gray-700" : "text-red-600 font-medium"}`}>{item.label}</span>
+                <span className={`ml-auto text-[10px] font-black uppercase px-2 py-0.5 rounded-sm ${item.done ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>
+                  {item.done ? "OK" : "TODO"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
   const [, navigate] = useLocation();
@@ -761,6 +799,7 @@ export default function AdminDashboard() {
     { id: "doprava", label: "DOPRAVA", icon: <Truck className="w-4 h-4" /> },
     { id: "sluzby", label: "SLUŽBY", icon: <Wrench className="w-4 h-4" /> },
     { id: "betony", label: "BETÓNY", icon: <Layers className="w-4 h-4" /> },
+    { id: "stav", label: "STAV", icon: <ClipboardList className="w-4 h-4" /> },
   ];
 
   return (
@@ -815,6 +854,7 @@ export default function AdminDashboard() {
           {tab === "sluzby" && <SluzbyTab key={syncKey} />}
           {tab === "doprava" && <DopravaTab key={syncKey} />}
           {tab === "klienti" && <KlientiTab key={syncKey} />}
+          {tab === "stav" && <StatusTab />}
         </div>
       </div>
     </div>
