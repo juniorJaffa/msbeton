@@ -183,7 +183,7 @@ export function ConcreteCalculator() {
   const [waitMin, setWaitMin] = useState("0 min");
   const [hoseMeters, setHoseMeters] = useState(0);
   const [washing, setWashing] = useState(false);
-  const [rozbehovaChemia, setRozbehovaChemia] = useState(false);
+  const [rozbehovaChemia, setRozbehovaChemia] = useState(true);
   const [showResult, setShowResult] = useState(false);
   const [priceMode, setPriceMode] = useState<PriceMode>("hotovost");
   const [loggedClient, setLoggedClient] = useState<LoggedClient | null>(() => clientAuth.getLoggedClient());
@@ -279,7 +279,8 @@ export function ConcreteCalculator() {
 
   function calcTransport(km: number, qty: number, tabType: Tab): number {
     if (km === 0) return 0;
-    const zone = tzones.find((z) => km >= z.fromKm && km < z.toKm) ?? tzones[tzones.length - 1];
+    // +2km rezerva zhodná so starou WP kalkulačkou
+    const zone = tzones.find((z) => (km + 2) >= z.fromKm && (km + 2) < z.toKm) ?? tzones[tzones.length - 1];
     const ratePerM3 = zone?.ratePerM3 ?? 0;
     const minimumFee = tsettings.minimumFee ?? 62.50;
 
@@ -356,8 +357,17 @@ export function ConcreteCalculator() {
     const totalDiscBezDph = Object.values(discountedItems).reduce((a, b) => a + b, 0);
     const totalDiscSDph = totalDiscBezDph * (1 + VAT);
 
-    // Hotovosť = 20% DPH (dph_spec = 1.20 — pôvodná WP kalkulačka)
-    const hotovostBaseItems = Object.fromEntries(Object.entries(items).map(([k, v]) => [k, v * (1 + VAT_HOTOVOST)])) as typeof items;
+    // Hotovosť: DPH 20% (dph_spec) sa aplikuje IBA na betón, nie na dopravu/služby (zhodné so starou WP kalkulačkou)
+    const hotovostBaseItems: typeof items = {
+      concrete: items.concrete * (1 + VAT_HOTOVOST),
+      transport: items.transport,
+      pump: items.pump,
+      hoses: items.hoses,
+      washing: items.washing,
+      chem: items.chem,
+      waiting: items.waiting,
+      zimne: items.zimne * (1 + VAT_HOTOVOST),
+    };
     const hotovostDiscItems: typeof items = {
       concrete: hotovostBaseItems.concrete * betonFactor,
       transport: hotovostBaseItems.transport * dopravaFactor,
@@ -369,7 +379,8 @@ export function ConcreteCalculator() {
       zimne: hotovostBaseItems.zimne * betonFactor,
     };
     const hotovostTotal = Object.values(hotovostDiscItems).reduce((a, b) => a + b, 0);
-    const hotovostOrigTotal = Object.values(hotovostBaseItems).reduce((a, b) => a + b, 0);
+    // Škrtnutá cena pri hotovosti = fakturová cena s DPH 23% (zhodné so starou WP kalkulačkou)
+    const hotovostOrigTotal = totalDiscSDph;
 
     const waitLabel = (() => {
       const wh = parseInt(waitHour) || 0;
@@ -381,12 +392,15 @@ export function ConcreteCalculator() {
     })();
 
     const mixTrucksCount = tab === "pumpa" ? trucks - 1 : trucks;
+    const transportZone = !isOwn && km > 0
+      ? (tzones.find((z) => (km + 2) >= z.fromKm && (km + 2) < z.toKm) ?? tzones[tzones.length - 1])
+      : null;
 
     return {
       trucks, truckCapacity, mixTrucksCount, items, totalBezDph, totalSDph: totalBezDph * (1 + VAT),
       discountedItems, totalDiscBezDph, totalDiscSDph,
       hotovostBaseItems, hotovostDiscItems, hotovostTotal, hotovostOrigTotal,
-      qty, totalQty, km, waitIntervals, waitLabel, pumpHrs, pumpMs, isOwn, concreteBreakdown,
+      qty, totalQty, km, waitIntervals, waitLabel, pumpHrs, pumpMs, isOwn, concreteBreakdown, transportZone,
     };
   }, [tab, quantity, distance, selectedType, pumpHour, pumpMin, waitTotalMins, hoseMeters, washing, rozbehovaChemia, zimneOpatrenia, betonFactor, dopravaFactor, sluzbyFactor, pumpServicePrice, chemServicePrice, washServicePrice, waitServicePrice, hoseServicePrice, zimneServicePrice, tzones, tsettings, extraItems, allCategories]);
 
@@ -495,7 +509,7 @@ export function ConcreteCalculator() {
   ${ownNote}
   ${section("Produkty")}
   ${betonRows}
-  ${origItems.transport > 0 ? row(`Minimálna doprava – ${result.trucks}× auto`, origItems.transport, baseItems.transport) : ""}
+  ${origItems.transport > 0 ? row(result.transportZone ? `Doprava od ${result.transportZone.fromKm}km do ${result.transportZone.toKm}km – ${result.totalQty}m³` : `Doprava – ${result.totalQty}m³`, origItems.transport, baseItems.transport) : ""}
   ${origItems.zimne > 0 ? row(`Zimné opatrenia – ${result.qty} m³ × ${zimneServicePrice.toFixed(2)} €`, origItems.zimne, baseItems.zimne) : ""}
   ${sluzbySec}
   <div style="background:#EDC531;color:#001D3D;font-weight:bold;font-size:11pt;padding:5px 8px;margin-top:10px">Celková cena</div>
@@ -649,11 +663,11 @@ export function ConcreteCalculator() {
                     )}
                     title="Zľavové tabuľky klienta"
                   >
-                    <Table2 className="w-3.5 h-3.5" />
+                    <Table2 className="w-5 h-5" />
                     <span className="hidden sm:inline whitespace-nowrap">Moje ceny</span>
                   </button>
-                  <button onClick={handleLogout} className="shrink-0 flex items-center gap-1 text-white/40 hover:text-white/70 text-xs transition-colors cursor-pointer ml-1">
-                    <LogOut className="w-3.5 h-3.5" /><span className="whitespace-nowrap hidden sm:inline">Odhlásiť</span>
+                  <button onClick={handleLogout} className="shrink-0 flex items-center gap-1.5 text-white/40 hover:text-white/70 text-xs transition-colors cursor-pointer ml-8 border border-white/15 rounded px-2.5 py-1.5">
+                    <LogOut className="w-5 h-5" /><span className="whitespace-nowrap hidden sm:inline">Odhlásiť</span>
                   </button>
                 </div>
                 <AnimatePresence>
@@ -957,7 +971,7 @@ export function ConcreteCalculator() {
               {/* HOTOVOSŤ / FAKTÚRA tabs */}
               {(() => {
                 const showHotovost = !loggedClient || loggedClient.canHotovost;
-                const modes = showHotovost ? (["hotovost", "faktura"] as PriceMode[]) : (["faktura"] as PriceMode[]);
+                const modes = showHotovost ? (["faktura", "hotovost"] as PriceMode[]) : (["faktura"] as PriceMode[]);
                 return (
                   <div className={cn("grid border-b border-primary/30", modes.length === 1 ? "grid-cols-1" : "grid-cols-2")}>
                     {modes.map((mode) => (
@@ -1016,11 +1030,11 @@ export function ConcreteCalculator() {
                     );
                   })}
                   {origDisplayItems.transport > 0 && (() => {
-                    const vehicleLabel = tab === "pumpa"
-                      ? `1× Pumpa (${PUMP_TRUCK_CAPACITY}m³)${result.mixTrucksCount > 0 ? ` + ${result.mixTrucksCount}× Mix (${MIX_TRUCK_CAPACITY}m³)` : ""}`
-                      : `${result.trucks}× Mix (${MIX_TRUCK_CAPACITY}m³)`;
+                    const dopravaLabel = result.transportZone
+                      ? `Doprava od ${result.transportZone.fromKm}km do ${result.transportZone.toKm}km – ${result.totalQty}m³`
+                      : `Doprava – ${result.totalQty}m³`;
                     return (
-                      <PriceRow label={`Doprava – ${vehicleLabel}`}
+                      <PriceRow label={dopravaLabel}
                         original={origDisplayItems.transport} discounted={displayItems.transport} hasDiscount={hasDiscount} />
                     );
                   })()}
@@ -1068,7 +1082,7 @@ export function ConcreteCalculator() {
                     </>
                   ) : (
                     <div className="flex justify-between items-center">
-                      <span className="font-bold text-white">Cena spolu (vr. 20% DPH)</span>
+                      <span className="font-bold text-white">Cena spolu</span>
                       <div className="text-right">
                         {hasDiscount && <span className="line-through text-white/35 text-xs block">{fmt(result.hotovostOrigTotal)}</span>}
                         <span className="text-2xl font-bold text-primary">{fmt(result.hotovostTotal)}</span>

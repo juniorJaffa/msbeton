@@ -80,7 +80,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background-color: rgba(0, 29, 61, 0.82);
+  background-color: rgba(0, 29, 61, 0.76);
   pointer-events: none;
 }
 .concrete-navy > * {
@@ -101,7 +101,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background-color: rgba(234, 231, 226, 0.58);
+  background-color: rgba(234, 231, 226, 0.42);
   pointer-events: none;
 }
 .concrete-light > * {

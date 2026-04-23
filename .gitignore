@@ -50,3 +50,6 @@ Thumbs.db
 .local/
 deploy.sh
 deploy.sh
+
+# Claude Token Monitor data
+.claude-monitor/
