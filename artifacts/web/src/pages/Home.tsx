@@ -168,7 +168,7 @@ export default function Home() {
                   "Flexibilita a presnosť dodávok na čas"
                 ].map((item, i) => (
                   <motion.li key={i} variants={fadeInUp} className="flex items-center gap-3">
-                    <CheckCircle2 className="text-primary w-6 h-6 shrink-0" />
+                    <CheckCircle2 className="text-primary w-6 h-6 shrink-0 [filter:drop-shadow(0_1px_4px_rgba(0,0,0,0.65))]" />
                     <span className="text-secondary font-medium text-lg">{item}</span>
                   </motion.li>
                 ))}

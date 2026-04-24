@@ -80,12 +80,13 @@ function TypeSelectField({ label, value, onChange, options }: {
   );
 }
 
-function CheckboxField({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+function CheckboxField({ label, checked, onChange, disabled }: { label: string; checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
-    <label className="flex items-center gap-3 cursor-pointer group">
-      <div onClick={() => onChange(!checked)} className={cn(
+    <label className={cn("flex items-center gap-3 group", disabled ? "cursor-default opacity-70" : "cursor-pointer")}>
+      <div onClick={() => !disabled && onChange(!checked)} className={cn(
         "w-5 h-5 border-2 flex items-center justify-center transition-all flex-shrink-0",
-        checked ? "bg-primary border-primary" : "bg-white/10 border-white/30 group-hover:border-primary/50"
+        checked ? "bg-primary border-primary" : "bg-white/10 border-white/30",
+        !disabled && !checked && "group-hover:border-primary/50"
       )}>
         {checked && <span className="text-white text-xs font-bold">✓</span>}
       </div>
@@ -509,9 +510,9 @@ export function ConcreteCalculator() {
   ${section("Produkty")}
   ${betonRows}
   ${origItems.transport > 0 ? (() => {
-      const pdfTrucks = tab === "pumpa" ? `1× Pumpa${result.mixTrucksCount > 0 ? ` + ${result.mixTrucksCount}× Mix` : ""}` : `${result.trucks}× Mix`;
-      const pdfZone = result.transportZone ? `od ${result.transportZone.fromKm}km do ${result.transportZone.toKm}km` : "";
-      return row(`Doprava ${pdfZone} – ${pdfTrucks} · ${result.totalQty}m³`, origItems.transport, baseItems.transport);
+      const pdfTrucks = tab === "pumpa" ? `1×Pumpa${result.mixTrucksCount > 0 ? `+${result.mixTrucksCount}×Mix` : ""}` : `${result.trucks}×Mix`;
+      const pdfZone = result.transportZone ? `${result.transportZone.fromKm}–${result.transportZone.toKm}km` : "";
+      return row(`Doprava ${pdfZone} · ${pdfTrucks} · ${result.totalQty}m³`, origItems.transport, baseItems.transport);
     })() : ""}
   ${origItems.zimne > 0 ? row(`Zimné opatrenia – ${result.qty} m³ × ${zimneServicePrice.toFixed(2)} €`, origItems.zimne, baseItems.zimne) : ""}
   ${sluzbySec}
@@ -953,7 +954,7 @@ export function ConcreteCalculator() {
 
               <div className="space-y-3 pt-1">
                 <CheckboxField label={`Umývanie mimo stavby (+${washServicePrice.toFixed(2)} €)`} checked={washing} onChange={(v) => { setWashing(v); setShowResult(false); }} />
-                <CheckboxField label={`Rozbehová chémia (+${chemServicePrice.toFixed(2)} €)`} checked={rozbehovaChemia} onChange={(v) => { setRozbehovaChemia(v); setShowResult(false); }} />
+                <CheckboxField label={`Rozbehová chémia (+${chemServicePrice.toFixed(2)} €)`} checked={rozbehovaChemia} onChange={(v) => { setRozbehovaChemia(v); setShowResult(false); }} disabled={tab === "pumpa"} />
               </div>
             </>
           )}
@@ -1034,12 +1035,12 @@ export function ConcreteCalculator() {
                   })}
                   {origDisplayItems.transport > 0 && (() => {
                     const trucksLabel = tab === "pumpa"
-                      ? `1× Pumpa + ${result.mixTrucksCount > 0 ? `${result.mixTrucksCount}× Mix` : ""}`
-                      : `${result.trucks}× Mix`;
+                      ? `1×Pumpa${result.mixTrucksCount > 0 ? `+${result.mixTrucksCount}×Mix` : ""}`
+                      : `${result.trucks}×Mix`;
                     const zoneStr = result.transportZone
-                      ? `od ${result.transportZone.fromKm}km do ${result.transportZone.toKm}km`
+                      ? `${result.transportZone.fromKm}–${result.transportZone.toKm}km`
                       : "";
-                    const dopravaLabel = `Doprava ${zoneStr} – ${trucksLabel} · ${result.totalQty}m³`;
+                    const dopravaLabel = `Doprava ${zoneStr} · ${trucksLabel} · ${result.totalQty}m³`;
                     return (
                       <PriceRow label={dopravaLabel}
                         original={origDisplayItems.transport} discounted={displayItems.transport} hasDiscount={hasDiscount} />

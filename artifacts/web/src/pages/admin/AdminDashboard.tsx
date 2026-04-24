@@ -461,9 +461,25 @@ function KlientiTab() {
   return (
     <div className="space-y-4">
       {/* Search + Add */}
-      <div className="flex gap-3">
+      <div className="flex gap-3 flex-wrap">
         <input placeholder="Hľadať klienta..." value={search} onChange={e => setSearch(e.target.value)}
-          className="flex-1 border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:border-primary" />
+          className="flex-1 min-w-40 border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:border-primary" />
+        <button
+          onClick={() => {
+            if (!confirm(`Vypnúť Hotovosť VŠETKÝM ${clients.filter(c => c.canHotovost !== false).length} klientom? (napr. pri daňovej kontrole)`)) return;
+            save(clients.map(c => ({ ...c, canHotovost: false })));
+          }}
+          className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-300 text-red-700 font-bold text-xs hover:bg-red-100 shrink-0 uppercase tracking-wide">
+          <ShieldOff className="w-3.5 h-3.5" /> Vypnúť Hotovosť všetkým
+        </button>
+        <button
+          onClick={() => {
+            if (!confirm(`Zapnúť Hotovosť VŠETKÝM ${clients.length} klientom?`)) return;
+            save(clients.map(c => ({ ...c, canHotovost: true })));
+          }}
+          className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-300 text-green-700 font-bold text-xs hover:bg-green-100 shrink-0 uppercase tracking-wide">
+          <ShieldCheck className="w-3.5 h-3.5" /> Zapnúť všetkým
+        </button>
         <button onClick={() => { setAdding(true); setExpanded(null); }}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-secondary font-bold text-sm hover:bg-primary/90 shrink-0">
           <Plus className="w-4 h-4" /> Pridať klienta
