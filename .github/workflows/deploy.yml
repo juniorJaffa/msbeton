@@ -28,7 +28,8 @@ jobs:
             cp artifacts/web/public/videos/hero-video.mp4 artifacts/web/dist/public/videos/hero-video.mp4
             set -a && source artifacts/api-server/.env && set +a
             pnpm --filter @workspace/db run push
-            pm2 restart msbeton-api
+            export $(cat artifacts/api-server/.env | xargs)
+            pm2 restart msbeton-api --update-env
 
       - name: Health check
         run: |
