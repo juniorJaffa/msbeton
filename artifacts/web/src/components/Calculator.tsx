@@ -54,10 +54,11 @@ function SelectField({ label, value, onChange, options }: {
   );
 }
 
-function TypeSelectField({ label, value, onChange, options }: {
-  label: string; value: string; onChange: (v: string) => void; options: { label: string; price: number }[];
+function TypeSelectField({ label, value, onChange, options, discountFactor = 1 }: {
+  label: string; value: string; onChange: (v: string) => void; options: { label: string; price: number }[]; discountFactor?: number;
 }) {
   const cleanLabel = (lbl: string) => lbl.replace(/ – [\d.]+ € \/ m³/, "").replace(/ – [\d,.]+ €\/m³/, "");
+  const hasDisc = discountFactor < 1;
   return (
     <div>
       <label className="block text-sm font-semibold text-white/80 mb-2">{label}</label>
@@ -70,7 +71,10 @@ function TypeSelectField({ label, value, onChange, options }: {
             <SelectItem key={o.label} value={o.label} className="text-white focus:bg-white/10 focus:text-primary cursor-pointer">
               <span className="flex items-center gap-4">
                 <span>{cleanLabel(o.label)}</span>
-                <span className="text-primary text-xs font-bold">{o.price.toFixed(2)} €/m³</span>
+                <span className="flex items-center gap-1.5 text-xs font-bold">
+                  {hasDisc && <s className="text-white/30 font-normal">{o.price.toFixed(2)}</s>}
+                  <span className="text-primary">{(o.price * discountFactor).toFixed(2)} €/m³</span>
+                </span>
               </span>
             </SelectItem>
           ))}
@@ -866,6 +870,7 @@ export function ConcreteCalculator() {
             value={selectedType?.label ?? ""}
             onChange={(v) => { setConcreteTypeLabel(v); setShowResult(false); }}
             options={typesForCategory}
+            discountFactor={betonFactor}
           />
 
           {/* Quantity */}
@@ -910,6 +915,7 @@ export function ConcreteCalculator() {
                   value={itemType?.label ?? ""}
                   onChange={(v) => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, typeLabel: v } : i)); setShowResult(false); }}
                   options={itemTypes}
+                  discountFactor={betonFactor}
                 />
                 <div>
                   <label className="block text-sm font-semibold text-white/80 mb-2">Množstvo betónu (m³)</label>
