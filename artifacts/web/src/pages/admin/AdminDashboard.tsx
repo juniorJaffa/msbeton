@@ -141,6 +141,62 @@ function BetonTab() {
   );
 }
 
+function PumpTruckIcon() {
+  return (
+    <svg width="38" height="22" viewBox="0 0 38 22" fill="currentColor" className="shrink-0">
+      {/* Truck body */}
+      <rect x="1" y="12" width="24" height="6" rx="1" />
+      {/* Cab */}
+      <rect x="22" y="9" width="9" height="9" rx="1" />
+      {/* Windshield */}
+      <rect x="23.5" y="10.5" width="6" height="4.5" rx="0.5" fill="white" fillOpacity="0.55" />
+      {/* Boom base pillar */}
+      <rect x="8" y="8" width="3" height="4" rx="0.5" />
+      {/* Boom arm segment 1 (going up-left) */}
+      <line x1="9.5" y1="8" x2="3" y2="2" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+      {/* Boom arm segment 2 (horizontal, going right) */}
+      <line x1="3" y1="2" x2="22" y2="2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      {/* Pipe hose drop */}
+      <line x1="22" y1="2" x2="22" y2="6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeDasharray="1.5 1" />
+      {/* Wheels */}
+      <circle cx="6" cy="19" r="3" />
+      <circle cx="6" cy="19" r="1.4" fill="white" fillOpacity="0.5" />
+      <circle cx="14" cy="19" r="3" />
+      <circle cx="14" cy="19" r="1.4" fill="white" fillOpacity="0.5" />
+      <circle cx="27" cy="19" r="3" />
+      <circle cx="27" cy="19" r="1.4" fill="white" fillOpacity="0.5" />
+    </svg>
+  );
+}
+
+function MixTruckIcon() {
+  return (
+    <svg width="38" height="22" viewBox="0 0 38 22" fill="currentColor" className="shrink-0">
+      {/* Truck body */}
+      <rect x="1" y="12" width="24" height="6" rx="1" />
+      {/* Cab */}
+      <rect x="22" y="9" width="9" height="9" rx="1" />
+      {/* Windshield */}
+      <rect x="23.5" y="10.5" width="6" height="4.5" rx="0.5" fill="white" fillOpacity="0.55" />
+      {/* Drum body */}
+      <ellipse cx="11" cy="10" rx="7" ry="5.5" />
+      {/* Drum stripes (blades) */}
+      <path d="M 5.5 7.5 Q 11 10 16.5 7.5" stroke="white" strokeWidth="1.1" fill="none" strokeLinecap="round" />
+      <path d="M 4.5 10 Q 11 12.5 17.5 10" stroke="white" strokeWidth="1.1" fill="none" strokeLinecap="round" />
+      <path d="M 5.5 12.5 Q 11 10 16.5 12.5" stroke="white" strokeWidth="1.1" fill="none" strokeLinecap="round" />
+      {/* Chute (výpustný žľab) */}
+      <line x1="4.5" y1="14" x2="1.5" y2="17" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      {/* Wheels */}
+      <circle cx="6" cy="19" r="3" />
+      <circle cx="6" cy="19" r="1.4" fill="white" fillOpacity="0.5" />
+      <circle cx="14" cy="19" r="3" />
+      <circle cx="14" cy="19" r="1.4" fill="white" fillOpacity="0.5" />
+      <circle cx="27" cy="19" r="3" />
+      <circle cx="27" cy="19" r="1.4" fill="white" fillOpacity="0.5" />
+    </svg>
+  );
+}
+
 // ── DOPRAVA tab ───────────────────────────────────────────────────────────────
 function DopravaTab() {
   const [zones, setZones] = useState<DeliveryZone[]>(adminData.getDelivery());
@@ -208,13 +264,19 @@ function DopravaTab() {
             </div>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div className="bg-yellow-50 p-3 border border-yellow-100">
-                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Čakačka <strong>Pumpa</strong> / 15 min</div>
+                <div className="flex items-center gap-2 mb-2 text-secondary/70">
+                  <PumpTruckIcon />
+                  <span className="text-xs text-gray-400 uppercase tracking-wide leading-tight">Čakačka <strong className="text-secondary">Pumpa</strong> / 15 min</span>
+                </div>
                 <div className="font-bold text-secondary">
                   <EditableField value={z.waitingRatePer15minPumpa ?? z.waitingRatePer15min ?? 8} type="number" onSave={v => update(z.id, "waitingRatePer15minPumpa", v)} /> €
                 </div>
               </div>
               <div className="bg-yellow-50 p-3 border border-yellow-100">
-                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Čakačka <strong>Mix</strong> / 15 min</div>
+                <div className="flex items-center gap-2 mb-2 text-secondary/70">
+                  <MixTruckIcon />
+                  <span className="text-xs text-gray-400 uppercase tracking-wide leading-tight">Čakačka <strong className="text-secondary">Mix</strong> / 15 min</span>
+                </div>
                 <div className="font-bold text-secondary">
                   <EditableField value={z.waitingRatePer15min ?? 8} type="number" onSave={v => update(z.id, "waitingRatePer15min", v)} /> €
                 </div>
@@ -555,18 +617,18 @@ function KlientiTab() {
             {/* Možnosti */}
             <div className="border-t border-gray-100 pt-4">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Možnosti</p>
-              <div className="flex flex-wrap gap-4">
-                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
-                  <input type="checkbox" checked={form.canHotovost} onChange={e => setForm({ ...form, canHotovost: e.target.checked })} className="accent-secondary w-4 h-4" />
-                  Možnosť – Hotovosť
+              <div className="border border-gray-200 bg-white divide-y divide-gray-100">
+                <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
+                  <input type="checkbox" checked={form.canHotovost} onChange={e => setForm({ ...form, canHotovost: e.target.checked })} className="accent-secondary w-5 h-5 shrink-0" />
+                  <span className="text-sm text-gray-700">Hotovosť</span>
                 </label>
-                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
-                  <input type="checkbox" checked={form.canPridatBeton} onChange={e => setForm({ ...form, canPridatBeton: e.target.checked })} className="accent-secondary w-4 h-4" />
-                  Možnosť – Pridať betón
+                <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
+                  <input type="checkbox" checked={form.canPridatBeton} onChange={e => setForm({ ...form, canPridatBeton: e.target.checked })} className="accent-secondary w-5 h-5 shrink-0" />
+                  <span className="text-sm text-gray-700">Pridať betón</span>
                 </label>
-                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
-                  <input type="checkbox" checked={form.active} onChange={e => setForm({ ...form, active: e.target.checked })} className="accent-green-600 w-4 h-4" />
-                  Prístup aktívny
+                <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
+                  <input type="checkbox" checked={form.active} onChange={e => setForm({ ...form, active: e.target.checked })} className="accent-green-600 w-5 h-5 shrink-0" />
+                  <span className="text-sm text-gray-700">Prístup aktívny</span>
                 </label>
               </div>
             </div>
@@ -709,33 +771,33 @@ function KlientiTab() {
                         ))}
                       </div>
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Možnosti</p>
-                      <div className="space-y-1.5">
-                        <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
-                          <input type="checkbox" checked={c.canHotovost ?? true} onChange={e => update(c.id, { canHotovost: e.target.checked })} className="accent-secondary" />
-                          Možnosť – Hotovosť
+                      <div className="border border-gray-200 bg-white divide-y divide-gray-100">
+                        <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
+                          <input type="checkbox" checked={c.canHotovost ?? true} onChange={e => update(c.id, { canHotovost: e.target.checked })} className="accent-secondary w-5 h-5 shrink-0" />
+                          <span className="text-sm text-gray-700">Hotovosť</span>
                         </label>
-                        <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
-                          <input type="checkbox" checked={c.canPridatBeton ?? true} onChange={e => update(c.id, { canPridatBeton: e.target.checked })} className="accent-secondary" />
-                          Možnosť – Pridať betón
+                        <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
+                          <input type="checkbox" checked={c.canPridatBeton ?? true} onChange={e => update(c.id, { canPridatBeton: e.target.checked })} className="accent-secondary w-5 h-5 shrink-0" />
+                          <span className="text-sm text-gray-700">Pridať betón</span>
                         </label>
-                        <div className="flex items-center gap-2 pt-1">
-                          <span className="text-xs text-gray-500 shrink-0">Typ dopravy</span>
+                        <div className="px-3 py-3">
+                          <div className="text-xs text-gray-400 mb-1.5">Typ dopravy</div>
                           <select
                             value={c.deliveryZoneId ?? ""}
                             onChange={e => update(c.id, { deliveryZoneId: e.target.value || undefined })}
-                            className="flex-1 border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:border-primary bg-white"
+                            className="w-full border border-gray-200 px-2 py-2 text-sm focus:outline-none focus:border-primary bg-white"
                           >
                             {adminData.getDelivery().map(z => (
                               <option key={z.id} value={z.id}>{z.name}</option>
                             ))}
                           </select>
                         </div>
-                        <button onClick={() => update(c.id, { active: !c.active })}
-                          className={`mt-2 flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase border transition-colors ${c.active ? "bg-green-50 border-green-300 text-green-700 hover:bg-green-100" : "bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100"}`}>
-                          {c.active ? <ShieldCheck className="w-3.5 h-3.5" /> : <ShieldOff className="w-3.5 h-3.5" />}
-                          {c.active ? "Prístup aktívny" : "Prístup neaktívny"}
-                        </button>
                       </div>
+                      <button onClick={() => update(c.id, { active: !c.active })}
+                        className={`mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-bold uppercase border transition-colors ${c.active ? "bg-green-50 border-green-300 text-green-700 hover:bg-green-100" : "bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100"}`}>
+                        {c.active ? <ShieldCheck className="w-4 h-4" /> : <ShieldOff className="w-4 h-4" />}
+                        {c.active ? "Prístup aktívny" : "Prístup neaktívny"}
+                      </button>
                     </div>
                   </div>
 

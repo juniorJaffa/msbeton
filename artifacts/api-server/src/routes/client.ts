@@ -63,6 +63,7 @@ interface UnifiedClient {
   discountCelkovo?: number;
   canHotovost?: boolean;
   canPridatBeton?: boolean;
+  deliveryZoneId?: string;
   active?: boolean;
   // legacy fallback fields
   name?: string;
