@@ -307,7 +307,7 @@ export function ConcreteCalculator() {
 
   function getItemType(catName: string | null, typeLabel: string | null) {
     const cat = allCategories.find((c) => c.name === catName)
-      ?? allCategories.find((c) => c.name.includes("Dmax16"))
+      ?? allCategories.find((c) => c.name.toUpperCase().includes("DMAX16") && c.name.toUpperCase().includes("DRVENÉ"))
       ?? allCategories[0];
     const types = cat?.types ?? [];
     return types.find((t) => t.label === typeLabel)
@@ -863,7 +863,7 @@ export function ConcreteCalculator() {
           {/* Extra Items (Pridať položku) */}
           {extraItems.map((item, idx) => {
             const itemCat = allCategories.find((c) => c.name === item.categoryName)
-              ?? allCategories.find((c) => c.name.includes("Dmax16"))
+              ?? allCategories.find((c) => c.name.toUpperCase().includes("DMAX16") && c.name.toUpperCase().includes("DRVENÉ"))
               ?? allCategories[0];
             const itemTypes = itemCat?.types ?? [];
             const itemType = itemTypes.find((t) => t.label === item.typeLabel)
