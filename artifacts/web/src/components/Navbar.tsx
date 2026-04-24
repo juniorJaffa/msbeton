@@ -39,7 +39,7 @@ export function Navbar() {
             <span className="hidden md:block text-white/50 text-xs truncate mr-4">
               Žilina betón, na ktorý sa môžete spoľahnúť
             </span>
-            <div className="flex items-center gap-3 sm:gap-5 ml-auto min-w-0">
+            <div className="flex items-center gap-4 sm:gap-5 ml-auto min-w-0">
               <a
                 href="mailto:info@msbeton.sk"
                 className="flex items-center gap-1.5 text-white/55 hover:text-white transition-colors text-xs shrink-0"
@@ -83,10 +83,10 @@ export function Navbar() {
               ) : (
                 <a
                   href="/admin/login"
-                  className="flex items-center gap-1 text-white/40 hover:text-white/80 transition-colors text-xs shrink-0"
+                  className="flex items-center text-white/40 hover:text-white/80 transition-colors shrink-0 p-1.5 -m-1.5"
                   title="Administrácia"
                 >
-                  <LogIn className="w-3 h-3 shrink-0" />
+                  <LogIn className="w-4 h-4 shrink-0" />
                 </a>
               )}
             </div>
