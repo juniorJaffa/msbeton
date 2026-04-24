@@ -188,6 +188,7 @@ const DEFAULT_TRANSPORT_ZONES: TransportPricingZone[] = [
   { id: "tz22", fromKm: 52, toKm: 56, ratePerM3: 30.00 },
   { id: "tz23", fromKm: 56, toKm: 60, ratePerM3: 32.50 },
   { id: "tz24", fromKm: 60, toKm: 70, ratePerM3: 35.00 },
+  { id: "kmv4rtdr", fromKm: 70, toKm: 100, ratePerM3: 40.00 },
 ];
 
 const DEFAULT_TRANSPORT_SETTINGS: TransportSettings = {
@@ -207,7 +208,20 @@ const DEFAULT_CLIENTS: Client[] = [];
 function loadData<T>(key: string, defaults: T): T {
   try {
     const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : defaults;
+    if (!raw) return defaults;
+    const parsed = JSON.parse(raw) as T;
+    // Migrácia: ak transport_zones nemá zónu pokrývajúcu 70+ km, doplníme ju
+    if (key === "msbeton_transport_zones" && Array.isArray(parsed)) {
+      const zones = parsed as TransportPricingZone[];
+      const hasHigh = zones.some(z => z.toKm >= 100);
+      if (!hasHigh) {
+        const updated = [...zones, { id: "kmv4rtdr", fromKm: 70, toKm: 100, ratePerM3: 40.00 }]
+          .sort((a, b) => a.fromKm - b.fromKm);
+        localStorage.setItem(key, JSON.stringify(updated));
+        return updated as unknown as T;
+      }
+    }
+    return parsed;
   } catch {
     return defaults;
   }
