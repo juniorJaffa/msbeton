@@ -279,8 +279,7 @@ export function ConcreteCalculator() {
 
   function calcTransport(km: number, qty: number, tabType: Tab): number {
     if (km === 0) return 0;
-    // +2km rezerva zhodná so starou WP kalkulačkou
-    const zone = tzones.find((z) => (km + 2) >= z.fromKm && (km + 2) < z.toKm) ?? tzones[tzones.length - 1];
+    const zone = tzones.find((z) => km >= z.fromKm && km < z.toKm) ?? tzones[tzones.length - 1];
     const ratePerM3 = zone?.ratePerM3 ?? 0;
     const minimumFee = tsettings.minimumFee ?? 62.50;
 
@@ -393,7 +392,7 @@ export function ConcreteCalculator() {
 
     const mixTrucksCount = tab === "pumpa" ? trucks - 1 : trucks;
     const transportZone = !isOwn && km > 0
-      ? (tzones.find((z) => (km + 2) >= z.fromKm && (km + 2) < z.toKm) ?? tzones[tzones.length - 1])
+      ? (tzones.find((z) => km >= z.fromKm && km < z.toKm) ?? tzones[tzones.length - 1])
       : null;
 
     return {
@@ -509,7 +508,11 @@ export function ConcreteCalculator() {
   ${ownNote}
   ${section("Produkty")}
   ${betonRows}
-  ${origItems.transport > 0 ? row(result.transportZone ? `Doprava od ${result.transportZone.fromKm}km do ${result.transportZone.toKm}km – ${result.totalQty}m³` : `Doprava – ${result.totalQty}m³`, origItems.transport, baseItems.transport) : ""}
+  ${origItems.transport > 0 ? (() => {
+      const pdfTrucks = tab === "pumpa" ? `1× Pumpa${result.mixTrucksCount > 0 ? ` + ${result.mixTrucksCount}× Mix` : ""}` : `${result.trucks}× Mix`;
+      const pdfZone = result.transportZone ? `od ${result.transportZone.fromKm}km do ${result.transportZone.toKm}km` : "";
+      return row(`Doprava ${pdfZone} – ${pdfTrucks} · ${result.totalQty}m³`, origItems.transport, baseItems.transport);
+    })() : ""}
   ${origItems.zimne > 0 ? row(`Zimné opatrenia – ${result.qty} m³ × ${zimneServicePrice.toFixed(2)} €`, origItems.zimne, baseItems.zimne) : ""}
   ${sluzbySec}
   <div style="background:#EDC531;color:#001D3D;font-weight:bold;font-size:11pt;padding:5px 8px;margin-top:10px">Celková cena</div>
@@ -1030,9 +1033,13 @@ export function ConcreteCalculator() {
                     );
                   })}
                   {origDisplayItems.transport > 0 && (() => {
-                    const dopravaLabel = result.transportZone
-                      ? `Doprava od ${result.transportZone.fromKm}km do ${result.transportZone.toKm}km – ${result.totalQty}m³`
-                      : `Doprava – ${result.totalQty}m³`;
+                    const trucksLabel = tab === "pumpa"
+                      ? `1× Pumpa + ${result.mixTrucksCount > 0 ? `${result.mixTrucksCount}× Mix` : ""}`
+                      : `${result.trucks}× Mix`;
+                    const zoneStr = result.transportZone
+                      ? `od ${result.transportZone.fromKm}km do ${result.transportZone.toKm}km`
+                      : "";
+                    const dopravaLabel = `Doprava ${zoneStr} – ${trucksLabel} · ${result.totalQty}m³`;
                     return (
                       <PriceRow label={dopravaLabel}
                         original={origDisplayItems.transport} discounted={displayItems.transport} hasDiscount={hasDiscount} />
