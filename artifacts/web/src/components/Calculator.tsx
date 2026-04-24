@@ -175,6 +175,9 @@ export function ConcreteCalculator() {
   const [deliveryMode, setDeliveryMode] = useState<"distance" | "address">("distance");
   const [distance, setDistance] = useState("");
   const [address, setAddress] = useState("");
+  const [addressKm, setAddressKm] = useState<number | null>(null);
+  const [addressLoading, setAddressLoading] = useState(false);
+  const addressInputRef = useRef<HTMLInputElement>(null);
   const [categoryName, setCategoryName] = useState<string | null>(null);
   const [concreteTypeLabel, setConcreteTypeLabel] = useState<string | null>(null);
   const [quantity, setQuantity] = useState("");
@@ -186,7 +189,7 @@ export function ConcreteCalculator() {
   const [washing, setWashing] = useState(false);
   const [rozbehovaChemia, setRozbehovaChemia] = useState(true);
   const [showResult, setShowResult] = useState(false);
-  const [priceMode, setPriceMode] = useState<PriceMode>("hotovost");
+  const [priceMode, setPriceMode] = useState<PriceMode>("faktura");
   const [loggedClient, setLoggedClient] = useState<LoggedClient | null>(() => clientAuth.getLoggedClient());
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [loginId, setLoginId] = useState("");
@@ -214,13 +217,55 @@ export function ConcreteCalculator() {
     }
   }, [loggedClient, priceMode]);
 
+  // Google Maps Autocomplete + DistanceMatrix pre adresný režim
+  useEffect(() => {
+    if (deliveryMode !== "address" || !addressInputRef.current) return;
+    const ORIGIN = { lat: 49.204417, lng: 18.729029 };
+
+    const initMaps = () => {
+      if (!addressInputRef.current) return;
+      const ac = new google.maps.places.Autocomplete(addressInputRef.current, { types: ["geocode"] });
+      ac.addListener("place_changed", () => {
+        const place = ac.getPlace();
+        if (!place?.formatted_address) return;
+        setAddress(place.formatted_address);
+        setAddressLoading(true);
+        setShowResult(false);
+        new google.maps.DistanceMatrixService().getDistanceMatrix(
+          { origins: [ORIGIN], destinations: [place.formatted_address], travelMode: google.maps.TravelMode.DRIVING, unitSystem: google.maps.UnitSystem.METRIC },
+          (response, status) => {
+            setAddressLoading(false);
+            if (status === "OK" && response) {
+              const el = response.rows[0]?.elements[0];
+              if (el?.status === "OK") {
+                const oneWayKm = el.distance.value / 1000;
+                setAddressKm(oneWayKm);
+                setDistance(String(Math.round((oneWayKm * 2 + 2) * 10) / 10));
+              }
+            }
+          }
+        );
+      });
+    };
+
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    if (typeof google !== "undefined" && google.maps?.places) {
+      initMaps();
+    } else {
+      intervalId = setInterval(() => {
+        if (typeof google !== "undefined" && google.maps?.places) { clearInterval(intervalId!); initMaps(); }
+      }, 300);
+    }
+    return () => { if (intervalId) clearInterval(intervalId); };
+  }, [deliveryMode]);
+
   const allCategories = useMemo(() => adminData.getCategories(), [revision]);
   const allServices = useMemo(() => adminData.getServices(), [revision]);
   const tzones = useMemo(() => adminData.getTransportZones(), [revision]);
   const tsettings = useMemo(() => adminData.getTransportSettings(), [revision]);
 
   const selectedCategory = allCategories.find((c) => c.name === categoryName)
-    ?? allCategories.find((c) => c.name.includes("Dmax16"))
+    ?? allCategories.find((c) => c.name.toUpperCase().includes("DMAX16") && c.name.toUpperCase().includes("DRVENÉ"))
     ?? allCategories[0];
   const typesForCategory = selectedCategory?.types ?? [];
   const selectedType = typesForCategory.find((t) => t.label === concreteTypeLabel)
@@ -758,17 +803,21 @@ export function ConcreteCalculator() {
                 className="w-full bg-white/10 border-b-2 border-b-primary text-white px-4 py-3 focus:outline-none placeholder:text-white/30 text-sm font-medium rounded-sm" />
             ) : (
               <div className="space-y-2">
-                <input type="text" value={address} onChange={(e) => { setAddress(e.target.value); setShowResult(false); }}
-                  placeholder="Zadajte adresu stavby"
-                  className="w-full bg-white/10 border-b-2 border-b-primary text-white px-4 py-3 focus:outline-none placeholder:text-white/30 text-sm font-medium rounded-sm" />
-                <div className="flex items-center gap-2">
-                  <input type="number" min="0" step="0.1" value={distance}
-                    onChange={(e) => { setDistance(e.target.value); setShowResult(false); }}
-                    onWheel={(e) => e.currentTarget.blur()}
-                    placeholder="Vzdialenosť od Žiliny (km)"
-                    className="flex-1 bg-white/10 border-b-2 border-b-primary/60 text-white px-4 py-2.5 focus:outline-none focus:border-b-primary placeholder:text-white/30 text-sm font-medium rounded-sm" />
-                  <span className="text-xs text-white/40 flex-shrink-0">km (pre výpočet dopravy)</span>
+                <div className="relative">
+                  <input
+                    ref={addressInputRef}
+                    type="text"
+                    defaultValue={address}
+                    onChange={(e) => { setAddress(e.target.value); setAddressKm(null); setShowResult(false); }}
+                    placeholder="Zadajte adresu stavby"
+                    className="w-full bg-white/10 border-b-2 border-b-primary text-white px-4 py-3 focus:outline-none placeholder:text-white/30 text-sm font-medium rounded-sm" />
+                  {addressLoading && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 text-xs">Vypočítavam...</span>}
                 </div>
+                {addressKm !== null && (
+                  <p className="text-xs text-white/50 px-1">
+                    Vzdialenosť: {addressKm.toFixed(1)} km × 2 + 2 km rezerva = <strong className="text-primary">{distance} km</strong> (pre výpočet dopravy)
+                  </p>
+                )}
               </div>
             )}
             <div className="flex items-center gap-6 pt-1">
