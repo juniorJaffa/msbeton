@@ -50,6 +50,7 @@ export interface LoggedClient {
   discountCelkovo: number;
   canHotovost: boolean;
   canPridatBeton: boolean;
+  deliveryZoneId?: string;
 }
 
 export const clientApi = {

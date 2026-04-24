@@ -18,7 +18,8 @@ export interface DeliveryZone {
   ratePerKm: number;
   truckCapacity: number;
   pumpHourlyRate: number;
-  waitingRatePer15min: number;
+  waitingRatePer15min: number;      // čakačka mix (€/15 min)
+  waitingRatePer15minPumpa?: number; // čakačka pumpa (€/15 min), fallback na waitingRatePer15min
 }
 
 export interface Service {
@@ -46,6 +47,7 @@ export interface Client {
   canHotovost: boolean;
   canPridatBeton: boolean;
   active: boolean;
+  deliveryZoneId?: string; // ID zóny dopravy (z adminData.getDelivery()), default = prvá zóna
 }
 
 export interface ClientAccount {

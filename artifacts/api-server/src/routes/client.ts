@@ -142,6 +142,7 @@ router.post("/login", async (req, res) => {
         discountCelkovo: account.discountCelkovo ?? 0,
         canHotovost: account.canHotovost ?? true,
         canPridatBeton: account.canPridatBeton ?? true,
+        deliveryZoneId: account.deliveryZoneId,
       },
     });
   } catch (err) {

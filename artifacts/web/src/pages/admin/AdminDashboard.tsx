@@ -186,7 +186,7 @@ function DopravaTab() {
               </div>
               <button onClick={() => remove(z.id)} className="p-1.5 bg-secondary text-primary hover:bg-secondary/80 rounded-sm"><Trash2 className="w-4 h-4" /></button>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm mb-3">
               <div className="bg-gray-50 p-3 border border-gray-100">
                 <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Sadzba za km</div>
                 <div className="font-bold text-secondary">
@@ -205,8 +205,16 @@ function DopravaTab() {
                   <EditableField value={z.pumpHourlyRate} type="number" onSave={v => update(z.id, "pumpHourlyRate", v)} /> €/hod
                 </div>
               </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-sm">
               <div className="bg-yellow-50 p-3 border border-yellow-100">
-                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Čakačka / 15 min</div>
+                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Čakačka <strong>Pumpa</strong> / 15 min</div>
+                <div className="font-bold text-secondary">
+                  <EditableField value={z.waitingRatePer15minPumpa ?? z.waitingRatePer15min ?? 8} type="number" onSave={v => update(z.id, "waitingRatePer15minPumpa", v)} /> €
+                </div>
+              </div>
+              <div className="bg-yellow-50 p-3 border border-yellow-100">
+                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Čakačka <strong>Mix</strong> / 15 min</div>
                 <div className="font-bold text-secondary">
                   <EditableField value={z.waitingRatePer15min ?? 8} type="number" onSave={v => update(z.id, "waitingRatePer15min", v)} /> €
                 </div>
@@ -710,6 +718,18 @@ function KlientiTab() {
                           <input type="checkbox" checked={c.canPridatBeton ?? true} onChange={e => update(c.id, { canPridatBeton: e.target.checked })} className="accent-secondary" />
                           Možnosť – Pridať betón
                         </label>
+                        <div className="flex items-center gap-2 pt-1">
+                          <span className="text-xs text-gray-500 shrink-0">Typ dopravy</span>
+                          <select
+                            value={c.deliveryZoneId ?? ""}
+                            onChange={e => update(c.id, { deliveryZoneId: e.target.value || undefined })}
+                            className="flex-1 border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:border-primary bg-white"
+                          >
+                            {adminData.getDelivery().map(z => (
+                              <option key={z.id} value={z.id}>{z.name}</option>
+                            ))}
+                          </select>
+                        </div>
                         <button onClick={() => update(c.id, { active: !c.active })}
                           className={`mt-2 flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase border transition-colors ${c.active ? "bg-green-50 border-green-300 text-green-700 hover:bg-green-100" : "bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100"}`}>
                           {c.active ? <ShieldCheck className="w-3.5 h-3.5" /> : <ShieldOff className="w-3.5 h-3.5" />}

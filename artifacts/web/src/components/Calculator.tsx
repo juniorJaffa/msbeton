@@ -261,8 +261,16 @@ export function ConcreteCalculator() {
 
   const allCategories = useMemo(() => adminData.getCategories(), [revision]);
   const allServices = useMemo(() => adminData.getServices(), [revision]);
+  const allDelivery = useMemo(() => adminData.getDelivery(), [revision]);
   const tzones = useMemo(() => adminData.getTransportZones(), [revision]);
   const tsettings = useMemo(() => adminData.getTransportSettings(), [revision]);
+
+  // Klientova zóna dopravy (podľa deliveryZoneId, fallback = prvá zóna)
+  const clientDeliveryZone = useMemo(() => {
+    if (loggedClient?.deliveryZoneId)
+      return allDelivery.find(z => z.id === loggedClient.deliveryZoneId) ?? allDelivery[0];
+    return allDelivery[0] ?? null;
+  }, [loggedClient, allDelivery]);
 
   const selectedCategory = allCategories.find((c) => c.name === categoryName)
     ?? allCategories.find((c) => c.name.toUpperCase().includes("DMAX16") && c.name.toUpperCase().includes("DRVENÉ"))
@@ -272,10 +280,17 @@ export function ConcreteCalculator() {
     ?? typesForCategory.find((t) => t.label.includes("C16/20"))
     ?? typesForCategory[0];
 
-  const pumpServicePrice = allServices.find((s) => s.name.includes("Čerpanie"))?.price ?? 112.50;
+  // Čerpanie: ak má klient priradenú zónu s vlastnou sadzbou pumpy, použij ju
+  const pumpServicePrice = clientDeliveryZone?.pumpHourlyRate
+    ?? allServices.find((s) => s.name.includes("Čerpanie"))?.price ?? 112.50;
   const chemServicePrice = allServices.find((s) => s.name.toLowerCase().includes("rozbeh"))?.price ?? 31.25;
   const washServicePrice = allServices.find((s) => s.name.toLowerCase().includes("umýv"))?.price ?? 56.25;
-  const waitServicePrice = allServices.find((s) => s.name.toLowerCase().includes("čakačk") || s.name.toLowerCase().includes("čakania"))?.price ?? 8.00;
+  // Čakačka: per-mode sadzba z delivery zóny (pumpa vs mix)
+  const waitServicePricePumpa = clientDeliveryZone?.waitingRatePer15minPumpa
+    ?? clientDeliveryZone?.waitingRatePer15min
+    ?? allServices.find((s) => s.name.toLowerCase().includes("čakačk") || s.name.toLowerCase().includes("čakania"))?.price ?? 8.00;
+  const waitServicePriceMix = clientDeliveryZone?.waitingRatePer15min
+    ?? allServices.find((s) => s.name.toLowerCase().includes("čakačk") || s.name.toLowerCase().includes("čakania"))?.price ?? 8.00;
   const hoseServicePrice = allServices.find((s) => s.name.toLowerCase().includes("hadice"))?.price ?? 10.00;
   const zimneServicePrice = allServices.find((s) => s.name.toLowerCase().includes("zimn"))?.price ?? 10.00;
 
@@ -384,7 +399,7 @@ export function ConcreteCalculator() {
       hoses: tab === "pumpa" && hoseMeters > 0 ? hoseMeters * hoseServicePrice : 0,
       washing: tab === "pumpa" && washing ? washServicePrice : 0,
       chem: tab === "pumpa" && rozbehovaChemia ? chemServicePrice : 0,
-      waiting: tab === "pumpa" ? waitIntervals * waitServicePrice : 0,
+      waiting: tab === "pumpa" ? waitIntervals * waitServicePricePumpa : (tab === "mix" ? waitIntervals * waitServicePriceMix : 0),
       zimne: zimneOpatrenia ? totalQty * zimneServicePrice : 0,
     };
 
@@ -447,7 +462,7 @@ export function ConcreteCalculator() {
       hotovostBaseItems, hotovostDiscItems, hotovostTotal, hotovostOrigTotal,
       qty, totalQty, km, waitIntervals, waitLabel, pumpHrs, pumpMs, isOwn, concreteBreakdown, transportZone,
     };
-  }, [tab, quantity, distance, selectedType, pumpHour, pumpMin, waitTotalMins, hoseMeters, washing, rozbehovaChemia, zimneOpatrenia, betonFactor, dopravaFactor, sluzbyFactor, pumpServicePrice, chemServicePrice, washServicePrice, waitServicePrice, hoseServicePrice, zimneServicePrice, tzones, tsettings, extraItems, allCategories]);
+  }, [tab, quantity, distance, selectedType, pumpHour, pumpMin, waitTotalMins, hoseMeters, washing, rozbehovaChemia, zimneOpatrenia, betonFactor, dopravaFactor, sluzbyFactor, pumpServicePrice, chemServicePrice, washServicePrice, waitServicePricePumpa, waitServicePriceMix, hoseServicePrice, zimneServicePrice, tzones, tsettings, extraItems, allCategories]);
 
   async function handleLogin() {
     if (!loginId || !loginPwd) return;
@@ -521,7 +536,7 @@ export function ConcreteCalculator() {
         row(`Prídavné hadice – ${hoseMeters} m`, origItems.hoses, baseItems.hoses) +
         row("Umývanie mimo stavby", origItems.washing, baseItems.washing) +
         row("Rozbehová chémia", origItems.chem, baseItems.chem) +
-        row(`Čakačky – ${result.waitLabel} (${result.waitIntervals}× ${waitServicePrice.toFixed(2)} €)`, origItems.waiting, baseItems.waiting)
+        row(`Čakačky – ${result.waitLabel} (${result.waitIntervals}× ${(tab === "pumpa" ? waitServicePricePumpa : waitServicePriceMix).toFixed(2)} €)`, origItems.waiting, baseItems.waiting)
       : "";
 
     const totalRows = isFaktura
@@ -695,29 +710,32 @@ export function ConcreteCalculator() {
           <div className="py-2 border-b border-white/10">
             {loggedClient ? (
               <div className="w-full">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-white/60 text-xs shrink-0">Prihlásený:</span>
-                  <span className="text-white text-sm font-semibold truncate min-w-0">{loggedClient.name}</span>
-                  {hasDiscount && (
-                    <span className="shrink-0 px-1.5 py-0.5 bg-primary text-secondary text-xs font-black rounded-sm tracking-wide">
-                      Zľava
-                    </span>
-                  )}
-                  <span className="flex-1" />
-                  <button
-                    onClick={() => setShowPriceTable(!showPriceTable)}
-                    className={cn(
-                      "shrink-0 flex items-center gap-1 text-xs transition-colors cursor-pointer",
-                      showPriceTable ? "text-primary" : "text-white/40 hover:text-primary"
+                <div className="flex items-center justify-between gap-2 min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-white/60 text-xs shrink-0">Prihlásený:</span>
+                    <span className="text-white text-sm font-semibold truncate min-w-0">{loggedClient.name}</span>
+                    {hasDiscount && (
+                      <span className="shrink-0 px-1.5 py-0.5 bg-primary text-secondary text-xs font-black rounded-sm tracking-wide">
+                        Zľava
+                      </span>
                     )}
-                    title="Zľavové tabuľky klienta"
-                  >
-                    <Table2 className="w-5 h-5" />
-                    <span className="hidden sm:inline whitespace-nowrap">Moje ceny</span>
-                  </button>
-                  <button onClick={handleLogout} className="shrink-0 flex items-center gap-1.5 text-white/40 hover:text-white/70 text-xs transition-colors cursor-pointer ml-8 border border-white/15 rounded px-2.5 py-1.5">
-                    <LogOut className="w-5 h-5" /><span className="whitespace-nowrap hidden sm:inline">Odhlásiť</span>
-                  </button>
+                  </div>
+                  <div className="flex items-center gap-5 shrink-0">
+                    <button
+                      onClick={() => setShowPriceTable(!showPriceTable)}
+                      className={cn(
+                        "flex items-center gap-1 text-xs transition-colors cursor-pointer",
+                        showPriceTable ? "text-primary" : "text-white/40 hover:text-primary"
+                      )}
+                      title="Zľavové tabuľky klienta"
+                    >
+                      <Table2 className="w-5 h-5" />
+                      <span className="hidden sm:inline whitespace-nowrap">Moje ceny</span>
+                    </button>
+                    <button onClick={handleLogout} className="flex items-center gap-1.5 text-white/40 hover:text-white/70 text-xs transition-colors cursor-pointer border border-white/15 rounded px-2.5 py-1.5">
+                      <LogOut className="w-5 h-5" /><span className="whitespace-nowrap hidden sm:inline">Odhlásiť</span>
+                    </button>
+                  </div>
                 </div>
                 <AnimatePresence>
                   {showPriceTable && (
@@ -956,7 +974,7 @@ export function ConcreteCalculator() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-white/80">
                     Čakačky
-                    <span className="ml-2 text-xs font-normal text-white/40">{waitServicePrice.toFixed(2)} € / 15 min</span>
+                    <span className="ml-2 text-xs font-normal text-white/40">{(tab === "pumpa" ? waitServicePricePumpa : waitServicePriceMix).toFixed(2)} € / 15 min</span>
                   </span>
                   {(parseInt(waitHour) > 0 || parseInt(waitMin) > 0) && (
                     <span className="text-xs text-primary font-bold">
@@ -1006,6 +1024,27 @@ export function ConcreteCalculator() {
                 <CheckboxField label={`Rozbehová chémia (+${chemServicePrice.toFixed(2)} €)`} checked={rozbehovaChemia} onChange={(v) => { setRozbehovaChemia(v); setShowResult(false); }} disabled={tab === "pumpa"} />
               </div>
             </>
+          )}
+
+          {/* MIX čakačka */}
+          {tab === "mix" && (
+            <div className="border border-white/10 rounded-lg p-4 space-y-3 bg-white/5">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-white/80">
+                  Čakačky
+                  <span className="ml-2 text-xs font-normal text-white/40">{waitServicePriceMix.toFixed(2)} € / 15 min</span>
+                </span>
+                {(parseInt(waitHour) > 0 || parseInt(waitMin) > 0) && (
+                  <span className="text-xs text-primary font-bold">
+                    {[parseInt(waitHour) > 0 ? `${parseInt(waitHour)} h` : "", parseInt(waitMin) > 0 ? `${parseInt(waitMin)} min` : ""].filter(Boolean).join(" ")}
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <SelectField label="Hodiny čakania" value={waitHour} onChange={(v) => { setWaitHour(v); setShowResult(false); }} options={WAIT_HOURS} />
+                <SelectField label="Minúty čakania" value={waitMin} onChange={(v) => { setWaitMin(v); setShowResult(false); }} options={WAIT_MINS} />
+              </div>
+            </div>
           )}
 
           {/* Calculate button */}
