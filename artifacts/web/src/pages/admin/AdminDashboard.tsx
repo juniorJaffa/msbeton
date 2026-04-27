@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { LogOut, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2 } from "lucide-react";
+import { LogOut, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { isLoggedIn, logout } from "@/lib/adminAuth";
-import { adminData, syncFromServer, ConcreteCategory, ConcreteType, DeliveryZone, Service, Client, TransportPricingZone, TransportSettings } from "@/lib/adminData";
+import { adminData, syncFromServer, ConcreteCategory, ConcreteType, DeliveryZone, Service, Client, TransportPricingZone, TransportSettings, Order } from "@/lib/adminData";
 
-type Tab = "betony" | "sluzby" | "doprava" | "klienti";
+type Tab = "betony" | "sluzby" | "doprava" | "klienti" | "objednavky";
 
 // ── Inline editable cell ──────────────────────────────────────────────────────
 function EditableField({ value, onSave, type = "text" }: { value: string | number; onSave: (v: string) => void; type?: string }) {
@@ -201,7 +201,7 @@ function MixTruckIcon() {
 function DopravaTab() {
   const [zones, setZones] = useState<DeliveryZone[]>(adminData.getDelivery());
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ name: "", ratePerKm: "", truckCapacity: "", pumpHourlyRate: "", waitingRatePer15min: "" });
+  const [form, setForm] = useState({ name: "", ratePerKm: "", truckCapacity: "", pumpTruckCapacity: "", pumpHourlyRate: "", waitingRatePer15min: "", pricingType: "standard" as "standard" | "km" | "auto", ratePerTruck: "" });
 
   const [pZones, setPZones] = useState<TransportPricingZone[]>(adminData.getTransportZones());
   const [ts, setTs] = useState<TransportSettings>(adminData.getTransportSettings());
@@ -227,63 +227,118 @@ function DopravaTab() {
   const remove = (id: string) => { if (confirm("Vymazať zónu?")) save(zones.filter(z => z.id !== id)); };
   const add = () => {
     if (!form.name || !form.ratePerKm) return;
-    save([...zones, { id: adminData.generateId(), name: form.name, ratePerKm: parseFloat(form.ratePerKm), truckCapacity: parseFloat(form.truckCapacity) || 7, pumpHourlyRate: parseFloat(form.pumpHourlyRate) || 180, waitingRatePer15min: parseFloat(form.waitingRatePer15min) || 8 }]);
-    setForm({ name: "", ratePerKm: "", truckCapacity: "", pumpHourlyRate: "", waitingRatePer15min: "" }); setAdding(false);
+    save([...zones, { id: adminData.generateId(), name: form.name, ratePerKm: parseFloat(form.ratePerKm) || 1.8, truckCapacity: parseFloat(form.truckCapacity) || 9, pumpTruckCapacity: parseFloat(form.pumpTruckCapacity) || 7, pumpHourlyRate: parseFloat(form.pumpHourlyRate) || 112.50, waitingRatePer15min: parseFloat(form.waitingRatePer15min) || 8, pricingType: form.pricingType, ratePerTruck: form.pricingType === "auto" ? parseFloat(form.ratePerTruck) || 0 : undefined }]);
+    setForm({ name: "", ratePerKm: "", truckCapacity: "", pumpTruckCapacity: "", pumpHourlyRate: "", waitingRatePer15min: "", pricingType: "standard", ratePerTruck: "" }); setAdding(false);
+  };
+
+  const pricingLabels: Record<string, { label: string; color: string }> = {
+    standard: { label: "Standard", color: "bg-blue-50 text-blue-700 border-blue-200" },
+    km: { label: "Kilometre", color: "bg-purple-50 text-purple-700 border-purple-200" },
+    auto: { label: "Počet áut", color: "bg-orange-50 text-orange-700 border-orange-200" },
   };
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-4">
-        {zones.map(z => (
-          <div key={z.id} className="bg-white border border-gray-200 shadow-sm p-5">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <div className="font-bold text-secondary text-lg"><EditableField value={z.name} onSave={v => update(z.id, "name", v)} /></div>
+        {zones.map(z => {
+          const pt = z.pricingType ?? "standard";
+          const ptInfo = pricingLabels[pt] ?? pricingLabels.standard;
+          return (
+          <div key={z.id} className="bg-white border border-gray-200 shadow-sm overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="font-bold text-secondary text-lg">
+                  <EditableField value={z.name} onSave={v => update(z.id, "name", v)} />
+                </div>
+                <select value={pt}
+                  onChange={e => save(zones.map(z2 => z2.id === z.id ? { ...z2, pricingType: e.target.value as "standard" | "km" | "auto" } : z2))}
+                  className={`border text-xs px-2 py-1 rounded-sm font-bold focus:outline-none cursor-pointer ${ptInfo.color}`}>
+                  <option value="standard">Standard</option>
+                  <option value="km">Kilometre</option>
+                  <option value="auto">Počet áut</option>
+                </select>
               </div>
-              <button onClick={() => remove(z.id)} className="p-1.5 bg-secondary text-primary hover:bg-secondary/80 rounded-sm"><Trash2 className="w-4 h-4" /></button>
+              <button onClick={() => remove(z.id)} className="p-1.5 bg-secondary/8 text-secondary/50 hover:bg-red-50 hover:text-red-500 rounded-sm transition-colors">
+                <Trash2 className="w-4 h-4" />
+              </button>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm mb-3">
-              <div className="bg-gray-50 p-3 border border-gray-100">
-                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Sadzba za km</div>
-                <div className="font-bold text-secondary">
-                  <EditableField value={z.ratePerKm} type="number" onSave={v => update(z.id, "ratePerKm", v)} /> €/km
+
+            {/* Top row: Sadzba + Pumpa hodinová */}
+            <div className="grid grid-cols-2 gap-px bg-gray-100 border-b border-gray-100">
+              <div className="bg-white px-5 py-3">
+                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">
+                  {pt === "auto" ? "Paušál / vozidlo" : pt === "km" ? "Sadzba €/km" : "Sadzba za km"}
+                </div>
+                <div className="font-bold text-secondary text-sm">
+                  {pt === "auto" ? (
+                    <><EditableField value={z.ratePerTruck ?? z.ratePerKm ?? 0} type="number" onSave={v => save(zones.map(z2 => z2.id === z.id ? { ...z2, ratePerTruck: parseFloat(v) } : z2))} /> €/vozidlo</>
+                  ) : (
+                    <><EditableField value={z.ratePerKm} type="number" onSave={v => update(z.id, "ratePerKm", v)} /> €/km</>
+                  )}
                 </div>
               </div>
-              <div className="bg-gray-50 p-3 border border-gray-100">
-                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Kapacita mixéra</div>
-                <div className="font-bold text-secondary">
-                  <EditableField value={z.truckCapacity} type="number" onSave={v => update(z.id, "truckCapacity", v)} /> m³
-                </div>
-              </div>
-              <div className="bg-gray-50 p-3 border border-gray-100">
+              <div className="bg-white px-5 py-3">
                 <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Hodinová sadzba pumpy</div>
-                <div className="font-bold text-secondary">
+                <div className="font-bold text-secondary text-sm">
                   <EditableField value={z.pumpHourlyRate} type="number" onSave={v => update(z.id, "pumpHourlyRate", v)} /> €/hod
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div className="bg-yellow-50 p-3 border border-yellow-100">
-                <div className="flex items-center gap-2 mb-2 text-secondary/70">
+
+            {/* PUMPA | MIXER side by side */}
+            <div className="grid grid-cols-2 gap-px bg-gray-100">
+              {/* PUMPA */}
+              <div className="bg-white px-5 py-4">
+                <div className="flex items-center gap-2 mb-3">
                   <PumpTruckIcon />
-                  <span className="text-xs text-gray-400 uppercase tracking-wide leading-tight">Čakačka <strong className="text-secondary">Pumpa</strong> / 15 min</span>
+                  <span className="text-xs font-black text-secondary uppercase tracking-widest">Pumpa</span>
                 </div>
-                <div className="font-bold text-secondary">
-                  <EditableField value={z.waitingRatePer15minPumpa ?? z.waitingRatePer15min ?? 8} type="number" onSave={v => update(z.id, "waitingRatePer15minPumpa", v)} /> €
+                <div className="space-y-3">
+                  <div>
+                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Kapacita</div>
+                    <div className="font-bold text-secondary text-sm">
+                      <EditableField value={z.pumpTruckCapacity ?? 7} type="number"
+                        onSave={v => save(zones.map(z2 => z2.id === z.id ? { ...z2, pumpTruckCapacity: parseFloat(v) } : z2))} /> m³
+                    </div>
+                  </div>
+                  <div className="bg-yellow-50 border border-yellow-100 rounded-sm px-3 py-2">
+                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Čakačka / 15 min</div>
+                    <div className="font-bold text-secondary text-sm">
+                      <EditableField value={z.waitingRatePer15minPumpa ?? z.waitingRatePer15min ?? 8} type="number"
+                        onSave={v => update(z.id, "waitingRatePer15minPumpa", v)} /> €
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="bg-yellow-50 p-3 border border-yellow-100">
-                <div className="flex items-center gap-2 mb-2 text-secondary/70">
+
+              {/* MIXER */}
+              <div className="bg-white px-5 py-4">
+                <div className="flex items-center gap-2 mb-3">
                   <MixTruckIcon />
-                  <span className="text-xs text-gray-400 uppercase tracking-wide leading-tight">Čakačka <strong className="text-secondary">Mix</strong> / 15 min</span>
+                  <span className="text-xs font-black text-secondary uppercase tracking-widest">Mixér</span>
                 </div>
-                <div className="font-bold text-secondary">
-                  <EditableField value={z.waitingRatePer15min ?? 8} type="number" onSave={v => update(z.id, "waitingRatePer15min", v)} /> €
+                <div className="space-y-3">
+                  <div>
+                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Kapacita</div>
+                    <div className="font-bold text-secondary text-sm">
+                      <EditableField value={z.truckCapacity ?? 9} type="number"
+                        onSave={v => update(z.id, "truckCapacity", v)} /> m³
+                    </div>
+                  </div>
+                  <div className="bg-yellow-50 border border-yellow-100 rounded-sm px-3 py-2">
+                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Čakačka / 15 min</div>
+                    <div className="font-bold text-secondary text-sm">
+                      <EditableField value={z.waitingRatePer15min ?? 8} type="number"
+                        onSave={v => update(z.id, "waitingRatePer15min", v)} /> €
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {adding ? (
@@ -291,9 +346,24 @@ function DopravaTab() {
           <div className="grid grid-cols-2 gap-3 mb-3">
             <input placeholder="Názov zóny" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
               className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary col-span-2" />
-            <input placeholder="Sadzba €/km (napr. 1.8)" type="number" step="0.1" value={form.ratePerKm} onChange={e => setForm({ ...form, ratePerKm: e.target.value })}
+            <div className="col-span-2">
+              <select value={form.pricingType} onChange={e => setForm({ ...form, pricingType: e.target.value as typeof form.pricingType })}
+                className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white">
+                <option value="standard">Standard (pásmo/m³ podľa km tabuľky)</option>
+                <option value="km">KM (€/km × m³)</option>
+                <option value="auto">Auto (paušál/vozidlo)</option>
+              </select>
+            </div>
+            <input placeholder="Sadzba €/km" type="number" step="0.1" value={form.ratePerKm} onChange={e => setForm({ ...form, ratePerKm: e.target.value })}
               className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-            <input placeholder="Kapacita mixéra (m³)" type="number" value={form.truckCapacity} onChange={e => setForm({ ...form, truckCapacity: e.target.value })}
+            {form.pricingType === "auto" ? (
+              <input placeholder="Paušál / vozidlo (€)" type="number" value={form.ratePerTruck} onChange={e => setForm({ ...form, ratePerTruck: e.target.value })}
+                className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+            ) : (
+              <input placeholder="Kapacita mixéra (m³, default 9)" type="number" value={form.truckCapacity} onChange={e => setForm({ ...form, truckCapacity: e.target.value })}
+                className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+            )}
+            <input placeholder="Kapacita pumpy (m³, default 7)" type="number" value={form.pumpTruckCapacity} onChange={e => setForm({ ...form, pumpTruckCapacity: e.target.value })}
               className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
             <input placeholder="Sadzba pumpy (€/hod)" type="number" value={form.pumpHourlyRate} onChange={e => setForm({ ...form, pumpHourlyRate: e.target.value })}
               className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
@@ -326,10 +396,16 @@ function DopravaTab() {
             <div key={field} className="bg-white border border-gray-200 p-3">
               <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">{label}</div>
               <div className="font-bold text-secondary">
-                <EditableField value={ts[field]} type="number" onSave={v => saveTs({ ...ts, [field]: parseFloat(v) || 0 })} />
+                <EditableField value={ts[field] as number} type="number" onSave={v => saveTs({ ...ts, [field]: parseFloat(v) || 0 })} />
               </div>
             </div>
           ))}
+          <div className="bg-primary/5 border border-primary/20 p-3">
+            <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">DPH Faktúra (%)</div>
+            <div className="font-bold text-secondary flex items-center gap-1">
+              <EditableField value={Math.round((ts.dph ?? 0.23) * 100)} type="number" onSave={v => saveTs({ ...ts, dph: (parseFloat(v) || 23) / 100 })} /> %
+            </div>
+          </div>
         </div>
       </div>
 
@@ -391,7 +467,7 @@ function SluzbyTab() {
   const toggle = (id: string) => save(services.map(s => s.id === id ? { ...s, active: !s.active } : s));
   const remove = (id: string) => { if (confirm("Vymazať službu?")) save(services.filter(s => s.id !== id)); };
   const update = (id: string, field: keyof Service, value: string) =>
-    save(services.map(s => s.id === id ? { ...s, [field]: field === "price" ? parseFloat(value) || 0 : value } : s));
+    save(services.map(s => s.id === id ? { ...s, [field]: field === "price" ? parseFloat(value) || 0 : (value === "—" ? undefined : value) } : s));
   const add = () => {
     if (!form.name) return;
     save([...services, { id: adminData.generateId(), name: form.name, unit: form.unit, price: parseFloat(form.price) || 0, description: form.description, active: true }]);
@@ -417,6 +493,13 @@ function SluzbyTab() {
                 <td className="px-5 py-3">
                   <div className="font-semibold text-secondary"><EditableField value={s.name} onSave={v => update(s.id, "name", v)} /></div>
                   <div className="text-xs text-gray-400 mt-0.5"><EditableField value={s.description || "—"} onSave={v => update(s.id, "description", v)} /></div>
+                  <div className="flex items-center gap-1 mt-1 text-[10px] text-gray-300">
+                    <span>Aktívne:</span>
+                    <EditableField value={s.activePeriodFrom || "—"} onSave={v => update(s.id, "activePeriodFrom", v)} />
+                    <span>–</span>
+                    <EditableField value={s.activePeriodTo || "—"} onSave={v => update(s.id, "activePeriodTo", v)} />
+                    <span className="text-gray-200">(MM-DD, prázdne = celý rok)</span>
+                  </div>
                 </td>
                 <td className="px-3 py-3 text-center text-gray-500 hidden sm:table-cell">
                   <EditableField value={s.unit || "—"} onSave={v => update(s.id, "unit", v)} />
@@ -466,6 +549,127 @@ function SluzbyTab() {
   );
 }
 
+// ── OBJEDNÁVKY tab ────────────────────────────────────────────────────────────
+const ORDER_STATUSES: { key: Order["status"]; label: string; color: string }[] = [
+  { key: "nova",       label: "Nová",       color: "bg-blue-100 text-blue-700" },
+  { key: "potvrdena",  label: "Potvrdená",  color: "bg-yellow-100 text-yellow-700" },
+  { key: "vybavena",   label: "Vybavená",   color: "bg-green-100 text-green-700" },
+  { key: "zrusena",    label: "Zrušená",    color: "bg-red-100 text-red-500" },
+];
+
+function OrderStatusBadge({ status, onChange }: { status: Order["status"]; onChange: (s: Order["status"]) => void }) {
+  const [open, setOpen] = useState(false);
+  const cur = ORDER_STATUSES.find(s => s.key === status)!;
+  return (
+    <div className="relative">
+      <button onClick={() => setOpen(o => !o)} className={`px-2 py-1 text-xs font-bold rounded-sm cursor-pointer ${cur.color}`}>{cur.label} ▾</button>
+      {open && (
+        <div className="absolute z-10 bg-white border border-gray-200 shadow-lg rounded-sm min-w-[110px] left-0 top-full mt-0.5">
+          {ORDER_STATUSES.map(s => (
+            <button key={s.key} onClick={() => { onChange(s.key); setOpen(false); }}
+              className={`block w-full text-left px-3 py-1.5 text-xs font-bold hover:bg-gray-50 ${s.color}`}>{s.label}</button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ObjednavkyTab() {
+  const [orders, setOrders] = useState<Order[]>(() => adminData.getOrders());
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<Order["status"] | "vsetky">("vsetky");
+
+  const save = (data: Order[]) => { setOrders(data); adminData.saveOrders(data); };
+  const remove = (id: string) => { if (confirm("Vymazať objednávku?")) save(orders.filter(o => o.id !== id)); };
+  const updateStatus = (id: string, status: Order["status"]) => save(orders.map(o => o.id === id ? { ...o, status } : o));
+
+  const filtered = filterStatus === "vsetky" ? orders : orders.filter(o => o.status === filterStatus);
+  const sorted = [...filtered].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  const fmtDate = (iso: string) => {
+    const d = new Date(iso);
+    return `${d.toLocaleDateString("sk-SK")} ${d.toLocaleTimeString("sk-SK", { hour: "2-digit", minute: "2-digit" })}`;
+  };
+
+  const tabLabel = { pumpa: "Pumpa", mix: "Mix", vlastnadoprava: "Vl. doprava" };
+
+  return (
+    <div className="space-y-4">
+      {/* Filter bar */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {(["vsetky", "nova", "potvrdena", "vybavena", "zrusena"] as const).map(s => {
+          const st = ORDER_STATUSES.find(x => x.key === s);
+          return (
+            <button key={s} onClick={() => setFilterStatus(s)}
+              className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
+                filterStatus === s
+                  ? "bg-secondary text-white border-secondary"
+                  : "bg-white text-gray-500 border-gray-200 hover:border-secondary/40"
+              }`}>
+              {s === "vsetky" ? "Všetky" : st?.label} {s !== "vsetky" && <span className="ml-1 text-[10px] opacity-60">{orders.filter(o => o.status === s).length}</span>}
+            </button>
+          );
+        })}
+        <span className="ml-auto text-xs text-gray-400">{sorted.length} objednávok</span>
+      </div>
+
+      {sorted.length === 0 ? (
+        <div className="bg-white border border-gray-200 px-8 py-12 text-center text-gray-400 text-sm">
+          Žiadne objednávky
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {sorted.map(o => {
+            const isExp = expanded === o.id;
+            return (
+              <div key={o.id} className="bg-white border border-gray-200 shadow-sm">
+                <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors"
+                  onClick={() => setExpanded(isExp ? null : o.id)}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-secondary text-sm truncate">{o.clientName}</span>
+                      {o.company && <span className="text-xs text-gray-400 truncate">({o.company})</span>}
+                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-300 border border-gray-200 px-1.5 py-0.5 rounded-sm">{tabLabel[o.tab]}</span>
+                    </div>
+                    <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                      <span className="text-xs text-gray-500">{o.concreteType.replace(/ – [\d.,]+ €.*/, "")}</span>
+                      <span className="text-xs text-gray-400">{o.totalQty} m³</span>
+                      {o.address && <span className="text-xs text-gray-400 truncate max-w-[160px]">{o.address}</span>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0" onClick={e => e.stopPropagation()}>
+                    <div className="text-right hidden sm:block">
+                      <div className="text-sm font-bold text-secondary">{o.totalSDph.toFixed(2)} €</div>
+                      <div className="text-[10px] text-gray-400">{o.priceMode === "hotovost" ? "hotovosť" : "faktúra"}</div>
+                    </div>
+                    <OrderStatusBadge status={o.status} onChange={s => updateStatus(o.id, s)} />
+                    <button onClick={() => remove(o.id)} className="p-1 text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                  </div>
+                  <span className="text-[10px] text-gray-300 shrink-0 hidden sm:block">{fmtDate(o.createdAt)}</span>
+                </div>
+                {isExp && (
+                  <div className="border-t border-gray-100 px-4 py-3 bg-gray-50/50 grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-gray-500">
+                    <div><span className="font-semibold text-gray-600">Dátum:</span> {fmtDate(o.createdAt)}</div>
+                    {o.phone && <div><span className="font-semibold text-gray-600">Telefón:</span> {o.phone}</div>}
+                    {o.email && <div><span className="font-semibold text-gray-600">Email:</span> {o.email}</div>}
+                    {o.clientId && <div><span className="font-semibold text-gray-600">ID klienta:</span> {o.clientId}</div>}
+                    {o.km && <div><span className="font-semibold text-gray-600">Vzdialenosť:</span> {o.km} km</div>}
+                    <div><span className="font-semibold text-gray-600">Bez DPH:</span> {o.totalBezDph.toFixed(2)} €</div>
+                    <div><span className="font-semibold text-gray-600">S DPH:</span> {o.totalSDph.toFixed(2)} €</div>
+                    {o.note && <div className="col-span-2"><span className="font-semibold text-gray-600">Poznámka:</span> {o.note}</div>}
+                    {o.breakdown && <div className="col-span-2 text-gray-400 whitespace-pre-wrap">{o.breakdown}</div>}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function genPassword() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
 }
@@ -495,8 +699,9 @@ function KlientiTab() {
   const emptyForm = {
     firstName: "", lastName: "", company: "", email: "", phone: "",
     loginId: "", password: "",
-    discountBeton: "0", discountDoprava: "0", discountSluzby: "0", discountCelkovo: "0",
-    canHotovost: true, canPridatBeton: true, active: true,
+    discountBeton: "20", discountDoprava: "0", discountSluzby: "0", discountCelkovo: "0",
+    hotovostDph: "20",
+    canHotovost: true, canPridatBeton: true, canZimneOpatrenia: false, active: true,
   };
   const [form, setForm] = useState(emptyForm);
   const [showFormPass, setShowFormPass] = useState(false);
@@ -517,7 +722,9 @@ function KlientiTab() {
       discountDoprava: parseFloat(form.discountDoprava) || 0,
       discountSluzby:  parseFloat(form.discountSluzby)  || 0,
       discountCelkovo: parseFloat(form.discountCelkovo) || 0,
+      hotovostDph: parseFloat(form.hotovostDph) / 100 || 0.20,
       canHotovost: form.canHotovost, canPridatBeton: form.canPridatBeton,
+      canZimneOpatrenia: form.canZimneOpatrenia,
       active: form.active,
     }]);
     setForm(emptyForm); setAdding(false);
@@ -620,11 +827,26 @@ function KlientiTab() {
               <div className="border border-gray-200 bg-white divide-y divide-gray-100">
                 <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
                   <input type="checkbox" checked={form.canHotovost} onChange={e => setForm({ ...form, canHotovost: e.target.checked })} className="accent-secondary w-5 h-5 shrink-0" />
-                  <span className="text-sm text-gray-700">Hotovosť</span>
+                  <div>
+                    <span className="text-sm text-gray-700">Hotovosť</span>
+                    {form.canHotovost && (
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-gray-400">DPH hotovosť:</span>
+                        <input type="number" min="0" max="100" value={form.hotovostDph} onClick={e => e.stopPropagation()}
+                          onChange={e => setForm({ ...form, hotovostDph: e.target.value })}
+                          className="border border-gray-200 px-2 py-0.5 text-xs focus:outline-none focus:border-primary w-16 text-center" />
+                        <span className="text-xs text-gray-400">%</span>
+                      </div>
+                    )}
+                  </div>
                 </label>
                 <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
                   <input type="checkbox" checked={form.canPridatBeton} onChange={e => setForm({ ...form, canPridatBeton: e.target.checked })} className="accent-secondary w-5 h-5 shrink-0" />
                   <span className="text-sm text-gray-700">Pridať betón</span>
+                </label>
+                <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
+                  <input type="checkbox" checked={form.canZimneOpatrenia} onChange={e => setForm({ ...form, canZimneOpatrenia: e.target.checked })} className="accent-blue-600 w-5 h-5 shrink-0" />
+                  <span className="text-sm text-gray-700">Zimné opatrenia (auto-ON v zime)</span>
                 </label>
                 <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
                   <input type="checkbox" checked={form.active} onChange={e => setForm({ ...form, active: e.target.checked })} className="accent-green-600 w-5 h-5 shrink-0" />
@@ -774,11 +996,27 @@ function KlientiTab() {
                       <div className="border border-gray-200 bg-white divide-y divide-gray-100">
                         <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
                           <input type="checkbox" checked={c.canHotovost ?? true} onChange={e => update(c.id, { canHotovost: e.target.checked })} className="accent-secondary w-5 h-5 shrink-0" />
-                          <span className="text-sm text-gray-700">Hotovosť</span>
+                          <div>
+                            <span className="text-sm text-gray-700">Hotovosť</span>
+                            {(c.canHotovost ?? true) && (
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs text-gray-400">DPH hotovosť:</span>
+                                <input type="number" min="0" max="100" value={Math.round((c.hotovostDph ?? 0.20) * 100)}
+                                  onClick={e => e.stopPropagation()}
+                                  onChange={e => update(c.id, { hotovostDph: (parseFloat(e.target.value) || 20) / 100 })}
+                                  className="border border-gray-200 px-2 py-0.5 text-xs focus:outline-none focus:border-primary w-16 text-center" />
+                                <span className="text-xs text-gray-400">%</span>
+                              </div>
+                            )}
+                          </div>
                         </label>
                         <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
                           <input type="checkbox" checked={c.canPridatBeton ?? true} onChange={e => update(c.id, { canPridatBeton: e.target.checked })} className="accent-secondary w-5 h-5 shrink-0" />
                           <span className="text-sm text-gray-700">Pridať betón</span>
+                        </label>
+                        <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
+                          <input type="checkbox" checked={c.canZimneOpatrenia ?? false} onChange={e => update(c.id, { canZimneOpatrenia: e.target.checked })} className="accent-blue-600 w-5 h-5 shrink-0" />
+                          <span className="text-sm text-gray-700">Zimné opatrenia (auto-ON v zime)</span>
                         </label>
                         <div className="px-3 py-3">
                           <div className="text-xs text-gray-400 mb-1.5">Typ dopravy</div>
@@ -856,6 +1094,7 @@ export default function AdminDashboard() {
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "klienti", label: "KLIENTI", icon: <Users className="w-4 h-4" /> },
+    { id: "objednavky", label: "OBJEDNÁVKY", icon: <ClipboardList className="w-4 h-4" /> },
     { id: "doprava", label: "DOPRAVA", icon: <Truck className="w-4 h-4" /> },
     { id: "sluzby", label: "SLUŽBY", icon: <Wrench className="w-4 h-4" /> },
     { id: "betony", label: "BETÓNY", icon: <Layers className="w-4 h-4" /> },
@@ -913,6 +1152,7 @@ export default function AdminDashboard() {
           {tab === "sluzby" && <SluzbyTab key={syncKey} />}
           {tab === "doprava" && <DopravaTab key={syncKey} />}
           {tab === "klienti" && <KlientiTab key={syncKey} />}
+          {tab === "objednavky" && <ObjednavkyTab key={syncKey} />}
         </div>
       </div>
     </div>

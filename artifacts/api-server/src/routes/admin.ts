@@ -12,6 +12,7 @@ const KEYS = {
   transportZones: "transport_zones",
   transportSettings: "transport_settings",
   clientAccounts: "client_accounts",
+  orders: "orders",
 } as const;
 
 async function getConfig(key: string): Promise<unknown | null> {
@@ -90,6 +91,15 @@ router.get("/client-accounts", async (req, res) => {
 router.put("/client-accounts", async (req, res) => {
   try { await setConfig(KEYS.clientAccounts, req.body); res.json({ ok: true }); }
   catch (err) { req.log.error({ err }, "Failed to save client accounts"); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.get("/orders", async (req, res) => {
+  try { res.json({ data: await getConfig(KEYS.orders) ?? [] }); }
+  catch (err) { req.log.error({ err }, "Failed to get orders"); res.status(500).json({ error: "Internal server error" }); }
+});
+router.put("/orders", async (req, res) => {
+  try { await setConfig(KEYS.orders, req.body); res.json({ ok: true }); }
+  catch (err) { req.log.error({ err }, "Failed to save orders"); res.status(500).json({ error: "Internal server error" }); }
 });
 
 export default router;

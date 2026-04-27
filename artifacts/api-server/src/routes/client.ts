@@ -64,6 +64,8 @@ interface UnifiedClient {
   canHotovost?: boolean;
   canPridatBeton?: boolean;
   deliveryZoneId?: string;
+  canZimneOpatrenia?: boolean;
+  hotovostDph?: number;
   active?: boolean;
   // legacy fallback fields
   name?: string;
@@ -144,10 +146,33 @@ router.post("/login", async (req, res) => {
         canHotovost: account.canHotovost ?? true,
         canPridatBeton: account.canPridatBeton ?? true,
         deliveryZoneId: account.deliveryZoneId,
+        canZimneOpatrenia: account.canZimneOpatrenia ?? false,
+        hotovostDph: account.hotovostDph,
       },
     });
   } catch (err) {
     req.log.error({ err }, "Client login failed");
+    return res.status(500).json({ ok: false, error: "Internal server error" });
+  }
+});
+
+router.post("/order", async (req, res) => {
+  try {
+    const order = req.body;
+    if (!order || !order.id) {
+      return res.status(400).json({ ok: false, error: "Chýbajú dáta objednávky" });
+    }
+    // Append to orders list in DB
+    const rows = await db.select().from(adminConfig).where(eq(adminConfig.key, "orders"));
+    const existing: unknown[] = rows.length > 0 && Array.isArray(rows[0].data) ? rows[0].data as unknown[] : [];
+    const updated = [...existing, { ...order, createdAt: new Date().toISOString() }];
+    await db
+      .insert(adminConfig)
+      .values({ key: "orders", data: updated })
+      .onConflictDoUpdate({ target: adminConfig.key, set: { data: updated, updatedAt: new Date() } });
+    return res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "Failed to create order");
     return res.status(500).json({ ok: false, error: "Internal server error" });
   }
 });

@@ -16,10 +16,13 @@ export interface DeliveryZone {
   id: string;
   name: string;
   ratePerKm: number;
-  truckCapacity: number;
+  truckCapacity: number;             // kapacita mixéra (m³), default 9
+  pumpTruckCapacity?: number;        // kapacita pumpy (m³), default 7
   pumpHourlyRate: number;
-  waitingRatePer15min: number;      // čakačka mix (€/15 min)
+  waitingRatePer15min: number;       // čakačka mix (€/15 min)
   waitingRatePer15minPumpa?: number; // čakačka pumpa (€/15 min), fallback na waitingRatePer15min
+  pricingType?: "standard" | "km" | "auto"; // typ výpočtu dopravy
+  ratePerTruck?: number;             // pre "auto" typ – paušál za vozidlo
 }
 
 export interface Service {
@@ -29,6 +32,8 @@ export interface Service {
   price: number;
   description: string;
   active: boolean;
+  activePeriodFrom?: string; // "MM-DD" napr. "11-15"
+  activePeriodTo?: string;   // "MM-DD" napr. "03-15"
 }
 
 export interface Client {
@@ -47,7 +52,31 @@ export interface Client {
   canHotovost: boolean;
   canPridatBeton: boolean;
   active: boolean;
-  deliveryZoneId?: string; // ID zóny dopravy (z adminData.getDelivery()), default = prvá zóna
+  deliveryZoneId?: string;     // ID zóny dopravy (z adminData.getDelivery()), default = prvá zóna
+  canZimneOpatrenia?: boolean; // zobrazí a auto-zahrnie zimné opatrenia
+  hotovostDph?: number;        // vlastná DPH pre hotovosť (napr. 0.20), default 0.20
+}
+
+export interface Order {
+  id: string;
+  createdAt: string;
+  status: "nova" | "potvrdena" | "vybavena" | "zrusena";
+  clientName: string;
+  clientId?: string;
+  company?: string;
+  phone?: string;
+  email?: string;
+  note?: string;
+  tab: "pumpa" | "mix" | "vlastnadoprava";
+  concreteType: string;
+  quantity: number;
+  totalQty: number;
+  address?: string;
+  km?: number;
+  priceMode: "faktura" | "hotovost";
+  totalBezDph: number;
+  totalSDph: number;
+  breakdown: string;
 }
 
 export interface ClientAccount {
@@ -72,6 +101,7 @@ export interface TransportSettings {
   winterSurcharge: number;
   waitingRatePer15min: number;
   minimumLoadM3: number;
+  dph?: number;  // DPH sadzba (napr. 0.23), default 0.23
 }
 
 const DEFAULT_CATEGORIES: ConcreteCategory[] = [
@@ -162,7 +192,7 @@ const DEFAULT_SERVICES: Service[] = [
   { id: "s3", name: "Umývanie mimo stavby", unit: "1 x", price: 56.25, description: "Umytie betónpumpy mimo miesta prevádzky", active: true },
   { id: "s4", name: "Čakačka mixéra", unit: "15 min.", price: 8.00, description: "Čakanie nad 30 min sa účtuje každých začatých 15 min", active: true },
   { id: "s5", name: "Prídavné hadice", unit: "1 m", price: 10.00, description: "Príplatok za každý meter predĺženia výložníkovej hadice", active: true },
-  { id: "s6", name: "Zimné opatrenia", unit: "m³", price: 5.00, description: "Príplatok za zimné opatrenia betónu (15.11.–15.3.), účtuje sa za každý m³ betónu", active: true },
+  { id: "s6", name: "Zimné opatrenia", unit: "m³", price: 5.00, description: "Príplatok za zimné opatrenia betónu (15.11.–15.3.), účtuje sa za každý m³ betónu", active: true, activePeriodFrom: "11-15", activePeriodTo: "03-15" },
 ];
 
 const DEFAULT_TRANSPORT_ZONES: TransportPricingZone[] = [
@@ -198,6 +228,7 @@ const DEFAULT_TRANSPORT_SETTINGS: TransportSettings = {
   winterSurcharge: 5.00,
   waitingRatePer15min: 8.33,
   minimumLoadM3: 5,
+  dph: 0.23,
 };
 
 const DEFAULT_CLIENT_ACCOUNTS: ClientAccount[] = [
@@ -235,13 +266,14 @@ function saveData<T>(key: string, data: T): void {
 
 export async function syncFromServer(): Promise<void> {
   try {
-    const [cats, delivery, services, clients, tzones, tsettings] = await Promise.all([
+    const [cats, delivery, services, clients, tzones, tsettings, orders] = await Promise.all([
       adminApi.getCategories(),
       adminApi.getDelivery(),
       adminApi.getServices(),
       adminApi.getClients(),
       adminApi.getTransportZones(),
       adminApi.getTransportSettings(),
+      adminApi.getOrders(),
     ]);
     const hasData = (v: unknown) => v !== null && v !== undefined && !(Array.isArray(v) && v.length === 0);
     const hasDataOrEmpty = (v: unknown) => v !== null && v !== undefined && Array.isArray(v);
@@ -258,6 +290,7 @@ export async function syncFromServer(): Promise<void> {
     else { const local = loadData<unknown>("msbeton_transport_zones", null); if (local) adminApi.saveTransportZones(local); }
     if (hasData(tsettings?.data)) { saveData("msbeton_transport_settings", tsettings!.data); updated = true; }
     else { const local = loadData<unknown>("msbeton_transport_settings", null); if (local) adminApi.saveTransportSettings(local); }
+    if (hasDataOrEmpty(orders?.data)) { saveData("msbeton_orders", orders!.data); updated = true; }
     if (updated) window.dispatchEvent(new Event("admin-data-synced"));
   } catch {
   }
@@ -304,6 +337,12 @@ export const adminData = {
   saveClientAccounts: (data: ClientAccount[]) => {
     saveData("msbeton_client_accounts", data);
     adminApi.saveClientAccounts(data);
+  },
+
+  getOrders: (): Order[] => loadData("msbeton_orders", []),
+  saveOrders: (data: Order[]) => {
+    saveData("msbeton_orders", data);
+    adminApi.saveOrders(data);
   },
 
   generateId: () => Math.random().toString(36).slice(2, 10),

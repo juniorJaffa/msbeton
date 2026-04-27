@@ -37,6 +37,9 @@ export const adminApi = {
 
   getClientAccounts: () => apiFetch<{ data: unknown }>(API_BASE, "/client-accounts"),
   saveClientAccounts: (data: unknown) => apiFetch(API_BASE, "/client-accounts", { method: "PUT", body: JSON.stringify(data) }),
+
+  getOrders: () => apiFetch<{ data: unknown }>(API_BASE, "/orders"),
+  saveOrders: (data: unknown) => apiFetch(API_BASE, "/orders", { method: "PUT", body: JSON.stringify(data) }),
 };
 
 export interface LoggedClient {
@@ -51,6 +54,8 @@ export interface LoggedClient {
   canHotovost: boolean;
   canPridatBeton: boolean;
   deliveryZoneId?: string;
+  canZimneOpatrenia?: boolean;
+  hotovostDph?: number;
 }
 
 export const clientApi = {
@@ -58,5 +63,10 @@ export const clientApi = {
     apiFetch<{ ok: boolean; client?: LoggedClient; error?: string }>(CLIENT_API, "/login", {
       method: "POST",
       body: JSON.stringify({ clientId, password }),
+    }),
+  submitOrder: (order: unknown) =>
+    apiFetch<{ ok: boolean; error?: string }>(CLIENT_API, "/order", {
+      method: "POST",
+      body: JSON.stringify(order),
     }),
 };
