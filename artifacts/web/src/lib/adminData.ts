@@ -238,11 +238,15 @@ const DEFAULT_CLIENT_ACCOUNTS: ClientAccount[] = [
 // Klienti s prístupom do kalkulačky (login + zľava) – nie partnerské spoločnosti
 const DEFAULT_CLIENTS: Client[] = [];
 
+const ARRAY_KEYS = new Set(["msbeton_categories", "msbeton_delivery", "msbeton_services", "msbeton_clients", "msbeton_transport_zones", "msbeton_client_accounts", "msbeton_orders"]);
+
 function loadData<T>(key: string, defaults: T): T {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return defaults;
     const parsed = JSON.parse(raw) as T;
+    // Ak očakávame pole ale dostaneme niečo iné, použi defaults
+    if (ARRAY_KEYS.has(key) && !Array.isArray(parsed)) return defaults;
     // Migrácia: ak transport_zones nemá zónu pokrývajúcu 70+ km, doplníme ju
     if (key === "msbeton_transport_zones" && Array.isArray(parsed)) {
       const zones = parsed as TransportPricingZone[];

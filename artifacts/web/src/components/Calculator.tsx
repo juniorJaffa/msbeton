@@ -1308,13 +1308,19 @@ export function ConcreteCalculator() {
           ) : (
             <div className="flex flex-col items-center justify-center h-full min-h-[420px] gap-4 text-center px-2">
               {tab === "pumpa" && (
-                <div className="w-full bg-secondary/60 border border-white/10 rounded-lg px-4 py-3 text-left">
-                  <div className="text-[10px] font-black text-primary/70 uppercase tracking-widest mb-2">Betónová pumpa</div>
-                  <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs">
-                    <span className="text-white/40">Kapacita <strong className="text-white/60">{pumpCap} m³</strong></span>
-                    <span className="text-white/40">Výložník <strong className="text-white/60">28 m</strong></span>
-                    <span className="text-white/40">Čerpanie <strong className="text-white/60">{pumpServicePrice.toFixed(2)} €/hod</strong></span>
-                    <span className="text-white/40">Rozbeh. chémia <strong className="text-white/60">{chemServicePrice.toFixed(2)} € (v cene)</strong></span>
+                <div className="w-full bg-secondary/60 border border-white/10 rounded-lg px-4 py-3 text-left space-y-2">
+                  <div>
+                    <div className="text-sm font-black text-white/80">Betónová pumpa {pumpCap}m³ · 28m rameno</div>
+                    <p className="text-xs text-white/40 mt-0.5 leading-relaxed">
+                      Prvé auto {pumpCap}m³, každé ďalšie {mixCap}m³ (domiešavač).<br />
+                      Čerpanie sa účtuje od príjazdu na stavbu.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs border-t border-white/10 pt-2">
+                    <span className="text-white/35">Kapacita <strong className="text-white/55">{pumpCap} m³</strong></span>
+                    <span className="text-white/35">Výložník <strong className="text-white/55">28 m</strong></span>
+                    <span className="text-white/35">Čerpanie <strong className="text-white/55">{pumpServicePrice.toFixed(2)} €/hod</strong></span>
+                    <span className="text-white/35">Rozbeh. chémia <strong className="text-white/55">{chemServicePrice.toFixed(2)} € (v cene)</strong></span>
                   </div>
                 </div>
               )}
