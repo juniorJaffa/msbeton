@@ -1149,16 +1149,18 @@ export function ConcreteCalculator() {
                 const showHotovost = !loggedClient || loggedClient.canHotovost;
                 const modes = showHotovost ? (["faktura", "hotovost"] as PriceMode[]) : (["faktura"] as PriceMode[]);
                 return (
-                  <div className={cn("grid border-b border-primary/30", modes.length === 1 ? "grid-cols-1" : "grid-cols-2")}>
-                    {modes.map((mode) => (
-                      <button key={mode} onClick={() => setPriceMode(mode)}
-                        className={cn("py-3 text-sm font-black tracking-widest transition-all cursor-pointer",
-                          priceMode === mode ? "bg-primary text-secondary" : "bg-white/5 text-white/50 hover:text-white/80"
-                        )}>
-                        {mode === "hotovost" ? "HOTOVOSŤ" : "FAKTÚRA"}
-                      </button>
-                    ))}
-                  </div>
+                  <>
+                    <div className={cn("grid border-b border-primary/30", modes.length === 1 ? "grid-cols-1" : "grid-cols-2")}>
+                      {modes.map((mode) => (
+                        <button key={mode} onClick={() => setPriceMode(mode)}
+                          className={cn("py-3 text-sm font-black tracking-widest transition-all cursor-pointer",
+                            priceMode === mode ? "bg-primary text-secondary" : "bg-white/5 text-white/50 hover:text-white/80"
+                          )}>
+                          {mode === "hotovost" ? "HOTOVOSŤ" : "FAKTÚRA"}
+                        </button>
+                      ))}
+                    </div>
+                  </>
                 );
               })()}
 
@@ -1281,6 +1283,14 @@ export function ConcreteCalculator() {
                       )}
                     </div>
                   )}
+                  {loggedClient && clientDeliveryZone && (
+                    <div className="flex items-center gap-2 text-white/40 text-xs">
+                      <span className="text-white/25 uppercase tracking-wide text-[10px]">Typ dopravy</span>
+                      <span className="font-semibold text-white/50">{clientDeliveryZone.name}</span>
+                      <span className="text-white/25">·</span>
+                      <span className="text-white/35">{{ standard: "Štandard", km: "Kilometre", auto: "Počet áut" }[clientDeliveryZone.pricingType ?? "standard"]}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Export buttons */}
@@ -1308,37 +1318,62 @@ export function ConcreteCalculator() {
           ) : (
             <div className="flex flex-col items-center justify-center h-full min-h-[420px] gap-4 text-center px-2">
               {tab === "pumpa" && (
-                <div className="w-full bg-secondary/60 border border-white/10 rounded-lg px-4 py-3 text-left space-y-2">
-                  <div>
-                    <div className="text-sm font-black text-white/80">Betónová pumpa {pumpCap}m³ · 28m rameno</div>
-                    <p className="text-xs text-white/40 mt-0.5 leading-relaxed">
+                <div className="w-full rounded-lg overflow-hidden text-left border border-primary/30">
+                  {/* Yellow header */}
+                  <div className="bg-primary px-4 py-2.5">
+                    <div className="text-sm font-black text-secondary">Betónová pumpa {pumpCap}m³ · 28m rameno</div>
+                  </div>
+                  {/* Description */}
+                  <div className="bg-primary/10 border-b border-primary/20 px-4 py-2">
+                    <p className="text-xs text-white/55 leading-relaxed">
                       Prvé auto {pumpCap}m³, každé ďalšie {mixCap}m³ (domiešavač).<br />
                       Čerpanie sa účtuje od príjazdu na stavbu.
                     </p>
                   </div>
-                  <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs border-t border-white/10 pt-2">
-                    <span className="text-white/35">Kapacita <strong className="text-white/55">{pumpCap} m³</strong></span>
-                    <span className="text-white/35">Výložník <strong className="text-white/55">28 m</strong></span>
-                    <span className="text-white/35">Čerpanie <strong className="text-white/55">{pumpServicePrice.toFixed(2)} €/hod</strong></span>
-                    <span className="text-white/35">Rozbeh. chémia <strong className="text-white/55">{chemServicePrice.toFixed(2)} € (v cene)</strong></span>
+                  {/* Specs 2×2 grid */}
+                  <div className="grid grid-cols-2 gap-px bg-primary/15">
+                    {[
+                      { label: "Kapacita", value: `${pumpCap} m³` },
+                      { label: "Výložník", value: "28 m" },
+                      { label: "Čerpanie", value: `${pumpServicePrice.toFixed(2)} €/hod` },
+                      { label: "Rozbeh. chémia", value: `${chemServicePrice.toFixed(2)} € (v cene)` },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="bg-secondary/70 px-3 py-2">
+                        <div className="text-[10px] text-white/35 uppercase tracking-wide mb-0.5">{label}</div>
+                        <div className="text-sm font-bold text-primary">{value}</div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
               {loggedClient && (
-                <div className="w-full bg-primary/8 border border-primary/20 rounded-lg px-4 py-3 text-left">
-                  <div className="flex items-center gap-1.5 mb-2">
+                <div className="w-full bg-primary/8 border border-primary/20 rounded-lg text-left overflow-hidden">
+                  {/* Klient header */}
+                  <div className="flex items-center gap-1.5 px-4 pt-3 pb-2">
                     <span className="text-[10px] font-black text-primary/70 uppercase tracking-widest shrink-0">Vaše zľavy</span>
                     <span className="text-white/20 text-[10px]">·</span>
                     <span className="text-white/55 text-xs font-semibold truncate">{loggedClient.name}</span>
                     <span className="ml-auto text-[9px] text-white/25 shrink-0">ID: {loggedClient.clientId}</span>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
+                  {/* Zľavy */}
+                  <div className="flex flex-wrap gap-1.5 px-4 pb-3">
                     {discountBeton   > 0 && <span className="bg-primary/15 text-primary font-black px-2 py-0.5 rounded-sm text-[11px]">Betón −{discountBeton}%</span>}
                     {discountDoprava > 0 && <span className="bg-primary/15 text-primary font-black px-2 py-0.5 rounded-sm text-[11px]">Doprava −{discountDoprava}%</span>}
                     {discountSluzby  > 0 && <span className="bg-primary/15 text-primary font-black px-2 py-0.5 rounded-sm text-[11px]">Služby −{discountSluzby}%</span>}
                     {discountCelkovo > 0 && <span className="bg-primary/15 text-primary font-black px-2 py-0.5 rounded-sm text-[11px]">Celkovo −{discountCelkovo}%</span>}
                     {!hasDiscount && <span className="text-white/25 text-[11px]">Žiadna zľava</span>}
                   </div>
+                  {/* Typ dopravy */}
+                  {clientDeliveryZone && (
+                    <div className="border-t border-primary/15 px-4 py-2 flex items-center gap-2">
+                      <Truck className="w-3.5 h-3.5 text-primary/50 flex-shrink-0" />
+                      <span className="text-[10px] text-white/30 uppercase tracking-wide shrink-0">Doprava</span>
+                      <span className="text-[11px] font-bold text-white/50 truncate">{clientDeliveryZone.name}</span>
+                      <span className="ml-auto text-[10px] text-white/25 shrink-0">
+                        {{standard:"Štandard", km:"Kilometre", auto:"Počet áut"}[clientDeliveryZone.pricingType ?? "standard"]}
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
               <svg viewBox="0 0 80 44" className="w-20 h-auto text-white/10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

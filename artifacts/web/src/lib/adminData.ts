@@ -258,6 +258,10 @@ function loadData<T>(key: string, defaults: T): T {
         return updated as unknown as T;
       }
     }
+    // Pre objekty (nie polia): merge defaults + parsed, aby nové polia mali fallback hodnotu
+    if (!Array.isArray(parsed) && typeof parsed === "object" && parsed !== null && typeof defaults === "object" && defaults !== null) {
+      return { ...(defaults as object), ...(parsed as object) } as T;
+    }
     return parsed;
   } catch {
     return defaults;

@@ -198,10 +198,17 @@ function MixTruckIcon() {
 }
 
 // ── DOPRAVA tab ───────────────────────────────────────────────────────────────
+const ZONE_TYPES: { key: "standard" | "km" | "auto"; label: string; desc: string; rateLabel: string; rateUnit: string }[] = [
+  { key: "standard", label: "Štandard",    desc: "sadzba €/km × objem",         rateLabel: "Sadzba za km",     rateUnit: "€/km" },
+  { key: "km",       label: "Kilometre",   desc: "sadzba €/km × m³ × vzdialenosť", rateLabel: "Sadzba €/km × m³", rateUnit: "€/km×m³" },
+  { key: "auto",     label: "Počet áut",   desc: "paušál za každé vozidlo",     rateLabel: "Paušál / vozidlo", rateUnit: "€/vozidlo" },
+];
+
 function DopravaTab() {
   const [zones, setZones] = useState<DeliveryZone[]>(adminData.getDelivery());
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ name: "", ratePerKm: "", truckCapacity: "", pumpTruckCapacity: "", pumpHourlyRate: "", waitingRatePer15min: "", pricingType: "standard" as "standard" | "km" | "auto", ratePerTruck: "" });
+  const emptyAddForm = { name: "", pricingType: "standard" as "standard" | "km" | "auto", ratePerKm: "", ratePerTruck: "", truckCapacity: "", pumpTruckCapacity: "", pumpHourlyRate: "", waitingRatePer15min: "" };
+  const [addForm, setAddForm] = useState(emptyAddForm);
 
   const [pZones, setPZones] = useState<TransportPricingZone[]>(adminData.getTransportZones());
   const [ts, setTs] = useState<TransportSettings>(adminData.getTransportSettings());
@@ -222,221 +229,221 @@ function DopravaTab() {
   };
 
   const save = (data: DeliveryZone[]) => { setZones(data); adminData.saveDelivery(data); };
-  const update = (id: string, field: keyof DeliveryZone, value: string) =>
-    save(zones.map(z => z.id === id ? { ...z, [field]: ["name"].includes(field) ? value : parseFloat(value) } : z));
-  const remove = (id: string) => { if (confirm("Vymazať zónu?")) save(zones.filter(z => z.id !== id)); };
-  const add = () => {
-    if (!form.name || !form.ratePerKm) return;
-    save([...zones, { id: adminData.generateId(), name: form.name, ratePerKm: parseFloat(form.ratePerKm) || 1.8, truckCapacity: parseFloat(form.truckCapacity) || 9, pumpTruckCapacity: parseFloat(form.pumpTruckCapacity) || 7, pumpHourlyRate: parseFloat(form.pumpHourlyRate) || 112.50, waitingRatePer15min: parseFloat(form.waitingRatePer15min) || 8, pricingType: form.pricingType, ratePerTruck: form.pricingType === "auto" ? parseFloat(form.ratePerTruck) || 0 : undefined }]);
-    setForm({ name: "", ratePerKm: "", truckCapacity: "", pumpTruckCapacity: "", pumpHourlyRate: "", waitingRatePer15min: "", pricingType: "standard", ratePerTruck: "" }); setAdding(false);
-  };
-
-  const pricingLabels: Record<string, { label: string; color: string }> = {
-    standard: { label: "Standard", color: "bg-blue-50 text-blue-700 border-blue-200" },
-    km: { label: "Kilometre", color: "bg-purple-50 text-purple-700 border-purple-200" },
-    auto: { label: "Počet áut", color: "bg-orange-50 text-orange-700 border-orange-200" },
+  const updateZone = (id: string, patch: Partial<DeliveryZone>) =>
+    save(zones.map(z => z.id === id ? { ...z, ...patch } : z));
+  const removeZone = (id: string) => { if (confirm("Vymazať dopravu?")) save(zones.filter(z => z.id !== id)); };
+  const addZone = () => {
+    if (!addForm.name) return;
+    const type = addForm.pricingType;
+    save([...zones, {
+      id: adminData.generateId(),
+      name: addForm.name,
+      pricingType: type,
+      ratePerKm: parseFloat(addForm.ratePerKm) || (type === "km" ? 1.8 : 0),
+      ratePerTruck: type === "auto" ? parseFloat(addForm.ratePerTruck) || 0 : undefined,
+      truckCapacity: parseFloat(addForm.truckCapacity) || 9,
+      pumpTruckCapacity: parseFloat(addForm.pumpTruckCapacity) || 7,
+      pumpHourlyRate: parseFloat(addForm.pumpHourlyRate) || 112.50,
+      waitingRatePer15min: parseFloat(addForm.waitingRatePer15min) || 8,
+    }]);
+    setAddForm(emptyAddForm); setAdding(false);
   };
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-4">
-        {zones.map(z => {
-          const pt = z.pricingType ?? "standard";
-          const ptInfo = pricingLabels[pt] ?? pricingLabels.standard;
-          return (
-          <div key={z.id} className="bg-white border border-gray-200 shadow-sm overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <div className="flex items-center gap-3">
-                <div className="font-bold text-secondary text-lg">
-                  <EditableField value={z.name} onSave={v => update(z.id, "name", v)} />
-                </div>
-                <select value={pt}
-                  onChange={e => save(zones.map(z2 => z2.id === z.id ? { ...z2, pricingType: e.target.value as "standard" | "km" | "auto" } : z2))}
-                  className={`border text-xs px-2 py-1 rounded-sm font-bold focus:outline-none cursor-pointer ${ptInfo.color}`}>
-                  <option value="standard">Standard</option>
-                  <option value="km">Kilometre</option>
-                  <option value="auto">Počet áut</option>
-                </select>
-              </div>
-              <button onClick={() => remove(z.id)} className="p-1.5 bg-secondary/8 text-secondary/50 hover:bg-red-50 hover:text-red-500 rounded-sm transition-colors">
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Top row: Sadzba + Pumpa hodinová */}
-            <div className="grid grid-cols-2 gap-px bg-gray-100 border-b border-gray-100">
-              <div className="bg-white px-5 py-3">
-                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">
-                  {pt === "auto" ? "Paušál / vozidlo" : pt === "km" ? "Sadzba €/km" : "Sadzba za km"}
-                </div>
-                <div className="font-bold text-secondary text-sm">
-                  {pt === "auto" ? (
-                    <><EditableField value={z.ratePerTruck ?? z.ratePerKm ?? 0} type="number" onSave={v => save(zones.map(z2 => z2.id === z.id ? { ...z2, ratePerTruck: parseFloat(v) } : z2))} /> €/vozidlo</>
-                  ) : (
-                    <><EditableField value={z.ratePerKm} type="number" onSave={v => update(z.id, "ratePerKm", v)} /> €/km</>
-                  )}
-                </div>
-              </div>
-              <div className="bg-white px-5 py-3">
-                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Hodinová sadzba pumpy</div>
-                <div className="font-bold text-secondary text-sm">
-                  <EditableField value={z.pumpHourlyRate} type="number" onSave={v => update(z.id, "pumpHourlyRate", v)} /> €/hod
-                </div>
-              </div>
-            </div>
-
-            {/* PUMPA | MIXER side by side */}
-            <div className="grid grid-cols-2 gap-px bg-gray-100">
-              {/* PUMPA */}
-              <div className="bg-white px-5 py-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <PumpTruckIcon />
-                  <span className="text-xs font-black text-secondary uppercase tracking-widest">Pumpa</span>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Kapacita</div>
-                    <div className="font-bold text-secondary text-sm">
-                      <EditableField value={z.pumpTruckCapacity ?? 7} type="number"
-                        onSave={v => save(zones.map(z2 => z2.id === z.id ? { ...z2, pumpTruckCapacity: parseFloat(v) } : z2))} /> m³
-                    </div>
-                  </div>
-                  <div className="bg-yellow-50 border border-yellow-100 rounded-sm px-3 py-2">
-                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Čakačka / 15 min</div>
-                    <div className="font-bold text-secondary text-sm">
-                      <EditableField value={z.waitingRatePer15minPumpa ?? z.waitingRatePer15min ?? 8} type="number"
-                        onSave={v => update(z.id, "waitingRatePer15minPumpa", v)} /> €
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* MIXER */}
-              <div className="bg-white px-5 py-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <MixTruckIcon />
-                  <span className="text-xs font-black text-secondary uppercase tracking-widest">Mixér</span>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Kapacita</div>
-                    <div className="font-bold text-secondary text-sm">
-                      <EditableField value={z.truckCapacity ?? 9} type="number"
-                        onSave={v => update(z.id, "truckCapacity", v)} /> m³
-                    </div>
-                  </div>
-                  <div className="bg-yellow-50 border border-yellow-100 rounded-sm px-3 py-2">
-                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Čakačka / 15 min</div>
-                    <div className="font-bold text-secondary text-sm">
-                      <EditableField value={z.waitingRatePer15min ?? 8} type="number"
-                        onSave={v => update(z.id, "waitingRatePer15min", v)} /> €
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          );
-        })}
-      </div>
-
-      {adding ? (
-        <div className="bg-white border-2 border-primary p-5">
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <input placeholder="Názov zóny" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-              className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary col-span-2" />
-            <div className="col-span-2">
-              <select value={form.pricingType} onChange={e => setForm({ ...form, pricingType: e.target.value as typeof form.pricingType })}
-                className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white">
-                <option value="standard">Standard (pásmo/m³ podľa km tabuľky)</option>
-                <option value="km">KM (€/km × m³)</option>
-                <option value="auto">Auto (paušál/vozidlo)</option>
-              </select>
-            </div>
-            <input placeholder="Sadzba €/km" type="number" step="0.1" value={form.ratePerKm} onChange={e => setForm({ ...form, ratePerKm: e.target.value })}
-              className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-            {form.pricingType === "auto" ? (
-              <input placeholder="Paušál / vozidlo (€)" type="number" value={form.ratePerTruck} onChange={e => setForm({ ...form, ratePerTruck: e.target.value })}
-                className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-            ) : (
-              <input placeholder="Kapacita mixéra (m³, default 9)" type="number" value={form.truckCapacity} onChange={e => setForm({ ...form, truckCapacity: e.target.value })}
-                className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-            )}
-            <input placeholder="Kapacita pumpy (m³, default 7)" type="number" value={form.pumpTruckCapacity} onChange={e => setForm({ ...form, pumpTruckCapacity: e.target.value })}
-              className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-            <input placeholder="Sadzba pumpy (€/hod)" type="number" value={form.pumpHourlyRate} onChange={e => setForm({ ...form, pumpHourlyRate: e.target.value })}
-              className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-            <input placeholder="Čakačka (€/15 min, napr. 8)" type="number" step="0.5" value={form.waitingRatePer15min} onChange={e => setForm({ ...form, waitingRatePer15min: e.target.value })}
-              className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-          </div>
-          <div className="flex gap-2">
-            <button onClick={add} className="px-4 py-2 bg-primary text-secondary font-bold text-sm hover:bg-primary/90">Pridať</button>
-            <button onClick={() => setAdding(false)} className="px-4 py-2 bg-gray-100 text-gray-500 text-sm hover:bg-gray-200">Zrušiť</button>
-          </div>
+    <div className="space-y-3">
+      {/* ── Nastavenia cenníka dopravy ── */}
+      <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
+          <h3 className="font-black text-secondary text-sm uppercase tracking-widest">Nastavenia cenníka dopravy</h3>
         </div>
-      ) : (
-        <button onClick={() => setAdding(true)}
-          className="flex items-center gap-2 w-full border-2 border-dashed border-gray-300 text-gray-400 hover:border-primary hover:text-primary font-bold text-sm py-4 justify-center transition-colors">
-          <Plus className="w-4 h-4" /> Pridať dopravnú zónu
-        </button>
-      )}
-
-      {/* ── Cenník – Nastavenia dopravy ── */}
-      <div className="mt-8 border-t border-gray-200 pt-6">
-        <h3 className="font-black text-secondary text-sm uppercase tracking-widest mb-1">Nastavenia cenníka dopravy</h3>
-        <div className="h-0.5 w-10 bg-primary mb-4" />
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-px bg-gray-100 m-4 rounded overflow-hidden">
           {[
             { label: "Min. cena / auto (€)", field: "minimumFee" as keyof TransportSettings },
             { label: "Zimný príplatok (€/m³)", field: "winterSurcharge" as keyof TransportSettings },
             { label: "Čakačka (€/15 min)", field: "waitingRatePer15min" as keyof TransportSettings },
             { label: "Min. objednávka (m³)", field: "minimumLoadM3" as keyof TransportSettings },
           ].map(({ label, field }) => (
-            <div key={field} className="bg-white border border-gray-200 p-3">
-              <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">{label}</div>
-              <div className="font-bold text-secondary">
+            <div key={field} className="bg-gray-50 px-3 py-2.5">
+              <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{label}</div>
+              <div className="font-bold text-secondary text-sm">
                 <EditableField value={ts[field] as number} type="number" onSave={v => saveTs({ ...ts, [field]: parseFloat(v) || 0 })} />
               </div>
             </div>
           ))}
-          <div className="bg-primary/5 border border-primary/20 p-3">
-            <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">DPH Faktúra (%)</div>
-            <div className="font-bold text-secondary flex items-center gap-1">
+          <div className="bg-primary/5 px-3 py-2.5">
+            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">DPH Faktúra (%)</div>
+            <div className="font-bold text-secondary text-sm flex items-center gap-1">
               <EditableField value={Math.round((ts.dph ?? 0.23) * 100)} type="number" onSave={v => saveTs({ ...ts, dph: (parseFloat(v) || 23) / 100 })} /> %
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Cenník – Zóny km / cena ── */}
-      <div className="mt-2">
-        <h3 className="font-black text-secondary text-sm uppercase tracking-widest mb-1">Zóny dopravy (cenník)</h3>
-        <div className="h-0.5 w-10 bg-primary mb-3" />
-        <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="text-left px-4 py-2.5 text-xs font-bold text-gray-400 uppercase tracking-wide">Od km</th>
-                <th className="text-left px-4 py-2.5 text-xs font-bold text-gray-400 uppercase tracking-wide">Do km</th>
-                <th className="text-right px-4 py-2.5 text-xs font-bold text-gray-400 uppercase tracking-wide">€/m³</th>
-                <th className="w-8" />
-              </tr>
-            </thead>
-            <tbody>
-              {pZones.map((z, i) => (
-                <tr key={z.id} className={`border-b border-gray-50 hover:bg-primary/5 ${i % 2 === 0 ? "" : "bg-gray-50/40"}`}>
-                  <td className="px-4 py-2 text-secondary"><EditableField value={z.fromKm} type="number" onSave={v => updatePZ(z.id, "fromKm", v)} /></td>
-                  <td className="px-4 py-2 text-secondary"><EditableField value={z.toKm} type="number" onSave={v => updatePZ(z.id, "toKm", v)} /></td>
-                  <td className="px-4 py-2 text-right font-bold text-secondary"><EditableField value={z.ratePerM3.toFixed(2)} type="number" onSave={v => updatePZ(z.id, "ratePerM3", v)} /></td>
-                  <td className="px-2 py-2 text-right"><button onClick={() => removePZ(z.id)} className="p-1 text-red-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* ── Typy dopravy ── */}
+      <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
+          <h3 className="font-black text-secondary text-sm uppercase tracking-widest">Typy dopravy</h3>
         </div>
+
+        {/* Zdieľaná info: Pumpa + Mixér — platí pre všetky typy */}
+        {(() => {
+          const ref = zones[0];
+          const updateAll = (patch: Partial<DeliveryZone>) => save(zones.map(z => ({ ...z, ...patch })));
+          return (
+            <div className="grid grid-cols-2 gap-px bg-gray-100 m-4 rounded overflow-hidden">
+              <div className="bg-yellow-50 px-4 py-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <PumpTruckIcon />
+                  <span className="text-xs font-black text-secondary uppercase tracking-wide">Pumpa</span>
+                </div>
+                <div className="flex gap-6">
+                  <div>
+                    <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Kapacita</div>
+                    <div className="font-bold text-secondary text-sm">
+                      <EditableField value={ref?.pumpTruckCapacity ?? 7} type="number" onSave={v => updateAll({ pumpTruckCapacity: parseFloat(v) })} /> m³
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Čakačka / 15 min</div>
+                    <div className="font-bold text-secondary text-sm">
+                      <EditableField value={ref?.waitingRatePer15minPumpa ?? ref?.waitingRatePer15min ?? 8} type="number" onSave={v => updateAll({ waitingRatePer15minPumpa: parseFloat(v) })} /> €
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-yellow-50 px-4 py-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <MixTruckIcon />
+                  <span className="text-xs font-black text-secondary uppercase tracking-wide">Mixér</span>
+                </div>
+                <div className="flex gap-6">
+                  <div>
+                    <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Kapacita</div>
+                    <div className="font-bold text-secondary text-sm">
+                      <EditableField value={ref?.truckCapacity ?? 9} type="number" onSave={v => updateAll({ truckCapacity: parseFloat(v) })} /> m³
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Čakačka / 15 min</div>
+                    <div className="font-bold text-secondary text-sm">
+                      <EditableField value={ref?.waitingRatePer15min ?? 8} type="number" onSave={v => updateAll({ waitingRatePer15min: parseFloat(v) })} /> €
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Číslovaný zoznam typov dopravy */}
+        <div className="border-t border-gray-100">
+          {ZONE_TYPES.map((zt, idx) => {
+            const typeZones = zones.filter(z => (z.pricingType ?? "standard") === zt.key);
+            if (typeZones.length === 0) return null;
+            return (
+              <div key={zt.key} className="border-b border-gray-100 last:border-b-0">
+                {/* Numbered type header */}
+                <div className="flex items-center gap-3 px-5 py-2 bg-gray-50/40">
+                  <span className="w-5 h-5 rounded-full bg-secondary text-white text-[10px] font-black flex items-center justify-center flex-shrink-0">
+                    {idx + 1}
+                  </span>
+                  <span className="font-black text-secondary text-sm">{zt.label}</span>
+                  <span className="text-[11px] text-gray-400">{zt.desc}</span>
+                </div>
+                {/* Zóny tohto typu */}
+                {typeZones.map(z => (
+                  <div key={z.id} className="flex items-center gap-3 px-5 py-2.5 pl-14 border-t border-gray-50 hover:bg-gray-50/50">
+                    <div className="font-semibold text-secondary text-sm flex-1">
+                      <EditableField value={z.name} onSave={v => updateZone(z.id, { name: v })} />
+                    </div>
+                    <div className="flex items-center gap-6 text-sm">
+                      <div className="text-right">
+                        <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{zt.rateLabel}</div>
+                        <div className="font-bold text-secondary">
+                          {zt.key === "auto"
+                            ? <><EditableField value={z.ratePerTruck ?? 0} type="number" onSave={v => updateZone(z.id, { ratePerTruck: parseFloat(v) })} /> {zt.rateUnit}</>
+                            : <><EditableField value={z.ratePerKm} type="number" onSave={v => updateZone(z.id, { ratePerKm: parseFloat(v) })} /> {zt.rateUnit}</>}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Čerpanie pumpy</div>
+                        <div className="font-bold text-secondary">
+                          <EditableField value={z.pumpHourlyRate} type="number" onSave={v => updateZone(z.id, { pumpHourlyRate: parseFloat(v) })} /> €/hod
+                        </div>
+                      </div>
+                    </div>
+                    <button onClick={() => removeZone(z.id)} className="p-1 text-gray-300 hover:text-red-500 transition-colors cursor-pointer flex-shrink-0">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Add form / button */}
+        {adding ? (
+          <div className="border-t border-gray-100 bg-gray-50/40 px-5 py-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+              <input placeholder="Názov dopravy *" value={addForm.name} onChange={e => setAddForm({ ...addForm, name: e.target.value })}
+                className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" autoFocus />
+              <select value={addForm.pricingType} onChange={e => setAddForm({ ...addForm, pricingType: e.target.value as "standard" | "km" | "auto" })}
+                className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white">
+                {ZONE_TYPES.map(zt => <option key={zt.key} value={zt.key}>{zt.label}</option>)}
+              </select>
+              {addForm.pricingType === "auto" ? (
+                <input placeholder="Paušál / vozidlo (€)" type="number" value={addForm.ratePerTruck} onChange={e => setAddForm({ ...addForm, ratePerTruck: e.target.value })}
+                  className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+              ) : (
+                <input placeholder="Sadzba €/km" type="number" step="0.1" value={addForm.ratePerKm} onChange={e => setAddForm({ ...addForm, ratePerKm: e.target.value })}
+                  className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+              )}
+              <input placeholder="Čerpanie pumpy (€/hod)" type="number" value={addForm.pumpHourlyRate} onChange={e => setAddForm({ ...addForm, pumpHourlyRate: e.target.value })}
+                className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+            </div>
+            <div className="flex gap-2">
+              <button onClick={addZone} className="px-4 py-2 bg-primary text-secondary font-bold text-sm hover:bg-primary/90">Pridať</button>
+              <button onClick={() => { setAdding(false); setAddForm(emptyAddForm); }} className="px-4 py-2 bg-gray-100 text-gray-500 text-sm hover:bg-gray-200">Zrušiť</button>
+            </div>
+          </div>
+        ) : (
+          <div className="border-t border-gray-100">
+            <button onClick={() => setAdding(true)}
+              className="flex items-center gap-2 w-full text-gray-400 hover:text-primary font-bold text-sm py-3 px-5 justify-start transition-colors hover:bg-gray-50">
+              <Plus className="w-4 h-4" /> Pridať dopravu
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ── Zóny dopravy (cenník) ── */}
+      <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
+          <h3 className="font-black text-secondary text-sm uppercase tracking-widest">Zóny dopravy (cenník)</h3>
+        </div>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-gray-100">
+              <th className="text-left px-5 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-wide">Od km</th>
+              <th className="text-left px-4 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-wide">Do km</th>
+              <th className="text-right px-4 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-wide">€/m³</th>
+              <th className="w-8" />
+            </tr>
+          </thead>
+          <tbody>
+            {pZones.map((z, i) => (
+              <tr key={z.id} className={`border-b border-gray-50 hover:bg-primary/5 ${i % 2 === 0 ? "" : "bg-gray-50/40"}`}>
+                <td className="px-5 py-2 text-secondary font-medium"><EditableField value={z.fromKm} type="number" onSave={v => updatePZ(z.id, "fromKm", v)} /></td>
+                <td className="px-4 py-2 text-secondary font-medium"><EditableField value={z.toKm} type="number" onSave={v => updatePZ(z.id, "toKm", v)} /></td>
+                <td className="px-4 py-2 text-right font-bold text-secondary"><EditableField value={z.ratePerM3.toFixed(2)} type="number" onSave={v => updatePZ(z.id, "ratePerM3", v)} /></td>
+                <td className="px-2 py-2 text-right"><button onClick={() => removePZ(z.id)} className="p-1 text-gray-300 hover:text-red-500 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
         {addingPZ ? (
-          <div className="flex gap-2 mt-2">
+          <div className="border-t border-gray-100 bg-gray-50/40 px-5 py-3 flex flex-wrap gap-2">
             <input placeholder="Od km" type="number" value={pzForm.fromKm} onChange={e => setPzForm({ ...pzForm, fromKm: e.target.value })}
               className="w-24 border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" autoFocus />
             <input placeholder="Do km" type="number" value={pzForm.toKm} onChange={e => setPzForm({ ...pzForm, toKm: e.target.value })}
@@ -447,10 +454,12 @@ function DopravaTab() {
             <button onClick={() => setAddingPZ(false)} className="px-3 py-2 bg-gray-100 text-gray-500 hover:bg-gray-200"><X className="w-4 h-4" /></button>
           </div>
         ) : (
-          <button onClick={() => setAddingPZ(true)}
-            className="flex items-center gap-1 text-xs text-primary font-bold hover:text-secondary transition-colors mt-2">
-            <Plus className="w-3.5 h-3.5" /> Pridať zónu
-          </button>
+          <div className="border-t border-gray-100">
+            <button onClick={() => setAddingPZ(true)}
+              className="flex items-center gap-2 w-full text-gray-400 hover:text-primary font-bold text-sm py-3 px-5 justify-start transition-colors hover:bg-gray-50">
+              <Plus className="w-4 h-4" /> Pridať zónu
+            </button>
+          </div>
         )}
       </div>
     </div>
@@ -493,13 +502,21 @@ function SluzbyTab() {
                 <td className="px-5 py-3">
                   <div className="font-semibold text-secondary"><EditableField value={s.name} onSave={v => update(s.id, "name", v)} /></div>
                   <div className="text-xs text-gray-400 mt-0.5"><EditableField value={s.description || "—"} onSave={v => update(s.id, "description", v)} /></div>
-                  <div className="flex items-center gap-1 mt-1 text-[10px] text-gray-300">
-                    <span>Aktívne:</span>
-                    <EditableField value={s.activePeriodFrom || "—"} onSave={v => update(s.id, "activePeriodFrom", v)} />
-                    <span>–</span>
-                    <EditableField value={s.activePeriodTo || "—"} onSave={v => update(s.id, "activePeriodTo", v)} />
-                    <span className="text-gray-200">(MM-DD, prázdne = celý rok)</span>
-                  </div>
+                  {s.name.toLowerCase().includes("zimn") && (
+                    <div className="flex items-center gap-1 mt-1 text-[10px] text-gray-300">
+                      <span>Aktívne:</span>
+                      <EditableField
+                        value={s.activePeriodFrom ? `${s.activePeriodFrom.split("-")[1]}.${s.activePeriodFrom.split("-")[0]}` : "—"}
+                        onSave={v => { const [dd, mm] = v.split("."); update(s.id, "activePeriodFrom", dd && mm ? `${mm}-${dd}` : v); }}
+                      />
+                      <span>–</span>
+                      <EditableField
+                        value={s.activePeriodTo ? `${s.activePeriodTo.split("-")[1]}.${s.activePeriodTo.split("-")[0]}` : "—"}
+                        onSave={v => { const [dd, mm] = v.split("."); update(s.id, "activePeriodTo", dd && mm ? `${mm}-${dd}` : v); }}
+                      />
+                      <span className="text-gray-200">(DD.MM)</span>
+                    </div>
+                  )}
                 </td>
                 <td className="px-3 py-3 text-center text-gray-500 hidden sm:table-cell">
                   <EditableField value={s.unit || "—"} onSave={v => update(s.id, "unit", v)} />
@@ -691,6 +708,7 @@ function DiscountInput({ label, value, onChange }: { label: string; value: strin
 
 function KlientiTab() {
   const [clients, setClients] = useState<Client[]>(adminData.getClients());
+  const [ts] = useState<TransportSettings>(adminData.getTransportSettings());
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showPass, setShowPass] = useState<Set<string>>(new Set());
   const [showTableFor, setShowTableFor] = useState<string | null>(null);
@@ -737,6 +755,27 @@ function KlientiTab() {
 
   return (
     <div className="space-y-4">
+      {/* General systémová DPH info */}
+      <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
+          <h3 className="font-black text-secondary text-sm uppercase tracking-widest">Systémová DPH</h3>
+        </div>
+        <div className="flex flex-wrap gap-px bg-gray-100">
+          <div className="bg-white px-5 py-3 flex-1 min-w-36">
+            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">DPH Faktúra</div>
+            <div className="font-bold text-secondary text-sm">{Math.round((ts.dph ?? 0.23) * 100)} %</div>
+          </div>
+          <div className="bg-white px-5 py-3 flex-1 min-w-36">
+            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">DPH Hotovosť (default)</div>
+            <div className="font-bold text-secondary text-sm">20 %<span className="text-xs text-gray-400 font-normal ml-1">(per klient)</span></div>
+          </div>
+          <div className="bg-gray-50 px-5 py-3 flex-1 min-w-48">
+            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Poznámka</div>
+            <div className="text-xs text-gray-500">Faktúra DPH sa mení v Admin › Doprava › Nastavenia cenníka</div>
+          </div>
+        </div>
+      </div>
+
       {/* Search + Add */}
       <div className="flex gap-3 flex-wrap">
         <input placeholder="Hľadať klienta..." value={search} onChange={e => setSearch(e.target.value)}
@@ -829,7 +868,7 @@ function KlientiTab() {
                   <input type="checkbox" checked={form.canHotovost} onChange={e => setForm({ ...form, canHotovost: e.target.checked })} className="accent-secondary w-5 h-5 shrink-0" />
                   <div>
                     <span className="text-sm text-gray-700">Hotovosť</span>
-                    {form.canHotovost && (
+                    {form.canHotovost ? (
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-xs text-gray-400">DPH hotovosť:</span>
                         <input type="number" min="0" max="100" value={form.hotovostDph} onClick={e => e.stopPropagation()}
@@ -837,6 +876,8 @@ function KlientiTab() {
                           className="border border-gray-200 px-2 py-0.5 text-xs focus:outline-none focus:border-primary w-16 text-center" />
                         <span className="text-xs text-gray-400">%</span>
                       </div>
+                    ) : (
+                      <div className="mt-1 text-xs text-gray-400">Iba faktúra · DPH <span className="font-bold text-gray-500">23 %</span></div>
                     )}
                   </div>
                 </label>
@@ -998,7 +1039,7 @@ function KlientiTab() {
                           <input type="checkbox" checked={c.canHotovost ?? true} onChange={e => update(c.id, { canHotovost: e.target.checked })} className="accent-secondary w-5 h-5 shrink-0" />
                           <div>
                             <span className="text-sm text-gray-700">Hotovosť</span>
-                            {(c.canHotovost ?? true) && (
+                            {(c.canHotovost ?? true) ? (
                               <div className="flex items-center gap-2 mt-1">
                                 <span className="text-xs text-gray-400">DPH hotovosť:</span>
                                 <input type="number" min="0" max="100" value={Math.round((c.hotovostDph ?? 0.20) * 100)}
@@ -1007,6 +1048,8 @@ function KlientiTab() {
                                   className="border border-gray-200 px-2 py-0.5 text-xs focus:outline-none focus:border-primary w-16 text-center" />
                                 <span className="text-xs text-gray-400">%</span>
                               </div>
+                            ) : (
+                              <div className="mt-1 text-xs text-gray-400">Iba faktúra · DPH <span className="font-bold text-gray-500">23 %</span></div>
                             )}
                           </div>
                         </label>
