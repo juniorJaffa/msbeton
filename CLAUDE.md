@@ -15,9 +15,17 @@ Tento repozitár je **moderný redesign** existujúcej WordPress stránky [msbet
 **Hlavné funkcie pôvodnej stránky, ktoré musí nová replikovať:**
 
 1. **Kalkulačka betónu** — hlavná funkcia stránky. Tri režimy: pumpa, mix (domiešavač), vlastná doprava. Počíta cenu betónu + dopravy + služieb s/bez DPH, s/bez zľavy klienta.
-2. **Správa klientov v admin UI** — vytváranie a editácia klientov s ich zľavami
+2. **Správa klientov v admin UI** — vytváranie a editácia klientov s ich zľavami; `isOwner: true` označí klienta ako vlastníka firmy (korunka, nedá sa zmazať)
 3. **Prihlásenie klienta do kalkulačky** — klient sa prihlási, kalkulačka automaticky aplikuje jeho zľavy
 4. **Admin dashboard** — správa: Betóny (kategórie + typy + ceny), Doprava (zónové sadzby), Služby (čerpanie, umývanie, čakačky…), Klienti
+
+### Firemné údaje (hardcoded v PDF exportoch)
+
+- Firma: **MS-BETON, spol. s r.o.**, Turie 468, 013 12 Turie, Slovenská republika
+- IČO: `55747591`, DIČ: `2122074603`, IČ DPH: `SK2122074603`
+- Kontakt: Peter Staňo, 0944069305, peter@msbeton.sk
+
+Tieto hodnoty sú hardcoded priamo v `Calculator.tsx` (PDF export kalkulačky) a `AdminDashboard.tsx` (exportClientPricePDF). **Nepatria do konfigurácie ani editovateľných polí.**
 
 ### Logika zliav (zhodná so starou WP kalkulačkou)
 
@@ -143,17 +151,18 @@ Všetky operácie používajú `INSERT … ON CONFLICT DO UPDATE` — pri zmená
 
 ### Produkčný deployment
 
-Push na `main` → GitHub Actions (`.github/workflows/deploy.yml`) → SSH na Hetzner VPS:
+Produkcia: [demo.msbeton.sk](https://demo.msbeton.sk), server `root@178.104.62.115`, adresár `/var/www/msbeton`.
 
 ```bash
-ssh -i ~/.ssh/id_ed25519_claude root@178.104.62.115
+# Manuálny deploy
+ssh -i ~/.ssh/id_ed25519_claude root@178.104.62.115 "cd /var/www/msbeton && git pull && PORT=3000 BASE_PATH=/ pnpm --filter @workspace/web build && pnpm --filter @workspace/api-server build && DATABASE_URL='postgresql://msbeton:vPk83o1ITFyjeheEjgkeT4sucEea4Z@localhost:5432/msbeton' pnpm --filter @workspace/db push && pm2 restart msbeton-api --update-env && echo OK"
 ```
 
-SSH kľúč: `id_ed25519_claude` (názov v GitHub Secrets: `itikon-claude-code`, fingerprint: `b3:9e:3f:d1:6f:10:20:84:cc:e0:78:13:50:78:fa:11`)
+- `pnpm run build` na serveri ZLYHÁ kvôli pre-existujúcim framer-motion TS chybám v `Home.tsx` — vždy build web + API zvlášť
+- `DATABASE_URL` je v `ecosystem.config.cjs` (nie v `.env` súbore)
+- SSH kľúč: `id_ed25519_claude` (GitHub Secret: `itikon-claude-code`)
 
-Workflow: `git pull` → build web + API → `db push` → `pm2 restart msbeton-api` → health check. `BASE_PATH` pre produkciu je nastavený v deploy workflow.
-
-Na serveri beží PostgreSQL — `DATABASE_URL` je nastavená ako environment variable pre pm2.
+Na serveri beží PostgreSQL — `DATABASE_URL` je nastavená v `ecosystem.config.cjs` pre pm2.
 
 ---
 
