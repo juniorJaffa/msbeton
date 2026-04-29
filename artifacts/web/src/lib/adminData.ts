@@ -263,9 +263,22 @@ const SYSTEM_OWNER_CLIENT: Client = {
 };
 
 function ensureOwner(clients: Client[]): Client[] {
-  const filtered = clients.map(c => c.id !== SYSTEM_OWNER_ID ? { ...c, isOwner: false } : c);
-  if (filtered.some(c => c.id === SYSTEM_OWNER_ID)) return filtered;
-  return [SYSTEM_OWNER_CLIENT, ...filtered];
+  const stripped = clients.map(c => c.id !== SYSTEM_OWNER_ID ? { ...c, isOwner: false } : c);
+  if (stripped.some(c => c.id === SYSTEM_OWNER_ID)) return stripped;
+
+  // Skúsi nájsť existujúceho klienta, ktorý je MS-BETON vlastníkom, a povýšiť ho
+  const matchIdx = stripped.findIndex(c =>
+    c.email === SYSTEM_OWNER_CLIENT.email ||
+    (c.firstName === SYSTEM_OWNER_CLIENT.firstName &&
+     c.lastName  === SYSTEM_OWNER_CLIENT.lastName &&
+     c.company   === SYSTEM_OWNER_CLIENT.company)
+  );
+  if (matchIdx >= 0) {
+    const promoted = { ...stripped[matchIdx], id: SYSTEM_OWNER_ID, isOwner: true };
+    return [promoted, ...stripped.filter((_, i) => i !== matchIdx)];
+  }
+
+  return [SYSTEM_OWNER_CLIENT, ...stripped];
 }
 
 // Klienti s prístupom do kalkulačky (login + zľava) – nie partnerské spoločnosti
