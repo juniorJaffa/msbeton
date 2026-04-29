@@ -736,17 +736,8 @@ export function ConcreteCalculator() {
 </head><body>
 
 <!-- Watermark -->
-<div style="position:fixed;bottom:60mm;right:20mm;opacity:0.04;pointer-events:none;z-index:0">
-  <svg width="180" height="120" viewBox="0 0 180 120" fill="#001D3D" xmlns="http://www.w3.org/2000/svg">
-    <!-- Betónpumpa silueta -->
-    <rect x="10" y="70" width="120" height="28" rx="4"/>
-    <circle cx="30" cy="100" r="14"/>
-    <circle cx="100" cy="100" r="14"/>
-    <rect x="30" y="55" width="8" height="20"/>
-    <rect x="50" y="40" width="60" height="10" rx="3" transform="rotate(-30 50 45)"/>
-    <rect x="90" y="18" width="8" height="28"/>
-    <rect x="86" y="14" width="16" height="8" rx="2"/>
-  </svg>
+<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);opacity:0.05;pointer-events:none;z-index:0;width:160mm">
+  <img src="${window.location.origin}/ms-beton-watermark.png" style="width:100%;height:auto" />
 </div>
 
 <!-- Header -->
@@ -787,11 +778,17 @@ export function ConcreteCalculator() {
   <!-- Total -->
   ${totalBlock}
 
+  <!-- Vypracovala spoločnosť -->
+  <div style="margin-top:10mm;text-align:center;font-size:9.5pt;color:#555;margin-bottom:3mm">Vypracovala spoločnosť</div>
+  <div style="border:1.5px solid #c8c8d8;border-radius:4px;padding:8mm 14mm;text-align:center;margin-bottom:8mm">
+    <img src="${window.location.origin}/ms-beton-watermark.png" style="width:80mm;height:auto;opacity:0.18" />
+  </div>
+
   <!-- Footer -->
-  <div style="margin-top:12mm;padding-top:4mm;border-top:1px solid #ddd;font-size:7.5pt;color:#888;line-height:1.7">
+  <div style="padding-top:4mm;border-top:1px solid #ddd;font-size:7.5pt;color:#888;line-height:1.7">
     * Cena je orientačná. Závisí od aktuálneho cenníka a dostupnosti. Kontaktujte nás pre presnú ponuku.<br>
-    Vypracovala spoločnosť: <strong style="color:#555">MS-BETON, spol. s r.o.</strong> &nbsp;|&nbsp; IČO: ${ico} &nbsp;|&nbsp; DIČ: ${companyDic} &nbsp;|&nbsp; IČ DPH: ${icoDph}<br>
-    ${companyAddress} &nbsp;|&nbsp; +421&nbsp;909&nbsp;205&nbsp;205 &nbsp;|&nbsp; info@msbeton.sk &nbsp;|&nbsp; msbeton.sk
+    MS-BETON, spol. s r.o. &nbsp;|&nbsp; IČO: ${ico} &nbsp;|&nbsp; DIČ: ${companyDic} &nbsp;|&nbsp; IČ DPH: ${icoDph} &nbsp;|&nbsp;
+    ${companyAddress} &nbsp;|&nbsp; +421&nbsp;909&nbsp;205&nbsp;205 &nbsp;|&nbsp; info@msbeton.sk
   </div>
 </div>
 <script>window.onload=function(){window.print();}</script>
