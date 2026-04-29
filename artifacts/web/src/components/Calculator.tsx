@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Truck, LogIn, LogOut, FileText, MessageSquare, Minus, Plus, Trash2, Table2, ShoppingCart, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatPhone } from "@/lib/utils";
 import { adminData } from "@/lib/adminData";
 import { clientAuth, type LoggedClient } from "@/lib/clientAuth";
 import { clientApi } from "@/lib/api";
@@ -992,8 +992,8 @@ export function ConcreteCalculator() {
             )}
           </div>
 
-          {/* Mobile-only info banner — na md+ je info v pravom paneli (placeholder) */}
-          <div className="md:hidden">
+          {/* Mobile-only info banner — skryté na md+ aj po vypočítaní (pravý panel prevezme info) */}
+          <div className={cn("md:hidden", showResult && "hidden")}>
             {tab === "pumpa" && (
               <div className="flex items-start gap-3 bg-primary/10 border border-primary/20 rounded-lg px-4 py-3">
                 <Truck className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
@@ -1480,7 +1480,7 @@ export function ConcreteCalculator() {
                   </button>
                 </div>
 
-                <button onClick={() => { setOrderForm(f => ({ ...f, name: loggedClient?.name ?? f.name })); setShowOrderModal(true); }}
+                <button onClick={() => { setOrderForm(f => ({ ...f, name: loggedClient?.name ?? f.name, phone: loggedClient?.phone ? formatPhone(loggedClient.phone) : f.phone })); setShowOrderModal(true); }}
                   className="flex items-center justify-center gap-2 w-full py-3 bg-primary text-white font-bold text-sm tracking-wide hover:bg-primary/90 transition-all cursor-pointer">
                   <ShoppingCart className="w-4 h-4" /> Záväzne objednať →
                 </button>
@@ -1631,8 +1631,12 @@ export function ConcreteCalculator() {
               </div>
 
               {orderDone ? (
-                <div className="text-center py-6 space-y-2">
-                  <div className="text-4xl">✓</div>
+                <div className="text-center py-8 space-y-3">
+                  <div className="flex items-center justify-center w-16 h-16 rounded-full bg-green-500/20 border-2 border-green-500 mx-auto">
+                    <svg viewBox="0 0 24 24" className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </div>
                   <p className="text-green-400 font-bold text-lg">Objednávka odoslaná!</p>
                   <p className="text-white/50 text-sm">Čoskoro vás budeme kontaktovať.</p>
                 </div>
@@ -1656,7 +1660,7 @@ export function ConcreteCalculator() {
                     </div>
                     <div>
                       <label className="text-xs text-white/60 mb-1 block">Telefón</label>
-                      <input value={orderForm.phone} onChange={e => setOrderForm(f => ({ ...f, phone: e.target.value }))}
+                      <input value={orderForm.phone} onChange={e => setOrderForm(f => ({ ...f, phone: formatPhone(e.target.value) }))}
                         placeholder="+421 9xx xxx xxx"
                         className="w-full bg-white/10 border-b-2 border-b-primary/60 text-white px-3 py-2 text-sm focus:outline-none focus:border-b-primary placeholder:text-white/30 rounded-sm" />
                     </div>

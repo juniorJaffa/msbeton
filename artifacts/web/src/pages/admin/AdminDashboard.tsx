@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { LogOut, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
-import { cn } from "@/lib/utils";
+import { cn, formatPhone } from "@/lib/utils";
 import { isLoggedIn, logout } from "@/lib/adminAuth";
 import { adminData, syncFromServer, SYSTEM_OWNER_ID, ConcreteCategory, ConcreteType, DeliveryZone, Service, Client, TransportPricingZone, TransportSettings, Order } from "@/lib/adminData";
 
@@ -697,7 +697,7 @@ function ObjednavkyTab() {
                 {isExp && (
                   <div className="border-t border-gray-100 px-4 py-3 bg-gray-50/50 grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-gray-500">
                     <div><span className="font-semibold text-gray-600">Dátum:</span> {fmtDate(o.createdAt)}</div>
-                    {o.phone && <div><span className="font-semibold text-gray-600">Telefón:</span> {o.phone}</div>}
+                    {o.phone && <div><span className="font-semibold text-gray-600">Telefón:</span> {formatPhone(o.phone)}</div>}
                     {o.email && <div><span className="font-semibold text-gray-600">Email:</span> {o.email}</div>}
                     {o.clientId && <div><span className="font-semibold text-gray-600">ID klienta:</span> {o.clientId}</div>}
                     {o.km && <div><span className="font-semibold text-gray-600">Vzdialenosť:</span> {o.km} km</div>}
@@ -893,7 +893,7 @@ function KlientiTab() {
                   className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
                 <input placeholder="E-Mail" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
                   className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-                <input placeholder="Tel. číslo" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}
+                <input placeholder="Tel. číslo" value={form.phone} onChange={e => setForm({ ...form, phone: formatPhone(e.target.value) })}
                   className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
                 <input placeholder="Spoločnosť" value={form.company} onChange={e => setForm({ ...form, company: e.target.value })}
                   className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary sm:col-span-2" />
@@ -1075,7 +1075,7 @@ function KlientiTab() {
                         ] as { label: string; field: keyof Client }[]).map(({ label, field }) => (
                           <div key={field} className="flex gap-2 items-start">
                             <span className="text-gray-400 text-xs w-20 shrink-0 pt-0.5">{label}</span>
-                            <EditableField value={(c[field] as string) || "—"} onSave={v => update(c.id, { [field]: v })} />
+                            <EditableField value={(c[field] as string) || "—"} onSave={v => update(c.id, { [field]: field === "phone" ? formatPhone(v) : v })} />
                           </div>
                         ))}
                       </div>
