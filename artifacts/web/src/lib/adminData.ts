@@ -241,8 +241,35 @@ const DEFAULT_CLIENT_ACCOUNTS: ClientAccount[] = [
   { id: "ca1", clientId: "20", password: "1234", name: "Testovací klient", discountPct: 20, discountGroup: "B", active: true },
 ];
 
+// Systémový vlastník — vždy prvý, nedá sa zmazať ani presunúť isOwner inam
+export const SYSTEM_OWNER_ID = "system-owner";
+const SYSTEM_OWNER_CLIENT: Client = {
+  id: SYSTEM_OWNER_ID,
+  isOwner: true,
+  firstName: "Peter",
+  lastName: "Staňo",
+  company: "MS-BETON",
+  email: "peter@msbeton.sk",
+  phone: "0909205205",
+  loginId: "",
+  password: "",
+  discountBeton: 0,
+  discountDoprava: 0,
+  discountSluzby: 0,
+  discountCelkovo: 0,
+  canHotovost: true,
+  canPridatBeton: true,
+  active: true,
+};
+
+function ensureOwner(clients: Client[]): Client[] {
+  const filtered = clients.map(c => c.id !== SYSTEM_OWNER_ID ? { ...c, isOwner: false } : c);
+  if (filtered.some(c => c.id === SYSTEM_OWNER_ID)) return filtered;
+  return [SYSTEM_OWNER_CLIENT, ...filtered];
+}
+
 // Klienti s prístupom do kalkulačky (login + zľava) – nie partnerské spoločnosti
-const DEFAULT_CLIENTS: Client[] = [];
+const DEFAULT_CLIENTS: Client[] = [SYSTEM_OWNER_CLIENT];
 
 const ARRAY_KEYS = new Set(["msbeton_categories", "msbeton_delivery", "msbeton_services", "msbeton_clients", "msbeton_transport_zones", "msbeton_client_accounts", "msbeton_orders"]);
 
@@ -329,10 +356,11 @@ export const adminData = {
     adminApi.saveServices(data);
   },
 
-  getClients: (): Client[] => loadData("msbeton_clients", DEFAULT_CLIENTS),
+  getClients: (): Client[] => ensureOwner(loadData("msbeton_clients", DEFAULT_CLIENTS)),
   saveClients: (data: Client[]) => {
-    saveData("msbeton_clients", data);
-    adminApi.saveClients(data);
+    const safe = ensureOwner(data);
+    saveData("msbeton_clients", safe);
+    adminApi.saveClients(safe);
   },
 
   getTransportZones: (): TransportPricingZone[] => loadData("msbeton_transport_zones", DEFAULT_TRANSPORT_ZONES),

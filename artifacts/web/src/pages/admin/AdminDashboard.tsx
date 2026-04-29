@@ -4,7 +4,7 @@ import { LogOut, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, 
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { cn } from "@/lib/utils";
 import { isLoggedIn, logout } from "@/lib/adminAuth";
-import { adminData, syncFromServer, ConcreteCategory, ConcreteType, DeliveryZone, Service, Client, TransportPricingZone, TransportSettings, Order } from "@/lib/adminData";
+import { adminData, syncFromServer, SYSTEM_OWNER_ID, ConcreteCategory, ConcreteType, DeliveryZone, Service, Client, TransportPricingZone, TransportSettings, Order } from "@/lib/adminData";
 
 type Tab = "betony" | "sluzby" | "doprava" | "klienti" | "objednavky";
 
@@ -758,7 +758,7 @@ function KlientiTab() {
   const [showFormPass, setShowFormPass] = useState(false);
 
   const save = (data: Client[]) => { setClients(data); adminData.saveClients(data); };
-  const remove = (id: string) => { if (confirm("Vymazať klienta?")) save(clients.filter(c => c.id !== id)); };
+  const remove = (id: string) => { if (id === SYSTEM_OWNER_ID) return; if (confirm("Vymazať klienta?")) save(clients.filter(c => c.id !== id)); };
   const update = (id: string, patch: Partial<Client>) => save(clients.map(c => c.id === id ? { ...c, ...patch } : c));
   const togglePassVis = (id: string) => setShowPass(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
 
@@ -1050,7 +1050,7 @@ function KlientiTab() {
                     className="p-1 text-gray-300 hover:text-secondary transition-colors">
                     <Table2 className="w-4 h-4" />
                   </button>
-                  {!c.isOwner && (
+                  {c.id !== SYSTEM_OWNER_ID && (
                     <button onClick={(e) => { e.stopPropagation(); remove(c.id); }} className="p-1 text-gray-300 hover:text-red-500 transition-colors">
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -1169,15 +1169,6 @@ function KlientiTab() {
                         {c.active ? "Prístup aktívny" : "Prístup neaktívny"}
                       </button>
                     </div>
-                  </div>
-
-                  {/* isOwner toggle */}
-                  <div className="border-t border-gray-100 pt-3">
-                    <label className="flex items-center gap-2 text-xs font-bold text-gray-500 cursor-pointer select-none w-fit">
-                      <input type="checkbox" checked={c.isOwner ?? false} onChange={e => update(c.id, { isOwner: e.target.checked })} className="accent-yellow-500 w-4 h-4 shrink-0" />
-                      <Crown className="w-3.5 h-3.5 text-primary" />
-                      Označiť ako vlastníka (chránenú pred zmazaním)
-                    </label>
                   </div>
 
                   {/* Zľavové tabuľky */}
