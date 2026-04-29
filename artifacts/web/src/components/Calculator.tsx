@@ -1164,7 +1164,7 @@ export function ConcreteCalculator() {
                     className="w-full bg-white/10 border-b-2 border-b-primary text-white px-4 py-3 focus:outline-none placeholder:text-white/30 text-sm font-medium rounded-sm"
                   />
                 </div>
-                {!isOwn && (
+                {tab !== "vlastnadoprava" && (
                   <label className="flex items-center gap-2.5 cursor-pointer group">
                     <input
                       type="checkbox"
