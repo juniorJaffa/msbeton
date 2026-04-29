@@ -58,6 +58,7 @@ export interface Client {
   canZimneOpatrenia?: boolean; // zobrazí a auto-zahrnie zimné opatrenia
   hotovostDph?: number;        // vlastná DPH pre hotovosť (napr. 0.20), default 0.20
   manualPrices?: Record<string, number>; // manuálne ceny per položka (ID → €), override zľavovej ceny
+  isOwner?: boolean; // vlastník / hlavný účet — nedá sa vymazať
 }
 
 export interface Order {

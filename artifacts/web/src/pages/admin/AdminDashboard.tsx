@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { LogOut, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText } from "lucide-react";
+import { LogOut, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { cn } from "@/lib/utils";
 import { isLoggedIn, logout } from "@/lib/adminAuth";
@@ -742,6 +742,7 @@ function KlientiTab() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showPass, setShowPass] = useState<Set<string>>(new Set());
   const [showTableFor, setShowTableFor] = useState<string | null>(null);
+  const [inlineTableMode, setInlineTableMode] = useState<"faktura" | "hotovost">("faktura");
   const [tablePdfModal, setTablePdfModal] = useState<Client | null>(null);
   const [tablePdfMode, setTablePdfMode] = useState<"faktura" | "hotovost">("faktura");
   const [search, setSearch] = useState("");
@@ -996,11 +997,14 @@ function KlientiTab() {
           const fullName = [c.firstName, c.lastName].filter(Boolean).join(" ") || "—";
           const maxDisc = Math.max(c.discountBeton ?? 0, c.discountDoprava ?? 0, c.discountSluzby ?? 0, c.discountCelkovo ?? 0);
           return (
-            <div key={c.id} className="bg-white border border-gray-200 shadow-sm overflow-hidden">
+            <div key={c.id} className={cn("border shadow-sm overflow-hidden", c.isOwner ? "bg-primary/5 border-primary/40" : "bg-white border-gray-200")}>
               {/* Card header */}
               <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => setExpanded(isExpanded ? null : c.id)}>
-                <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center shrink-0">
-                  <span className="text-secondary font-black text-sm">{(c.firstName || c.company || "?").charAt(0).toUpperCase()}</span>
+                <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0", c.isOwner ? "bg-primary/20" : "bg-secondary/10")}>
+                  {c.isOwner
+                    ? <Crown className="w-4 h-4 text-primary" />
+                    : <span className="text-secondary font-black text-sm">{(c.firstName || c.company || "?").charAt(0).toUpperCase()}</span>
+                  }
                 </div>
                 {/* Meno */}
                 <div className="w-36 min-w-0 shrink-0">
@@ -1022,6 +1026,11 @@ function KlientiTab() {
                   ))}
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
+                  {c.isOwner && (
+                    <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-black uppercase rounded-sm bg-primary/20 text-primary/80 mr-1">
+                      <Crown className="w-3 h-3" /> Vlastník
+                    </span>
+                  )}
                   {hasLogin ? (
                     <span className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase rounded-sm ${c.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
                       {c.active ? <ShieldCheck className="w-3 h-3" /> : <ShieldOff className="w-3 h-3" />}
@@ -1041,9 +1050,11 @@ function KlientiTab() {
                     className="p-1 text-gray-300 hover:text-secondary transition-colors">
                     <Table2 className="w-4 h-4" />
                   </button>
-                  <button onClick={(e) => { e.stopPropagation(); remove(c.id); }} className="p-1 text-gray-300 hover:text-red-500 transition-colors">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {!c.isOwner && (
+                    <button onClick={(e) => { e.stopPropagation(); remove(c.id); }} className="p-1 text-gray-300 hover:text-red-500 transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -1160,37 +1171,66 @@ function KlientiTab() {
                     </div>
                   </div>
 
+                  {/* isOwner toggle */}
+                  <div className="border-t border-gray-100 pt-3">
+                    <label className="flex items-center gap-2 text-xs font-bold text-gray-500 cursor-pointer select-none w-fit">
+                      <input type="checkbox" checked={c.isOwner ?? false} onChange={e => update(c.id, { isOwner: e.target.checked })} className="accent-yellow-500 w-4 h-4 shrink-0" />
+                      <Crown className="w-3.5 h-3.5 text-primary" />
+                      Označiť ako vlastníka (chránenú pred zmazaním)
+                    </label>
+                  </div>
+
                   {/* Zľavové tabuľky */}
                   <div className="border-t border-gray-100 pt-3">
-                    <button
-                      onClick={() => setShowTableFor(showTableFor === c.id ? null : c.id)}
-                      className="flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-secondary transition-colors cursor-pointer"
-                    >
-                      <Table2 className="w-3.5 h-3.5" />
-                      {showTableFor === c.id ? "Skryť zľavové tabuľky" : "Zobraziť zľavové tabuľky klienta"}
-                    </button>
+                    <div className="flex items-center justify-between mb-3">
+                      <button
+                        onClick={() => setShowTableFor(showTableFor === c.id ? null : c.id)}
+                        className="flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-secondary transition-colors cursor-pointer"
+                      >
+                        <Table2 className="w-3.5 h-3.5" />
+                        {showTableFor === c.id ? "Skryť zľavové tabuľky" : "Zobraziť zľavové tabuľky klienta"}
+                      </button>
+                      {showTableFor === c.id && (
+                        <div className="flex items-center gap-2">
+                          <div className="flex border border-gray-200 rounded-sm overflow-hidden text-xs">
+                            {(["faktura", "hotovost"] as const).map(mode => (
+                              <button key={mode} onClick={() => setInlineTableMode(mode)}
+                                className={cn("px-3 py-1 font-black tracking-wider transition-all",
+                                  inlineTableMode === mode ? "bg-secondary text-white" : "text-gray-400 hover:text-secondary bg-white"
+                                )}>
+                                {mode === "faktura" ? "FAKTÚRA" : "HOTOVOSŤ"}
+                              </button>
+                            ))}
+                          </div>
+                          <button onClick={() => exportClientPricePDF(c, inlineTableMode, ts)}
+                            className="flex items-center gap-1.5 px-3 py-1 bg-primary text-secondary font-black text-xs hover:bg-primary/90 transition-colors cursor-pointer rounded-sm">
+                            <FileText className="w-3.5 h-3.5" /> PDF
+                          </button>
+                        </div>
+                      )}
+                    </div>
                     {showTableFor === c.id && (
-                      <div className="mt-3">
-                        <ClientPriceTable
-                          discountBeton={c.discountBeton ?? 0}
-                          discountDoprava={c.discountDoprava ?? 0}
-                          discountSluzby={c.discountSluzby ?? 0}
-                          discountCelkovo={c.discountCelkovo ?? 0}
-                          manualPrices={c.manualPrices}
-                          onManualPriceChange={(itemId, price) => {
-                            const current = c.manualPrices ?? {};
-                            let next: Record<string, number>;
-                            if (price === null) {
-                              const { [itemId]: _removed, ...rest } = current;
-                              next = rest;
-                            } else {
-                              next = { ...current, [itemId]: price };
-                            }
-                            update(c.id, { manualPrices: next });
-                          }}
-                          variant="light"
-                        />
-                      </div>
+                      <ClientPriceTable
+                        discountBeton={c.discountBeton ?? 0}
+                        discountDoprava={c.discountDoprava ?? 0}
+                        discountSluzby={c.discountSluzby ?? 0}
+                        discountCelkovo={c.discountCelkovo ?? 0}
+                        manualPrices={c.manualPrices}
+                        onManualPriceChange={inlineTableMode === "faktura" ? (itemId, price) => {
+                          const current = c.manualPrices ?? {};
+                          let next: Record<string, number>;
+                          if (price === null) {
+                            const { [itemId]: _removed, ...rest } = current;
+                            next = rest;
+                          } else {
+                            next = { ...current, [itemId]: price };
+                          }
+                          update(c.id, { manualPrices: next });
+                        } : undefined}
+                        priceMode={inlineTableMode}
+                        hotovostDph={c.hotovostDph ?? (ts.defaultHotovostDph ?? 0.20)}
+                        variant="light"
+                      />
                     )}
                   </div>
                 </div>
