@@ -22,6 +22,7 @@ interface ExtraItem {
   categoryName: string | null;
   typeLabel: string | null;
   quantity: string;
+  noTransport?: boolean;
 }
 
 const DEFAULT_VAT = 0.23;
@@ -459,7 +460,7 @@ export function ConcreteCalculator() {
       const q = parseFloat(item.quantity) || 0;
       if (t && q > 0) {
         const itemManual = mp[t.id];
-        const extraTC = isOwn ? zeroTC : calcTransport(km, q, tab, clientDeliveryZone);
+        const extraTC = (isOwn || item.noTransport) ? zeroTC : calcTransport(km, q, tab, clientDeliveryZone);
         concreteBreakdown.push({
           label: `Betón ${cleanType(t.label)} – ${q} m³`,
           qty: q,
@@ -1128,7 +1129,9 @@ export function ConcreteCalculator() {
             return (
               <div key={item.id} className="border border-primary/25 rounded-lg p-4 space-y-3 bg-primary/5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-primary/70 uppercase tracking-widest">Položka {idx + 2}</span>
+                  <span className="text-xs font-black text-primary/70 uppercase tracking-widest">
+                    Položka{item.categoryName ? ` – ${item.categoryName}` : ` ${idx + 2}`}
+                  </span>
                   <button
                     type="button"
                     onClick={() => { setExtraItems(extraItems.filter((i) => i.id !== item.id)); setShowResult(false); }}
@@ -1161,6 +1164,19 @@ export function ConcreteCalculator() {
                     className="w-full bg-white/10 border-b-2 border-b-primary text-white px-4 py-3 focus:outline-none placeholder:text-white/30 text-sm font-medium rounded-sm"
                   />
                 </div>
+                {!isOwn && (
+                  <label className="flex items-center gap-2.5 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={item.noTransport ?? false}
+                      onChange={(e) => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, noTransport: e.target.checked } : i)); setShowResult(false); }}
+                      className="w-4 h-4 accent-primary cursor-pointer"
+                    />
+                    <span className={cn("text-sm transition-colors", item.noTransport ? "text-primary font-semibold" : "text-white/60 group-hover:text-white/80")}>
+                      Nezapočítať dopravu
+                    </span>
+                  </label>
+                )}
               </div>
             );
           })}
