@@ -1435,8 +1435,8 @@ export function ConcreteCalculator() {
                                 label={isExtra
                                   ? ci.transportIsMin
                                     ? <span>Min. doprava – <strong>{ci.transportTrucks}x auto</strong></span>
-                                    : <span>Doprava – <strong>{ci.qty} m³</strong></span>
-                                  : <span>{prefix}{zoneStr ? ` ${zoneStr}` : ""} · <strong>{trucksLabel}</strong> · {ci.qty}m³</span>}
+                                    : <span>Doprava</span>
+                                  : <span>{prefix}{zoneStr ? ` ${zoneStr}` : ""} · <strong>{trucksLabel}</strong></span>}
                                 original={itemTransportOrig} discounted={itemTransportDisc} hasDiscount={hasDiscount} />
                             )}
                             {itemFillupOrig > 0 && (
@@ -1449,7 +1449,7 @@ export function ConcreteCalculator() {
                       })}
                       {!hasExtras && origDisplayItems.transport > 0 && (
                         <PriceRow
-                          label={<span>{prefix}{zoneStr ? ` ${zoneStr}` : ""} · <strong>{trucksLabel}</strong> · {result.qty}m³</span>}
+                          label={<span>{prefix}{zoneStr ? ` ${zoneStr}` : ""} · <strong>{trucksLabel}</strong></span>}
                           original={origDisplayItems.transport} discounted={displayItems.transport} hasDiscount={hasDiscount} />
                       )}
                       {!hasExtras && origDisplayItems.fillup > 0 && (
