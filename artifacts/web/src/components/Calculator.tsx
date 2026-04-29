@@ -429,27 +429,47 @@ export function ConcreteCalculator() {
     if (!qty || !selectedType) return null;
 
     // Extra items: compute per-item concrete breakdown with manual price support
+    // Každá položka dostane vlastný calcTransport (zhodné so starou PHP kalkulačkou, ktorá volala
+    // get_pump_calculation_distance per item vrátane fill-up pre každú položku zvlášť)
     const mp = loggedClient?.manualPrices ?? {};
-    const concreteBreakdown: Array<{label: string; qty: number; bezDph: number; bezDphFinal: number; bezDphFinalHotovost: number}> = [];
+    const isOwn = tab === "vlastnadoprava";
+    const zeroTC = { cost: 0, isMin: false, fillupM3: 0, fillupCost: 0 };
+    type BreakdownItem = {
+      label: string; qty: number;
+      bezDph: number; bezDphFinal: number; bezDphFinalHotovost: number;
+      transport: number; transportFillup: number;
+      transportFillupM3: number; transportFillupTarget: number;
+    };
+    const concreteBreakdown: BreakdownItem[] = [];
     const mainManual = mp[selectedType.id];
+    const mainTC = isOwn ? zeroTC : calcTransport(km, qty, tab, clientDeliveryZone);
     concreteBreakdown.push({
       label: `Betón ${cleanType(selectedType.label)} – ${qty} m³`,
       qty,
       bezDph: qty * selectedType.price,
       bezDphFinal: mainManual !== undefined ? qty * mainManual : qty * selectedType.price * betonFactor,
       bezDphFinalHotovost: mainManual !== undefined ? qty * mainManual * (1 + VAT_HOTOVOST) : qty * selectedType.price * betonFactor * (1 + VAT_HOTOVOST),
+      transport: mainTC.cost,
+      transportFillup: mainTC.fillupCost,
+      transportFillupM3: mainTC.fillupM3,
+      transportFillupTarget: mainTC.fillupM3 > 0 ? (qty < 5 ? 5 : 10) : 0,
     });
     for (const item of extraItems) {
       const t = getItemType(item.categoryName, item.typeLabel);
       const q = parseFloat(item.quantity) || 0;
       if (t && q > 0) {
         const itemManual = mp[t.id];
+        const extraTC = isOwn ? zeroTC : calcTransport(km, q, tab, clientDeliveryZone);
         concreteBreakdown.push({
           label: `Betón ${cleanType(t.label)} – ${q} m³`,
           qty: q,
           bezDph: q * t.price,
           bezDphFinal: itemManual !== undefined ? q * itemManual : q * t.price * betonFactor,
           bezDphFinalHotovost: itemManual !== undefined ? q * itemManual * (1 + VAT_HOTOVOST) : q * t.price * betonFactor * (1 + VAT_HOTOVOST),
+          transport: extraTC.cost,
+          transportFillup: extraTC.fillupCost,
+          transportFillupM3: extraTC.fillupM3,
+          transportFillupTarget: extraTC.fillupM3 > 0 ? (q < 5 ? 5 : 10) : 0,
         });
       }
     }
@@ -459,6 +479,10 @@ export function ConcreteCalculator() {
     const extraQty = extraItems.reduce((s, i) => s + (parseFloat(i.quantity) || 0), 0);
     const totalQty = qty + extraQty;
 
+    // Celková doprava = súčet per-item dopráv (zhodné s pôvodnou kalkulačkou)
+    const totalTransportCost = concreteBreakdown.reduce((s, ci) => s + ci.transport, 0);
+    const totalFillupCost = concreteBreakdown.reduce((s, ci) => s + ci.transportFillup, 0);
+    // Počet áut sa počíta stále z celkového množstva (len pre display)
     const trucks = tab === "pumpa" ? calcPumpTrucks(totalQty) : Math.ceil(totalQty / mixCap);
     const truckCapacity = tab === "pumpa" ? pumpCap : mixCap;
     const pumpHrs = parseInt(pumpHour) || 1;
@@ -470,8 +494,7 @@ export function ConcreteCalculator() {
     const waitIntervalsMix = Math.ceil(waitTotalMins / 15);
     const waitIntervals = tab === "pumpa" ? waitIntervalsPumpa : waitIntervalsMix;
 
-    const isOwn = tab === "vlastnadoprava";
-    const transportCalc = isOwn ? { cost: 0, isMin: false, fillupM3: 0, fillupCost: 0 } : calcTransport(km, totalQty, tab, clientDeliveryZone);
+    const transportCalc = { cost: totalTransportCost, isMin: concreteBreakdown[0] ? (isOwn ? false : calcTransport(km, qty, tab, clientDeliveryZone).isMin) : false, fillupM3: concreteBreakdown[0]?.transportFillupM3 ?? 0, fillupCost: totalFillupCost };
     const items = {
       concrete: totalConcreteBezDph,
       transport: transportCalc.cost,
@@ -1363,11 +1386,10 @@ export function ConcreteCalculator() {
                         const origVal = isFaktura ? ci.bezDph : ci.bezDph * (1 + VAT_HOTOVOST);
                         const discVal = isFaktura ? ci.bezDphFinal : ci.bezDphFinalHotovost;
                         const isExtra = idx > 0;
-                        const propFactor = result.totalQty > 0 ? ci.qty / result.totalQty : 0;
-                        const itemTransportOrig = hasExtras ? origDisplayItems.transport * propFactor : 0;
-                        const itemTransportDisc = hasExtras ? displayItems.transport * propFactor : 0;
-                        const itemFillupOrig = hasExtras && !isExtra ? origDisplayItems.fillup : 0;
-                        const itemFillupDisc = hasExtras && !isExtra ? displayItems.fillup : 0;
+                        const itemTransportOrig = hasExtras ? ci.transport : 0;
+                        const itemTransportDisc = hasExtras ? ci.transport * dopravaFactor : 0;
+                        const itemFillupOrig = hasExtras ? ci.transportFillup : 0;
+                        const itemFillupDisc = hasExtras ? ci.transportFillup * dopravaFactor : 0;
                         return (
                           <div key={idx} className={cn(isExtra ? "mt-2 pt-2 border-t border-white/10" : "")}>
                             {isExtra && (
@@ -1383,7 +1405,7 @@ export function ConcreteCalculator() {
                             )}
                             {itemFillupOrig > 0 && (
                               <PriceRow
-                                label={`Doťaženie do ${result.fillupTarget}m³ – ${result.fillupM3}m³`}
+                                label={`Doťaženie do ${ci.transportFillupTarget}m³ – ${ci.transportFillupM3}m³`}
                                 original={itemFillupOrig} discounted={itemFillupDisc} hasDiscount={hasDiscount} />
                             )}
                           </div>
