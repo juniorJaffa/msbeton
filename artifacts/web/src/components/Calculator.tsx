@@ -173,8 +173,20 @@ function TypeRadioGroup({ label, value, onChange, options }: {
 function fmt(n: number) { return n.toFixed(2) + " €"; }
 function cleanType(lbl: string) { return lbl.replace(/ – [\d.]+ € \/ m³/, "").replace(/ – [\d,.]+ €\/m³/, ""); }
 
-function PriceRow({ label, original, discounted, hasDiscount }: { label: string; original: number; discounted: number; hasDiscount: boolean }) {
+function PriceRow({ label, original, discounted, hasDiscount, isFillup }: { label: string; original: number; discounted: number; hasDiscount: boolean; isFillup?: boolean }) {
   if (original === 0) return null;
+  if (isFillup) {
+    return (
+      <div className="flex justify-between items-center text-sm px-3 py-2 mt-1 rounded-sm" style={{ background: "rgba(44,46,67,0.7)" }}>
+        <span className="text-primary font-semibold flex-1 pr-2">{label}</span>
+        <div className="flex-1 mx-3 h-px" style={{ background: "linear-gradient(90deg,#EDC531 0%,transparent 100%)" }} />
+        <span className="text-right flex-shrink-0">
+          {hasDiscount && <span className="line-through text-primary/35 text-xs block">{fmt(original)}</span>}
+          <span className="font-bold text-primary">{fmt(discounted)}</span>
+        </span>
+      </div>
+    );
+  }
   return (
     <div className="flex justify-between items-start text-sm py-1">
       <span className="text-white/70 flex-1 pr-2">{label}</span>
@@ -1422,7 +1434,7 @@ export function ConcreteCalculator() {
                             {itemFillupOrig > 0 && (
                               <PriceRow
                                 label={`Doťaženie do ${ci.transportFillupTarget}m³ – ${ci.transportFillupM3}m³`}
-                                original={itemFillupOrig} discounted={itemFillupDisc} hasDiscount={hasDiscount} />
+                                original={itemFillupOrig} discounted={itemFillupDisc} hasDiscount={hasDiscount} isFillup />
                             )}
                           </div>
                         );
@@ -1435,7 +1447,7 @@ export function ConcreteCalculator() {
                       {!hasExtras && origDisplayItems.fillup > 0 && (
                         <PriceRow
                           label={`Doťaženie do ${result.fillupTarget}m³ – ${result.fillupM3}m³`}
-                          original={origDisplayItems.fillup} discounted={displayItems.fillup} hasDiscount={hasDiscount} />
+                          original={origDisplayItems.fillup} discounted={displayItems.fillup} hasDiscount={hasDiscount} isFillup />
                       )}
                       {displayItems.zimne > 0 && (
                         <PriceRow label={`Zimné opatrenia – ${result.totalQty} m³`}
