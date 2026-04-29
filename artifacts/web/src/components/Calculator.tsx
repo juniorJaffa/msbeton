@@ -992,18 +992,36 @@ export function ConcreteCalculator() {
             )}
           </div>
 
-          {/* Pumpa info banner — removed here, shown in result panel */}
-
-          {/* Vlastná doprava info banner */}
-          {tab === "vlastnadoprava" && (
-            <div className="flex items-start gap-3 bg-primary/10 border border-primary/20 rounded-lg px-4 py-3">
-              <Truck className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-semibold text-white">Vlastná doprava</p>
-                <p className="text-xs text-white/60 mt-0.5">Zákazník si betón vyzdvihne vlastným vozidlom na prevádzke. Doprava sa nepočíta.</p>
+          {/* Mobile-only info banner — na md+ je info v pravom paneli (placeholder) */}
+          <div className="md:hidden">
+            {tab === "pumpa" && (
+              <div className="flex items-start gap-3 bg-primary/10 border border-primary/20 rounded-lg px-4 py-3">
+                <Truck className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-white">Betónová pumpa {pumpCap}m³ · 28m rameno</p>
+                  <p className="text-xs text-white/60 mt-0.5">Prvé auto {pumpCap}m³, každé ďalšie {mixCap}m³ (domiešavač). Čerpanie od príjazdu na stavbu.</p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+            {tab === "mix" && (
+              <div className="flex items-start gap-3 bg-primary/10 border border-primary/20 rounded-lg px-4 py-3">
+                <Truck className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-white">Domiešavač {mixCap}m³</p>
+                  <p className="text-xs text-white/60 mt-0.5">Prvých 30 min čakania bez poplatku. Čakanie každých začatých 15 min. Kapacita {mixCap}m³.</p>
+                </div>
+              </div>
+            )}
+            {tab === "vlastnadoprava" && (
+              <div className="flex items-start gap-3 bg-primary/10 border border-primary/20 rounded-lg px-4 py-3">
+                <Truck className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-white">Vlastná doprava</p>
+                  <p className="text-xs text-white/60 mt-0.5">Zákazník si betón vyzdvihne vlastným vozidlom na prevádzke. Doprava sa nepočíta.</p>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Delivery */}
           {tab !== "vlastnadoprava" && <div className="space-y-2">
@@ -1471,6 +1489,30 @@ export function ConcreteCalculator() {
             </motion.div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full min-h-[420px] gap-4 text-center px-2">
+              {tab === "vlastnadoprava" && (
+                <div className="w-full rounded-lg overflow-hidden text-left border border-primary/30">
+                  <div className="bg-primary px-4 py-2.5">
+                    <div className="text-sm font-black text-secondary">Vlastná doprava</div>
+                  </div>
+                  <div className="bg-primary/10 border-b border-primary/20 px-4 py-3">
+                    <p className="text-xs text-white/55 leading-relaxed">
+                      Zákazník si betón vyzdvihne vlastným vozidlom<br />
+                      na prevádzke. Doprava sa nepočíta.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-px bg-primary/15">
+                    {[
+                      { label: "Doprava", value: "Nepočíta sa" },
+                      { label: "Odber", value: "Na prevádzke" },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="bg-secondary/70 px-3 py-2">
+                        <div className="text-[10px] text-white/35 uppercase tracking-wide mb-0.5">{label}</div>
+                        <div className="text-sm font-bold text-primary">{value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               {tab === "pumpa" && (
                 <div className="w-full rounded-lg overflow-hidden text-left border border-primary/30">
                   <div className="bg-primary px-4 py-2.5">
