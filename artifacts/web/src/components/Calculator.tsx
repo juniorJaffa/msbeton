@@ -1515,9 +1515,9 @@ export function ConcreteCalculator() {
                     <div className="flex items-center gap-2 text-white/50 text-xs pt-1">
                       <Truck className="w-3.5 h-3.5" />
                       {tab === "pumpa" ? (
-                        <span>1× Pumpa ({pumpCap}m³){result.mixTrucksCount > 0 ? ` + ${result.mixTrucksCount}× Mix (${mixCap}m³)` : ""} = {result.trucks} vozidl{result.trucks === 1 ? "o" : "á"}</span>
+                        <span><strong>1× Pumpa</strong> ({pumpCap}m³){result.mixTrucksCount > 0 ? <> + <strong>{result.mixTrucksCount}× Mix</strong> ({mixCap}m³)</> : ""} = <strong>{result.trucks} vozidl{result.trucks === 1 ? "o" : "á"}</strong></span>
                       ) : (
-                        <span>{result.trucks}× Mix ({mixCap}m³/vozidlo)</span>
+                        <span><strong>{result.trucks}× Mix</strong> ({mixCap}m³/vozidlo)</span>
                       )}
                     </div>
                   )}
