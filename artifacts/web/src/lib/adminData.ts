@@ -32,8 +32,10 @@ export interface Service {
   price: number;
   description: string;
   active: boolean;
-  activePeriodFrom?: string; // "MM-DD" napr. "11-15"
-  activePeriodTo?: string;   // "MM-DD" napr. "03-15"
+  activePeriodFrom?: string;
+  activePeriodTo?: string;
+  maxMeters?: number;             // max bm pre hadice
+  serviceMode?: "pumpa" | "mix";  // iba pre daný režim kalkulačky
 }
 
 export interface Client {
@@ -55,6 +57,7 @@ export interface Client {
   deliveryZoneId?: string;     // ID zóny dopravy (z adminData.getDelivery()), default = prvá zóna
   canZimneOpatrenia?: boolean; // zobrazí a auto-zahrnie zimné opatrenia
   hotovostDph?: number;        // vlastná DPH pre hotovosť (napr. 0.20), default 0.20
+  manualPrices?: Record<string, number>; // manuálne ceny per položka (ID → €), override zľavovej ceny
 }
 
 export interface Order {
@@ -101,7 +104,8 @@ export interface TransportSettings {
   winterSurcharge: number;
   waitingRatePer15min: number;
   minimumLoadM3: number;
-  dph?: number;  // DPH sadzba (napr. 0.23), default 0.23
+  dph?: number;
+  defaultHotovostDph?: number;  // default DPH hotovosť pre klientov, default 0.20
 }
 
 const DEFAULT_CATEGORIES: ConcreteCategory[] = [
@@ -190,8 +194,9 @@ const DEFAULT_SERVICES: Service[] = [
   { id: "s1", name: "Čerpanie betónu", unit: "1 hod.", price: 112.50, description: "Čerpanie betónu pumpou, od príjazdu do odjazdu zo stavby", active: true },
   { id: "s2", name: "Rozbehová chémia", unit: "1 ks", price: 31.25, description: "Chemická prísada pre spustenie betónpumpy", active: true },
   { id: "s3", name: "Umývanie mimo stavby", unit: "1 x", price: 56.25, description: "Umytie betónpumpy mimo miesta prevádzky", active: true },
-  { id: "s4", name: "Čakačka mixéra", unit: "15 min.", price: 8.00, description: "Čakanie nad 30 min sa účtuje každých začatých 15 min", active: true },
-  { id: "s5", name: "Prídavné hadice", unit: "1 m", price: 10.00, description: "Príplatok za každý meter predĺženia výložníkovej hadice", active: true },
+  { id: "s4", name: "Čakačka mixéra", unit: "15 min.", price: 8.00, description: "Čakanie nad 30 min sa účtuje každých začatých 15 min", active: true, serviceMode: "mix" as const },
+  { id: "s7", name: "Čakačka pumpy", unit: "15 min. / ks", price: 8.00, description: "Čakanie pumpy, účtuje sa za každý kus (15 min)", active: true, serviceMode: "pumpa" as const },
+  { id: "s5", name: "Prídavné hadice", unit: "1 m", price: 10.00, description: "Príplatok za každý meter predĺženia výložníkovej hadice", active: true, maxMeters: 10 },
   { id: "s6", name: "Zimné opatrenia", unit: "m³", price: 5.00, description: "Príplatok za zimné opatrenia betónu (15.11.–15.3.), účtuje sa za každý m³ betónu", active: true, activePeriodFrom: "11-15", activePeriodTo: "03-15" },
 ];
 

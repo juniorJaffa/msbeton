@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { LogOut, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList } from "lucide-react";
+import { LogOut, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { isLoggedIn, logout } from "@/lib/adminAuth";
 import { adminData, syncFromServer, ConcreteCategory, ConcreteType, DeliveryZone, Service, Client, TransportPricingZone, TransportSettings, Order } from "@/lib/adminData";
@@ -290,8 +290,8 @@ function DopravaTab() {
           const ref = zones[0];
           const updateAll = (patch: Partial<DeliveryZone>) => save(zones.map(z => ({ ...z, ...patch })));
           return (
-            <div className="grid grid-cols-2 gap-px bg-gray-100 m-4 rounded overflow-hidden">
-              <div className="bg-yellow-50 px-4 py-3 space-y-2">
+            <div className="grid grid-cols-2 gap-3 m-4">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-md px-4 py-3 space-y-2">
                 <div className="flex items-center gap-2">
                   <PumpTruckIcon />
                   <span className="text-xs font-black text-secondary uppercase tracking-wide">Pumpa</span>
@@ -311,7 +311,7 @@ function DopravaTab() {
                   </div>
                 </div>
               </div>
-              <div className="bg-yellow-50 px-4 py-3 space-y-2">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-md px-4 py-3 space-y-2">
                 <div className="flex items-center gap-2">
                   <MixTruckIcon />
                   <span className="text-xs font-black text-secondary uppercase tracking-wide">Mixér</span>
@@ -476,12 +476,25 @@ function SluzbyTab() {
   const toggle = (id: string) => save(services.map(s => s.id === id ? { ...s, active: !s.active } : s));
   const remove = (id: string) => { if (confirm("Vymazať službu?")) save(services.filter(s => s.id !== id)); };
   const update = (id: string, field: keyof Service, value: string) =>
-    save(services.map(s => s.id === id ? { ...s, [field]: field === "price" ? parseFloat(value) || 0 : (value === "—" ? undefined : value) } : s));
+    save(services.map(s => s.id === id ? { ...s, [field]: (field === "price" || field === "maxMeters") ? (parseFloat(value) || 0) : (value === "—" ? undefined : value) } : s));
   const add = () => {
     if (!form.name) return;
     save([...services, { id: adminData.generateId(), name: form.name, unit: form.unit, price: parseFloat(form.price) || 0, description: form.description, active: true }]);
     setForm({ name: "", unit: "", price: "", description: "" }); setAdding(false);
   };
+
+  // Zorad: čakačka pumpy hneď za čakačkou mixéra
+  const displayServices = (() => {
+    const pumpaItems = services.filter(s => s.serviceMode === "pumpa");
+    const result: Service[] = [];
+    for (const s of services) {
+      if (s.serviceMode === "pumpa") continue;
+      result.push(s);
+      if (s.serviceMode === "mix") result.push(...pumpaItems);
+    }
+    if (!services.some(s => s.serviceMode === "mix")) result.push(...pumpaItems);
+    return result;
+  })();
 
   return (
     <div className="space-y-3">
@@ -497,7 +510,7 @@ function SluzbyTab() {
             </tr>
           </thead>
           <tbody>
-            {services.map((s, i) => (
+            {displayServices.map((s, i) => (
               <tr key={s.id} className={`border-b border-gray-50 ${s.active ? "" : "opacity-50"} ${i % 2 === 0 ? "" : "bg-gray-50/40"}`}>
                 <td className="px-5 py-3">
                   <div className="font-semibold text-secondary"><EditableField value={s.name} onSave={v => update(s.id, "name", v)} /></div>
@@ -515,6 +528,21 @@ function SluzbyTab() {
                         onSave={v => { const [dd, mm] = v.split("."); update(s.id, "activePeriodTo", dd && mm ? `${mm}-${dd}` : v); }}
                       />
                       <span className="text-gray-200">(DD.MM)</span>
+                    </div>
+                  )}
+                  {s.serviceMode && (
+                    <div className="flex items-center gap-1 mt-1.5">
+                      {s.serviceMode === "pumpa" ? <PumpTruckIcon /> : <MixTruckIcon />}
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
+                        {s.serviceMode === "pumpa" ? "Iba Pumpa" : "Iba Mixér"}
+                      </span>
+                    </div>
+                  )}
+                  {s.maxMeters !== undefined && (
+                    <div className="flex items-center gap-1 mt-1 text-[10px] text-gray-400">
+                      <span>Max:</span>
+                      <EditableField value={s.maxMeters} type="number" onSave={v => update(s.id, "maxMeters", v)} />
+                      <span>m</span>
                     </div>
                   )}
                 </td>
@@ -708,10 +736,13 @@ function DiscountInput({ label, value, onChange }: { label: string; value: strin
 
 function KlientiTab() {
   const [clients, setClients] = useState<Client[]>(adminData.getClients());
-  const [ts] = useState<TransportSettings>(adminData.getTransportSettings());
+  const [ts, setTs] = useState<TransportSettings>(adminData.getTransportSettings());
+  const saveTs = (data: TransportSettings) => { setTs(data); adminData.saveTransportSettings(data); };
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showPass, setShowPass] = useState<Set<string>>(new Set());
   const [showTableFor, setShowTableFor] = useState<string | null>(null);
+  const [tablePdfModal, setTablePdfModal] = useState<Client | null>(null);
+  const [tablePdfMode, setTablePdfMode] = useState<"faktura" | "hotovost">("faktura");
   const [search, setSearch] = useState("");
   const [adding, setAdding] = useState(false);
   const emptyForm = {
@@ -755,23 +786,79 @@ function KlientiTab() {
 
   return (
     <div className="space-y-4">
-      {/* General systémová DPH info */}
+      {/* Systémová DPH — editovateľná */}
       <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
           <h3 className="font-black text-secondary text-sm uppercase tracking-widest">Systémová DPH</h3>
         </div>
         <div className="flex flex-wrap gap-px bg-gray-100">
           <div className="bg-white px-5 py-3 flex-1 min-w-36">
-            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">DPH Faktúra</div>
-            <div className="font-bold text-secondary text-sm">{Math.round((ts.dph ?? 0.23) * 100)} %</div>
+            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">DPH Faktúra</div>
+            <div className="flex items-center gap-1 font-bold text-secondary text-sm">
+              <EditableField value={Math.round((ts.dph ?? 0.23) * 100)} type="number"
+                onSave={v => saveTs({ ...ts, dph: (parseFloat(v) || 23) / 100 })} /> %
+            </div>
           </div>
-          <div className="bg-white px-5 py-3 flex-1 min-w-36">
-            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">DPH Hotovosť (default)</div>
-            <div className="font-bold text-secondary text-sm">20 %<span className="text-xs text-gray-400 font-normal ml-1">(per klient)</span></div>
+          <div className="bg-white px-5 py-3 flex-1 min-w-56">
+            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">DPH Hotovosť — default</div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1 font-bold text-secondary text-sm">
+                <EditableField value={Math.round((ts.defaultHotovostDph ?? 0.20) * 100)} type="number"
+                  onSave={v => saveTs({ ...ts, defaultHotovostDph: (parseFloat(v) || 20) / 100 })} /> %
+              </div>
+              <button
+                onClick={() => {
+                  const dph = ts.defaultHotovostDph ?? 0.20;
+                  const affected = clients.filter(c => c.hotovostDph === undefined || Math.abs((c.hotovostDph ?? 0.20) - 0.20) < 0.001).length;
+                  if (!confirm(`Nastaviť ${Math.round(dph * 100)}% DPH hotovosť pre ${affected} klientov bez vlastnej sadzby?`)) return;
+                  save(clients.map(c =>
+                    (c.hotovostDph === undefined || Math.abs((c.hotovostDph ?? 0.20) - 0.20) < 0.001)
+                      ? { ...c, hotovostDph: dph }
+                      : c
+                  ));
+                }}
+                className="px-2 py-1 bg-secondary/10 border border-secondary/20 text-secondary font-bold text-[10px] hover:bg-secondary/20 transition-colors uppercase tracking-wide">
+                Nastaviť klientom
+              </button>
+            </div>
+            <div className="text-[10px] text-gray-400 mt-1">Platí pre klientov bez vlastnej DPH sadzby</div>
           </div>
-          <div className="bg-gray-50 px-5 py-3 flex-1 min-w-48">
-            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Poznámka</div>
-            <div className="text-xs text-gray-500">Faktúra DPH sa mení v Admin › Doprava › Nastavenia cenníka</div>
+          <div className="bg-white px-5 py-3 flex-1 min-w-48 border-l border-gray-100">
+            {(() => {
+              const enabledCount = clients.filter(c => c.canHotovost !== false).length;
+              const disabledCount = clients.length - enabledCount;
+              return (
+                <>
+                  <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Hotovosť — hromadne</div>
+                  <div className="text-[10px] text-gray-500 mb-2">
+                    <span className="text-green-600 font-bold">{enabledCount}</span> zapnutá
+                    {disabledCount > 0 && <>, <span className="text-red-500 font-bold">{disabledCount}</span> vypnutá</>}
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    {enabledCount > 0 && (
+                      <button
+                        onClick={() => {
+                          if (!confirm(`Vypnúť Hotovosť VŠETKÝM ${enabledCount} klientom?`)) return;
+                          save(clients.map(c => ({ ...c, canHotovost: false })));
+                        }}
+                        className="flex items-center gap-1.5 px-2 py-1 bg-red-50 border border-red-200 text-red-700 font-bold text-[10px] hover:bg-red-100 transition-colors uppercase tracking-wide">
+                        <ShieldOff className="w-3 h-3" /> Vypnúť ({enabledCount})
+                      </button>
+                    )}
+                    {disabledCount > 0 && (
+                      <button
+                        onClick={() => {
+                          if (!confirm(`Zapnúť Hotovosť VŠETKÝM ${disabledCount} klientom?`)) return;
+                          save(clients.map(c => ({ ...c, canHotovost: true })));
+                        }}
+                        className="flex items-center gap-1.5 px-2 py-1 bg-green-50 border border-green-200 text-green-700 font-bold text-[10px] hover:bg-green-100 transition-colors uppercase tracking-wide">
+                        <ShieldCheck className="w-3 h-3" /> Zapnúť ({disabledCount})
+                      </button>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>
@@ -780,22 +867,6 @@ function KlientiTab() {
       <div className="flex gap-3 flex-wrap">
         <input placeholder="Hľadať klienta..." value={search} onChange={e => setSearch(e.target.value)}
           className="flex-1 min-w-40 border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:border-primary" />
-        <button
-          onClick={() => {
-            if (!confirm(`Vypnúť Hotovosť VŠETKÝM ${clients.filter(c => c.canHotovost !== false).length} klientom? (napr. pri daňovej kontrole)`)) return;
-            save(clients.map(c => ({ ...c, canHotovost: false })));
-          }}
-          className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-300 text-red-700 font-bold text-xs hover:bg-red-100 shrink-0 uppercase tracking-wide">
-          <ShieldOff className="w-3.5 h-3.5" /> Vypnúť Hotovosť všetkým
-        </button>
-        <button
-          onClick={() => {
-            if (!confirm(`Zapnúť Hotovosť VŠETKÝM ${clients.length} klientom?`)) return;
-            save(clients.map(c => ({ ...c, canHotovost: true })));
-          }}
-          className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-300 text-green-700 font-bold text-xs hover:bg-green-100 shrink-0 uppercase tracking-wide">
-          <ShieldCheck className="w-3.5 h-3.5" /> Zapnúť všetkým
-        </button>
         <button onClick={() => { setAdding(true); setExpanded(null); }}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-secondary font-bold text-sm hover:bg-primary/90 shrink-0">
           <Plus className="w-4 h-4" /> Pridať klienta
@@ -963,6 +1034,12 @@ function KlientiTab() {
                   <span className="p-1 text-gray-400">
                     {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                   </span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setTablePdfModal(c); setTablePdfMode("faktura"); }}
+                    title="Zľavové tabuľky klienta"
+                    className="p-1 text-gray-300 hover:text-secondary transition-colors">
+                    <Table2 className="w-4 h-4" />
+                  </button>
                   <button onClick={(e) => { e.stopPropagation(); remove(c.id); }} className="p-1 text-gray-300 hover:text-red-500 transition-colors">
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -1098,6 +1175,18 @@ function KlientiTab() {
                           discountDoprava={c.discountDoprava ?? 0}
                           discountSluzby={c.discountSluzby ?? 0}
                           discountCelkovo={c.discountCelkovo ?? 0}
+                          manualPrices={c.manualPrices}
+                          onManualPriceChange={(itemId, price) => {
+                            const current = c.manualPrices ?? {};
+                            let next: Record<string, number>;
+                            if (price === null) {
+                              const { [itemId]: _removed, ...rest } = current;
+                              next = rest;
+                            } else {
+                              next = { ...current, [itemId]: price };
+                            }
+                            update(c.id, { manualPrices: next });
+                          }}
                           variant="light"
                         />
                       </div>
@@ -1109,14 +1198,223 @@ function KlientiTab() {
           );
         })}
       </div>
+
+      {/* ── Popup: Zľavové tabuľky klienta ── */}
+      {tablePdfModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 overflow-auto"
+          onClick={() => setTablePdfModal(null)}>
+          <div className="bg-gray-50 w-full max-w-3xl my-4 shadow-2xl rounded-sm"
+            onClick={e => e.stopPropagation()}>
+
+            {/* Header */}
+            <div className="bg-secondary text-white px-6 py-4 flex items-center justify-between">
+              <div>
+                <div className="font-black text-base uppercase tracking-widest">Zľavové tabuľky klienta</div>
+                <div className="text-sm text-white/60 mt-0.5">
+                  {[tablePdfModal.firstName, tablePdfModal.lastName].filter(Boolean).join(" ")}
+                  {tablePdfModal.company && ` · ${tablePdfModal.company}`}
+                  {tablePdfModal.email && ` · ${tablePdfModal.email}`}
+                </div>
+              </div>
+              <button onClick={() => setTablePdfModal(null)} className="text-white/60 hover:text-white p-1">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* FAKTÚRA / HOTOVOSŤ tabs */}
+            <div className="grid grid-cols-2 bg-white border-b border-gray-200">
+              {(["faktura", "hotovost"] as const).map(mode => (
+                <button key={mode} onClick={() => setTablePdfMode(mode)} className={cn(
+                  "py-3 font-black text-sm tracking-widest transition-all",
+                  mode === "faktura" ? "border-r border-gray-200" : "",
+                  tablePdfMode === mode ? "bg-secondary text-white" : "text-gray-400 hover:text-secondary"
+                )}>
+                  {mode === "faktura" ? "FAKTÚRA" : "HOTOVOSŤ"}
+                </button>
+              ))}
+            </div>
+
+            {/* Price table */}
+            <div className="overflow-y-auto p-4" style={{ maxHeight: "60vh" }}>
+              <ClientPriceTable
+                discountBeton={tablePdfModal.discountBeton ?? 0}
+                discountDoprava={tablePdfModal.discountDoprava ?? 0}
+                discountSluzby={tablePdfModal.discountSluzby ?? 0}
+                discountCelkovo={tablePdfModal.discountCelkovo ?? 0}
+                manualPrices={tablePdfModal.manualPrices}
+                priceMode={tablePdfMode}
+                hotovostDph={tablePdfModal.hotovostDph ?? (ts.defaultHotovostDph ?? 0.20)}
+                variant="light"
+              />
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-between items-center px-6 py-4 border-t border-gray-200 bg-white">
+              <button onClick={() => setTablePdfModal(null)}
+                className="px-4 py-2 border border-secondary text-secondary font-bold text-sm hover:bg-secondary hover:text-white transition-colors cursor-pointer">
+                ZRUŠIŤ
+              </button>
+              <button onClick={() => exportClientPricePDF(tablePdfModal, tablePdfMode, ts)}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-secondary font-bold text-sm hover:bg-primary/90 transition-colors cursor-pointer">
+                <FileText className="w-4 h-4" /> EXPORTOVAŤ PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+function exportClientPricePDF(client: Client, priceMode: "faktura" | "hotovost", tsettings: TransportSettings) {
+  const categories = adminData.getCategories();
+  const services = adminData.getServices().filter(s => s.active);
+  const zones = adminData.getTransportZones();
+
+  const effectiveBeton   = (client.discountBeton   ?? 0) > 0 ? (client.discountBeton   ?? 0) : (client.discountCelkovo ?? 0);
+  const effectiveDoprava = (client.discountDoprava ?? 0) > 0 ? (client.discountDoprava ?? 0) : (client.discountCelkovo ?? 0);
+  const effectiveSluzby  = (client.discountSluzby  ?? 0) > 0 ? (client.discountSluzby  ?? 0) : (client.discountCelkovo ?? 0);
+  const betonFactor   = 1 - effectiveBeton   / 100;
+  const dopravaFactor = 1 - effectiveDoprava / 100;
+  const sluzbyFactor  = 1 - effectiveSluzby  / 100;
+  const hotovostMult = priceMode === "hotovost" ? 1 + (client.hotovostDph ?? tsettings.defaultHotovostDph ?? 0.20) : 1;
+  const mp = client.manualPrices ?? {};
+  const hasDiscount = effectiveBeton > 0 || effectiveDoprava > 0 || effectiveSluzby > 0 || Object.keys(mp).length > 0;
+  const today = new Date().toLocaleDateString("sk-SK");
+  const clientName = [client.firstName, client.lastName].filter(Boolean).join(" ");
+
+  const fmtP = (n: number) => n.toFixed(2) + " €";
+  const thS = `padding:5px 8px;font-size:8pt;text-align:left`;
+  const thRS = `padding:5px 8px;font-size:8pt;text-align:right`;
+  const tdS = `padding:4px 8px;font-size:8.5pt;border-bottom:1px solid #eee`;
+  const tdRS = `padding:4px 8px;font-size:8.5pt;border-bottom:1px solid #eee;text-align:right`;
+  const discS = `padding:4px 8px;font-size:8.5pt;border-bottom:1px solid #eee;text-align:right;color:#1a7c2e;font-weight:bold;background:#f0fff0`;
+
+  const buildTable = (headers: string[], rows: Array<[string, string, string, string?]>, bg?: string) => {
+    const head = headers.map((h, i) => `<th style="background:${bg ?? "#001D3D"};color:#fff;${i < 2 ? thS : thRS}">${h}</th>`).join("");
+    const body = rows.map((row, ri) => {
+      const rowBg = ri % 2 === 1 ? "background:#f9f9f9;" : "";
+      const cols = [
+        `<td style="${tdS}${rowBg}">${row[0]}</td>`,
+        `<td style="${tdRS}${rowBg}">${row[1]}</td>`,
+        `<td style="${tdRS}${rowBg}">${row[2]}</td>`,
+        row[3] !== undefined ? `<td style="${discS}${rowBg}">${row[3]}</td>` : (hasDiscount ? `<td style="${tdRS}${rowBg}"></td>` : ""),
+      ];
+      return `<tr>${cols.join("")}</tr>`;
+    }).join("");
+    return `<table style="border-collapse:collapse;width:100%;margin-bottom:14px"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+  };
+
+  const discHdr = hasDiscount ? ["Názov", "Množstvo", "Pôvodná cena", "Zľavnená cena"] : ["Názov", "Množstvo", "Cena"];
+
+  // Betóny
+  const betonHtml = categories.map(cat => {
+    const rows: Array<[string, string, string, string?]> = cat.types
+      .filter(t => t.price > 0 && t.label.trim())
+      .map(t => {
+        const orig = t.price * hotovostMult;
+        const manual = mp[t.id] !== undefined ? mp[t.id] * hotovostMult : undefined;
+        const disc = manual !== undefined ? manual : orig * betonFactor;
+        const hasItemDisc = Math.abs(orig - disc) > 0.001;
+        return hasDiscount
+          ? [t.label, "1 m³", fmtP(orig), hasItemDisc ? fmtP(disc) : undefined] as [string, string, string, string?]
+          : [t.label, "1 m³", fmtP(orig)] as [string, string, string];
+      });
+    return `<h3 style="font-size:9.5pt;color:#001D3D;margin:14px 0 3px;border-bottom:2px solid #EDC531;padding-bottom:3px">${cat.name}</h3>
+      ${buildTable(discHdr, rows)}`;
+  }).join("");
+
+  // Služby
+  const sluzbyRows: Array<[string, string, string, string?]> = services.map(s => {
+    const disc = s.price * sluzbyFactor;
+    const hasItemDisc = Math.abs(s.price - disc) > 0.001;
+    return hasDiscount
+      ? [s.name, s.unit || "—", fmtP(s.price), hasItemDisc ? fmtP(disc) : undefined] as [string, string, string, string?]
+      : [s.name, s.unit || "—", fmtP(s.price)] as [string, string, string];
+  });
+
+  // Doprava
+  const minFee = tsettings.minimumFee ?? 62.50;
+  const minFeeDisc = minFee * dopravaFactor;
+  const dopravaRows: Array<[string, string, string, string?]> = [];
+  dopravaRows.push(hasDiscount
+    ? ["Min. doprava / auto", "1×", fmtP(minFee), Math.abs(minFee - minFeeDisc) > 0.001 ? fmtP(minFeeDisc) : undefined]
+    : ["Min. doprava / auto", "1×", fmtP(minFee)]);
+  zones.forEach(z => {
+    const disc = z.ratePerM3 * dopravaFactor;
+    const hasItemDisc = Math.abs(z.ratePerM3 - disc) > 0.001;
+    dopravaRows.push(hasDiscount
+      ? [`Od ${z.fromKm} – ${z.toKm} km`, "1 m³×", fmtP(z.ratePerM3), hasItemDisc ? fmtP(disc) : undefined]
+      : [`Od ${z.fromKm} – ${z.toKm} km`, "1 m³×", fmtP(z.ratePerM3)]);
+  });
+  const dopravaHdr = hasDiscount ? ["Vzdialenosť", "Množstvo", "Pôvodná cena", "Zľavnená cena"] : ["Vzdialenosť", "Množstvo", "Cena"];
+
+  const discInfo = hasDiscount
+    ? `<div style="color:#c9a800;font-size:8pt;margin-top:3px">Zľavy: Betón ${effectiveBeton}% | Doprava ${effectiveDoprava}% | Služby ${effectiveSluzby}%</div>`
+    : "";
+
+  const html = `<!DOCTYPE html><html lang="sk"><head>
+<meta charset="utf-8">
+<title>Zľavové tabuľky – ${clientName || "klient"}</title>
+<style>
+  @page { size: A4; margin: 12mm 14mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 9pt; color: #222; }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head><body>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:5mm;border-bottom:2px solid #EDC531;margin-bottom:5mm">
+  <div>
+    <div style="font-size:14pt;font-weight:bold;color:#001D3D">MS-BETON, spol. s r.o.</div>
+    <div style="font-size:8pt;color:#555;margin-top:2px">Turie 468, 013 12 Turie &nbsp;|&nbsp; +421 909 205 205 &nbsp;|&nbsp; info@msbeton.sk</div>
+    <div style="font-size:7.5pt;color:#777;margin-top:1px">IČO: 55747591 &nbsp;|&nbsp; DIČ: 2122074603 &nbsp;|&nbsp; IČ DPH: SK2122074603</div>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:13pt;font-weight:bold;color:#EDC531;letter-spacing:0.5px">ZĽAVOVÉ TABUĽKY</div>
+    <div style="font-size:8pt;color:#777;margin-top:2px">${priceMode === "hotovost" ? "Hotovosť (s DPH na betón)" : "Faktúra (bez DPH)"}</div>
+    <div style="font-size:8pt;color:#999;margin-top:1px">Dátum: ${today}</div>
+  </div>
+</div>
+
+<div style="border:1px solid #ddd;padding:6px 10px;margin-bottom:5mm;font-size:8.5pt">
+  <strong style="color:#001D3D">${clientName}${client.company ? ` – ${client.company}` : ""}</strong>
+  ${client.email ? `<br>Email: ${client.email}` : ""}${client.phone ? ` &nbsp;|&nbsp; Tel: ${client.phone}` : ""}
+  ${discInfo}
+</div>
+
+<h2 style="font-size:10pt;color:#EDC531;background:#001D3D;padding:4px 8px;margin-bottom:0">Betóny</h2>
+${betonHtml}
+
+<h2 style="font-size:10pt;color:#EDC531;background:#001D3D;padding:4px 8px;margin-bottom:8px;margin-top:12px">Služby</h2>
+${buildTable(discHdr, sluzbyRows)}
+
+<h2 style="font-size:10pt;color:#EDC531;background:#001D3D;padding:4px 8px;margin-bottom:8px;margin-top:12px">Doprava</h2>
+${buildTable(dopravaHdr, dopravaRows)}
+
+<div style="margin-top:10mm;padding-top:4mm;border-top:1px solid #eee;font-size:7.5pt;color:#999">
+  Vypracovala spoločnosť: MS-BETON, spol. s r.o. &nbsp;|&nbsp; IČO: 55747591 &nbsp;|&nbsp; IČ DPH: SK2122074603<br>
+  Turie 468, 013 12 Turie &nbsp;|&nbsp; +421 909 205 205 &nbsp;|&nbsp; info@msbeton.sk &nbsp;|&nbsp; msbeton.sk
+</div>
+
+<script>window.onload=function(){window.print();}</script>
+</body></html>`;
+
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, "_blank");
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+  if (!win) { const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.click(); }
 }
 
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
   const [, navigate] = useLocation();
-  const [tab, setTab] = useState<Tab>("klienti");
+  const [tab, setTab] = useState<Tab>(() => {
+    const hash = window.location.hash.slice(1) as Tab;
+    const valid: Tab[] = ["betony", "sluzby", "doprava", "klienti", "objednavky"];
+    return valid.includes(hash) ? hash : "klienti";
+  });
   const [syncKey, setSyncKey] = useState(0);
 
   useEffect(() => {
@@ -1168,7 +1466,7 @@ export default function AdminDashboard() {
           {tabs.map(t => (
             <button
               key={t.id}
-              onClick={() => setTab(t.id)}
+              onClick={() => { setTab(t.id); window.location.hash = t.id; }}
               className={`flex items-center gap-1.5 px-3 sm:px-5 py-2.5 text-xs sm:text-sm font-black uppercase tracking-wide sm:tracking-widest transition-all shrink-0 ${
                 tab === t.id
                   ? "bg-secondary text-white"

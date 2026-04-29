@@ -56,6 +56,7 @@ export interface LoggedClient {
   deliveryZoneId?: string;
   canZimneOpatrenia?: boolean;
   hotovostDph?: number;
+  manualPrices?: Record<string, number>;
 }
 
 export const clientApi = {
