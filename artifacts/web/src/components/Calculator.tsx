@@ -173,7 +173,7 @@ function TypeRadioGroup({ label, value, onChange, options }: {
 function fmt(n: number) { return n.toFixed(2) + " €"; }
 function cleanType(lbl: string) { return lbl.replace(/ – [\d.]+ € \/ m³/, "").replace(/ – [\d,.]+ €\/m³/, ""); }
 
-function PriceRow({ label, original, discounted, hasDiscount, isFillup }: { label: string; original: number; discounted: number; hasDiscount: boolean; isFillup?: boolean }) {
+function PriceRow({ label, original, discounted, hasDiscount, isFillup }: { label: React.ReactNode; original: number; discounted: number; hasDiscount: boolean; isFillup?: boolean }) {
   if (original === 0) return null;
   if (isFillup) {
     return (
@@ -1434,9 +1434,9 @@ export function ConcreteCalculator() {
                               <PriceRow
                                 label={isExtra
                                   ? ci.transportIsMin
-                                    ? `Min. doprava – ${ci.transportTrucks}x auto`
-                                    : `Doprava – ${ci.qty} m³`
-                                  : `${prefix}${zoneStr ? ` ${zoneStr}` : ""} · ${trucksLabel} · ${ci.qty}m³`}
+                                    ? <span>Min. doprava – <strong>{ci.transportTrucks}x auto</strong></span>
+                                    : <span>Doprava – <strong>{ci.qty} m³</strong></span>
+                                  : <span>{prefix}{zoneStr ? ` ${zoneStr}` : ""} · <strong>{trucksLabel}</strong> · {ci.qty}m³</span>}
                                 original={itemTransportOrig} discounted={itemTransportDisc} hasDiscount={hasDiscount} />
                             )}
                             {itemFillupOrig > 0 && (
@@ -1449,7 +1449,7 @@ export function ConcreteCalculator() {
                       })}
                       {!hasExtras && origDisplayItems.transport > 0 && (
                         <PriceRow
-                          label={`${prefix}${zoneStr ? ` ${zoneStr}` : ""} · ${trucksLabel} · ${result.qty}m³`}
+                          label={<span>{prefix}{zoneStr ? ` ${zoneStr}` : ""} · <strong>{trucksLabel}</strong> · {result.qty}m³</span>}
                           original={origDisplayItems.transport} discounted={displayItems.transport} hasDiscount={hasDiscount} />
                       )}
                       {!hasExtras && origDisplayItems.fillup > 0 && (
