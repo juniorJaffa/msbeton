@@ -452,10 +452,12 @@ export function ConcreteCalculator() {
       bezDph: number; bezDphFinal: number; bezDphFinalHotovost: number;
       transport: number; transportFillup: number;
       transportFillupM3: number; transportFillupTarget: number;
+      transportIsMin: boolean; transportTrucks: number;
     };
     const concreteBreakdown: BreakdownItem[] = [];
     const mainManual = mp[selectedType.id];
     const mainTC = isOwn ? zeroTC : calcTransport(km, qty, tab, clientDeliveryZone);
+    const mainTrucks = tab === "pumpa" ? calcPumpTrucks(qty) : Math.ceil(qty / mixCap);
     concreteBreakdown.push({
       label: `Betón ${cleanType(selectedType.label)} – ${qty} m³`,
       qty,
@@ -466,6 +468,8 @@ export function ConcreteCalculator() {
       transportFillup: mainTC.fillupCost,
       transportFillupM3: mainTC.fillupM3,
       transportFillupTarget: mainTC.fillupM3 > 0 ? (qty < 5 ? 5 : 10) : 0,
+      transportIsMin: mainTC.isMin,
+      transportTrucks: mainTrucks,
     });
     for (const item of extraItems) {
       const t = getItemType(item.categoryName, item.typeLabel);
@@ -473,6 +477,7 @@ export function ConcreteCalculator() {
       if (t && q > 0) {
         const itemManual = mp[t.id];
         const extraTC = (isOwn || item.noTransport) ? zeroTC : calcTransport(km, q, tab, clientDeliveryZone);
+        const extraTrucks = tab === "pumpa" ? calcPumpTrucks(q) : Math.ceil(q / mixCap);
         concreteBreakdown.push({
           label: `Betón ${cleanType(t.label)} – ${q} m³`,
           qty: q,
@@ -483,6 +488,8 @@ export function ConcreteCalculator() {
           transportFillup: extraTC.fillupCost,
           transportFillupM3: extraTC.fillupM3,
           transportFillupTarget: extraTC.fillupM3 > 0 ? (q < 5 ? 5 : 10) : 0,
+          transportIsMin: extraTC.isMin,
+          transportTrucks: extraTrucks,
         });
       }
     }
@@ -1425,7 +1432,11 @@ export function ConcreteCalculator() {
                             <PriceRow label={ci.label} original={origVal} discounted={discVal} hasDiscount={Math.abs(origVal - discVal) > 0.001} />
                             {hasExtras && itemTransportOrig > 0 && (
                               <PriceRow
-                                label={isExtra ? `Doprava – ${ci.qty} m³` : `${prefix}${zoneStr ? ` ${zoneStr}` : ""} · ${trucksLabel} · ${ci.qty}m³`}
+                                label={isExtra
+                                  ? ci.transportIsMin
+                                    ? `Min. doprava – ${ci.transportTrucks}x auto`
+                                    : `Doprava – ${ci.qty} m³`
+                                  : `${prefix}${zoneStr ? ` ${zoneStr}` : ""} · ${trucksLabel} · ${ci.qty}m³`}
                                 original={itemTransportOrig} discounted={itemTransportDisc} hasDiscount={hasDiscount} />
                             )}
                             {itemFillupOrig > 0 && (
