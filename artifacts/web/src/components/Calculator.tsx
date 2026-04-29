@@ -1432,11 +1432,11 @@ export function ConcreteCalculator() {
                             <PriceRow label={ci.label} original={origVal} discounted={discVal} hasDiscount={Math.abs(origVal - discVal) > 0.001} />
                             {hasExtras && itemTransportOrig > 0 && (
                               <PriceRow
-                                label={isExtra
-                                  ? ci.transportIsMin
-                                    ? <span>Min. doprava – <strong>{ci.transportTrucks}x auto</strong></span>
-                                    : <span>Doprava</span>
-                                  : <span>{prefix}{zoneStr ? ` ${zoneStr}` : ""} · <strong>{trucksLabel}</strong></span>}
+                                label={ci.transportIsMin
+                                  ? <span>Min. doprava – <strong>{ci.transportTrucks}x auto</strong></span>
+                                  : isExtra
+                                    ? <span>Doprava</span>
+                                    : <span>{prefix}{zoneStr ? ` ${zoneStr}` : ""} · <strong>{trucksLabel}</strong></span>}
                                 original={itemTransportOrig} discounted={itemTransportDisc} hasDiscount={hasDiscount} />
                             )}
                             {itemFillupOrig > 0 && (
@@ -1449,7 +1449,9 @@ export function ConcreteCalculator() {
                       })}
                       {!hasExtras && origDisplayItems.transport > 0 && (
                         <PriceRow
-                          label={<span>{prefix}{zoneStr ? ` ${zoneStr}` : ""} · <strong>{trucksLabel}</strong></span>}
+                          label={result.transportIsMin
+                            ? <span>Min. doprava – <strong>{result.trucks}x auto</strong></span>
+                            : <span>{prefix}{zoneStr ? ` ${zoneStr}` : ""} · <strong>{trucksLabel}</strong></span>}
                           original={origDisplayItems.transport} discounted={displayItems.transport} hasDiscount={hasDiscount} />
                       )}
                       {!hasExtras && origDisplayItems.fillup > 0 && (
