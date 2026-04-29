@@ -143,6 +143,7 @@ router.post("/login", async (req, res) => {
         discountDoprava: account.discountDoprava ?? 0,
         discountSluzby: account.discountSluzby ?? 0,
         discountCelkovo: account.discountCelkovo ?? 0,
+        phone: account.phone ?? "",
         canHotovost: account.canHotovost ?? true,
         canPridatBeton: account.canPridatBeton ?? true,
         deliveryZoneId: account.deliveryZoneId,

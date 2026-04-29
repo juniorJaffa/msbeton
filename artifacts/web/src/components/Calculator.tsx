@@ -230,7 +230,7 @@ export function ConcreteCalculator() {
   const [revision, setRevision] = useState(0);
   const [extraItems, setExtraItems] = useState<ExtraItem[]>([]);
   const [showOrderModal, setShowOrderModal] = useState(false);
-  const [orderForm, setOrderForm] = useState({ name: loggedClient?.name ?? "", phone: "", email: "", note: "" });
+  const [orderForm, setOrderForm] = useState({ name: loggedClient?.name ?? "", phone: loggedClient?.phone ? formatPhone(loggedClient.phone) : "", email: "", note: "" });
   const [orderSubmitting, setOrderSubmitting] = useState(false);
   const [orderDone, setOrderDone] = useState(false);
 

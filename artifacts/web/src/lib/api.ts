@@ -47,6 +47,7 @@ export interface LoggedClient {
   clientId: string;
   name: string;
   company: string;
+  phone?: string;
   discountBeton: number;
   discountDoprava: number;
   discountSluzby: number;
