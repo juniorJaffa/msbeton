@@ -502,8 +502,8 @@ export function ConcreteCalculator() {
     // Celková doprava = súčet per-item dopráv (zhodné s pôvodnou kalkulačkou)
     const totalTransportCost = concreteBreakdown.reduce((s, ci) => s + ci.transport, 0);
     const totalFillupCost = concreteBreakdown.reduce((s, ci) => s + ci.transportFillup, 0);
-    // Počet áut sa počíta stále z celkového množstva (len pre display)
-    const trucks = tab === "pumpa" ? calcPumpTrucks(totalQty) : Math.ceil(totalQty / mixCap);
+    // Počet áut = súčet per-item transportTrucks (každá položka má vlastné auto)
+    const trucks = concreteBreakdown.reduce((s, ci) => s + ci.transportTrucks, 0);
     const truckCapacity = tab === "pumpa" ? pumpCap : mixCap;
     const pumpHrs = parseInt(pumpHour) || 1;
     const pumpMs = parseInt(pumpMin) || 0;
