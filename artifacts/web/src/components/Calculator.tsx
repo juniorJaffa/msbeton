@@ -520,7 +520,7 @@ export function ConcreteCalculator() {
             svcWaitLabel = `${s.waitPiecesPumpa} ks`;
           } else if (tab === "mix") {
             const wm = (parseInt(s.waitHour) || 0) * 60 + (parseInt(s.waitMin) || 0);
-            svcWaitIntervals = Math.ceil(wm / 15);
+            svcWaitIntervals = Math.ceil(Math.max(0, wm - 30) / 15);
             svcWaitCost = svcWaitIntervals * waitServicePriceMix;
             const wh = parseInt(s.waitHour) || 0;
             const wmm = parseInt(s.waitMin) || 0;
@@ -565,7 +565,7 @@ export function ConcreteCalculator() {
 
     // Čakačky: pumpa = kusy (1 kus = 15 min), mix = hodiny + minúty
     const waitIntervalsPumpa = waitPiecesPumpa;
-    const waitIntervalsMix = Math.ceil(waitTotalMins / 15);
+    const waitIntervalsMix = Math.ceil(Math.max(0, waitTotalMins - 30) / 15);
     const waitIntervals = tab === "pumpa" ? waitIntervalsPumpa : waitIntervalsMix;
 
     const transportCalc = { cost: totalTransportCost, isMin: concreteBreakdown[0] ? (isOwn ? false : calcTransport(km, qty, tab, clientDeliveryZone).isMin) : false, fillupM3: concreteBreakdown[0]?.transportFillupM3 ?? 0, fillupCost: totalFillupCost };
@@ -1636,7 +1636,7 @@ export function ConcreteCalculator() {
                   </div>
                 )}
 
-                {/* Produkty */}
+                {/* Produkty + Služby inline per item */}
                 {(() => {
                   const trucksLabel = tab === "pumpa"
                     ? `1×Pumpa${result.mixTrucksCount > 0 ? `+${result.mixTrucksCount}×Mix` : ""}`
@@ -1646,6 +1646,21 @@ export function ConcreteCalculator() {
                     : "";
                   const prefix = result.transportIsMin ? "Min. doprava" : "Doprava";
                   const hasExtras = result.concreteBreakdown.length > 1;
+
+                  // Main item services (len hlavný formulár, nie extra items)
+                  const mainPumpBase = tab === "pumpa" ? (result.pumpHrs + result.pumpMs / 60) * pumpServicePrice : 0;
+                  const mainHoseBase = tab === "pumpa" && hoseMeters > 0 ? hoseMeters * hoseServicePrice : 0;
+                  const mainWashBase = tab === "pumpa" && washing ? washServicePrice : 0;
+                  const mainChemBase = tab === "pumpa" ? chemServicePrice : 0;
+                  const mainWaitBase = tab === "pumpa"
+                    ? result.waitIntervals * waitServicePricePumpa
+                    : (tab === "mix" ? result.waitIntervals * waitServicePriceMix : 0);
+                  const mainHasServices = (mainPumpBase + mainHoseBase + mainWashBase + mainChemBase + mainWaitBase) > 0;
+
+                  const SvcBlock = ({ label }: { label: string }) => (
+                    <div className="text-[9px] font-black text-primary/50 uppercase tracking-widest mb-0.5 mt-1.5">{label}</div>
+                  );
+
                   return (
                     <div>
                       <h4 className="text-primary font-bold text-xs uppercase tracking-widest mb-2">Produkty</h4>
@@ -1657,8 +1672,10 @@ export function ConcreteCalculator() {
                         const itemTransportDisc = hasExtras ? ci.transport * dopravaFactor : 0;
                         const itemFillupOrig = hasExtras ? ci.transportFillup : 0;
                         const itemFillupDisc = hasExtras ? ci.transportFillup * dopravaFactor : 0;
+                        const itemHasSvc = isExtra && (ci.svcPumpCost > 0 || ci.svcHoseCost > 0 || ci.svcWashCost > 0 || ci.svcWaitCost > 0);
+
                         return (
-                          <div key={idx} className={cn(isExtra ? "mt-2 pt-2 border-t border-white/10" : "")}>
+                          <div key={idx} className={cn(isExtra ? "mt-3 pt-2.5 border-t border-white/10" : "")}>
                             {isExtra && (
                               <div className="text-[10px] text-primary/60 font-black uppercase tracking-wider mb-1">
                                 Pridaná položka {idx}
@@ -1678,6 +1695,41 @@ export function ConcreteCalculator() {
                               <PriceRow
                                 label={`Doťaženie do ${ci.transportFillupTarget}m³ – ${ci.transportFillupM3}m³`}
                                 original={itemFillupOrig} discounted={itemFillupDisc} hasDiscount={hasDiscount} isFillup />
+                            )}
+
+                            {/* Hlavné služby – hneď pod main itemom */}
+                            {idx === 0 && mainHasServices && (
+                              <div className="mt-1.5 pl-3 border-l-2 border-primary/20 space-y-0">
+                                <SvcBlock label={tab === "pumpa" ? "Služby – Pumpa" : "Čakačky"} />
+                                {mainPumpBase > 0 && <PriceRow label={`Čerpanie betónu – ${result.pumpHrs} h${result.pumpMs > 0 ? ` ${result.pumpMs} min` : ""}`}
+                                  original={mainPumpBase} discounted={mainPumpBase * sluzbyFactor} hasDiscount={hasDiscount} />}
+                                {mainChemBase > 0 && <PriceRow label="Rozbehová chémia"
+                                  original={mainChemBase} discounted={mainChemBase * sluzbyFactor} hasDiscount={hasDiscount} />}
+                                {mainHoseBase > 0 && <PriceRow label={`Prídavné hadice – ${hoseMeters} m`}
+                                  original={mainHoseBase} discounted={mainHoseBase * sluzbyFactor} hasDiscount={hasDiscount} />}
+                                {mainWashBase > 0 && <PriceRow label="Umývanie mimo stavby"
+                                  original={mainWashBase} discounted={mainWashBase * sluzbyFactor} hasDiscount={hasDiscount} />}
+                                {mainWaitBase > 0 && <PriceRow
+                                  label={tab === "pumpa" ? `Čakačky – ${result.waitLabel}` : `Čas na stavbe – ${result.waitLabel}`}
+                                  original={mainWaitBase} discounted={mainWaitBase * sluzbyFactor} hasDiscount={hasDiscount} />}
+                              </div>
+                            )}
+
+                            {/* Per-item služby pre extra položky */}
+                            {itemHasSvc && (
+                              <div className="mt-1.5 pl-3 border-l-2 border-primary/20 space-y-0">
+                                <SvcBlock label={tab === "pumpa" ? "Služby – Pumpa" : "Čakačky"} />
+                                {ci.svcPumpCost > 0 && <PriceRow
+                                  label={`Čerpanie betónu – ${ci.svcPumpHrs} h${ci.svcPumpMs > 0 ? ` ${ci.svcPumpMs} min` : ""}`}
+                                  original={ci.svcPumpCost} discounted={ci.svcPumpCost * sluzbyFactor} hasDiscount={hasDiscount} />}
+                                {ci.svcHoseCost > 0 && <PriceRow label={`Prídavné hadice – ${ci.svcHoseMeters} m`}
+                                  original={ci.svcHoseCost} discounted={ci.svcHoseCost * sluzbyFactor} hasDiscount={hasDiscount} />}
+                                {ci.svcWashCost > 0 && <PriceRow label="Umývanie mimo stavby"
+                                  original={ci.svcWashCost} discounted={ci.svcWashCost * sluzbyFactor} hasDiscount={hasDiscount} />}
+                                {ci.svcWaitCost > 0 && <PriceRow
+                                  label={tab === "pumpa" ? `Čakačky – ${ci.svcWaitLabel}` : `Čas na stavbe – ${ci.svcWaitLabel}`}
+                                  original={ci.svcWaitCost} discounted={ci.svcWaitCost * sluzbyFactor} hasDiscount={hasDiscount} />}
+                              </div>
                             )}
                           </div>
                         );
@@ -1701,29 +1753,6 @@ export function ConcreteCalculator() {
                     </div>
                   );
                 })()}
-
-                {/* Služby – Pumpa */}
-                {tab === "pumpa" && (origDisplayItems.pump > 0 || origDisplayItems.hoses > 0 || origDisplayItems.washing > 0 || origDisplayItems.chem > 0 || origDisplayItems.waiting > 0) && (
-                  <div className="bg-white/5 rounded-sm px-3 py-2.5 -mx-1">
-                    <h4 className="text-primary font-bold text-xs uppercase tracking-widest mb-2">Služby</h4>
-                    <PriceRow label={`Čerpanie betónu – ${result.pumpHrs} h${result.pumpMs > 0 ? ` ${result.pumpMs} min` : ""}`}
-                      original={origDisplayItems.pump} discounted={displayItems.pump} hasDiscount={hasDiscount} />
-                    {hoseMeters > 0 && <PriceRow label={`Prídavné hadice – ${hoseMeters} m`}
-                      original={origDisplayItems.hoses} discounted={displayItems.hoses} hasDiscount={hasDiscount} />}
-                    <PriceRow label="Umývanie mimo stavby" original={origDisplayItems.washing} discounted={displayItems.washing} hasDiscount={hasDiscount} />
-                    <PriceRow label="Rozbehová chémia" original={origDisplayItems.chem} discounted={displayItems.chem} hasDiscount={hasDiscount} />
-                    {result.waitIntervals > 0 && <PriceRow label={`Čakačky – ${result.waitLabel}`}
-                      original={origDisplayItems.waiting} discounted={displayItems.waiting} hasDiscount={hasDiscount} />}
-                  </div>
-                )}
-                {/* Služby – Mix čakačky */}
-                {tab === "mix" && origDisplayItems.waiting > 0 && (
-                  <div className="bg-white/5 rounded-sm px-3 py-2.5 -mx-1">
-                    <h4 className="text-primary font-bold text-xs uppercase tracking-widest mb-2">Čakačky</h4>
-                    <PriceRow label={`Čas na stavbe – ${result.waitLabel}`}
-                      original={origDisplayItems.waiting} discounted={displayItems.waiting} hasDiscount={hasDiscount} />
-                  </div>
-                )}
 
                 {/* Total */}
                 <div className="border-t border-white/20 pt-3 space-y-1.5">

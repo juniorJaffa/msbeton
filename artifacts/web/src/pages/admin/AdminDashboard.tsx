@@ -803,7 +803,7 @@ function ObjednavkyTab() {
         <div className="border-t border-gray-100 mx-4" />
         {/* Row 3 – vyhľadávanie + dátumový filter */}
         <div className="flex items-center gap-3 flex-wrap px-4 py-3">
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-7 shrink-0">Hľadaj</span>
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest shrink-0">Hľadaj</span>
           <input
             type="text" value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Meno, firma, telefón, ID, adresa..."
