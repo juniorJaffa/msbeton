@@ -254,6 +254,12 @@ export function ConcreteCalculator() {
   }, []);
 
   useEffect(() => {
+    const handler = () => setLoggedClient(clientAuth.getLoggedClient());
+    window.addEventListener("client-session-changed", handler);
+    return () => window.removeEventListener("client-session-changed", handler);
+  }, []);
+
+  useEffect(() => {
     if (loggedClient && !loggedClient.canHotovost && priceMode === "hotovost") {
       setPriceMode("faktura");
     }
@@ -1636,7 +1642,7 @@ export function ConcreteCalculator() {
                   </div>
                 )}
 
-                {/* Produkty + Služby inline per item */}
+                {/* Produkty: betón → doprava → doťaženie → služby (per každý item) */}
                 {(() => {
                   const trucksLabel = tab === "pumpa"
                     ? `1×Pumpa${result.mixTrucksCount > 0 ? `+${result.mixTrucksCount}×Mix` : ""}`
@@ -1645,9 +1651,7 @@ export function ConcreteCalculator() {
                     ? `${result.transportZone.fromKm}–${result.transportZone.toKm}km`
                     : "";
                   const prefix = result.transportIsMin ? "Min. doprava" : "Doprava";
-                  const hasExtras = result.concreteBreakdown.length > 1;
 
-                  // Všetky services sa zobrazujú PO doprave (nie inline pod produktom)
                   const mainPumpBase = tab === "pumpa" ? (result.pumpHrs + result.pumpMs / 60) * pumpServicePrice : 0;
                   const mainHoseBase = tab === "pumpa" && hoseMeters > 0 ? hoseMeters * hoseServicePrice : 0;
                   const mainWashBase = tab === "pumpa" && washing ? washServicePrice : 0;
@@ -1668,10 +1672,9 @@ export function ConcreteCalculator() {
                         const origVal = isFaktura ? ci.bezDph : ci.bezDph * (1 + VAT_HOTOVOST);
                         const discVal = isFaktura ? ci.bezDphFinal : ci.bezDphFinalHotovost;
                         const isExtra = idx > 0;
-                        const itemTransportOrig = hasExtras ? ci.transport : 0;
-                        const itemTransportDisc = hasExtras ? ci.transport * dopravaFactor : 0;
-                        const itemFillupOrig = hasExtras ? ci.transportFillup : 0;
-                        const itemFillupDisc = hasExtras ? ci.transportFillup * dopravaFactor : 0;
+                        const itemHasSvc = idx === 0
+                          ? mainHasServices
+                          : (ci.svcPumpCost > 0 || ci.svcHoseCost > 0 || ci.svcWashCost > 0 || ci.svcWaitCost > 0);
 
                         return (
                           <div key={idx} className={cn(isExtra ? "mt-3 pt-2.5 border-t border-white/10" : "")}>
@@ -1681,76 +1684,68 @@ export function ConcreteCalculator() {
                               </div>
                             )}
                             <PriceRow label={ci.label} original={origVal} discounted={discVal} hasDiscount={Math.abs(origVal - discVal) > 0.001} />
-                            {hasExtras && itemTransportOrig > 0 && (
+
+                            {/* Doprava pre tento item */}
+                            {!result.isOwn && ci.transport > 0 && (
                               <PriceRow
                                 label={ci.transportIsMin
                                   ? <span>Min. doprava – <strong>{ci.transportTrucks}x auto</strong></span>
-                                  : isExtra
-                                    ? <span>Doprava</span>
-                                    : <span>{prefix}{zoneStr ? ` ${zoneStr}` : ""} · <strong>{trucksLabel}</strong></span>}
-                                original={itemTransportOrig} discounted={itemTransportDisc} hasDiscount={hasDiscount} />
+                                  : idx === 0
+                                    ? <span>{prefix}{zoneStr ? ` ${zoneStr}` : ""} · <strong>{trucksLabel}</strong> · {ci.qty}&thinsp;m³</span>
+                                    : <span>Doprava · {ci.qty}&thinsp;m³</span>}
+                                original={ci.transport} discounted={ci.transport * dopravaFactor} hasDiscount={hasDiscount} />
                             )}
-                            {itemFillupOrig > 0 && (
+                            {ci.transportFillup > 0 && (
                               <PriceRow
                                 label={`Doťaženie do ${ci.transportFillupTarget}m³ – ${ci.transportFillupM3}m³`}
-                                original={itemFillupOrig} discounted={itemFillupDisc} hasDiscount={hasDiscount} isFillup />
+                                original={ci.transportFillup} discounted={ci.transportFillup * dopravaFactor} hasDiscount={hasDiscount} isFillup />
+                            )}
+
+                            {/* Služby pre tento item – vždy pod dopravou */}
+                            {itemHasSvc && (
+                              <div className="mt-1.5 pl-3 border-l-2 border-primary/20 space-y-0">
+                                <SvcBlock label={tab === "pumpa" ? "Služby – Pumpa" : "Čakačky"} />
+                                {idx === 0 ? (
+                                  <>
+                                    {mainPumpBase > 0 && <PriceRow label={`Čerpanie betónu – ${result.pumpHrs} h${result.pumpMs > 0 ? ` ${result.pumpMs} min` : ""}`}
+                                      original={mainPumpBase} discounted={mainPumpBase * sluzbyFactor} hasDiscount={hasDiscount} />}
+                                    {mainChemBase > 0 && <PriceRow label="Rozbehová chémia"
+                                      original={mainChemBase} discounted={mainChemBase * sluzbyFactor} hasDiscount={hasDiscount} />}
+                                    {mainHoseBase > 0 && <PriceRow label={`Prídavné hadice – ${hoseMeters} m`}
+                                      original={mainHoseBase} discounted={mainHoseBase * sluzbyFactor} hasDiscount={hasDiscount} />}
+                                    {mainWashBase > 0 && <PriceRow label="Umývanie mimo stavby"
+                                      original={mainWashBase} discounted={mainWashBase * sluzbyFactor} hasDiscount={hasDiscount} />}
+                                    {mainWaitBase > 0 && <PriceRow
+                                      label={tab === "pumpa"
+                                        ? `Čakačky – ${result.waitLabel}`
+                                        : <span>Čas na stavbe – {result.waitLabel} <span className="text-[9px] text-white/35 font-normal">(prvých 30 min zadarmo)</span></span>}
+                                      original={mainWaitBase} discounted={mainWaitBase * sluzbyFactor} hasDiscount={hasDiscount} />}
+                                  </>
+                                ) : (
+                                  <>
+                                    {ci.svcPumpCost > 0 && <PriceRow
+                                      label={`Čerpanie betónu – ${ci.svcPumpHrs} h${ci.svcPumpMs > 0 ? ` ${ci.svcPumpMs} min` : ""}`}
+                                      original={ci.svcPumpCost} discounted={ci.svcPumpCost * sluzbyFactor} hasDiscount={hasDiscount} />}
+                                    {ci.svcHoseCost > 0 && <PriceRow label={`Prídavné hadice – ${ci.svcHoseMeters} m`}
+                                      original={ci.svcHoseCost} discounted={ci.svcHoseCost * sluzbyFactor} hasDiscount={hasDiscount} />}
+                                    {ci.svcWashCost > 0 && <PriceRow label="Umývanie mimo stavby"
+                                      original={ci.svcWashCost} discounted={ci.svcWashCost * sluzbyFactor} hasDiscount={hasDiscount} />}
+                                    {ci.svcWaitCost > 0 && <PriceRow
+                                      label={tab === "pumpa"
+                                        ? `Čakačky – ${ci.svcWaitLabel}`
+                                        : <span>Čas na stavbe – {ci.svcWaitLabel} <span className="text-[9px] text-white/35 font-normal">(prvých 30 min zadarmo)</span></span>}
+                                      original={ci.svcWaitCost} discounted={ci.svcWaitCost * sluzbyFactor} hasDiscount={hasDiscount} />}
+                                  </>
+                                )}
+                              </div>
                             )}
                           </div>
                         );
                       })}
-                      {!hasExtras && origDisplayItems.transport > 0 && (
-                        <PriceRow
-                          label={result.transportIsMin
-                            ? <span>Min. doprava – <strong>{result.trucks}x auto</strong></span>
-                            : <span>{prefix}{zoneStr ? ` ${zoneStr}` : ""} · <strong>{trucksLabel}</strong></span>}
-                          original={origDisplayItems.transport} discounted={displayItems.transport} hasDiscount={hasDiscount} />
-                      )}
-                      {!hasExtras && origDisplayItems.fillup > 0 && (
-                        <PriceRow
-                          label={`Doťaženie do ${result.fillupTarget}m³ – ${result.fillupM3}m³`}
-                          original={origDisplayItems.fillup} discounted={displayItems.fillup} hasDiscount={hasDiscount} isFillup />
-                      )}
                       {displayItems.zimne > 0 && (
                         <PriceRow label={`Zimné opatrenia – ${result.totalQty} m³`}
                           original={origDisplayItems.zimne} discounted={displayItems.zimne} hasDiscount={hasDiscount} />
                       )}
-
-                      {/* Služby – vždy pod dopravou */}
-                      {mainHasServices && (
-                        <div className="mt-2 pl-3 border-l-2 border-primary/20 space-y-0">
-                          <SvcBlock label={tab === "pumpa" ? "Služby – Pumpa" : "Čakačky"} />
-                          {mainPumpBase > 0 && <PriceRow label={`Čerpanie betónu – ${result.pumpHrs} h${result.pumpMs > 0 ? ` ${result.pumpMs} min` : ""}`}
-                            original={mainPumpBase} discounted={mainPumpBase * sluzbyFactor} hasDiscount={hasDiscount} />}
-                          {mainChemBase > 0 && <PriceRow label="Rozbehová chémia"
-                            original={mainChemBase} discounted={mainChemBase * sluzbyFactor} hasDiscount={hasDiscount} />}
-                          {mainHoseBase > 0 && <PriceRow label={`Prídavné hadice – ${hoseMeters} m`}
-                            original={mainHoseBase} discounted={mainHoseBase * sluzbyFactor} hasDiscount={hasDiscount} />}
-                          {mainWashBase > 0 && <PriceRow label="Umývanie mimo stavby"
-                            original={mainWashBase} discounted={mainWashBase * sluzbyFactor} hasDiscount={hasDiscount} />}
-                          {mainWaitBase > 0 && <PriceRow
-                            label={tab === "pumpa" ? `Čakačky – ${result.waitLabel}` : `Čas na stavbe – ${result.waitLabel}`}
-                            original={mainWaitBase} discounted={mainWaitBase * sluzbyFactor} hasDiscount={hasDiscount} />}
-                        </div>
-                      )}
-                      {result.concreteBreakdown.slice(1).map((ci, i) => {
-                        const itemHasSvc = ci.svcPumpCost > 0 || ci.svcHoseCost > 0 || ci.svcWashCost > 0 || ci.svcWaitCost > 0;
-                        if (!itemHasSvc) return null;
-                        return (
-                          <div key={i} className="mt-1.5 pl-3 border-l-2 border-primary/20 space-y-0">
-                            <SvcBlock label={`${tab === "pumpa" ? "Služby" : "Čakačky"} – Položka ${i + 1}`} />
-                            {ci.svcPumpCost > 0 && <PriceRow
-                              label={`Čerpanie betónu – ${ci.svcPumpHrs} h${ci.svcPumpMs > 0 ? ` ${ci.svcPumpMs} min` : ""}`}
-                              original={ci.svcPumpCost} discounted={ci.svcPumpCost * sluzbyFactor} hasDiscount={hasDiscount} />}
-                            {ci.svcHoseCost > 0 && <PriceRow label={`Prídavné hadice – ${ci.svcHoseMeters} m`}
-                              original={ci.svcHoseCost} discounted={ci.svcHoseCost * sluzbyFactor} hasDiscount={hasDiscount} />}
-                            {ci.svcWashCost > 0 && <PriceRow label="Umývanie mimo stavby"
-                              original={ci.svcWashCost} discounted={ci.svcWashCost * sluzbyFactor} hasDiscount={hasDiscount} />}
-                            {ci.svcWaitCost > 0 && <PriceRow
-                              label={tab === "pumpa" ? `Čakačky – ${ci.svcWaitLabel}` : `Čas na stavbe – ${ci.svcWaitLabel}`}
-                              original={ci.svcWaitCost} discounted={ci.svcWaitCost * sluzbyFactor} hasDiscount={hasDiscount} />}
-                          </div>
-                        );
-                      })}
                     </div>
                   );
                 })()}

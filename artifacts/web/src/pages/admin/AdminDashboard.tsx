@@ -730,20 +730,15 @@ function ObjednavkyTab() {
   const remove = (id: string) => { if (confirm("Vymazať objednávku?")) save(orders.filter(o => o.id !== id)); };
   const updateStatus = (id: string, status: Order["status"]) => save(orders.map(o => o.id === id ? { ...o, status } : o));
 
-  const searchLow = search.toLowerCase().trim();
+  const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const searchTerms = search.trim().split(/\s+/).filter(Boolean);
   const filtered = orders
     .filter(o => filterStatus === "vsetky" || o.status === filterStatus)
     .filter(o => filterTab   === "vsetky" || o.tab    === filterTab)
     .filter(o => {
-      if (!searchLow) return true;
-      return (
-        o.clientName.toLowerCase().includes(searchLow) ||
-        (o.company?.toLowerCase().includes(searchLow) ?? false) ||
-        (o.phone?.includes(searchLow) ?? false) ||
-        (o.clientId?.toLowerCase().includes(searchLow) ?? false) ||
-        (o.address?.toLowerCase().includes(searchLow) ?? false) ||
-        (o.email?.toLowerCase().includes(searchLow) ?? false)
-      );
+      if (!searchTerms.length) return true;
+      const haystack = [o.clientName, o.company ?? "", o.phone ?? "", o.clientId ?? "", o.address ?? "", o.email ?? ""].join(" ");
+      return searchTerms.every(t => norm(haystack).includes(norm(t)) || haystack.includes(t));
     })
     .filter(o => {
       if (dateFrom) { const d = o.createdAt.slice(0, 10); if (d < dateFrom) return false; }
@@ -850,6 +845,7 @@ function ObjednavkyTab() {
                       {o.km && <span className="text-xs text-gray-400">{o.km} km</span>}
                       {o.address && <span className="text-xs text-gray-400 truncate max-w-[140px]">{o.address}</span>}
                     </div>
+                    <div className="text-[10px] text-gray-400 mt-0.5">{fmtDate(o.createdAt)}</div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0" onClick={e => e.stopPropagation()}>
                     <div className="text-right hidden sm:block">
@@ -859,7 +855,6 @@ function ObjednavkyTab() {
                     <OrderStatusBadge status={o.status} onChange={s => updateStatus(o.id, s)} />
                     <button onClick={() => remove(o.id)} className="p-1 text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
-                  <span className="text-[10px] text-gray-300 shrink-0 hidden sm:block">{fmtDate(o.createdAt)}</span>
                 </div>
                 {isExp && (
                   <div className="border-t border-gray-100 bg-gray-50/40">
@@ -872,11 +867,11 @@ function ObjednavkyTab() {
                         {o.phone && <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Telefón</span><span className="text-gray-600">{formatPhone(o.phone)}</span></div>}
                         {o.email && <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Email</span><span className="text-gray-600">{o.email}</span></div>}
                         {o.clientId && <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">ID klienta</span><span className="text-gray-500">{o.clientId}</span></div>}
-                        <div className="flex gap-2 pt-1"><span className="text-gray-400 w-20 shrink-0">Dátum</span><span className="text-gray-500">{fmtDate(o.createdAt)}</span></div>
                       </div>
                       {/* Detail dopravy + poznámka */}
                       <div className="px-4 py-3 space-y-1.5 text-xs">
                         <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Objednávka</div>
+                        <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Dátum</span><span className="text-gray-500">{fmtDate(o.createdAt)}</span></div>
                         <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Režim</span><span className="font-bold text-gray-800">{tabLabel[o.tab]}</span></div>
                         <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Množstvo</span><span className="font-bold text-gray-800">{o.totalQty} m³</span></div>
                         {o.km && <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Vzdialenosť</span><span className="font-medium text-gray-700">{o.km} km</span></div>}
