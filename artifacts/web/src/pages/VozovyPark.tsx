@@ -10,7 +10,7 @@ const vehicles = [
     typeColor: "bg-primary text-secondary",
     specs: [
       { label: "Dosah výložníka", value: "28 m" },
-      { label: "Typ", value: "Stacionárna pumpa" },
+      { label: "Objem čerpadla", value: "7 m³" },
     ],
     desc: "Doprava betónu potrubím priamo na ťažko dostupné miesta stavby.",
     img: "/images/pump-truck.jpg",
