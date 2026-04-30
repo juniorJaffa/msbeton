@@ -740,40 +740,46 @@ function ObjednavkyTab() {
 
   return (
     <div className="space-y-3">
-      {/* Filter bar – status */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <button onClick={() => setFilterStatus("vsetky")}
-          className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${filterStatus === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-secondary/40"}`}>
-          Všetky <span className="ml-1 text-[10px] opacity-60">{orders.length}</span>
-        </button>
-        {ORDER_STATUSES.map(s => (
-          <button key={s.key} onClick={() => setFilterStatus(s.key)}
-            className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
-              filterStatus === s.key ? STATUS_ACTIVE_COLORS[s.key] : `bg-white border-gray-200 ${s.color} opacity-80 hover:opacity-100`
-            }`}>
-            {s.label} <span className="ml-1 text-[10px] opacity-70">{orders.filter(o => o.status === s.key).length}</span>
+      {/* Filter panel */}
+      <div className="bg-white border border-gray-200 shadow-sm">
+        {/* Row 1 – stav */}
+        <div className="flex items-center gap-2 flex-wrap px-4 py-3">
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-7 shrink-0">Stav</span>
+          <button onClick={() => setFilterStatus("vsetky")}
+            className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${filterStatus === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-secondary/40"}`}>
+            Všetky <span className="ml-1 text-[10px] opacity-60">{orders.length}</span>
           </button>
-        ))}
-        <span className="ml-auto text-xs text-gray-400">{sorted.length} objednávok</span>
-      </div>
-      {/* Filter bar – typ vozidla */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <button onClick={() => setFilterTab("vsetky")}
-          className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${filterTab === "vsetky" ? "bg-gray-700 text-white border-gray-700" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"}`}>
-          Všetky typy
-        </button>
-        {(["pumpa", "mix", "vlastnadoprava"] as Order["tab"][]).map(t => {
-          const s = TAB_STYLES[t];
-          return (
-            <button key={t} onClick={() => setFilterTab(t)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
-                filterTab === t ? s.activeBg : `bg-white border-gray-200 text-gray-500 hover:border-gray-400`
+          {ORDER_STATUSES.map(s => (
+            <button key={s.key} onClick={() => setFilterStatus(s.key)}
+              className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
+                filterStatus === s.key ? STATUS_ACTIVE_COLORS[s.key] : `bg-white border-gray-200 ${s.color} opacity-80 hover:opacity-100`
               }`}>
-              <span className={`w-2 h-2 rounded-full ${filterTab === t ? "bg-white" : s.dot}`} />
-              {s.label} <span className="text-[10px] opacity-60">{orders.filter(o => o.tab === t).length}</span>
+              {s.label} <span className="ml-1 text-[10px] opacity-70">{orders.filter(o => o.status === s.key).length}</span>
             </button>
-          );
-        })}
+          ))}
+          <span className="ml-auto text-xs text-gray-400 shrink-0">{sorted.length} objednávok</span>
+        </div>
+        <div className="border-t border-gray-100 mx-4" />
+        {/* Row 2 – typ vozidla */}
+        <div className="flex items-center gap-2 flex-wrap px-4 py-3">
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-7 shrink-0">Typ</span>
+          <button onClick={() => setFilterTab("vsetky")}
+            className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${filterTab === "vsetky" ? "bg-gray-700 text-white border-gray-700" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"}`}>
+            Všetky typy
+          </button>
+          {(["pumpa", "mix", "vlastnadoprava"] as Order["tab"][]).map(t => {
+            const s = TAB_STYLES[t];
+            return (
+              <button key={t} onClick={() => setFilterTab(t)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
+                  filterTab === t ? s.activeBg : `bg-white border-gray-200 text-gray-500 hover:border-gray-400`
+                }`}>
+                <span className={`w-2 h-2 rounded-full ${filterTab === t ? "bg-white" : s.dot}`} />
+                {s.label} <span className="text-[10px] opacity-60">{orders.filter(o => o.tab === t).length}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {sorted.length === 0 ? (
