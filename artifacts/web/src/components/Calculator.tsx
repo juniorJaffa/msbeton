@@ -18,12 +18,24 @@ import { ClientPriceTable } from "@/components/ClientPriceTable";
 type Tab = "pumpa" | "mix" | "vlastnadoprava";
 type PriceMode = "faktura" | "hotovost";
 
+interface ExtraItemServices {
+  pumpHour: string;
+  pumpMin: string;
+  waitPiecesPumpa: number;
+  hoseMeters: number;
+  washing: boolean;
+  waitHour: string;
+  waitMin: string;
+}
+
 interface ExtraItem {
   id: string;
   categoryName: string | null;
   typeLabel: string | null;
   quantity: string;
   noTransport?: boolean;
+  svc?: ExtraItemServices;
+  showSvc?: boolean;
 }
 
 const DEFAULT_VAT = 0.23;
@@ -454,6 +466,11 @@ export function ConcreteCalculator() {
       transport: number; transportFillup: number;
       transportFillupM3: number; transportFillupTarget: number;
       transportIsMin: boolean; transportTrucks: number;
+      // per-item services
+      svcPumpHrs: number; svcPumpMs: number; svcPumpCost: number;
+      svcHoseMeters: number; svcHoseCost: number;
+      svcWashing: boolean; svcWashCost: number;
+      svcWaitIntervals: number; svcWaitCost: number; svcWaitLabel: string;
     };
     const concreteBreakdown: BreakdownItem[] = [];
     const mainManual = mp[selectedType.id];
@@ -471,6 +488,10 @@ export function ConcreteCalculator() {
       transportFillupTarget: mainTC.fillupM3 > 0 ? (qty < 5 ? 5 : 10) : 0,
       transportIsMin: mainTC.isMin,
       transportTrucks: mainTrucks,
+      svcPumpHrs: 0, svcPumpMs: 0, svcPumpCost: 0,
+      svcHoseMeters: 0, svcHoseCost: 0,
+      svcWashing: false, svcWashCost: 0,
+      svcWaitIntervals: 0, svcWaitCost: 0, svcWaitLabel: "",
     });
     for (const item of extraItems) {
       const t = getItemType(item.categoryName, item.typeLabel);
@@ -479,6 +500,33 @@ export function ConcreteCalculator() {
         const itemManual = mp[t.id];
         const extraTC = (isOwn || item.noTransport) ? zeroTC : calcTransport(km, q, tab, clientDeliveryZone);
         const extraTrucks = tab === "pumpa" ? calcPumpTrucks(q) : Math.ceil(q / mixCap);
+        // Per-item services
+        let svcPumpHrs = 0, svcPumpMs = 0, svcPumpCost = 0;
+        let svcHoseMeters = 0, svcHoseCost = 0;
+        let svcWashing = false, svcWashCost = 0;
+        let svcWaitIntervals = 0, svcWaitCost = 0, svcWaitLabel = "";
+        if (item.svc) {
+          const s = item.svc;
+          if (tab === "pumpa") {
+            svcPumpHrs = parseInt(s.pumpHour) || 1;
+            svcPumpMs = parseInt(s.pumpMin) || 0;
+            svcPumpCost = (svcPumpHrs + svcPumpMs / 60) * pumpServicePrice;
+            svcHoseMeters = s.hoseMeters;
+            svcHoseCost = s.hoseMeters * hoseServicePrice;
+            svcWashing = s.washing;
+            svcWashCost = s.washing ? washServicePrice : 0;
+            svcWaitIntervals = s.waitPiecesPumpa;
+            svcWaitCost = s.waitPiecesPumpa * waitServicePricePumpa;
+            svcWaitLabel = `${s.waitPiecesPumpa} ks`;
+          } else if (tab === "mix") {
+            const wm = (parseInt(s.waitHour) || 0) * 60 + (parseInt(s.waitMin) || 0);
+            svcWaitIntervals = Math.ceil(wm / 15);
+            svcWaitCost = svcWaitIntervals * waitServicePriceMix;
+            const wh = parseInt(s.waitHour) || 0;
+            const wmm = parseInt(s.waitMin) || 0;
+            svcWaitLabel = [wh > 0 ? `${wh} h` : "", wmm > 0 ? `${wmm} min` : ""].filter(Boolean).join(" ");
+          }
+        }
         concreteBreakdown.push({
           label: `Betón ${cleanType(t.label)} – ${q} m³`,
           qty: q,
@@ -491,6 +539,10 @@ export function ConcreteCalculator() {
           transportFillupTarget: extraTC.fillupM3 > 0 ? (q < 5 ? 5 : 10) : 0,
           transportIsMin: extraTC.isMin,
           transportTrucks: extraTrucks,
+          svcPumpHrs, svcPumpMs, svcPumpCost,
+          svcHoseMeters, svcHoseCost,
+          svcWashing, svcWashCost,
+          svcWaitIntervals, svcWaitCost, svcWaitLabel,
         });
       }
     }
@@ -508,7 +560,8 @@ export function ConcreteCalculator() {
     const truckCapacity = tab === "pumpa" ? pumpCap : mixCap;
     const pumpHrs = parseInt(pumpHour) || 1;
     const pumpMs = parseInt(pumpMin) || 0;
-    const pumpCost = tab === "pumpa" ? pumpHrs * pumpServicePrice + (pumpMs > 0 ? pumpServicePrice * 0.5 : 0) : 0;
+    // Správny vzorec: hodiny + minúty/60 (napr. 1h 15min = 1.25h, nie 1.5h)
+    const pumpCost = tab === "pumpa" ? (pumpHrs + pumpMs / 60) * pumpServicePrice : 0;
 
     // Čakačky: pumpa = kusy (1 kus = 15 min), mix = hodiny + minúty
     const waitIntervalsPumpa = waitPiecesPumpa;
@@ -516,15 +569,24 @@ export function ConcreteCalculator() {
     const waitIntervals = tab === "pumpa" ? waitIntervalsPumpa : waitIntervalsMix;
 
     const transportCalc = { cost: totalTransportCost, isMin: concreteBreakdown[0] ? (isOwn ? false : calcTransport(km, qty, tab, clientDeliveryZone).isMin) : false, fillupM3: concreteBreakdown[0]?.transportFillupM3 ?? 0, fillupCost: totalFillupCost };
+
+    // Per-item service súčty (extra items s pridanými službami)
+    const extraSvcPumpCost  = concreteBreakdown.slice(1).reduce((s, ci) => s + ci.svcPumpCost, 0);
+    const extraSvcHoseCost  = concreteBreakdown.slice(1).reduce((s, ci) => s + ci.svcHoseCost, 0);
+    const extraSvcWashCost  = concreteBreakdown.slice(1).reduce((s, ci) => s + ci.svcWashCost, 0);
+    const extraSvcWaitCost  = concreteBreakdown.slice(1).reduce((s, ci) => s + ci.svcWaitCost, 0);
+
     const items = {
       concrete: totalConcreteBezDph,
       transport: transportCalc.cost,
       fillup: transportCalc.fillupCost,
-      pump: tab === "pumpa" ? pumpCost : 0,
-      hoses: tab === "pumpa" && hoseMeters > 0 ? hoseMeters * hoseServicePrice : 0,
-      washing: tab === "pumpa" && washing ? washServicePrice : 0,
+      pump: tab === "pumpa" ? pumpCost + extraSvcPumpCost : 0,
+      hoses: tab === "pumpa" ? (hoseMeters > 0 ? hoseMeters * hoseServicePrice : 0) + extraSvcHoseCost : 0,
+      washing: tab === "pumpa" ? (washing ? washServicePrice : 0) + extraSvcWashCost : 0,
       chem: tab === "pumpa" ? chemServicePrice : 0,
-      waiting: tab === "pumpa" ? waitIntervals * waitServicePricePumpa : (tab === "mix" ? waitIntervals * waitServicePriceMix : 0),
+      waiting: tab === "pumpa"
+        ? waitIntervals * waitServicePricePumpa + extraSvcWaitCost
+        : (tab === "mix" ? waitIntervals * waitServicePriceMix + extraSvcWaitCost : 0),
       zimne: zimneOpatrenia ? totalQty * zimneServicePrice : 0,
     };
 
@@ -869,9 +931,9 @@ export function ConcreteCalculator() {
     if (tab === "pumpa") {
       if (smsItems.pump > 0) {
         svcDiv();
-        const pumpH = result.pumpHrs + (result.pumpMs > 0 ? 0.5 : 0);
+        const pumpTimeStr = result.pumpMs > 0 ? `${result.pumpHrs}h ${result.pumpMs}min` : `${result.pumpHrs}h`;
         lines.push("Čerpanie betónu");
-        lines.push(rowUnit(`${pumpH}h`, pumpServicePrice * sluzbyFactor, smsItems.pump));
+        lines.push(rowUnit(pumpTimeStr, pumpServicePrice * sluzbyFactor, smsItems.pump));
       }
       if (smsItems.hoses > 0) {
         svcDiv();
@@ -956,6 +1018,10 @@ export function ConcreteCalculator() {
       totalBezDph: result.totalDiscBezDph,
       totalSDph: isFakt ? result.totalDiscSDph : result.hotovostTotal,
       breakdown,
+      fillupM3: result.fillupM3 > 0 ? result.fillupM3 : undefined,
+      fillupTarget: result.fillupM3 > 0 ? result.fillupTarget : undefined,
+      deliveryZoneType: clientDeliveryZone?.pricingType ?? "standard",
+      deliveryZoneName: clientDeliveryZone?.name ?? undefined,
     });
     setOrderSubmitting(false);
     setOrderDone(true);
@@ -1270,12 +1336,80 @@ export function ConcreteCalculator() {
                     </span>
                   </label>
                 )}
+                {/* + Pridať Služby per extra item */}
+                {!item.svc && tab !== "vlastnadoprava" && (
+                  <button type="button"
+                    onClick={() => {
+                      const defaults: ExtraItemServices = { pumpHour: "1 h", pumpMin: "0 min", waitPiecesPumpa: 0, hoseMeters: 0, washing: false, waitHour: "0 h", waitMin: "0 min" };
+                      setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, svc: defaults, showSvc: true } : i));
+                      setShowResult(false);
+                    }}
+                    className="w-full py-2 border border-dashed border-primary/30 text-primary/50 hover:border-primary hover:text-primary transition-all text-xs font-semibold cursor-pointer rounded-sm">
+                    + Pridať Služby ({tab === "pumpa" ? "čerpanie, hadice, čakačky" : "čakačky"})
+                  </button>
+                )}
+                {item.svc && (
+                  <div className="border border-primary/20 rounded-lg p-3 space-y-3 bg-primary/3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black text-primary/60 uppercase tracking-widest">
+                        Služby – {tab === "pumpa" ? "Pumpa" : "Mix"}
+                      </span>
+                      <button type="button"
+                        onClick={() => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, svc: undefined } : i)); setShowResult(false); }}
+                        className="text-white/20 hover:text-red-400 transition-colors cursor-pointer text-[10px]">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                    {tab === "pumpa" && (
+                      <>
+                        <div className="grid grid-cols-2 gap-2">
+                          <SelectField label="Čerpanie h" value={item.svc.pumpHour} onChange={(v) => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, svc: { ...i.svc!, pumpHour: v } } : i)); setShowResult(false); }} options={PUMP_HOURS} />
+                          <SelectField label="Čerpanie min" value={item.svc.pumpMin} onChange={(v) => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, svc: { ...i.svc!, pumpMin: v } } : i)); setShowResult(false); }} options={PUMP_MINS} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="border border-white/10 rounded-lg p-2 bg-white/5">
+                            <div className="text-[10px] font-semibold text-white/60 mb-1">Čakačky (ks)</div>
+                            <div className="flex items-center gap-1.5">
+                              <button type="button" onClick={() => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, svc: { ...i.svc!, waitPiecesPumpa: Math.max(0, i.svc!.waitPiecesPumpa - 1) } } : i)); setShowResult(false); }}
+                                className="w-6 h-6 flex items-center justify-center border border-white/20 text-white/60 hover:border-primary hover:text-primary transition-colors rounded-sm cursor-pointer text-sm font-bold">−</button>
+                              <span className={cn("flex-1 text-center text-base font-black", item.svc.waitPiecesPumpa > 0 ? "text-primary" : "text-white/30")}>{item.svc.waitPiecesPumpa}</span>
+                              <button type="button" onClick={() => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, svc: { ...i.svc!, waitPiecesPumpa: i.svc!.waitPiecesPumpa + 1 } } : i)); setShowResult(false); }}
+                                className="w-6 h-6 flex items-center justify-center border border-white/20 text-white/60 hover:border-primary hover:text-primary transition-colors rounded-sm cursor-pointer text-sm font-bold">+</button>
+                            </div>
+                          </div>
+                          <div className="border border-white/10 rounded-lg p-2 bg-white/5">
+                            <div className="text-[10px] font-semibold text-white/60 mb-1">Hadice (m)</div>
+                            <div className="flex items-center gap-1.5">
+                              <button type="button" onClick={() => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, svc: { ...i.svc!, hoseMeters: Math.max(0, i.svc!.hoseMeters - 1) } } : i)); setShowResult(false); }}
+                                className="w-6 h-6 flex items-center justify-center border border-white/20 text-white/60 hover:border-primary hover:text-primary transition-colors rounded-sm cursor-pointer flex-shrink-0"><Minus className="w-3 h-3" /></button>
+                              <span className={cn("flex-1 text-center text-base font-black", item.svc.hoseMeters > 0 ? "text-primary" : "text-white/30")}>{item.svc.hoseMeters > 0 ? item.svc.hoseMeters : "—"}</span>
+                              <button type="button" onClick={() => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, svc: { ...i.svc!, hoseMeters: Math.min(hoseMaxMeters, i.svc!.hoseMeters + 1) } } : i)); setShowResult(false); }}
+                                className="w-6 h-6 flex items-center justify-center border border-white/20 text-white/60 hover:border-primary hover:text-primary transition-colors rounded-sm cursor-pointer flex-shrink-0"><Plus className="w-3 h-3" /></button>
+                            </div>
+                          </div>
+                        </div>
+                        <label className="flex items-center gap-2 cursor-pointer group">
+                          <input type="checkbox" checked={item.svc.washing}
+                            onChange={(e) => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, svc: { ...i.svc!, washing: e.target.checked } } : i)); setShowResult(false); }}
+                            className="w-4 h-4 accent-primary cursor-pointer" />
+                          <span className={cn("text-xs transition-colors", item.svc.washing ? "text-primary font-semibold" : "text-white/50 group-hover:text-white/70")}>Umývanie mimo stavby</span>
+                        </label>
+                      </>
+                    )}
+                    {tab === "mix" && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <SelectField label="Čakačky h" value={item.svc.waitHour} onChange={(v) => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, svc: { ...i.svc!, waitHour: v } } : i)); setShowResult(false); }} options={WAIT_HOURS} />
+                        <SelectField label="Čakačky min" value={item.svc.waitMin} onChange={(v) => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, svc: { ...i.svc!, waitMin: v } } : i)); setShowResult(false); }} options={WAIT_MINS} />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
 
-          {/* Pridať položku button — iba pre klientov s canPridatBeton */}
-          {loggedClient?.canPridatBeton && (
+          {/* Pridať položku button — iba pre klientov s canPridatBeton, nie pre vlastnadoprava */}
+          {loggedClient?.canPridatBeton && tab !== "vlastnadoprava" && (
             <button
               type="button"
               onClick={() => {
@@ -1407,10 +1541,29 @@ export function ConcreteCalculator() {
           )}
 
           {/* Calculate button */}
-          <button onClick={() => { if (parseFloat(quantity) > 0) setShowResult(true); }}
-            className="w-full py-4 bg-transparent border-2 border-primary text-primary font-bold text-base tracking-widest hover:bg-primary hover:text-white transition-all duration-200 cursor-pointer mt-2">
-            VYPOČÍTAŤ CENU
-          </button>
+          {(() => {
+            const hasQty = parseFloat(quantity) > 0 && selectedType != null;
+            const hasKm = tab === "vlastnadoprava" || parseFloat(distance) > 0 || addressKm !== null;
+            const canCalc = hasQty && hasKm;
+            return (
+              <div className="space-y-1 mt-2">
+                <button onClick={() => { if (canCalc) setShowResult(true); }} disabled={!canCalc}
+                  className={cn("w-full py-4 border-2 font-bold text-base tracking-widest transition-all duration-200",
+                    canCalc
+                      ? "bg-transparent border-primary text-primary hover:bg-primary hover:text-white cursor-pointer"
+                      : "border-white/20 text-white/25 cursor-not-allowed"
+                  )}>
+                  VYPOČÍTAŤ CENU
+                </button>
+                {hasQty && !hasKm && (
+                  <p className="text-center text-xs text-primary/60">Zadajte vzdialenosť v km alebo adresu</p>
+                )}
+                {!hasQty && (
+                  <p className="text-center text-xs text-white/30">Zadajte množstvo betónu</p>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* RIGHT: Result */}
@@ -1473,6 +1626,11 @@ export function ConcreteCalculator() {
                         <span className="text-[10px] text-primary/50 uppercase tracking-widest shrink-0">Typ dopravy</span>
                         <span className="text-white/20 text-[10px]">·</span>
                         <span className="text-[10px] font-semibold text-white/45">{clientDeliveryZone.name}</span>
+                        {clientDeliveryZone.pricingType && clientDeliveryZone.pricingType !== "standard" && (
+                          <span className="text-[9px] font-black text-primary/60 bg-primary/10 px-1 py-0.5 rounded-sm uppercase">
+                            {clientDeliveryZone.pricingType === "km" ? "€/km" : "€/auto"}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1544,7 +1702,7 @@ export function ConcreteCalculator() {
                   );
                 })()}
 
-                {/* Služby */}
+                {/* Služby – Pumpa */}
                 {tab === "pumpa" && (origDisplayItems.pump > 0 || origDisplayItems.hoses > 0 || origDisplayItems.washing > 0 || origDisplayItems.chem > 0 || origDisplayItems.waiting > 0) && (
                   <div className="bg-white/5 rounded-sm px-3 py-2.5 -mx-1">
                     <h4 className="text-primary font-bold text-xs uppercase tracking-widest mb-2">Služby</h4>
@@ -1556,6 +1714,14 @@ export function ConcreteCalculator() {
                     <PriceRow label="Rozbehová chémia" original={origDisplayItems.chem} discounted={displayItems.chem} hasDiscount={hasDiscount} />
                     {result.waitIntervals > 0 && <PriceRow label={`Čakačky – ${result.waitLabel}`}
                       original={origDisplayItems.waiting} discounted={displayItems.waiting} hasDiscount={hasDiscount} />}
+                  </div>
+                )}
+                {/* Služby – Mix čakačky */}
+                {tab === "mix" && origDisplayItems.waiting > 0 && (
+                  <div className="bg-white/5 rounded-sm px-3 py-2.5 -mx-1">
+                    <h4 className="text-primary font-bold text-xs uppercase tracking-widest mb-2">Čakačky</h4>
+                    <PriceRow label={`Čas na stavbe – ${result.waitLabel}`}
+                      original={origDisplayItems.waiting} discounted={displayItems.waiting} hasDiscount={hasDiscount} />
                   </div>
                 )}
 

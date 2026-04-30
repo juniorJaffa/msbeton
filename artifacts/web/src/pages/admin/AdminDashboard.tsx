@@ -722,14 +722,34 @@ function ObjednavkyTab() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<Order["status"] | "vsetky">("vsetky");
   const [filterTab, setFilterTab] = useState<Order["tab"] | "vsetky">("vsetky");
+  const [search, setSearch] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   const save = (data: Order[]) => { setOrders(data); adminData.saveOrders(data); };
   const remove = (id: string) => { if (confirm("Vymazať objednávku?")) save(orders.filter(o => o.id !== id)); };
   const updateStatus = (id: string, status: Order["status"]) => save(orders.map(o => o.id === id ? { ...o, status } : o));
 
+  const searchLow = search.toLowerCase().trim();
   const filtered = orders
     .filter(o => filterStatus === "vsetky" || o.status === filterStatus)
-    .filter(o => filterTab   === "vsetky" || o.tab    === filterTab);
+    .filter(o => filterTab   === "vsetky" || o.tab    === filterTab)
+    .filter(o => {
+      if (!searchLow) return true;
+      return (
+        o.clientName.toLowerCase().includes(searchLow) ||
+        (o.company?.toLowerCase().includes(searchLow) ?? false) ||
+        (o.phone?.includes(searchLow) ?? false) ||
+        (o.clientId?.toLowerCase().includes(searchLow) ?? false) ||
+        (o.address?.toLowerCase().includes(searchLow) ?? false) ||
+        (o.email?.toLowerCase().includes(searchLow) ?? false)
+      );
+    })
+    .filter(o => {
+      if (dateFrom) { const d = o.createdAt.slice(0, 10); if (d < dateFrom) return false; }
+      if (dateTo)   { const d = o.createdAt.slice(0, 10); if (d > dateTo)   return false; }
+      return true;
+    });
   const sorted = [...filtered].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   const fmtDate = (iso: string) => {
@@ -780,6 +800,30 @@ function ObjednavkyTab() {
             );
           })}
         </div>
+        <div className="border-t border-gray-100 mx-4" />
+        {/* Row 3 – vyhľadávanie + dátumový filter */}
+        <div className="flex items-center gap-3 flex-wrap px-4 py-3">
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-7 shrink-0">Hľadaj</span>
+          <input
+            type="text" value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Meno, firma, telefón, ID, adresa..."
+            className="flex-1 min-w-[160px] border border-gray-200 px-3 py-1.5 text-xs focus:outline-none focus:border-secondary rounded-sm"
+          />
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-gray-400 shrink-0">od</span>
+            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+              className="border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-secondary rounded-sm w-32" />
+            <span className="text-[10px] text-gray-400 shrink-0">do</span>
+            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+              className="border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-secondary rounded-sm w-32" />
+          </div>
+          {(search || dateFrom || dateTo) && (
+            <button onClick={() => { setSearch(""); setDateFrom(""); setDateTo(""); }}
+              className="text-[10px] text-gray-400 hover:text-red-500 transition-colors px-2 py-1.5 border border-gray-200 rounded-sm cursor-pointer">
+              Vymazať
+            </button>
+          )}
+        </div>
       </div>
 
       {sorted.length === 0 ? (
@@ -797,18 +841,19 @@ function ObjednavkyTab() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-secondary text-sm truncate">{o.clientName}</span>
-                      {o.company && <span className="text-xs text-gray-400 truncate">({o.company})</span>}
+                      {o.company && <span className="text-xs text-gray-500 font-medium truncate">{o.company}</span>}
                       <TabBadge tab={o.tab} />
                     </div>
-                    <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                      <span className="text-xs text-gray-500">{o.concreteType.replace(/ – [\d.,]+ €.*/, "")}</span>
-                      <span className="text-xs text-gray-400">{o.totalQty} m³</span>
-                      {o.address && <span className="text-xs text-gray-400 truncate max-w-[160px]">{o.address}</span>}
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <span className="text-xs text-gray-500 font-medium">{o.concreteType.replace(/ – [\d.,]+ €.*/, "")}</span>
+                      <span className="text-xs font-bold text-secondary">{o.totalQty} m³</span>
+                      {o.km && <span className="text-xs text-gray-400">{o.km} km</span>}
+                      {o.address && <span className="text-xs text-gray-400 truncate max-w-[140px]">{o.address}</span>}
                     </div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0" onClick={e => e.stopPropagation()}>
                     <div className="text-right hidden sm:block">
-                      <div className="text-sm font-bold text-secondary">{o.totalSDph.toFixed(2)} €</div>
+                      <div className="text-sm font-black text-secondary">{o.totalSDph.toFixed(2)} €</div>
                       <div className="text-[10px] text-gray-400">{o.priceMode === "hotovost" ? "hotovosť" : "faktúra"}</div>
                     </div>
                     <OrderStatusBadge status={o.status} onChange={s => updateStatus(o.id, s)} />
@@ -832,12 +877,25 @@ function ObjednavkyTab() {
                       {/* Detail dopravy + poznámka */}
                       <div className="px-4 py-3 space-y-1.5 text-xs">
                         <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Objednávka</div>
-                        <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Režim</span><span className="font-medium text-gray-700">{tabLabel[o.tab]}</span></div>
-                        <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Množstvo</span><span className="text-gray-600">{o.totalQty} m³</span></div>
-                        {o.km && <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Vzdialenosť</span><span className="text-gray-600">{o.km} km</span></div>}
-                        {o.address && <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Adresa</span><span className="text-gray-600 break-words">{o.address}</span></div>}
-                        <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Cena</span><span className="text-gray-600">{o.priceMode === "hotovost" ? "hotovosť" : "faktúra"}</span></div>
-                        {o.note && <div className="flex gap-2 pt-1"><span className="text-gray-400 w-20 shrink-0">Poznámka</span><span className="text-gray-600 italic">{o.note}</span></div>}
+                        <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Režim</span><span className="font-bold text-gray-800">{tabLabel[o.tab]}</span></div>
+                        <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Množstvo</span><span className="font-bold text-gray-800">{o.totalQty} m³</span></div>
+                        {o.km && <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Vzdialenosť</span><span className="font-medium text-gray-700">{o.km} km</span></div>}
+                        {o.address && <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Adresa</span><span className="text-gray-600 break-words">{o.address}</span></div>}
+                        {o.deliveryZoneName && (
+                          <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Typ dopravy</span>
+                            <span className="font-medium text-gray-700">
+                              {o.deliveryZoneName}
+                              {o.deliveryZoneType && o.deliveryZoneType !== "standard" && (
+                                <span className="ml-1 text-[9px] font-black text-primary bg-primary/10 px-1 py-0.5 rounded-sm uppercase">{o.deliveryZoneType === "km" ? "€/km" : "€/auto"}</span>
+                              )}
+                            </span>
+                          </div>
+                        )}
+                        {(o.fillupM3 ?? 0) > 0 && (
+                          <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Doťaženie</span><span className="font-medium text-amber-700">+{o.fillupM3} m³ → {o.fillupTarget} m³</span></div>
+                        )}
+                        <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Fakturácia</span><span className="text-gray-600">{o.priceMode === "hotovost" ? "hotovosť" : "faktúra"}</span></div>
+                        {o.note && <div className="flex gap-2 pt-1"><span className="text-gray-400 w-24 shrink-0">Poznámka</span><span className="text-gray-600 italic">{o.note}</span></div>}
                       </div>
                     </div>
                     {/* Kalkulácia */}
