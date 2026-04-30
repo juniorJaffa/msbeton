@@ -1124,7 +1124,7 @@ function KlientiTab() {
                         ] as { label: string; field: keyof Client }[]).map(({ label, field }) => (
                           <div key={field} className="flex gap-2 items-start">
                             <span className="text-gray-400 text-xs w-20 shrink-0 pt-0.5">{label}</span>
-                            <EditableField value={(c[field] as string) || "—"} onSave={v => update(c.id, { [field]: field === "phone" ? formatPhone(v) : v })} />
+                            <EditableField value={field === "phone" ? formatPhone((c[field] as string) || "") || "—" : (c[field] as string) || "—"} onSave={v => update(c.id, { [field]: field === "phone" ? formatPhone(v) : v })} />
                           </div>
                         ))}
                       </div>
@@ -1460,7 +1460,7 @@ function exportClientPricePDF(client: Client, priceMode: "faktura" | "hotovost",
 
 <div style="border:1px solid #ddd;padding:6px 10px;margin-bottom:5mm;font-size:8.5pt">
   <strong style="color:#001D3D">${clientName}${client.company ? ` – ${client.company}` : ""}</strong>
-  ${client.email ? `<br>Email: ${client.email}` : ""}${client.phone ? ` &nbsp;|&nbsp; Tel: ${client.phone}` : ""}
+  ${client.email ? `<br>Email: ${client.email}` : ""}${client.phone ? ` &nbsp;|&nbsp; Tel: ${formatPhone(client.phone)}` : ""}
   ${discInfo}
 </div>
 
