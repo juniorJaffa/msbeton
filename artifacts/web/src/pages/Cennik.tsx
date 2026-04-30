@@ -116,8 +116,7 @@ export default function Cennik() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-3">
           <Info className="w-4 h-4 text-primary shrink-0" />
           <p className="text-secondary text-sm font-medium">
-            <strong>Pri registrácii získate automaticky zľavu 10 %.</strong>{" "}
-            <span className="text-gray-600 font-normal">Ceny platia pre rok 2025. Ceny sú uvedené BEZ DPH.</span>
+            <span className="text-gray-600 font-normal">Ceny platia pre rok 2026. Ceny sú uvedené BEZ DPH.</span>
           </p>
         </div>
       </div>
