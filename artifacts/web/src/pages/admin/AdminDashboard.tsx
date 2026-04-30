@@ -690,43 +690,90 @@ function OrderStatusBadge({ status, onChange }: { status: Order["status"]; onCha
   );
 }
 
+const TAB_STYLES: Record<Order["tab"], { badge: string; activeBg: string; dot: string; label: string }> = {
+  pumpa:        { badge: "bg-amber-100 text-amber-700 border-amber-200",  activeBg: "bg-amber-500 text-white border-amber-500",  dot: "bg-amber-500",  label: "Pumpa" },
+  mix:          { badge: "bg-blue-100 text-blue-700 border-blue-200",     activeBg: "bg-blue-500 text-white border-blue-500",     dot: "bg-blue-500",   label: "Mix" },
+  vlastnadoprava: { badge: "bg-green-100 text-green-700 border-green-200", activeBg: "bg-green-500 text-white border-green-500", dot: "bg-green-500",  label: "Vl. doprava" },
+};
+
+const STATUS_ACTIVE_COLORS: Record<Order["status"], string> = {
+  nova:      "bg-blue-500 text-white border-blue-500",
+  potvrdena: "bg-yellow-400 text-white border-yellow-400",
+  vybavena:  "bg-green-600 text-white border-green-600",
+  zrusena:   "bg-red-500 text-white border-red-500",
+};
+
+function TabBadge({ tab }: { tab: Order["tab"] }) {
+  const s = TAB_STYLES[tab];
+  const icon = tab === "pumpa"
+    ? <svg width="14" height="9" viewBox="0 0 38 22" fill="currentColor"><rect x="1" y="12" width="24" height="6" rx="1"/><rect x="22" y="9" width="9" height="9" rx="1"/><rect x="8" y="8" width="3" height="4" rx="0.5"/><line x1="9.5" y1="8" x2="3" y2="2" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/><line x1="3" y1="2" x2="22" y2="2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><circle cx="6" cy="19" r="3"/><circle cx="14" cy="19" r="3"/><circle cx="27" cy="19" r="3"/></svg>
+    : tab === "mix"
+    ? <svg width="14" height="9" viewBox="0 0 38 22" fill="currentColor"><rect x="1" y="12" width="24" height="6" rx="1"/><rect x="22" y="9" width="9" height="9" rx="1"/><ellipse cx="12" cy="9" rx="9" ry="6"/><circle cx="6" cy="19" r="3"/><circle cx="20" cy="19" r="3"/><circle cx="27" cy="19" r="3"/></svg>
+    : <svg width="14" height="9" viewBox="0 0 38 22" fill="currentColor"><rect x="1" y="10" width="30" height="8" rx="1"/><path d="M4 10 L9 4 L24 4 L28 10"/><circle cx="8" cy="19" r="3"/><circle cx="24" cy="19" r="3"/></svg>;
+  return (
+    <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest border px-1.5 py-0.5 rounded-sm ${s.badge}`}>
+      {icon}{s.label}
+    </span>
+  );
+}
+
 function ObjednavkyTab() {
   const [orders, setOrders] = useState<Order[]>(() => adminData.getOrders());
   const [expanded, setExpanded] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<Order["status"] | "vsetky">("vsetky");
+  const [filterTab, setFilterTab] = useState<Order["tab"] | "vsetky">("vsetky");
 
   const save = (data: Order[]) => { setOrders(data); adminData.saveOrders(data); };
   const remove = (id: string) => { if (confirm("Vymazať objednávku?")) save(orders.filter(o => o.id !== id)); };
   const updateStatus = (id: string, status: Order["status"]) => save(orders.map(o => o.id === id ? { ...o, status } : o));
 
-  const filtered = filterStatus === "vsetky" ? orders : orders.filter(o => o.status === filterStatus);
+  const filtered = orders
+    .filter(o => filterStatus === "vsetky" || o.status === filterStatus)
+    .filter(o => filterTab   === "vsetky" || o.tab    === filterTab);
   const sorted = [...filtered].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   const fmtDate = (iso: string) => {
     const d = new Date(iso);
     return `${d.toLocaleDateString("sk-SK")} ${d.toLocaleTimeString("sk-SK", { hour: "2-digit", minute: "2-digit" })}`;
   };
-
-  const tabLabel = { pumpa: "Pumpa", mix: "Mix", vlastnadoprava: "Vl. doprava" };
+  const tabLabel: Record<Order["tab"], string> = { pumpa: "Pumpa", mix: "Mix", vlastnadoprava: "Vl. doprava" };
 
   return (
-    <div className="space-y-4">
-      {/* Filter bar */}
+    <div className="space-y-3">
+      {/* Filter bar – status */}
       <div className="flex items-center gap-2 flex-wrap">
-        {(["vsetky", "nova", "potvrdena", "vybavena", "zrusena"] as const).map(s => {
-          const st = ORDER_STATUSES.find(x => x.key === s);
+        <button onClick={() => setFilterStatus("vsetky")}
+          className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${filterStatus === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-secondary/40"}`}>
+          Všetky <span className="ml-1 text-[10px] opacity-60">{orders.length}</span>
+        </button>
+        {ORDER_STATUSES.map(s => (
+          <button key={s.key} onClick={() => setFilterStatus(s.key)}
+            className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
+              filterStatus === s.key ? STATUS_ACTIVE_COLORS[s.key] : `bg-white border-gray-200 ${s.color} opacity-80 hover:opacity-100`
+            }`}>
+            {s.label} <span className="ml-1 text-[10px] opacity-70">{orders.filter(o => o.status === s.key).length}</span>
+          </button>
+        ))}
+        <span className="ml-auto text-xs text-gray-400">{sorted.length} objednávok</span>
+      </div>
+      {/* Filter bar – typ vozidla */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <button onClick={() => setFilterTab("vsetky")}
+          className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${filterTab === "vsetky" ? "bg-gray-700 text-white border-gray-700" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"}`}>
+          Všetky typy
+        </button>
+        {(["pumpa", "mix", "vlastnadoprava"] as Order["tab"][]).map(t => {
+          const s = TAB_STYLES[t];
           return (
-            <button key={s} onClick={() => setFilterStatus(s)}
-              className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
-                filterStatus === s
-                  ? "bg-secondary text-white border-secondary"
-                  : "bg-white text-gray-500 border-gray-200 hover:border-secondary/40"
+            <button key={t} onClick={() => setFilterTab(t)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
+                filterTab === t ? s.activeBg : `bg-white border-gray-200 text-gray-500 hover:border-gray-400`
               }`}>
-              {s === "vsetky" ? "Všetky" : st?.label} {s !== "vsetky" && <span className="ml-1 text-[10px] opacity-60">{orders.filter(o => o.status === s).length}</span>}
+              <span className={`w-2 h-2 rounded-full ${filterTab === t ? "bg-white" : s.dot}`} />
+              {s.label} <span className="text-[10px] opacity-60">{orders.filter(o => o.tab === t).length}</span>
             </button>
           );
         })}
-        <span className="ml-auto text-xs text-gray-400">{sorted.length} objednávok</span>
       </div>
 
       {sorted.length === 0 ? (
@@ -745,7 +792,7 @@ function ObjednavkyTab() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-secondary text-sm truncate">{o.clientName}</span>
                       {o.company && <span className="text-xs text-gray-400 truncate">({o.company})</span>}
-                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-300 border border-gray-200 px-1.5 py-0.5 rounded-sm">{tabLabel[o.tab]}</span>
+                      <TabBadge tab={o.tab} />
                     </div>
                     <div className="flex items-center gap-3 mt-0.5 flex-wrap">
                       <span className="text-xs text-gray-500">{o.concreteType.replace(/ – [\d.,]+ €.*/, "")}</span>
