@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Truck, LogIn, LogOut, FileText, MessageSquare, Minus, Plus, Trash2, Table2, ShoppingCart, X } from "lucide-react";
 import { cn, formatPhone } from "@/lib/utils";
+import { PhoneInput } from "@/components/PhoneInput";
 import { adminData } from "@/lib/adminData";
 import { clientAuth, type LoggedClient } from "@/lib/clientAuth";
 import { clientApi } from "@/lib/api";
@@ -1796,8 +1797,8 @@ export function ConcreteCalculator() {
                     </div>
                     <div>
                       <label className="text-xs text-white/60 mb-1 block">Telefón</label>
-                      <input value={orderForm.phone} onChange={e => setOrderForm(f => ({ ...f, phone: formatPhone(e.target.value) }))}
-                        placeholder="+421 9xx xxx xxx"
+                      <PhoneInput value={orderForm.phone} onChange={v => setOrderForm(f => ({ ...f, phone: v }))}
+                        placeholder="0944 xxx xxx"
                         className="w-full bg-white/10 border-b-2 border-b-primary/60 text-white px-3 py-2 text-sm focus:outline-none focus:border-b-primary placeholder:text-white/30 rounded-sm" />
                     </div>
                     <div>

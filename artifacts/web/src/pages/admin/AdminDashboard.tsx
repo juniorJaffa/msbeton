@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { LogOut, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
+import { PhoneInput } from "@/components/PhoneInput";
 import { cn, formatPhone } from "@/lib/utils";
 import { isLoggedIn, logout } from "@/lib/adminAuth";
 import { adminData, syncFromServer, SYSTEM_OWNER_ID, ConcreteCategory, ConcreteType, DeliveryZone, Service, Client, TransportPricingZone, TransportSettings, Order } from "@/lib/adminData";
@@ -1010,7 +1011,8 @@ function KlientiTab() {
                   className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
                 <input placeholder="E-Mail" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
                   className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-                <input placeholder="Tel. číslo" value={form.phone} onChange={e => setForm({ ...form, phone: formatPhone(e.target.value) })}
+                <PhoneInput value={form.phone} onChange={v => setForm({ ...form, phone: v })}
+                  placeholder="0944 xxx xxx"
                   className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
                 <input placeholder="Spoločnosť" value={form.company} onChange={e => setForm({ ...form, company: e.target.value })}
                   className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary sm:col-span-2" />
@@ -1192,7 +1194,7 @@ function KlientiTab() {
                         ] as { label: string; field: keyof Client }[]).map(({ label, field }) => (
                           <div key={field} className="flex gap-2 items-start">
                             <span className="text-gray-400 text-xs w-20 shrink-0 pt-0.5">{label}</span>
-                            <EditableField value={field === "phone" ? formatPhone((c[field] as string) || "") || "—" : (c[field] as string) || "—"} onSave={v => update(c.id, { [field]: field === "phone" ? formatPhone(v) : v })} />
+                            <EditableField value={field === "phone" ? formatPhone((c[field] as string) || "") || "—" : (c[field] as string) || "—"} type={field === "phone" ? "tel" : "text"} onSave={v => update(c.id, { [field]: field === "phone" ? formatPhone(v) : v })} />
                           </div>
                         ))}
                       </div>
