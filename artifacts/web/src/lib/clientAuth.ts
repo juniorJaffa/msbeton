@@ -16,7 +16,6 @@ const ADMIN_CLIENT: LoggedClient = {
   discountCelkovo: 0,
   canHotovost: true,
   canPridatBeton: true,
-  canZimneOpatrenia: true,
 };
 
 export const clientAuth = {

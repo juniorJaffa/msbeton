@@ -695,16 +695,65 @@ function ObjednavkyTab() {
                   <span className="text-[10px] text-gray-300 shrink-0 hidden sm:block">{fmtDate(o.createdAt)}</span>
                 </div>
                 {isExp && (
-                  <div className="border-t border-gray-100 px-4 py-3 bg-gray-50/50 grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-gray-500">
-                    <div><span className="font-semibold text-gray-600">Dátum:</span> {fmtDate(o.createdAt)}</div>
-                    {o.phone && <div><span className="font-semibold text-gray-600">Telefón:</span> {formatPhone(o.phone)}</div>}
-                    {o.email && <div><span className="font-semibold text-gray-600">Email:</span> {o.email}</div>}
-                    {o.clientId && <div><span className="font-semibold text-gray-600">ID klienta:</span> {o.clientId}</div>}
-                    {o.km && <div><span className="font-semibold text-gray-600">Vzdialenosť:</span> {o.km} km</div>}
-                    <div><span className="font-semibold text-gray-600">Bez DPH:</span> {o.totalBezDph.toFixed(2)} €</div>
-                    <div><span className="font-semibold text-gray-600">S DPH:</span> {o.totalSDph.toFixed(2)} €</div>
-                    {o.note && <div className="col-span-2"><span className="font-semibold text-gray-600">Poznámka:</span> {o.note}</div>}
-                    {o.breakdown && <div className="col-span-2 text-gray-400 whitespace-pre-wrap">{o.breakdown}</div>}
+                  <div className="border-t border-gray-100 bg-gray-50/40">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-100">
+                      {/* Kontakt */}
+                      <div className="px-4 py-3 space-y-1.5 text-xs">
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Kontakt</div>
+                        <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Meno</span><span className="font-medium text-gray-700">{o.clientName}</span></div>
+                        {o.company && <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Firma</span><span className="text-gray-600">{o.company}</span></div>}
+                        {o.phone && <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Telefón</span><span className="text-gray-600">{formatPhone(o.phone)}</span></div>}
+                        {o.email && <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Email</span><span className="text-gray-600">{o.email}</span></div>}
+                        {o.clientId && <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">ID klienta</span><span className="text-gray-500">{o.clientId}</span></div>}
+                        <div className="flex gap-2 pt-1"><span className="text-gray-400 w-20 shrink-0">Dátum</span><span className="text-gray-500">{fmtDate(o.createdAt)}</span></div>
+                      </div>
+                      {/* Detail dopravy + poznámka */}
+                      <div className="px-4 py-3 space-y-1.5 text-xs">
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Objednávka</div>
+                        <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Režim</span><span className="font-medium text-gray-700">{tabLabel[o.tab]}</span></div>
+                        <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Množstvo</span><span className="text-gray-600">{o.totalQty} m³</span></div>
+                        {o.km && <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Vzdialenosť</span><span className="text-gray-600">{o.km} km</span></div>}
+                        {o.address && <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Adresa</span><span className="text-gray-600 break-words">{o.address}</span></div>}
+                        <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Cena</span><span className="text-gray-600">{o.priceMode === "hotovost" ? "hotovosť" : "faktúra"}</span></div>
+                        {o.note && <div className="flex gap-2 pt-1"><span className="text-gray-400 w-20 shrink-0">Poznámka</span><span className="text-gray-600 italic">{o.note}</span></div>}
+                      </div>
+                    </div>
+                    {/* Kalkulácia */}
+                    {o.breakdown && (
+                      <div className="border-t border-gray-100 px-4 py-3">
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Kalkulácia</div>
+                        <div className="space-y-1">
+                          {o.breakdown.split("\n").map((line, i) => {
+                            const parts = line.split(": ");
+                            const label = parts[0];
+                            const value = parts.slice(1).join(": ");
+                            return (
+                              <div key={i} className="flex justify-between items-baseline text-xs gap-4">
+                                <span className="text-gray-500">{label}</span>
+                                {value && <span className="font-semibold text-gray-700 shrink-0">{value}</span>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="mt-3 pt-2 border-t border-gray-200 flex justify-between items-center">
+                          <span className="text-xs text-gray-500">Spolu bez DPH</span>
+                          <span className="text-sm font-bold text-secondary">{o.totalBezDph.toFixed(2)} €</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-400">S DPH</span>
+                          <span className="text-base font-black text-secondary">{o.totalSDph.toFixed(2)} €</span>
+                        </div>
+                      </div>
+                    )}
+                    {!o.breakdown && (
+                      <div className="border-t border-gray-100 px-4 py-3 flex justify-between items-center">
+                        <span className="text-xs text-gray-400">Celková suma</span>
+                        <div className="text-right">
+                          <div className="text-xs text-gray-400">{o.totalBezDph.toFixed(2)} € bez DPH</div>
+                          <div className="text-base font-black text-secondary">{o.totalSDph.toFixed(2)} €</div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

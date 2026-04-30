@@ -815,25 +815,101 @@ export function ConcreteCalculator() {
     if (!result) return;
     const isFaktura = priceMode === "faktura";
     const smsItems = isFaktura ? result.discountedItems : result.hotovostDiscItems;
-    const lines = ["MS-BETON cenová ponuka:"];
+    const now = new Date();
+    const fmtDate = `${String(now.getDate()).padStart(2,"0")}.${String(now.getMonth()+1).padStart(2,"0")}.${now.getFullYear()}`;
+    const fmtTime = `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
+    const div = "-------------------------------";
+    const row = (label: string, val: number) => `${label.padEnd(22)}= ${val.toFixed(2)} €`;
+    const rowUnit = (qty: string, unit: number, total: number) =>
+      `${(qty + " x " + unit.toFixed(2) + " €").padEnd(22)}= ${total.toFixed(2)} €`;
+
+    const lines: string[] = [];
+    lines.push(div, "            Cenová ponuka", div);
+    if (address) lines.push(`${address} - ${result.km}km`);
+    else if (result.km > 0) lines.push(`${result.km}km`);
     if (result.isOwn) lines.push("Vlastná doprava – odber na prevádzke");
+    lines.push(div);
+    lines.push(`Dátum vystavenia - ${fmtDate}`);
+    lines.push(`Čas vystavenia   - ${fmtTime}`);
+    lines.push(div);
+
     for (const ci of result.concreteBreakdown) {
-      const finalVal = isFaktura ? ci.bezDphFinal : ci.bezDphFinalHotovost;
-      lines.push(`${ci.label}: ${fmt(finalVal)}`);
+      const concreteVal = isFaktura ? ci.bezDphFinal : ci.bezDphFinalHotovost;
+      const unitPrice = ci.qty > 0 ? concreteVal / ci.qty : 0;
+      const concreteName = ci.label.replace(/ – \d+(?:[.,]\d+)? m³$/, "");
+      lines.push(concreteName);
+      lines.push(rowUnit(`${ci.qty}m³`, unitPrice, concreteVal));
+
+      if (!result.isOwn && ci.transport > 0) {
+        const transportDisc = ci.transport * dopravaFactor;
+        if (ci.transportIsMin) {
+          const carCost = ci.transportTrucks > 0 ? transportDisc / ci.transportTrucks : 0;
+          lines.push("Minimálna doprava");
+          lines.push(rowUnit(`${ci.transportTrucks}x auto`, carCost, transportDisc));
+        } else if (result.transportZone) {
+          const zone = result.transportZone;
+          const effectiveRate = zone.ratePerM3 * dopravaFactor;
+          lines.push(`Doprava od ${zone.fromKm}km do ${zone.toKm}km`);
+          lines.push(rowUnit(`${ci.qty}m³`, effectiveRate, transportDisc));
+          if (ci.transportFillup > 0) {
+            const fillupDisc = ci.transportFillup * dopravaFactor;
+            lines.push(`Doťaženie do ${ci.transportFillupTarget}m³`);
+            lines.push(rowUnit(`${ci.transportFillupM3}m³`, effectiveRate, fillupDisc));
+          }
+        } else {
+          lines.push(`Doprava: ${transportDisc.toFixed(2)} €`);
+        }
+      }
     }
-    if (smsItems.transport > 0) lines.push(`Doprava: ${fmt(smsItems.transport)}`);
-    if (smsItems.fillup > 0) lines.push(`Doťaženie do ${result.fillupTarget}m³ – ${result.fillupM3}m³: ${fmt(smsItems.fillup)}`);
-    if (smsItems.zimne > 0) lines.push(`Zimné opatrenia ${result.qty}m³: ${fmt(smsItems.zimne)}`);
+
+    let svcSection = false;
+    const svcDiv = () => { if (!svcSection) { lines.push(div); svcSection = true; } };
+
     if (tab === "pumpa") {
-      if (smsItems.pump > 0) lines.push(`Pumpa: ${fmt(smsItems.pump)}`);
-      if (smsItems.hoses > 0) lines.push(`Hadice ${hoseMeters}m: ${fmt(smsItems.hoses)}`);
-      if (smsItems.washing > 0) lines.push(`Umývanie: ${fmt(smsItems.washing)}`);
+      if (smsItems.pump > 0) {
+        svcDiv();
+        const pumpH = result.pumpHrs + (result.pumpMs > 0 ? 0.5 : 0);
+        lines.push("Čerpanie betónu");
+        lines.push(rowUnit(`${pumpH}h`, pumpServicePrice * sluzbyFactor, smsItems.pump));
+      }
+      if (smsItems.hoses > 0) {
+        svcDiv();
+        lines.push("Prídavné hadice");
+        lines.push(rowUnit(`${hoseMeters}m`, hoseServicePrice * sluzbyFactor, smsItems.hoses));
+      }
+      if (smsItems.washing > 0) {
+        svcDiv();
+        lines.push("Umývanie mimo stavby");
+        lines.push(rowUnit("1 ks", washServicePrice * sluzbyFactor, smsItems.washing));
+      }
+      if (smsItems.chem > 0) {
+        svcDiv();
+        lines.push("Rozbehová chémia");
+        lines.push(rowUnit("1 ks", chemServicePrice * sluzbyFactor, smsItems.chem));
+      }
+      if (smsItems.waiting > 0) {
+        svcDiv();
+        lines.push(`Čakačky – ${result.waitLabel}`);
+        lines.push(rowUnit(`${result.waitIntervals} × 15min`, waitServicePricePumpa * sluzbyFactor, smsItems.waiting));
+      }
+    } else if (tab === "mix" && smsItems.waiting > 0) {
+      svcDiv();
+      lines.push(`Čas na stavbe – ${result.waitLabel}`);
+      lines.push(rowUnit(`${result.waitIntervals} × 15min`, waitServicePriceMix * sluzbyFactor, smsItems.waiting));
     }
+
+    if (smsItems.zimne > 0) {
+      svcDiv();
+      lines.push("Zimné opatrenia");
+      lines.push(rowUnit(`${result.totalQty}m³`, zimneServicePrice * betonFactor, smsItems.zimne));
+    }
+
+    lines.push(div);
     if (isFaktura) {
-      lines.push(`SPOLU bez DPH: ${fmt(result.totalDiscBezDph)}`);
-      lines.push(`SPOLU s DPH: ${fmt(result.totalDiscSDph)}`);
+      lines.push(row("Cena bez DPH", result.totalDiscBezDph));
+      lines.push(row("Cena s DPH", result.totalDiscSDph));
     } else {
-      lines.push(`SPOLU: ${fmt(result.hotovostTotal)}`);
+      lines.push(row("Cena spolu", result.hotovostTotal));
     }
     if (hasDiscount) {
       const dp: string[] = [];
