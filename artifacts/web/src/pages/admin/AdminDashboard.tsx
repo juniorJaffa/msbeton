@@ -463,6 +463,74 @@ function DopravaTab() {
           </div>
         )}
       </div>
+
+      {/* ── Info panel: Pravidlá doťaženia ── */}
+      {(() => {
+        const pumpCap = zones[0]?.pumpTruckCapacity ?? 7;
+        const mixCap  = zones[0]?.truckCapacity     ?? 9;
+        const minFee  = ts.minimumFee ?? 62.50;
+        const rows = [
+          {
+            icon: "🚛",
+            mode: "Pumpa",
+            rules: [
+              { when: `množstvo < 5 m³`, action: `doťaž na 5 m³`, example: `napr. 3 m³ → +2 m³` },
+              { when: `${pumpCap} m³ < množstvo < 10 m³`, action: `doťaž na 10 m³`, example: `napr. 8 m³ → +2 m³` },
+            ],
+          },
+          {
+            icon: "🔄",
+            mode: "Mixér",
+            rules: [
+              { when: `množstvo < 5 m³`, action: `doťaž na 5 m³`, example: `napr. 3 m³ → +2 m³` },
+              { when: `${mixCap} m³ < množstvo < 10 m³`, action: `doťaž na 10 m³`, example: `napr. 9.5 m³ → +0.5 m³` },
+            ],
+          },
+        ];
+        return (
+          <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-5 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+              <h3 className="font-black text-secondary text-sm uppercase tracking-widest">Pravidlá doťaženia</h3>
+              <span className="text-[10px] text-gray-400 font-normal normal-case tracking-normal">— automatický príplatok k doprave</span>
+            </div>
+            <div className="px-5 py-4 space-y-4">
+              <p className="text-xs text-gray-500 leading-relaxed">
+                Doťaženie je <strong className="text-secondary">extra objem betónu</strong>, ktorý sa dopočíta k objednávke, ak je množstvo nevýhodné pre plnú kapacitu auta.
+                Cena doťaženia sa počíta rovnakou sadzbou ako doprava v danej zóne (€/m³).
+                Pri <strong className="text-secondary">minimálnej doprave</strong> sa doťaženie <span className="text-red-500 font-semibold">nepočíta</span>.
+              </p>
+              <div className="grid sm:grid-cols-2 gap-3">
+                {rows.map(r => (
+                  <div key={r.mode} className="bg-gray-50 border border-gray-100 rounded p-3">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <span>{r.icon}</span>
+                      <span className="text-xs font-black text-secondary uppercase tracking-wide">{r.mode}</span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {r.rules.map((rule, i) => (
+                        <div key={i} className="flex items-start gap-2 text-xs">
+                          <span className="mt-0.5 w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                          <div>
+                            <span className="text-gray-500">Ak </span>
+                            <span className="font-mono font-semibold text-secondary">{rule.when}</span>
+                            <span className="text-gray-500"> → </span>
+                            <span className="font-semibold text-secondary">{rule.action}</span>
+                            <span className="text-gray-400 ml-1">({rule.example})</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded px-3 py-2 text-xs text-amber-800">
+                <span className="shrink-0 mt-0.5">⚠️</span>
+                <span>Doťaženie sa <strong>nevypočíta</strong>, ak celková cena dopravy vrátane doťaženia klesne pod <strong className="font-mono">{minFee.toFixed(2)} €/auto</strong> (minimálna doprava). V takom prípade sa použije min. poplatok a doťaženie sa ignoruje.</span>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
