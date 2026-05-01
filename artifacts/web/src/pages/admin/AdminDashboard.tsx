@@ -1546,6 +1546,18 @@ function KlientiTab() {
                 discountSluzby={tablePdfModal.discountSluzby ?? 0}
                 discountCelkovo={tablePdfModal.discountCelkovo ?? 0}
                 manualPrices={tablePdfModal.manualPrices}
+                onManualPriceChange={tablePdfMode === "faktura" ? (itemId, price) => {
+                  const current = tablePdfModal.manualPrices ?? {};
+                  let next: Record<string, number>;
+                  if (price === null) {
+                    const { [itemId]: _removed, ...rest } = current;
+                    next = rest;
+                  } else {
+                    next = { ...current, [itemId]: price };
+                  }
+                  update(tablePdfModal.id, { manualPrices: next });
+                  setTablePdfModal({ ...tablePdfModal, manualPrices: next });
+                } : undefined}
                 priceMode={tablePdfMode}
                 hotovostDph={tablePdfModal.hotovostDph ?? (ts.defaultHotovostDph ?? 0.20)}
                 variant="light"
