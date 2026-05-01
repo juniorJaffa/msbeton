@@ -962,6 +962,7 @@ function DiscountInput({ label, value, onChange }: { label: string; value: strin
 
 function KlientiTab() {
   const [clients, setClients] = useState<Client[]>(adminData.getClients());
+  const [zones] = useState(() => adminData.getDelivery());
   const [ts, setTs] = useState<TransportSettings>(adminData.getTransportSettings());
   const saveTs = (data: TransportSettings) => { setTs(data); adminData.saveTransportSettings(data); };
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -1006,10 +1007,13 @@ function KlientiTab() {
     setForm(emptyForm); setAdding(false);
   };
 
-  const filtered = clients.filter(c =>
-    [c.firstName, c.lastName, c.company, c.email, c.phone, c.loginId]
-      .some(f => (f ?? "").toLowerCase().includes(search.toLowerCase()))
-  );
+  const normK = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const searchTerms = search.trim().split(/\s+/).filter(Boolean);
+  const filtered = clients.filter(c => {
+    if (!searchTerms.length) return true;
+    const haystack = [c.firstName, c.lastName, c.company, c.email, c.phone, c.loginId].filter(Boolean).join(" ");
+    return searchTerms.every(t => normK(haystack).includes(normK(t)) || haystack.includes(t));
+  });
 
   return (
     <div className="space-y-4">
@@ -1222,6 +1226,8 @@ function KlientiTab() {
           const hasLogin = !!(c.loginId && c.password);
           const fullName = [c.firstName, c.lastName].filter(Boolean).join(" ") || "—";
           const maxDisc = Math.max(c.discountBeton ?? 0, c.discountDoprava ?? 0, c.discountSluzby ?? 0, c.discountCelkovo ?? 0);
+          const clientZone = c.deliveryZoneId ? zones.find(z => z.id === c.deliveryZoneId) : zones[0];
+          const zonePricingType = clientZone?.pricingType ?? "standard";
           return (
             <div key={c.id} className={cn("border shadow-sm overflow-hidden", c.isOwner ? "bg-primary/5 border-primary/40" : "bg-white border-gray-200")}>
               {/* Card header */}
@@ -1251,9 +1257,18 @@ function KlientiTab() {
                     </div>
                   ))}
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
+                  {clientZone && (
+                    <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase rounded-sm bg-blue-50 text-blue-600 border border-blue-200 shrink-0" title={`Zóna: ${clientZone.name}`}>
+                      <Truck className="w-3 h-3" />
+                      <span className="hidden sm:inline max-w-[80px] truncate">{clientZone.name}</span>
+                      {zonePricingType !== "standard" && (
+                        <span className="font-black text-primary">{zonePricingType === "km" ? "€/km" : "€/auto"}</span>
+                      )}
+                    </span>
+                  )}
                   {c.isOwner && (
-                    <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-black uppercase rounded-sm bg-primary/20 text-primary/80 mr-1">
+                    <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-black uppercase rounded-sm bg-primary/20 text-primary/80">
                       <Crown className="w-3 h-3" /> Admin
                     </span>
                   )}
