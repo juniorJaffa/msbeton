@@ -1259,25 +1259,14 @@ function KlientiTab() {
                   ))}
                 </div>
                 <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
-                  {clientZone && (() => {
-                    let rateInfo = "";
-                    if (zonePricingType === "km") {
-                      rateInfo = `${clientZone.ratePerKm?.toFixed(2)} €/km`;
-                    } else if (zonePricingType === "auto") {
-                      rateInfo = `${clientZone.ratePerTruck?.toFixed(2)} €/auto`;
-                    } else {
-                      const first = pZones[0];
-                      const last = pZones[pZones.length - 1];
-                      if (first && last) rateInfo = `${first.ratePerM3.toFixed(2)}–${last.ratePerM3.toFixed(2)} €/m³`;
-                    }
-                    return (
-                      <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-sm bg-blue-50 text-blue-600 border border-blue-200 shrink-0" title={`Zóna: ${clientZone.name}`}>
-                        <Truck className="w-3 h-3 shrink-0" />
-                        <span className="hidden sm:inline truncate max-w-[70px]">{clientZone.name}</span>
-                        {rateInfo && <span className="font-normal text-blue-500">({rateInfo})</span>}
-                      </span>
-                    );
-                  })()}
+                  {clientZone && (
+                    <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold rounded-sm bg-blue-50 text-blue-600 border border-blue-200 shrink-0" title={clientZone.name}>
+                      <Truck className="w-3 h-3 shrink-0" />
+                      {zonePricingType === "km" && <span>€/km</span>}
+                      {zonePricingType === "auto" && <span>€/auto</span>}
+                      {zonePricingType === "standard" && <span>Štd</span>}
+                    </span>
+                  )}
                   {c.isOwner && (
                     <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-black uppercase rounded-sm bg-primary/20 text-primary/80">
                       <Crown className="w-3 h-3" /> Admin
@@ -1413,6 +1402,13 @@ function KlientiTab() {
                               <option key={z.id} value={z.id}>{z.name}</option>
                             ))}
                           </select>
+                          {clientZone && (
+                            <div className="mt-1.5 text-[11px] text-blue-600 font-medium">
+                              {zonePricingType === "km" && `Sadzba: ${clientZone.ratePerKm?.toFixed(2)} €/km`}
+                              {zonePricingType === "auto" && `Paušál: ${clientZone.ratePerTruck?.toFixed(2)} €/auto`}
+                              {zonePricingType === "standard" && pZones.length > 0 && `Pásma: ${pZones[0].ratePerM3.toFixed(2)} – ${pZones[pZones.length - 1].ratePerM3.toFixed(2)} €/m³`}
+                            </div>
+                          )}
                         </div>
                       </div>
                       <button onClick={() => update(c.id, { active: !c.active })}
