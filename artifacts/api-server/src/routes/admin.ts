@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { db, adminConfig } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { invalidateClientCache } from "./client";
 
 const router = Router();
 
@@ -62,7 +63,7 @@ router.get("/clients", async (req, res) => {
   catch (err) { req.log.error({ err }, "Failed to get clients"); res.status(500).json({ error: "Internal server error" }); }
 });
 router.put("/clients", async (req, res) => {
-  try { await setConfig(KEYS.clients, req.body); res.json({ ok: true }); }
+  try { await setConfig(KEYS.clients, req.body); invalidateClientCache(); res.json({ ok: true }); }
   catch (err) { req.log.error({ err }, "Failed to save clients"); res.status(500).json({ error: "Internal server error" }); }
 });
 

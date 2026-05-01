@@ -47,4 +47,14 @@ export const clientAuth = {
     localStorage.removeItem(SESSION_KEY);
     window.dispatchEvent(new Event("client-session-changed"));
   },
+
+  async refreshSession(): Promise<void> {
+    const current = this.getLoggedClient();
+    if (!current || current.id === "admin") return;
+    const result = await clientApi.me(current.id);
+    if (result?.ok && result.client) {
+      localStorage.setItem(SESSION_KEY, JSON.stringify(result.client));
+      window.dispatchEvent(new Event("client-session-changed"));
+    }
+  },
 };

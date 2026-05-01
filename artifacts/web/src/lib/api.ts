@@ -66,6 +66,8 @@ export const clientApi = {
       method: "POST",
       body: JSON.stringify({ clientId, password }),
     }),
+  me: (id: string) =>
+    apiFetch<{ ok: boolean; client?: LoggedClient }>(CLIENT_API, `/me?id=${encodeURIComponent(id)}`),
   submitOrder: (order: unknown) =>
     apiFetch<{ ok: boolean; error?: string }>(CLIENT_API, "/order", {
       method: "POST",

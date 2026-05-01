@@ -1543,6 +1543,12 @@ export function ConcreteCalculator() {
                 <SelectField label="Hodiny čakania" value={waitHour} onChange={(v) => { setWaitHour(v); setShowResult(false); }} options={WAIT_HOURS} />
                 <SelectField label="Minúty čakania" value={waitMin} onChange={(v) => { setWaitMin(v); setShowResult(false); }} options={WAIT_MINS} />
               </div>
+              {waitTotalMins > 0 && waitTotalMins <= 30 && (
+                <p className="text-xs text-green-400/80 flex items-center gap-1.5 mt-0.5">
+                  <span className="text-green-400 font-bold">✓</span>
+                  Prvých 30 min zadarmo – táto doba sa neúčtuje
+                </p>
+              )}
             </div>
           )}
 

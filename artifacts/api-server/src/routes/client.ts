@@ -48,6 +48,12 @@ async function verifyPassword(plain: string, stored: string): Promise<boolean> {
 
 const router = Router();
 
+// In-memory cache so DB isn't hit on every page load (TTL: 30s)
+let clientCache: { data: UnifiedClient[]; ts: number } | null = null;
+const CACHE_TTL = 30_000;
+
+export function invalidateClientCache() { clientCache = null; }
+
 interface UnifiedClient {
   id: string;
   firstName?: string;
@@ -93,25 +99,56 @@ const DEFAULT_CLIENT_ACCOUNTS: UnifiedClient[] = [
 ];
 
 async function getClientAccounts(): Promise<UnifiedClient[]> {
+  if (clientCache && Date.now() - clientCache.ts < CACHE_TTL) return clientCache.data;
+  let result: UnifiedClient[];
+
   // 1. Try unified clients list (new structure)
   const clientRows = await db.select().from(adminConfig).where(eq(adminConfig.key, "clients"));
   if (clientRows.length > 0 && Array.isArray(clientRows[0].data)) {
     const clients = clientRows[0].data as UnifiedClient[];
     const active = clients.filter((c) => c.loginId && c.password && c.active !== false);
-    if (active.length > 0) return active;
+    if (active.length > 0) {
+      result = active;
+      clientCache = { data: result, ts: Date.now() };
+      return result;
+    }
   }
 
   // 2. Try legacy client_accounts
   const rows = await db.select().from(adminConfig).where(eq(adminConfig.key, "client_accounts"));
   if (rows.length > 0 && Array.isArray(rows[0].data) && (rows[0].data as LegacyClientAccount[]).length > 0) {
     const legacy = rows[0].data as LegacyClientAccount[];
-    return legacy.map((a) => ({
+    result = legacy.map((a) => ({
       id: a.id, loginId: a.clientId, password: a.password,
       name: a.name, discountBeton: a.discountPct ?? 0, active: a.active,
     }));
+    clientCache = { data: result, ts: Date.now() };
+    return result;
   }
 
-  return DEFAULT_CLIENT_ACCOUNTS;
+  result = DEFAULT_CLIENT_ACCOUNTS;
+  clientCache = { data: result, ts: Date.now() };
+  return result;
+}
+
+function buildClientResponse(account: UnifiedClient) {
+  return {
+    id: account.id,
+    clientId: account.loginId,
+    name: [account.firstName, account.lastName].filter(Boolean).join(" ") || account.name || "Klient",
+    company: account.company ?? "",
+    discountBeton: account.discountBeton ?? account.discountPct ?? 0,
+    discountDoprava: account.discountDoprava ?? 0,
+    discountSluzby: account.discountSluzby ?? 0,
+    discountCelkovo: account.discountCelkovo ?? 0,
+    phone: account.phone ?? "",
+    canHotovost: account.canHotovost ?? true,
+    canPridatBeton: account.canPridatBeton ?? true,
+    deliveryZoneId: account.deliveryZoneId,
+    canZimneOpatrenia: account.canZimneOpatrenia ?? false,
+    hotovostDph: account.hotovostDph,
+    manualPrices: account.manualPrices,
+  };
 }
 
 router.post("/login", async (req, res) => {
@@ -132,29 +169,24 @@ router.post("/login", async (req, res) => {
     if (!account) {
       return res.status(401).json({ ok: false, error: "Nesprávne prihlasovacie údaje" });
     }
-    const fullName = [account.firstName, account.lastName].filter(Boolean).join(" ") || account.name || "Klient";
-    return res.json({
-      ok: true,
-      client: {
-        id: account.id,
-        clientId: account.loginId,
-        name: fullName,
-        company: account.company ?? "",
-        discountBeton: account.discountBeton ?? account.discountPct ?? 0,
-        discountDoprava: account.discountDoprava ?? 0,
-        discountSluzby: account.discountSluzby ?? 0,
-        discountCelkovo: account.discountCelkovo ?? 0,
-        phone: account.phone ?? "",
-        canHotovost: account.canHotovost ?? true,
-        canPridatBeton: account.canPridatBeton ?? true,
-        deliveryZoneId: account.deliveryZoneId,
-        canZimneOpatrenia: account.canZimneOpatrenia ?? false,
-        hotovostDph: account.hotovostDph,
-        manualPrices: account.manualPrices,
-      },
-    });
+    return res.json({ ok: true, client: buildClientResponse(account) });
   } catch (err) {
     req.log.error({ err }, "Client login failed");
+    return res.status(500).json({ ok: false, error: "Internal server error" });
+  }
+});
+
+// Refresh session – called on app load to get fresh client data without re-login
+router.get("/me", async (req, res) => {
+  try {
+    const { id } = req.query;
+    if (!id) return res.status(400).json({ ok: false });
+    const accounts = await getClientAccounts();
+    const account = accounts.find((a) => a.id === String(id) && a.active !== false);
+    if (!account) return res.status(404).json({ ok: false, error: "Klient nenájdený" });
+    return res.json({ ok: true, client: buildClientResponse(account) });
+  } catch (err) {
+    req.log.error({ err }, "Client me failed");
     return res.status(500).json({ ok: false, error: "Internal server error" });
   }
 });
