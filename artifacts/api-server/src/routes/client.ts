@@ -66,6 +66,7 @@ interface UnifiedClient {
   deliveryZoneId?: string;
   canZimneOpatrenia?: boolean;
   hotovostDph?: number;
+  manualPrices?: Record<string, number>;
   active?: boolean;
   // legacy fallback fields
   name?: string;
@@ -149,6 +150,7 @@ router.post("/login", async (req, res) => {
         deliveryZoneId: account.deliveryZoneId,
         canZimneOpatrenia: account.canZimneOpatrenia ?? false,
         hotovostDph: account.hotovostDph,
+        manualPrices: account.manualPrices,
       },
     });
   } catch (err) {
