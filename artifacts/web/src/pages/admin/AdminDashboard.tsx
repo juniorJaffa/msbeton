@@ -1259,11 +1259,14 @@ function KlientiTab() {
                 </div>
                 <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
                   {clientZone && (
-                    <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase rounded-sm bg-blue-50 text-blue-600 border border-blue-200 shrink-0" title={`Zóna: ${clientZone.name}`}>
-                      <Truck className="w-3 h-3" />
-                      <span className="hidden sm:inline max-w-[80px] truncate">{clientZone.name}</span>
-                      {zonePricingType !== "standard" && (
-                        <span className="font-black text-primary">{zonePricingType === "km" ? "€/km" : "€/auto"}</span>
+                    <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-sm bg-blue-50 text-blue-600 border border-blue-200 shrink-0" title={`Zóna: ${clientZone.name}`}>
+                      <Truck className="w-3 h-3 shrink-0" />
+                      <span className="hidden sm:inline truncate max-w-[70px]">{clientZone.name}</span>
+                      {zonePricingType === "km" && (
+                        <span className="font-black text-primary uppercase">€/km <span className="font-normal text-blue-500 normal-case">({clientZone.ratePerKm?.toFixed(2)} €/km)</span></span>
+                      )}
+                      {zonePricingType === "auto" && (
+                        <span className="font-black text-primary uppercase">€/auto <span className="font-normal text-blue-500 normal-case">({clientZone.ratePerTruck?.toFixed(2)} €/auto)</span></span>
                       )}
                     </span>
                   )}
