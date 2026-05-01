@@ -17,7 +17,7 @@ Tento repozitár je **moderný redesign** existujúcej WordPress stránky [msbet
 1. **Kalkulačka betónu** — hlavná funkcia stránky. Tri režimy: pumpa, mix (domiešavač), vlastná doprava. Počíta cenu betónu + dopravy + služieb s/bez DPH, s/bez zľavy klienta.
 2. **Správa klientov v admin UI** — vytváranie a editácia klientov s ich zľavami; `isOwner: true` označí klienta ako vlastníka firmy (korunka, nedá sa zmazať)
 3. **Prihlásenie klienta do kalkulačky** — klient sa prihlási, kalkulačka automaticky aplikuje jeho zľavy
-4. **Admin dashboard** — správa: Betóny (kategórie + typy + ceny), Doprava (zónové sadzby), Služby (čerpanie, umývanie, čakačky…), Klienti
+4. **Admin dashboard** — správa: Betóny (kategórie + typy + ceny), Doprava (zónové sadzby), Služby (čerpanie, umývanie, čakačky…), Klienti, Objednávky
 
 ### Firemné údaje (hardcoded v PDF exportoch)
 
@@ -38,8 +38,39 @@ Referencia: `calculator-utils.php`, funkcia `get_discount_with_type()`:
 ### Transportná logika (fill-up pravidlo, zhodné so starou kalkulačkou)
 
 - Pumpa: prvé auto 7 m³, každé ďalšie 9 m³ (domiešavač)
-- Fill-up: ak `qty < 5`, doplní sa na 5 m³; ak `qty > 7 && qty < 10` (pumpa) alebo `qty > 9 && qty < 10` (mix), doplní sa na 10 m³
+- Fill-up platí **iba pre Standard typ dopravy** (nie km ani auto):
+  - `qty < 5` → doplní na 5 m³
+  - `qty > 7 && qty < 10` (pumpa) alebo `qty > 9 && qty < 10` (mix) → doplní na 10 m³
 - Cena dopravy = zóna (podľa km) × celkový objem vrátane fill-up; ak priemer na auto < minimálna sadzba, použije sa minimum × počet áut
+- **km typ**: `cost = km × ratePerKm × qty` (bez fill-up)
+- **auto typ**: `cost = trucks × ratePerTruck` (bez fill-up)
+
+### Mix čakačky pravidlo
+
+Prvých 30 minút čakania je **zadarmo**. Potom sa účtuje každých začatých 15 min:
+```typescript
+waitIntervalsMix = Math.ceil(Math.max(0, waitTotalMins - 30) / 15)
+```
+Referencia: `calculator-utils.php`, funkcia `get_mix_calculation_pricing()`.
+
+### Kalkulačka – výsledok: poradie riadkov
+
+Pre každú položku (hlavnú aj extra):
+1. Betón (produkt)
+2. Doprava
+3. Doťaženie (ak aplikovateľné)
+4. Služby (čerpanie / chémia / hadice / umývanie / čakačky)
+
+Služby sú vždy **pod dopravou**, nie nad ňou.
+
+### Admin – search (Objednávky aj Klienti)
+
+Multi-word AND logika s diacritics normalizáciou:
+```typescript
+const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const searchTerms = search.trim().split(/\s+/).filter(Boolean);
+// každý term musí matchnúť niektoré pole
+```
 
 ### Testovacie prihlasovacie údaje
 
@@ -130,6 +161,7 @@ Všetky operácie používajú `INSERT … ON CONFLICT DO UPDATE` — pri zmená
 
 - **Admin**: iba client-side, `btoa`-enkódovaná kontrola prihlasovacích údajov v `adminAuth.ts`, session v localStorage. Žiadne API volania.
 - **Klient**: `POST /api/client/login` → server overí voči `clients` kľúču v DB → vráti session objekt uložený pod `msbeton_client_session`. `clientAuth.ts` používa výlučne PostgreSQL (žiadny localStorage fallback).
+- **Logout z Navbar**: `clientAuth.logout()` dispatchuje `client-session-changed` event. `Calculator.tsx` počúva tento event a syncuje svoj `loggedClient` stav.
 
 ### Kľúčové API routy
 
@@ -143,6 +175,12 @@ Všetky operácie používajú `INSERT … ON CONFLICT DO UPDATE` — pri zmená
 | GET/PUT | `/api/admin/services` | Služby (čerpanie, umývanie, čakačky…) |
 | POST | `/api/client/login` | Prihlásenie klienta |
 
+### Kľúčové komponenty
+
+- `PhoneInput` — globálny komponent pre telefónne čísla, formátuje na blur, normalizuje +421/00421 → 0xxx
+- `Calculator.tsx` — celá logika kalkulačky vrátane extra položiek, per-item služieb, PDF exportu, SMS exportu
+- `AdminDashboard.tsx` — všetky admin tabuľky; každá sekcia je samostatná funkcia (napr. `KlientiTab`, `ObjednavkyTab`)
+
 ### Štýlovanie
 
 - Primárna farba: `#EDC531` (zlatá), Sekundárna: `#001D3D` (navy)
@@ -152,6 +190,8 @@ Všetky operácie používajú `INSERT … ON CONFLICT DO UPDATE` — pri zmená
 ### Produkčný deployment
 
 Produkcia: [demo.msbeton.sk](https://demo.msbeton.sk), server `root@178.104.62.115`, adresár `/var/www/msbeton`.
+
+**GitHub Action nasadzuje automaticky** pri každom `git push origin main`. Manuálny deploy len ak Action zlyhá alebo commity neboli pushnuté:
 
 ```bash
 # Manuálny deploy
