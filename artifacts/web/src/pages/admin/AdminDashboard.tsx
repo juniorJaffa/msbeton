@@ -751,6 +751,7 @@ function ObjednavkyTab() {
     const d = new Date(iso);
     return `${d.toLocaleDateString("sk-SK")} ${d.toLocaleTimeString("sk-SK", { hour: "2-digit", minute: "2-digit" })}`;
   };
+  const fmtEur = (n: number) => n.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
   const tabLabel: Record<Order["tab"], string> = { pumpa: "Pumpa", mix: "Mix", vlastnadoprava: "Vl. doprava" };
 
   return (
@@ -849,7 +850,7 @@ function ObjednavkyTab() {
                   </div>
                   <div className="flex items-center gap-3 shrink-0" onClick={e => e.stopPropagation()}>
                     <div className="text-right hidden sm:block">
-                      <div className="text-sm font-black text-secondary">{o.totalSDph.toFixed(2)} €</div>
+                      <div className="text-sm font-black text-secondary">{fmtEur(o.totalSDph)}</div>
                       <div className="text-[10px] text-gray-400">{o.priceMode === "hotovost" ? "hotovosť" : "faktúra"}</div>
                     </div>
                     <OrderStatusBadge status={o.status} onChange={s => updateStatus(o.id, s)} />
@@ -912,11 +913,11 @@ function ObjednavkyTab() {
                         </div>
                         <div className="mt-3 pt-2 border-t border-gray-200 flex justify-between items-center">
                           <span className="text-xs text-gray-500">Spolu bez DPH</span>
-                          <span className="text-sm font-bold text-secondary">{o.totalBezDph.toFixed(2)} €</span>
+                          <span className="text-sm font-bold text-secondary">{fmtEur(o.totalBezDph)}</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-gray-400">S DPH</span>
-                          <span className="text-base font-black text-secondary">{o.totalSDph.toFixed(2)} €</span>
+                          <span className="text-base font-black text-secondary">{fmtEur(o.totalSDph)}</span>
                         </div>
                       </div>
                     )}
@@ -924,8 +925,8 @@ function ObjednavkyTab() {
                       <div className="border-t border-gray-100 px-4 py-3 flex justify-between items-center">
                         <span className="text-xs text-gray-400">Celková suma</span>
                         <div className="text-right">
-                          <div className="text-xs text-gray-400">{o.totalBezDph.toFixed(2)} € bez DPH</div>
-                          <div className="text-base font-black text-secondary">{o.totalSDph.toFixed(2)} €</div>
+                          <div className="text-xs text-gray-400">{fmtEur(o.totalBezDph)} bez DPH</div>
+                          <div className="text-base font-black text-secondary">{fmtEur(o.totalSDph)}</div>
                         </div>
                       </div>
                     )}
