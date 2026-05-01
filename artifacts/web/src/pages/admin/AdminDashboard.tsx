@@ -963,6 +963,7 @@ function DiscountInput({ label, value, onChange }: { label: string; value: strin
 function KlientiTab() {
   const [clients, setClients] = useState<Client[]>(adminData.getClients());
   const [zones] = useState(() => adminData.getDelivery());
+  const [pZones] = useState(() => adminData.getTransportZones());
   const [ts, setTs] = useState<TransportSettings>(adminData.getTransportSettings());
   const saveTs = (data: TransportSettings) => { setTs(data); adminData.saveTransportSettings(data); };
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -1258,18 +1259,25 @@ function KlientiTab() {
                   ))}
                 </div>
                 <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
-                  {clientZone && (
-                    <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-sm bg-blue-50 text-blue-600 border border-blue-200 shrink-0" title={`Zóna: ${clientZone.name}`}>
-                      <Truck className="w-3 h-3 shrink-0" />
-                      <span className="hidden sm:inline truncate max-w-[70px]">{clientZone.name}</span>
-                      {zonePricingType === "km" && (
-                        <span className="font-black text-primary uppercase">€/km <span className="font-normal text-blue-500 normal-case">({clientZone.ratePerKm?.toFixed(2)} €/km)</span></span>
-                      )}
-                      {zonePricingType === "auto" && (
-                        <span className="font-black text-primary uppercase">€/auto <span className="font-normal text-blue-500 normal-case">({clientZone.ratePerTruck?.toFixed(2)} €/auto)</span></span>
-                      )}
-                    </span>
-                  )}
+                  {clientZone && (() => {
+                    let rateInfo = "";
+                    if (zonePricingType === "km") {
+                      rateInfo = `${clientZone.ratePerKm?.toFixed(2)} €/km`;
+                    } else if (zonePricingType === "auto") {
+                      rateInfo = `${clientZone.ratePerTruck?.toFixed(2)} €/auto`;
+                    } else {
+                      const first = pZones[0];
+                      const last = pZones[pZones.length - 1];
+                      if (first && last) rateInfo = `${first.ratePerM3.toFixed(2)}–${last.ratePerM3.toFixed(2)} €/m³`;
+                    }
+                    return (
+                      <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-sm bg-blue-50 text-blue-600 border border-blue-200 shrink-0" title={`Zóna: ${clientZone.name}`}>
+                        <Truck className="w-3 h-3 shrink-0" />
+                        <span className="hidden sm:inline truncate max-w-[70px]">{clientZone.name}</span>
+                        {rateInfo && <span className="font-normal text-blue-500">({rateInfo})</span>}
+                      </span>
+                    );
+                  })()}
                   {c.isOwner && (
                     <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-black uppercase rounded-sm bg-primary/20 text-primary/80">
                       <Crown className="w-3 h-3" /> Admin
