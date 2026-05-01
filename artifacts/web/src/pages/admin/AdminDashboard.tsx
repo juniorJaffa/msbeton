@@ -1301,10 +1301,49 @@ function KlientiTab() {
 
               {/* Expanded detail */}
               {isExpanded && (
-                <div className="border-t border-gray-100 px-4 py-4 space-y-4 bg-gray-50/60">
-                  {/* Osobné info */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
+                <div className="border-t border-gray-100 bg-gray-50/60">
+
+                  {/* Zľavy – prominentný pás hore */}
+                  <div className="px-4 py-3 bg-white border-b border-gray-100">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Zľavy klienta</p>
+                    <div className="grid grid-cols-4 gap-2">
+                      {([
+                        { label: "Betón",   field: "discountBeton" as keyof Client },
+                        { label: "Doprava", field: "discountDoprava" as keyof Client },
+                        { label: "Služby",  field: "discountSluzby" as keyof Client },
+                        { label: "Celkovo", field: "discountCelkovo" as keyof Client },
+                      ]).map(({ label, field }) => {
+                        const val = (c[field] as number) ?? 0;
+                        const active = val > 0;
+                        return (
+                          <div key={field} className={cn(
+                            "border px-2 py-2 text-center",
+                            active ? "bg-primary/10 border-primary/40" : "bg-gray-50 border-gray-200"
+                          )}>
+                            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1.5">{label}</div>
+                            <div className="flex items-center justify-center gap-0.5">
+                              <input
+                                type="number" min="0" max="100"
+                                value={val}
+                                onChange={e => update(c.id, { [field]: parseFloat(e.target.value) || 0 })}
+                                onFocus={e => e.target.select()}
+                                className={cn(
+                                  "border-0 px-1 py-0 text-xl font-black focus:outline-none w-12 text-center bg-transparent leading-none",
+                                  active ? "text-primary" : "text-gray-300"
+                                )}
+                              />
+                              <span className={cn("text-sm font-bold leading-none", active ? "text-primary/70" : "text-gray-300")}>%</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Hlavná mriežka: Osobné info | Prístup + Možnosti */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-100">
+                    {/* Ľavý stĺpec: Osobné info */}
+                    <div className="px-4 py-4">
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Osobné info</p>
                       <div className="space-y-1.5 text-sm">
                         {([
@@ -1322,105 +1361,90 @@ function KlientiTab() {
                       </div>
                     </div>
 
-                    {/* Login + zľavy */}
-                    <div>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Prístup do kalkulačky</p>
-                      <div className="space-y-2 text-sm mb-3">
-                        <div className="flex gap-2 items-center">
-                          <span className="text-gray-400 text-xs w-20 shrink-0">Login ID</span>
-                          <EditableField value={c.loginId || "—"} onSave={v => update(c.id, { loginId: v })} />
-                        </div>
-                        <div className="flex gap-2 items-center">
-                          <span className="text-gray-400 text-xs w-20 shrink-0">Heslo</span>
-                          <span className="font-mono text-secondary">
-                            {showPass.has(c.id) ? (c.password || "—") : (c.password ? "••••••" : "—")}
-                          </span>
-                          <button onClick={() => togglePassVis(c.id)} className="text-gray-400 hover:text-secondary">
-                            {showPass.has(c.id) ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                          </button>
-                          <button onClick={() => update(c.id, { password: genPassword() })} title="Vygenerovať nové heslo" className="text-gray-400 hover:text-secondary">
-                            <RefreshCw className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Zľavy</p>
-                      <div className="grid grid-cols-2 gap-2 mb-3">
-                        {([
-                          { label: "Zľava/Betón",   field: "discountBeton" },
-                          { label: "Zľava/Doprava", field: "discountDoprava" },
-                          { label: "Zľava/Služby",  field: "discountSluzby" },
-                          { label: "Zľava/Celkovo", field: "discountCelkovo" },
-                        ] as { label: string; field: keyof Client }[]).map(({ label, field }) => (
-                          <div key={field}>
-                            <label className="text-xs text-gray-400 block mb-1">{label}</label>
-                            <div className="flex items-center gap-1">
-                              <input type="number" min="0" max="100" value={(c[field] as number) ?? 0}
-                                onChange={e => update(c.id, { [field]: parseFloat(e.target.value) || 0 })}
-                                onFocus={e => e.target.select()}
-                                className="border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:border-primary w-full text-center" />
-                              <span className="text-xs text-gray-400 shrink-0">%</span>
-                            </div>
+                    {/* Pravý stĺpec: Prístup + Možnosti */}
+                    <div className="px-4 py-4 space-y-3">
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Prístup do kalkulačky</p>
+                        <div className="border border-gray-200 bg-white divide-y divide-gray-100 mb-2">
+                          <div className="flex items-center gap-2 px-3 py-2">
+                            <span className="text-gray-400 text-xs w-14 shrink-0">Login ID</span>
+                            <EditableField value={c.loginId || "—"} onSave={v => update(c.id, { loginId: v })} />
                           </div>
-                        ))}
+                          <div className="flex items-center gap-2 px-3 py-2">
+                            <span className="text-gray-400 text-xs w-14 shrink-0">Heslo</span>
+                            <span className="font-mono text-secondary text-sm flex-1">
+                              {showPass.has(c.id) ? (c.password || "—") : (c.password ? "••••••" : "—")}
+                            </span>
+                            <button onClick={() => togglePassVis(c.id)} className="text-gray-400 hover:text-secondary shrink-0">
+                              {showPass.has(c.id) ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                            </button>
+                            <button onClick={() => update(c.id, { password: genPassword() })} title="Vygenerovať nové heslo" className="text-gray-400 hover:text-secondary shrink-0">
+                              <RefreshCw className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        <button onClick={() => update(c.id, { active: !c.active })}
+                          className={`w-full flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-bold uppercase border transition-colors ${c.active ? "bg-green-50 border-green-300 text-green-700 hover:bg-green-100" : "bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100"}`}>
+                          {c.active ? <ShieldCheck className="w-4 h-4" /> : <ShieldOff className="w-4 h-4" />}
+                          {c.active ? "Prístup aktívny" : "Prístup neaktívny"}
+                        </button>
                       </div>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Možnosti</p>
-                      <div className="border border-gray-200 bg-white divide-y divide-gray-100">
-                        <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
-                          <input type="checkbox" checked={c.canHotovost ?? true} onChange={e => update(c.id, { canHotovost: e.target.checked })} className="accent-secondary w-5 h-5 shrink-0" />
-                          <div>
-                            <span className="text-sm text-gray-700">Hotovosť</span>
-                            {(c.canHotovost ?? true) ? (
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className="text-xs text-gray-400">DPH hotovosť:</span>
-                                <input type="number" min="0" max="100" value={Math.round((c.hotovostDph ?? 0.20) * 100)}
-                                  onClick={e => e.stopPropagation()}
-                                  onChange={e => update(c.id, { hotovostDph: (parseFloat(e.target.value) || 20) / 100 })}
-                                  className="border border-gray-200 px-2 py-0.5 text-xs focus:outline-none focus:border-primary w-16 text-center" />
-                                <span className="text-xs text-gray-400">%</span>
+
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Možnosti</p>
+                        <div className="border border-gray-200 bg-white divide-y divide-gray-100">
+                          <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50 select-none">
+                            <input type="checkbox" checked={c.canHotovost ?? true} onChange={e => update(c.id, { canHotovost: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <span className="text-sm text-gray-700">Hotovosť</span>
+                              {(c.canHotovost ?? true) ? (
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                  <span className="text-xs text-gray-400">DPH:</span>
+                                  <input type="number" min="0" max="100" value={Math.round((c.hotovostDph ?? 0.20) * 100)}
+                                    onClick={e => e.stopPropagation()}
+                                    onChange={e => update(c.id, { hotovostDph: (parseFloat(e.target.value) || 20) / 100 })}
+                                    className="border border-gray-200 px-2 py-0.5 text-xs focus:outline-none focus:border-primary w-12 text-center" />
+                                  <span className="text-xs text-gray-400">%</span>
+                                </div>
+                              ) : (
+                                <div className="text-xs text-gray-400">Iba faktúra · DPH <span className="font-bold text-gray-500">23 %</span></div>
+                              )}
+                            </div>
+                          </label>
+                          <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50 select-none">
+                            <input type="checkbox" checked={c.canPridatBeton ?? true} onChange={e => update(c.id, { canPridatBeton: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />
+                            <span className="text-sm text-gray-700">Pridať betón</span>
+                          </label>
+                          <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50 select-none">
+                            <input type="checkbox" checked={c.canZimneOpatrenia ?? false} onChange={e => update(c.id, { canZimneOpatrenia: e.target.checked })} className="accent-blue-600 w-4 h-4 shrink-0" />
+                            <span className="text-sm text-gray-700">Zimné opatrenia</span>
+                          </label>
+                          <div className="px-3 py-2.5">
+                            <div className="text-xs text-gray-400 mb-1">Typ dopravy</div>
+                            <select
+                              value={c.deliveryZoneId ?? ""}
+                              onChange={e => update(c.id, { deliveryZoneId: e.target.value || undefined })}
+                              className="w-full border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:border-primary bg-white"
+                            >
+                              {adminData.getDelivery().map(z => (
+                                <option key={z.id} value={z.id}>{z.name}</option>
+                              ))}
+                            </select>
+                            {clientZone && (
+                              <div className="mt-1 text-[11px] text-blue-600 font-medium">
+                                {zonePricingType === "km" && `Sadzba: ${clientZone.ratePerKm?.toFixed(2)} €/km`}
+                                {zonePricingType === "auto" && `Paušál: ${clientZone.ratePerTruck?.toFixed(2)} €/auto`}
+                                {zonePricingType === "standard" && pZones.length > 0 && `Pásma: ${pZones[0].ratePerM3.toFixed(2)} – ${pZones[pZones.length - 1].ratePerM3.toFixed(2)} €/m³`}
                               </div>
-                            ) : (
-                              <div className="mt-1 text-xs text-gray-400">Iba faktúra · DPH <span className="font-bold text-gray-500">23 %</span></div>
                             )}
                           </div>
-                        </label>
-                        <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
-                          <input type="checkbox" checked={c.canPridatBeton ?? true} onChange={e => update(c.id, { canPridatBeton: e.target.checked })} className="accent-secondary w-5 h-5 shrink-0" />
-                          <span className="text-sm text-gray-700">Pridať betón</span>
-                        </label>
-                        <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
-                          <input type="checkbox" checked={c.canZimneOpatrenia ?? false} onChange={e => update(c.id, { canZimneOpatrenia: e.target.checked })} className="accent-blue-600 w-5 h-5 shrink-0" />
-                          <span className="text-sm text-gray-700">Zimné opatrenia (auto-ON v zime)</span>
-                        </label>
-                        <div className="px-3 py-3">
-                          <div className="text-xs text-gray-400 mb-1.5">Typ dopravy</div>
-                          <select
-                            value={c.deliveryZoneId ?? ""}
-                            onChange={e => update(c.id, { deliveryZoneId: e.target.value || undefined })}
-                            className="w-full border border-gray-200 px-2 py-2 text-sm focus:outline-none focus:border-primary bg-white"
-                          >
-                            {adminData.getDelivery().map(z => (
-                              <option key={z.id} value={z.id}>{z.name}</option>
-                            ))}
-                          </select>
-                          {clientZone && (
-                            <div className="mt-1.5 text-[11px] text-blue-600 font-medium">
-                              {zonePricingType === "km" && `Sadzba: ${clientZone.ratePerKm?.toFixed(2)} €/km`}
-                              {zonePricingType === "auto" && `Paušál: ${clientZone.ratePerTruck?.toFixed(2)} €/auto`}
-                              {zonePricingType === "standard" && pZones.length > 0 && `Pásma: ${pZones[0].ratePerM3.toFixed(2)} – ${pZones[pZones.length - 1].ratePerM3.toFixed(2)} €/m³`}
-                            </div>
-                          )}
                         </div>
                       </div>
-                      <button onClick={() => update(c.id, { active: !c.active })}
-                        className={`mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-bold uppercase border transition-colors ${c.active ? "bg-green-50 border-green-300 text-green-700 hover:bg-green-100" : "bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100"}`}>
-                        {c.active ? <ShieldCheck className="w-4 h-4" /> : <ShieldOff className="w-4 h-4" />}
-                        {c.active ? "Prístup aktívny" : "Prístup neaktívny"}
-                      </button>
                     </div>
                   </div>
 
                   {/* Zľavové tabuľky */}
-                  <div className="border-t border-gray-100 pt-3">
+                  <div className="border-t border-gray-100 px-4 py-3">
                     <div className="flex items-center justify-between mb-3">
                       <button
                         onClick={() => setShowTableFor(showTableFor === c.id ? null : c.id)}
