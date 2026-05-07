@@ -1928,12 +1928,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 {/* Export buttons */}
                 <div className="grid grid-cols-2 gap-3 pt-2">
                   <button onClick={exportPDF}
-                    className="flex items-center justify-center gap-2 py-3 border border-white/20 text-white/70 hover:border-primary hover:text-primary transition-all text-sm font-semibold cursor-pointer rounded-sm">
+                    className="flex items-center justify-center gap-2 py-3 border border-white/20 text-white/70 hover:border-primary hover:text-primary transition-all text-sm font-semibold cursor-pointer rounded-sm focus:outline-none">
                     <FileText className="w-4 h-4" /> EXPORT PDF
                   </button>
                   <button onClick={exportSMS}
-                    className={cn("flex items-center justify-center gap-2 py-3 border transition-all text-sm font-semibold cursor-pointer rounded-sm",
-                      smsCopied ? "border-green-500 text-green-400" : "border-white/20 text-white/70 hover:border-primary hover:text-primary"
+                    className={cn("flex items-center justify-center gap-2 py-3 border transition-all text-sm font-semibold cursor-pointer rounded-sm focus:outline-none",
+                      smsCopied ? "border-primary text-primary" : "border-white/20 text-white/70 hover:border-primary hover:text-primary"
                     )}>
                     <MessageSquare className="w-4 h-4" />
                     {smsCopied ? "SKOPÍROVANÉ!" : "EXPORT SMS"}
