@@ -15,8 +15,9 @@ function EditableField({ value, onSave, type = "text" }: { value: string | numbe
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(String(value));
   const save = () => { onSave(val); setEditing(false); };
+  const startEdit = () => { setVal(String(value)); setEditing(true); };
   if (!editing) return (
-    <span className="cursor-pointer hover:text-primary transition-colors group flex items-center gap-1" onClick={() => setEditing(true)}>
+    <span className="cursor-pointer hover:text-primary transition-colors group flex items-center gap-1" onClick={startEdit}>
       {value}
       <Pencil className="w-3 h-3 opacity-0 group-hover:opacity-50 transition-opacity" />
     </span>
@@ -24,7 +25,7 @@ function EditableField({ value, onSave, type = "text" }: { value: string | numbe
   return (
     <span className="flex items-center gap-1">
       <input type={type} value={val} onChange={e => setVal(e.target.value)} onKeyDown={e => { if (e.key === "Enter") save(); if (e.key === "Escape") setEditing(false); }}
-        className="bg-white border border-primary px-2 py-0.5 text-secondary text-sm w-32 focus:outline-none" autoFocus />
+        className="bg-white border border-primary px-2 py-0.5 text-secondary text-sm w-32 focus:outline-none" autoFocus onFocus={e => e.target.select()} />
       <button onClick={save} className="text-green-600 hover:text-green-700"><Check className="w-4 h-4" /></button>
       <button onClick={() => setEditing(false)} className="text-red-500 hover:text-red-600"><X className="w-4 h-4" /></button>
     </span>
