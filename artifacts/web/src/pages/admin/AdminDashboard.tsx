@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { LogOut, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
+import { PriceModeToggle } from "@/components/PriceModeToggle";
 import { PhoneInput } from "@/components/PhoneInput";
 import { cn, formatPhone } from "@/lib/utils";
 import { isLoggedIn, logout } from "@/lib/adminAuth";
@@ -1544,16 +1545,7 @@ function KlientiTab() {
                       </button>
                       {showTableFor === c.id && (
                         <div className="flex items-center gap-2">
-                          <div className="flex border border-gray-200 rounded-sm overflow-hidden text-xs">
-                            {(["faktura", "hotovost"] as const).map(mode => (
-                              <button key={mode} onClick={() => setInlineTableMode(mode)}
-                                className={cn("px-3 py-1 font-black tracking-wider transition-all",
-                                  inlineTableMode === mode ? "bg-secondary text-white" : "text-gray-400 hover:text-secondary bg-white"
-                                )}>
-                                {mode === "faktura" ? "FAKTÚRA" : "HOTOVOSŤ"}
-                              </button>
-                            ))}
-                          </div>
+                          <PriceModeToggle mode={inlineTableMode} onChange={setInlineTableMode} showHotovost={c.canHotovost ?? true} size="sm" />
                           <button onClick={() => exportClientPricePDF(c, inlineTableMode, ts)}
                             className="flex items-center gap-1.5 px-3 py-1 bg-primary text-secondary font-black text-xs hover:bg-primary/90 transition-colors cursor-pointer rounded-sm">
                             <FileText className="w-3.5 h-3.5" /> PDF
@@ -1639,16 +1631,8 @@ function KlientiTab() {
             </div>
 
             {/* FAKTÚRA / HOTOVOSŤ tabs */}
-            <div className="grid grid-cols-2 bg-white border-b border-gray-200">
-              {(["faktura", "hotovost"] as const).map(mode => (
-                <button key={mode} onClick={() => setTablePdfMode(mode)} className={cn(
-                  "py-3 font-black text-sm tracking-widest transition-all",
-                  mode === "faktura" ? "border-r border-gray-200" : "",
-                  tablePdfMode === mode ? "bg-secondary text-white" : "text-gray-400 hover:text-secondary"
-                )}>
-                  {mode === "faktura" ? "FAKTÚRA" : "HOTOVOSŤ"}
-                </button>
-              ))}
+            <div className="px-4 py-3 bg-[#1a2535] border-b border-white/10">
+              <PriceModeToggle mode={tablePdfMode} onChange={setTablePdfMode} showHotovost={tablePdfModal?.canHotovost ?? true} size="lg" className="w-full" />
             </div>
 
             {/* Price table */}

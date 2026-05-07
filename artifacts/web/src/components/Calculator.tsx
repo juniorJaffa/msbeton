@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
+import { PriceModeToggle } from "@/components/PriceModeToggle";
 
 type Tab = "pumpa" | "mix" | "vlastnadoprava";
 type PriceMode = "faktura" | "hotovost";
@@ -1179,18 +1180,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 <AnimatePresence>
                   {showPriceTable && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mt-3 overflow-hidden">
-                      <div className="flex gap-1 mb-2">
-                        <button
-                          onClick={() => setPriceTableMode("faktura")}
-                          className={`px-3 py-1 text-xs rounded font-medium transition-colors ${priceTableMode === "faktura" ? "bg-primary text-navy" : "bg-white/10 text-white/60 hover:bg-white/20"}`}
-                        >Faktúra</button>
-                        {loggedClient?.canHotovost && (
-                          <button
-                            onClick={() => setPriceTableMode("hotovost")}
-                            className={`px-3 py-1 text-xs rounded font-medium transition-colors ${priceTableMode === "hotovost" ? "bg-primary text-navy" : "bg-white/10 text-white/60 hover:bg-white/20"}`}
-                          >Hotovosť</button>
-                        )}
-                      </div>
+                      <PriceModeToggle
+                        mode={priceTableMode}
+                        onChange={setPriceTableMode}
+                        showHotovost={!!(loggedClient?.canHotovost)}
+                        size="sm"
+                        className="mb-2"
+                      />
                       <ClientPriceTable
                         discountBeton={discountBeton}
                         discountDoprava={discountDoprava}
