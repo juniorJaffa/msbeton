@@ -204,9 +204,9 @@ function MixTruckIcon() {
 
 // ── DOPRAVA tab ───────────────────────────────────────────────────────────────
 const ZONE_TYPES: { key: "standard" | "km" | "auto"; label: string; desc: string; rateLabel: string; rateUnit: string }[] = [
-  { key: "standard", label: "Štandard",    desc: "cena podľa km pásiem × objem", rateLabel: "Sadzba za km",     rateUnit: "€/km" },
-  { key: "km",       label: "Kilometre",   desc: "sadzba €/km × m³ × vzdialenosť", rateLabel: "Sadzba €/km × m³", rateUnit: "€/km×m³" },
-  { key: "auto",     label: "Počet áut",   desc: "paušál za každé vozidlo",     rateLabel: "Paušál / vozidlo", rateUnit: "€/vozidlo" },
+  { key: "standard", label: "Štandard",  desc: "cena z tabuľky Zóny dopravy × objem + doťaženie", rateLabel: "Cena / m³", rateUnit: "€/m³" },
+  { key: "km",       label: "Kilometre", desc: "sadzba €/km × počet áut × vzdialenosť",           rateLabel: "Sadzba",    rateUnit: "€/km" },
+  { key: "auto",     label: "Počet áut", desc: "paušál za každé vozidlo",                         rateLabel: "Paušál",    rateUnit: "€/vozidlo" },
 ];
 
 function DopravaTab() {
@@ -345,20 +345,26 @@ function DopravaTab() {
           {ZONE_TYPES.map((zt, idx) => {
             const typeZones = zones.filter(z => (z.pricingType ?? "standard") === zt.key);
             if (typeZones.length === 0) return null;
+            const isStandard = zt.key === "standard";
             return (
-              <div key={zt.key} className="border-b border-gray-100 last:border-b-0">
-                {/* Numbered type header */}
-                <div className="flex items-center gap-3 px-5 py-2 bg-gray-50/40 flex-wrap">
-                  <span className="w-5 h-5 rounded-full bg-secondary text-white text-[10px] font-black flex items-center justify-center flex-shrink-0">
+              <div key={zt.key} className={`border-b border-gray-100 last:border-b-0 ${isStandard ? "bg-blue-50/30" : ""}`}>
+                {/* Type header */}
+                <div className={`flex items-start gap-3 px-5 py-3 flex-wrap ${isStandard ? "bg-blue-50/60 border-b border-blue-100" : "bg-gray-50/40"}`}>
+                  <span className={`w-5 h-5 rounded-full text-white text-[10px] font-black flex items-center justify-center flex-shrink-0 mt-0.5 ${isStandard ? "bg-blue-600" : "bg-secondary"}`}>
                     {idx + 1}
                   </span>
-                  <span className="font-black text-secondary text-sm">{zt.label}</span>
-                  <span className="text-[11px] text-gray-400">{zt.desc}</span>
-                  {zt.key === "standard" && (
-                    <span className="text-[10px] text-blue-600 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded-sm font-medium">
-                      Cena riadená Pásmami – Cenník → Doprava
-                    </span>
-                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-black text-secondary text-sm">{zt.label}</span>
+                      <span className="text-[11px] text-gray-400">{zt.desc}</span>
+                    </div>
+                    {isStandard && (
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span className="text-[10px] text-blue-600 bg-blue-100 border border-blue-200 px-1.5 py-0.5 rounded font-bold">Zóny dopravy (cenník)</span>
+                        <span className="text-[10px] text-blue-400">— cena €/m³ sa berie z tabuľky nižšie podľa km vzdialenosti</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 {/* Zóny tohto typu */}
                 {typeZones.map(z => (
@@ -370,8 +376,8 @@ function DopravaTab() {
                       <div className="text-right">
                         <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{zt.rateLabel}</div>
                         <div className="font-bold text-secondary">
-                          {zt.key === "standard"
-                            ? <span className="text-[11px] text-blue-500 italic font-normal">z Pásiem</span>
+                          {isStandard
+                            ? <span className="text-[11px] text-blue-500 italic font-normal flex items-center gap-1">z Zón dopravy ↓</span>
                             : zt.key === "auto"
                               ? <><EditableField value={z.ratePerTruck ?? 0} type="number" onSave={v => updateZone(z.id, { ratePerTruck: parseFloat(v) })} /> {zt.rateUnit}</>
                               : <><EditableField value={z.ratePerKm} type="number" onSave={v => updateZone(z.id, { ratePerKm: parseFloat(v) })} /> {zt.rateUnit}</>}
@@ -433,17 +439,21 @@ function DopravaTab() {
         )}
       </div>
 
-      {/* ── Zóny dopravy (cenník) ── */}
-      <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
-          <h3 className="font-black text-secondary text-sm uppercase tracking-widest">Zóny dopravy (cenník)</h3>
+      {/* ── Zóny dopravy (cenník) — prepojené so Štandard ── */}
+      <div className="bg-white border border-blue-200 shadow-sm overflow-hidden">
+        <div className="px-5 py-3 border-b border-blue-100 bg-blue-50/70">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-black text-secondary text-sm uppercase tracking-widest">Zóny dopravy</h3>
+            <span className="text-[10px] text-blue-600 bg-blue-100 border border-blue-200 px-1.5 py-0.5 rounded font-bold">cenník</span>
+          </div>
+          <p className="text-[11px] text-blue-500 mt-0.5">Používa sa pre typ <strong>Štandard</strong> — cena €/m³ podľa vzdialenosti (od–do km)</p>
         </div>
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-100">
-              <th className="text-left px-5 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-wide">Od km</th>
-              <th className="text-left px-4 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-wide">Do km</th>
-              <th className="text-right px-4 py-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-wide">€/m³</th>
+            <tr className="border-b border-blue-100 bg-blue-50/30">
+              <th className="text-left px-5 py-2.5 text-[10px] font-bold text-blue-400 uppercase tracking-wide">Od km</th>
+              <th className="text-left px-4 py-2.5 text-[10px] font-bold text-blue-400 uppercase tracking-wide">Do km</th>
+              <th className="text-right px-4 py-2.5 text-[10px] font-bold text-blue-400 uppercase tracking-wide">€/m³</th>
               <th className="w-8" />
             </tr>
           </thead>
