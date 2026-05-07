@@ -979,7 +979,7 @@ function DiscountInput({ label, value, onChange }: { label: string; value: strin
     <div>
       <label className="text-xs text-gray-500 block mb-1">{label}</label>
       <div className="flex items-center gap-1">
-        <input type="number" min="0" max="100" value={value} onChange={e => onChange(e.target.value)}
+        <input type="number" min="0" max="100" value={value} onChange={e => onChange(e.target.value.replace(/^0+(?=\d)/, "") || "0")}
           onFocus={e => e.target.select()}
           className="border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:border-primary w-full text-center" />
         <span className="text-xs text-gray-400 shrink-0">%</span>
@@ -1422,8 +1422,8 @@ function KlientiTab() {
                             <div className="flex items-center justify-center gap-0.5">
                               <input
                                 type="number" min="0" max="100"
-                                value={val}
-                                onChange={e => update(c.id, { [field]: parseFloat(e.target.value) || 0 })}
+                                value={String(val)}
+                                onChange={e => update(c.id, { [field]: Math.min(100, Math.max(0, parseInt(e.target.value) || 0)) })}
                                 onFocus={e => e.target.select()}
                                 className={cn(
                                   "border-0 px-1 py-0 text-xl font-black focus:outline-none w-12 text-center bg-transparent leading-none",
