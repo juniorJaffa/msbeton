@@ -841,7 +841,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         ? `1×Pumpa${ci.transportTrucks > 1 ? `+${ci.transportTrucks - 1}×Mix` : ""}`
         : `${ci.transportTrucks}×Mix`;
       const dopravaExtraLabel = `${ci.transportIsMin ? "Min. doprava" : "Doprava"}${pdfZone ? ` ${pdfZone}` : ""} · ${pdfExtraTrucks}`;
-      let rows = sectionRow(`Pridaná položka ${idx + 1}`);
+      const extraBetonLabel = ci.label.replace(/ – [\d.,]+ m³$/, "");
+      let rows = sectionRow(`Pridaná položka ${idx + 1}${extraBetonLabel ? ` – ${extraBetonLabel}` : ""}`);
       rows += trow(ci.label, `${ci.qty}&nbsp;m³`, unitStr, betonOrig, betonDisc);
       rows += trow(dopravaExtraLabel, `${ci.qty}&nbsp;m³`, "—", transOrig, transDisc);
       rows += trow(`Doťaženie do&nbsp;${ci.transportFillupTarget}&nbsp;m³`, `${ci.transportFillupM3}&nbsp;m³`, "—", fillupOrig, fillupDisc);
