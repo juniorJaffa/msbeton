@@ -1314,10 +1314,13 @@ function KlientiTab() {
                 </label>
                 <div className="px-3 py-3">
                   <div className="text-xs text-gray-400 mb-1.5">Typ dopravy</div>
-                  <select value={form.deliveryZoneId} onChange={e => setForm({ ...form, deliveryZoneId: e.target.value })}
-                    className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-secondary bg-white text-gray-700 appearance-none cursor-pointer shadow-sm">
-                    {zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
-                  </select>
+                  <div className="relative">
+                    <select value={form.deliveryZoneId} onChange={e => setForm({ ...form, deliveryZoneId: e.target.value })}
+                      className="w-full border border-gray-200 rounded px-3 py-2.5 pr-8 text-sm focus:outline-none focus:border-secondary bg-white text-gray-700 cursor-pointer">
+                      {zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
+                    </select>
+                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  </div>
                 </div>
                 <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
                   <input type="checkbox" checked={form.active} onChange={e => setForm({ ...form, active: e.target.checked })} className="accent-green-600 w-5 h-5 shrink-0" />
@@ -1613,15 +1616,18 @@ function KlientiTab() {
                           </label>
                           <div className="px-3 py-2.5">
                             <div className="text-xs text-gray-400 mb-1">Typ dopravy</div>
-                            <select
-                              value={c.deliveryZoneId ?? ""}
-                              onChange={e => update(c.id, { deliveryZoneId: e.target.value || undefined })}
-                              className="w-full border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:border-primary bg-white"
-                            >
-                              {adminData.getDelivery().map(z => (
-                                <option key={z.id} value={z.id}>{z.name}</option>
-                              ))}
-                            </select>
+                            <div className="relative">
+                              <select
+                                value={c.deliveryZoneId ?? ""}
+                                onChange={e => update(c.id, { deliveryZoneId: e.target.value || undefined })}
+                                className="w-full border border-gray-200 px-2 py-1.5 pr-7 text-sm focus:outline-none focus:border-primary bg-white cursor-pointer"
+                              >
+                                {adminData.getDelivery().map(z => (
+                                  <option key={z.id} value={z.id}>{z.name}</option>
+                                ))}
+                              </select>
+                              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                            </div>
                             {clientZone && (
                               <div className="mt-1 text-[11px] text-blue-600 font-medium">
                                 {zonePricingType === "km" && `Sadzba: ${clientZone.ratePerKm?.toFixed(2)} €/km`}
