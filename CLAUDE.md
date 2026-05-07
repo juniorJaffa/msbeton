@@ -27,31 +27,22 @@ Tento repozitár je **moderný redesign** existujúcej WordPress stránky [msbet
 
 Tieto hodnoty sú hardcoded priamo v `Calculator.tsx` (PDF export kalkulačky) a `AdminDashboard.tsx` (exportClientPricePDF). **Nepatria do konfigurácie ani editovateľných polí.**
 
-### Logika zliav (zhodná so starou WP kalkulačkou)
+### Výpočtová logika kalkulačky
 
-Referencia: `calculator-utils.php`, funkcia `get_discount_with_type()`:
-- Každý klient má 4 zľavy: `discountBeton`, `discountDoprava`, `discountSluzby`, `discountCelkovo`
-- Fallback **per kategóriu**: ak `discountBeton = 0`, použije sa `discountCelkovo` (nie globálne na celok)
-- `effectiveX = discountX > 0 ? discountX : discountCelkovo`
-- V UI sa zobrazujú **raw nakonfigurované hodnoty** (nie odvodené efektívne), aby admin videl čo reálne nastavil
+→ **[docs/calculator-logic.md](docs/calculator-logic.md)** — detaily: `concreteBreakdown` štruktúra, zľavy, transport (fill-up / km / auto), extra položky, hotovosť vs faktúra.
 
-### Transportná logika (fill-up pravidlo, zhodné so starou kalkulačkou)
+Skrátený prehľad:
+- `concreteBreakdown[0]` = hlavná položka, `[1..]` = extra položky ("+Pridať položku")
+- `origItems.transport` = **súčet všetkých** — pre PDF hlavnej položky použi `concreteBreakdown[0].transport`
+- Fill-up len pre Standard typ; km typ: `cost = km × ratePerKm × trucks`; mix čakačky: prvých 30 min zadarmo
 
-- Pumpa: prvé auto 7 m³, každé ďalšie 9 m³ (domiešavač)
-- Fill-up platí **iba pre Standard typ dopravy** (nie km ani auto):
-  - `qty < 5` → doplní na 5 m³
-  - `qty > 7 && qty < 10` (pumpa) alebo `qty > 9 && qty < 10` (mix) → doplní na 10 m³
-- Cena dopravy = zóna (podľa km) × celkový objem vrátane fill-up; ak priemer na auto < minimálna sadzba, použije sa minimum × počet áut
-- **km typ**: `cost = km × ratePerKm × qty` (bez fill-up)
-- **auto typ**: `cost = trucks × ratePerTruck` (bez fill-up)
+### PDF a SMS export
 
-### Mix čakačky pravidlo
+→ **[docs/pdf-sms-export.md](docs/pdf-sms-export.md)** — štruktúra tabulky, watermark/signing box, `cleanType()`, SMS formát a `row()` zarovnanie.
 
-Prvých 30 minút čakania je **zadarmo**. Potom sa účtuje každých začatých 15 min:
-```typescript
-waitIntervalsMix = Math.ceil(Math.max(0, waitTotalMins - 30) / 15)
-```
-Referencia: `calculator-utils.php`, funkcia `get_mix_calculation_pricing()`.
+### Admin vzory a schémy
+
+→ **[docs/admin-patterns.md](docs/admin-patterns.md)** — `Service` schéma (serviceMode/maxMeters/activePeriod), `EditableField` správanie, client `loginId` vs `clientId`, `clientOverride` pre admin kalkulačku, search normalizácia.
 
 ### Kalkulačka – výsledok: poradie riadkov
 
@@ -61,16 +52,7 @@ Pre každú položku (hlavnú aj extra):
 3. Doťaženie (ak aplikovateľné)
 4. Služby (čerpanie / chémia / hadice / umývanie / čakačky)
 
-Služby sú vždy **pod dopravou**, nie nad ňou.
-
-### Admin – search (Objednávky aj Klienti)
-
-Multi-word AND logika s diacritics normalizáciou:
-```typescript
-const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-const searchTerms = search.trim().split(/\s+/).filter(Boolean);
-// každý term musí matchnúť niektoré pole
-```
+Služby vždy **pod dopravou**.
 
 ### Testovacie prihlasovacie údaje
 

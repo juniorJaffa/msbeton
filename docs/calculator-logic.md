@@ -1,0 +1,153 @@
+# Kalkulačka — výpočtová logika
+
+Referenčný súbor: `artifacts/web/src/components/Calculator.tsx`
+Pôvodný WP zdroj: `calculator-utils.php`, `calculator-pump.php`, `calculator-mixer.php`
+
+---
+
+## concreteBreakdown — štruktúra
+
+`concreteBreakdown` je pole všetkých betónových položiek vypočítaných v `useMemo`:
+
+```
+concreteBreakdown[0]   = hlavná položka (quantity + selectedType)
+concreteBreakdown[1..] = extra položky ("+Pridať položku")
+```
+
+Každý prvok (`ConcreteBreakdownItem`) obsahuje:
+
+| Pole | Typ | Popis |
+|------|-----|-------|
+| `label` | string | `"Betón C25/30 – 5 m³"` |
+| `qty` | number | objem m³ |
+| `bezDph` | number | raw cena bez zľavy |
+| `bezDphFinal` | number | fakturovaná cena (po zľave betónu) |
+| `bezDphFinalHotovost` | number | hotovostná cena (po zľave + VAT_HOTOVOST) |
+| `transport` | number | raw doprava (0 ak `noTransport` alebo vlastná) |
+| `transportFillup` | number | cena doťaženia |
+| `transportFillupM3` | number | m³ doťaženia |
+| `transportFillupTarget` | number | cieľový objem (5 alebo 10 m³) |
+| `transportIsMin` | boolean | platí minimálna sadzba |
+| `transportTrucks` | number | počet áut pre túto položku |
+| `svcPumpCost` | number | čerpanie (per extra item, 0 ak hlavná) |
+| `svcPumpHrs/Ms` | number | čas čerpania |
+| `svcHoseMeters` | number | bm hadíc |
+| `svcHoseCost` | number | cena hadíc |
+| `svcWashing` | boolean | umývanie mimo stavby |
+| `svcWashCost` | number | cena umývania |
+| `svcWaitIntervals` | number | počet × 15 min |
+| `svcWaitCost` | number | cena čakačky |
+| `svcWaitLabel` | string | textový popis čakačky |
+
+> **Dôležité**: `cleanType(label)` odstraňuje cenovú príponu (`– X.XX €/m³`) aj leading prefix `"Betón "`, aby nevznikalo `"Betón Betón C25/30"`.
+
+---
+
+## Logika zliav
+
+Referencia: `calculator-utils.php` → `get_discount_with_type()`
+
+Každý klient má 4 zľavy:
+
+```typescript
+effectiveBeton   = discountBeton   > 0 ? discountBeton   : discountCelkovo
+effectiveDoprava = discountDoprava > 0 ? discountDoprava : discountCelkovo
+effectiveSluzby  = discountSluzby  > 0 ? discountSluzby  : discountCelkovo
+```
+
+Faktory použité vo výpočte:
+
+```typescript
+betonFactor   = 1 - effectiveBeton   / 100
+dopravaFactor = 1 - effectiveDoprava / 100
+sluzbyFactor  = 1 - effectiveSluzby  / 100
+```
+
+V UI sa zobrazujú **raw nakonfigurované hodnoty** (nie odvodené efektívne).
+
+---
+
+## Transportná logika
+
+### Standard typ (zóny podľa km)
+
+Fill-up pravidlo — iba pre Standard:
+
+| Podmienka | Akcia |
+|-----------|-------|
+| `qty < 5` | doplní na 5 m³ |
+| `qty > 7 && qty < 10` (pumpa) | doplní na 10 m³ |
+| `qty > 9 && qty < 10` (mix) | doplní na 10 m³ |
+
+Cena = `zone.ratePerM3 × totalQty` (vrátane fill-up m³)
+Ak `costPerTruck < minRate` → platí `minRate × trucks`
+
+### km typ
+
+```
+cost = km × ratePerKm × trucks
+```
+Bez fill-up, `trucks = ceil(qty / truckCapacity)`.
+
+### auto typ
+
+```
+cost = trucks × ratePerTruck
+```
+Bez fill-up.
+
+### Počet áut
+
+- Pumpa: `1 pumpa + ceil(qty / mixCap)` mix áut (prvé auto = 7 m³, ďalšie = 9 m³)
+- Mix: `ceil(qty / mixCap)` áut
+
+---
+
+## Mix čakačky pravidlo
+
+Prvých 30 minút **zadarmo**. Potom každých začatých 15 min:
+
+```typescript
+waitIntervalsMix = Math.ceil(Math.max(0, waitTotalMins - 30) / 15)
+```
+
+Pumpa čakačky: počítajú sa v kusoch (1 ks = 15 min), bez voľného limitu.
+
+---
+
+## Extra položky ("+Pridať položku")
+
+Extra položky sú `extraItems` stav v komponente. Každá má:
+- `categoryName`, `typeLabel`, `quantity` — výber betónu + objem
+- `noTransport?: boolean` — ak `true`, transport = 0 pre túto položku
+- `svc?: ExtraItemServices` — voliteľné per-item služby (pumpa/mix)
+
+Extra položky sa pridávajú do `concreteBreakdown` (index 1+) v `useMemo`:
+
+```typescript
+for (const item of extraItems) {
+  const extraTC = (isOwn || item.noTransport) ? zeroTC : calcTransport(km, q, tab, ...)
+  // ... vypočíta betón + transport + per-item svc
+  concreteBreakdown.push({ ... })
+}
+```
+
+`origItems.transport` je **súčet** transport nákladov všetkých položiek. Pri PDF exporte **nepoužívaj** `origItems.transport` pre hlavnú položku — použi `concreteBreakdown[0].transport`.
+
+---
+
+## Hotovosť vs Faktúra
+
+DPH na hotovosť (`VAT_HOTOVOST`, default 20%) sa aplikuje **iba na betón**, nie na dopravu/služby:
+
+```typescript
+hotovostBaseItems = {
+  concrete: items.concrete * (1 + VAT_HOTOVOST),
+  transport: items.transport,          // bez DPH
+  pump: items.pump,                    // bez DPH
+  zimne: items.zimne * (1 + VAT_HOTOVOST),
+  // ...
+}
+```
+
+`VAT_HOTOVOST` môže byť per-klient (`loggedClient.hotovostDph`), inak default `DEFAULT_VAT_HOTOVOST = 0.20`.
