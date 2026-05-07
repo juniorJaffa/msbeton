@@ -1386,8 +1386,8 @@ function KlientiTab() {
                       )}
                       {c.isOwner && <span className="text-[10px] font-black text-primary/70">Admin</span>}
                       {hasLogin
-                        ? <span className={`text-[10px] font-bold ${c.active ? "text-green-600" : "text-gray-400"}`}>{c.active ? "Aktívny" : "Neaktívny"}</span>
-                        : <span className="text-[10px] text-gray-400">Bez prístupu</span>
+                        ? <span className={`inline-block w-2 h-2 rounded-full ${c.active ? "bg-green-500" : "bg-gray-300"}`} title={c.active ? "Aktívny" : "Neaktívny"} />
+                        : <span className="inline-block w-2 h-2 rounded-full bg-gray-200" title="Bez prístupu" />
                       }
                     </div>
                   </div>
