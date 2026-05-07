@@ -769,6 +769,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
     // Build rows — main item only (extras handled separately in extraRows)
     const mainCI = result.concreteBreakdown[0];
+    const mainBetonLabel = mainCI?.label.replace(/ – [\d.,]+ m³$/, "") ?? "";
     const betonRows = (() => {
       if (!mainCI) return "";
       const origVal = isFaktura ? mainCI.bezDph : mainCI.bezDph * (1 + VAT_HOTOVOST);
@@ -811,8 +812,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     };
     const hasMainSluzby = tab === "pumpa" && (mainSluzbyOrig.pump + mainSluzbyOrig.hoses + mainSluzbyOrig.washing + mainSluzbyOrig.chem + mainSluzbyOrig.waiting) > 0;
     const sluzbyRows = hasMainSluzby
-      ? sectionRow("Služby") +
-        trow(`Čerpanie betónu – ${result.pumpHrs}&nbsp;h${result.pumpMs > 0 ? `&nbsp;${result.pumpMs}&nbsp;min` : ""}`,
+      ? trow(`Čerpanie betónu – ${result.pumpHrs}&nbsp;h${result.pumpMs > 0 ? `&nbsp;${result.pumpMs}&nbsp;min` : ""}`,
           `${result.pumpHrs}&nbsp;h${result.pumpMs > 0 ? `&nbsp;${result.pumpMs}&nbsp;min` : ""}`, `${fmtN(pumpServicePrice)}&nbsp;€/h`, mainSluzbyOrig.pump, mainSluzbyOrig.pump * sluzbyFactor) +
         (hoseMeters > 0 ? trow(`Prídavné hadice`, `${hoseMeters}&nbsp;m`, `${fmtN(hoseServicePrice)}&nbsp;€/m`, mainSluzbyOrig.hoses, mainSluzbyOrig.hoses * sluzbyFactor) : "") +
         (washing ? trow("Umývanie mimo stavby", "1&nbsp;ks", `${fmtN(washServicePrice)}&nbsp;€`, mainSluzbyOrig.washing, mainSluzbyOrig.washing * sluzbyFactor) : "") +
@@ -933,7 +933,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   <table style="border:1px solid #ddd;margin-bottom:5mm">
     ${thead()}
     ${ownNote}
-    ${sectionRow("Produkty")}
+    ${sectionRow(result.concreteBreakdown.length > 1 ? `Položka 1 – ${mainBetonLabel}` : mainBetonLabel || "Produkty")}
     ${betonRows}
     ${transportRow}
     ${fillupRow}
