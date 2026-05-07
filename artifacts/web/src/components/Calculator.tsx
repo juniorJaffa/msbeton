@@ -1935,8 +1935,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     className={cn("flex items-center justify-center gap-2 py-3 border transition-all text-sm font-semibold cursor-pointer rounded-sm focus:outline-none",
                       smsCopied ? "border-primary text-primary" : "border-white/20 text-white/70 hover:border-primary hover:text-primary"
                     )}>
-                    <MessageSquare className="w-4 h-4" />
-                    {smsCopied ? "SKOPÍROVANÉ!" : "EXPORT SMS"}
+                    <MessageSquare className="w-4 h-4 shrink-0" />
+                    <span className="whitespace-nowrap">{smsCopied ? "SKOPÍROVANÉ!" : "EXPORT SMS"}</span>
                   </button>
                 </div>
 
