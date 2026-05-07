@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Truck, LogIn, LogOut, FileText, MessageSquare, Minus, Plus, Trash2, Table2, ShoppingCart, X } from "lucide-react";
+import { ChevronDown, Truck, LogIn, LogOut, FileText, MessageSquare, Minus, Plus, Trash2, Table2, ShoppingCart, X, Info } from "lucide-react";
 import { cn, formatPhone } from "@/lib/utils";
 import { PhoneInput } from "@/components/PhoneInput";
 import { adminData } from "@/lib/adminData";
@@ -214,6 +214,7 @@ function PriceRow({ label, original, discounted, hasDiscount, isFillup }: { labe
 
 export function ConcreteCalculator({ clientOverride }: { clientOverride?: import("@/lib/clientAuth").LoggedClient } = {}) {
   const [tab, setTab] = useState<Tab>("pumpa");
+  const [tabInfoOpen, setTabInfoOpen] = useState(false);
   const [deliveryMode, setDeliveryMode] = useState<"distance" | "address">("distance");
   const [distance, setDistance] = useState("");
   const [address, setAddress] = useState("");
@@ -1140,7 +1141,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         {/* Tabs */}
         <div className="grid grid-cols-3">
           {(["pumpa", "mix", "vlastnadoprava"] as Tab[]).map((t) => (
-            <button key={t} onClick={() => { setTab(t); setExtraItems([]); setShowResult(false); }}
+            <button key={t} onClick={() => { setTab(t); setExtraItems([]); setShowResult(false); setTabInfoOpen(false); }}
               className={cn("flex flex-col items-center justify-center gap-2 py-4 transition-all cursor-pointer group",
                 tab === t ? "bg-secondary border-b-4 border-primary" : "bg-white/5 border-b-4 border-transparent hover:bg-white/10"
               )}>
@@ -1303,34 +1304,24 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             )}
           </div>
 
-          {/* Mobile-only info banner — skryté na md+ aj po vypočítaní (pravý panel prevezme info) */}
+          {/* Mobile-only collapsible info — skryté na md+ aj po vypočítaní */}
           <div className={cn("md:hidden", showResult && "hidden")}>
-            {tab === "pumpa" && (
-              <div className="flex items-start gap-3 bg-primary/10 border border-primary/20 rounded-lg px-4 py-3">
-                <Truck className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-white">Betónová pumpa {pumpCap}m³ · 28m rameno</p>
-                  <p className="text-xs text-white/60 mt-0.5">Prvé auto {pumpCap}m³, každé ďalšie {mixCap}m³ (domiešavač). Čerpanie od príjazdu na stavbu.</p>
-                </div>
-              </div>
-            )}
-            {tab === "mix" && (
-              <div className="flex items-start gap-3 bg-primary/10 border border-primary/20 rounded-lg px-4 py-3">
-                <Truck className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-white">Domiešavač {mixCap}m³</p>
-                  <p className="text-xs text-white/60 mt-0.5">Prvých 30 min čakania bez poplatku. Čakanie každých začatých 15 min. Kapacita {mixCap}m³.</p>
-                </div>
-              </div>
-            )}
-            {tab === "vlastnadoprava" && (
-              <div className="flex items-start gap-3 bg-primary/10 border border-primary/20 rounded-lg px-4 py-3">
-                <Truck className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-white">Vlastná doprava</p>
-                  <p className="text-xs text-white/60 mt-0.5">Zákazník si betón vyzdvihne vlastným vozidlom na prevádzke. Doprava sa nepočíta.</p>
-                </div>
-              </div>
+            <button
+              onClick={() => setTabInfoOpen(o => !o)}
+              className="w-full flex items-center gap-1.5 px-1 py-1 text-white/40 hover:text-white/60 transition-colors"
+            >
+              <Info className="w-3.5 h-3.5 shrink-0" />
+              <span className="text-[11px]">
+                {tab === "pumpa" ? `Pumpa ${pumpCap}m³ · 28m rameno` : tab === "mix" ? `Domiešavač ${mixCap}m³` : "Vlastná doprava"}
+              </span>
+              <ChevronDown className={cn("w-3 h-3 ml-auto transition-transform", tabInfoOpen && "rotate-180")} />
+            </button>
+            {tabInfoOpen && (
+              <p className="text-xs text-white/50 px-1 pb-1 leading-relaxed">
+                {tab === "pumpa" && `Prvé auto ${pumpCap}m³, každé ďalšie ${mixCap}m³ (domiešavač). Čerpanie od príjazdu na stavbu.`}
+                {tab === "mix" && `Prvých 30 min čakania bez poplatku. Čakanie každých začatých 15 min. Kapacita ${mixCap}m³.`}
+                {tab === "vlastnadoprava" && "Zákazník si betón vyzdvihne vlastným vozidlom na prevádzke. Doprava sa nepočíta."}
+              </p>
             )}
           </div>
 
