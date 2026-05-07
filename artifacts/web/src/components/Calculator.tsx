@@ -766,27 +766,34 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const sectionRow = (title: string) =>
       `<tr><td colspan="5" style="background:#EDC531;color:#001D3D;font-weight:bold;font-size:8.5pt;padding:4px 8px">${title}</td></tr>`;
 
-    // Build rows
-    const betonRows = result.concreteBreakdown.map((ci) => {
-      const origVal = isFaktura ? ci.bezDph : ci.bezDph * (1 + VAT_HOTOVOST);
-      const discVal = isFaktura ? ci.bezDphFinal : ci.bezDphFinalHotovost;
-      const unitPriceOrig = ci.qty > 0 ? origVal / ci.qty : 0;
-      const unitPrice = ci.qty > 0 ? discVal / ci.qty : 0;
+    // Build rows — main item only (extras handled separately in extraRows)
+    const mainCI = result.concreteBreakdown[0];
+    const betonRows = (() => {
+      if (!mainCI) return "";
+      const origVal = isFaktura ? mainCI.bezDph : mainCI.bezDph * (1 + VAT_HOTOVOST);
+      const discVal = isFaktura ? mainCI.bezDphFinal : mainCI.bezDphFinalHotovost;
+      const unitPriceOrig = mainCI.qty > 0 ? origVal / mainCI.qty : 0;
+      const unitPrice = mainCI.qty > 0 ? discVal / mainCI.qty : 0;
       const unitStr = hasDiscount && Math.abs(unitPriceOrig - unitPrice) > 0.001
         ? `<span style="text-decoration:line-through;color:#bbb;font-size:7.5pt">${fmtN(unitPriceOrig)}&nbsp;€/m³</span><br>${fmtN(unitPrice)}&nbsp;€/m³`
         : `${fmtN(unitPrice)}&nbsp;€/m³`;
-      return trow(ci.label, `${ci.qty}&nbsp;m³`, unitStr, origVal, discVal);
-    }).join("");
+      return trow(mainCI.label, `${mainCI.qty}&nbsp;m³`, unitStr, origVal, discVal);
+    })();
 
-    const pdfTrucks = tab === "pumpa" ? `1×Pumpa${result.mixTrucksCount > 0 ? `+${result.mixTrucksCount}×Mix` : ""}` : `${result.trucks}×Mix`;
+    const mainTrucks = mainCI?.transportTrucks ?? 0;
+    const pdfTrucks = tab === "pumpa" ? `1×Pumpa${mainTrucks > 1 ? `+${mainTrucks - 1}×Mix` : ""}` : `${mainTrucks}×Mix`;
     const pdfZone = result.transportZone ? `${result.transportZone.fromKm}–${result.transportZone.toKm}&nbsp;km` : "";
     const pdfPrefix = result.transportIsMin ? "Min. doprava" : "Doprava";
     const dopravaLabel = `${pdfPrefix}${pdfZone ? ` ${pdfZone}` : ""} · ${pdfTrucks}`;
-    const transportRow = origItems.transport > 0
-      ? trow(dopravaLabel, `${result.qty}&nbsp;m³`, "—", origItems.transport, baseItems.transport)
+    const mainTransportOrig = mainCI?.transport ?? 0;
+    const mainTransportDisc = mainTransportOrig * dopravaFactor;
+    const transportRow = mainTransportOrig > 0
+      ? trow(dopravaLabel, `${result.qty}&nbsp;m³`, "—", mainTransportOrig, mainTransportDisc)
       : "";
-    const fillupRow = origItems.fillup > 0
-      ? trow(`Doťaženie do&nbsp;${result.fillupTarget}&nbsp;m³`, `${result.fillupM3}&nbsp;m³`, "—", origItems.fillup, baseItems.fillup)
+    const mainFillupOrig = mainCI?.transportFillup ?? 0;
+    const mainFillupDisc = mainFillupOrig * dopravaFactor;
+    const fillupRow = mainFillupOrig > 0
+      ? trow(`Doťaženie do&nbsp;${result.fillupTarget}&nbsp;m³`, `${mainCI?.transportFillupM3}&nbsp;m³`, "—", mainFillupOrig, mainFillupDisc)
       : "";
     const zimneRow = origItems.zimne > 0
       ? trow(`Zimné opatrenia`, `${result.qty}&nbsp;m³`, `${fmtN(zimneServicePrice)}&nbsp;€/m³`, origItems.zimne, baseItems.zimne)
@@ -898,11 +905,6 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 </style>
 </head><body>
 
-<!-- Watermark -->
-<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);opacity:0.05;pointer-events:none;z-index:0;width:160mm">
-  <img src="${window.location.origin}/ms-beton-watermark.png" style="width:100%;height:auto" />
-</div>
-
 <!-- Header -->
 <div style="background:#001D3D;color:#fff;padding:10mm 14mm 8mm;position:relative;z-index:1">
   <div style="display:flex;justify-content:space-between;align-items:flex-start">
@@ -941,6 +943,17 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
   <!-- Total -->
   ${totalBlock}
+
+  <!-- Vypracovala spoločnosť -->
+  <div style="margin-top:8mm;display:flex;align-items:flex-start;gap:6mm">
+    <div style="flex:1;border:1px solid #c8c8d8;border-radius:3px;padding:4mm 6mm;text-align:center">
+      <div style="font-size:8pt;color:#888;margin-bottom:3mm">Vypracovala spoločnosť</div>
+      <img src="${window.location.origin}/ms-beton-watermark.png" style="width:36mm;height:auto;opacity:0.22;display:block;margin:0 auto" />
+    </div>
+    <div style="flex:1;border:1px solid #c8c8d8;border-radius:3px;padding:4mm 6mm;min-height:28mm">
+      <div style="font-size:8pt;color:#888;margin-bottom:2mm">Podpis a pečiatka zákazníka</div>
+    </div>
+  </div>
 
   <!-- Footer -->
   <div style="padding-top:4mm;border-top:1px solid #ddd;font-size:7.5pt;color:#888;line-height:1.7">
