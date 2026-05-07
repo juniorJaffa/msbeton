@@ -1419,7 +1419,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
               <div key={item.id} className="border border-primary/25 rounded-lg p-4 space-y-3 bg-primary/5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-black text-primary/70 uppercase tracking-widest">
-                    Položka {idx + 1}{item.categoryName ? ` – ${item.categoryName}` : ""}
+                    Položka {idx + 1}
                   </span>
                   <button
                     type="button"
@@ -1450,8 +1450,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     onChange={(e) => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, quantity: e.target.value } : i)); setShowResult(false); }}
                     onWheel={(e) => e.currentTarget.blur()}
                     placeholder="Zadajte množstvo"
-                    className="w-full bg-white/10 border-b-2 border-b-primary text-white px-4 py-3 focus:outline-none placeholder:text-white/30 text-sm font-medium rounded-sm"
+                    className={cn("w-full bg-white/10 border-b-2 text-white px-4 py-3 focus:outline-none placeholder:text-white/30 text-sm font-medium rounded-sm",
+                      showResult && !item.quantity ? "border-b-red-400" : "border-b-primary"
+                    )}
                   />
+                  {showResult && !item.quantity && (
+                    <p className="text-[11px] text-red-400 mt-1">Bez množstva – položka nie je zahrnutá vo výpočte</p>
+                  )}
                 </div>
                 {tab !== "vlastnadoprava" && (
                   <div>
