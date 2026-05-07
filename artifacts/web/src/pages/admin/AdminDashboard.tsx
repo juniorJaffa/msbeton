@@ -4,6 +4,7 @@ import { LogOut, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, 
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
+import { VersionBadge } from "@/components/VersionBadge";
 import { PhoneInput } from "@/components/PhoneInput";
 import { cn, formatPhone } from "@/lib/utils";
 import { isLoggedIn, logout } from "@/lib/adminAuth";
@@ -359,9 +360,12 @@ function DopravaTab() {
                       <span className="text-[11px] text-gray-400">{zt.desc}</span>
                     </div>
                     {isStandard && (
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <span className="text-[10px] text-blue-600 bg-blue-100 border border-blue-200 px-1.5 py-0.5 rounded font-bold">Zóny dopravy (cenník)</span>
-                        <span className="text-[10px] text-blue-400">— cena €/m³ sa berie z tabuľky nižšie podľa km vzdialenosti</span>
+                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                        <a href="#zony-dopravy" onClick={e => { e.preventDefault(); document.getElementById("zony-dopravy")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
+                          className="text-[10px] text-blue-600 bg-blue-100 border border-blue-200 px-1.5 py-0.5 rounded font-bold hover:bg-blue-200 transition-colors cursor-pointer">
+                          Zóny dopravy (cenník) ↓
+                        </a>
+                        <span className="text-[10px] text-blue-400">cena €/m³ podľa km vzdialenosti</span>
                       </div>
                     )}
                   </div>
@@ -440,7 +444,7 @@ function DopravaTab() {
       </div>
 
       {/* ── Zóny dopravy (cenník) — prepojené so Štandard ── */}
-      <div className="bg-white border border-blue-200 shadow-sm overflow-hidden">
+      <div id="zony-dopravy" className="bg-white border border-blue-200 shadow-sm overflow-hidden" style={{ scrollMarginTop: "80px" }}>
         <div className="px-5 py-3 border-b border-blue-100 bg-blue-50/70">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-black text-secondary text-sm uppercase tracking-widest">Zóny dopravy</h3>
@@ -1074,7 +1078,7 @@ function KlientiTab() {
             </div>
           </div>
           <div className="bg-white px-3 py-2 flex-1 min-w-0">
-            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">DPH Hotovosť — default</div>
+            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">DPH Hotovosť</div>
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-1 font-bold text-secondary text-sm">
                 <EditableField value={Math.round((ts.defaultHotovostDph ?? 0.20) * 100)} type="number"
@@ -1271,14 +1275,14 @@ function KlientiTab() {
 
       {/* Table header */}
       <div className="hidden sm:flex items-center gap-3 px-4 py-2 bg-secondary text-white text-xs font-black uppercase tracking-widest">
-        <div className="w-8 shrink-0" />
-        <div className="w-36 shrink-0">Klient</div>
+        <div className="w-9 shrink-0" />
+        <div className="flex-1 min-w-0">Klient</div>
         <div className="flex flex-1">
           {["Betón", "Doprava", "Služby", "Celkovo"].map(l => (
             <div key={l} className="flex-1 text-center text-primary">{l}</div>
           ))}
         </div>
-        <div className="w-28 shrink-0" />
+        <div className="w-44 shrink-0" />
       </div>
 
       {/* Client cards */}
@@ -1328,15 +1332,9 @@ function KlientiTab() {
 
                 {/* Desktop: zľavy stĺpce */}
                 <div className="hidden sm:flex flex-1 items-center">
-                  {[
-                    { label: "Betón",   val: c.discountBeton   ?? 0 },
-                    { label: "Doprava", val: c.discountDoprava ?? 0 },
-                    { label: "Služby",  val: c.discountSluzby  ?? 0 },
-                    { label: "Celkovo", val: c.discountCelkovo ?? 0 },
-                  ].map(({ label, val }) => (
-                    <div key={label} className="flex-1 text-center">
-                      <div className="text-[10px] text-gray-400 uppercase tracking-wide">{label}</div>
-                      <div className={`text-sm font-bold ${val > 0 ? "text-primary" : "text-gray-300"}`}>{val}%</div>
+                  {[c.discountBeton ?? 0, c.discountDoprava ?? 0, c.discountSluzby ?? 0, c.discountCelkovo ?? 0].map((val, i) => (
+                    <div key={i} className="flex-1 text-center">
+                      <span className={`text-sm font-bold ${val > 0 ? "text-primary" : "text-gray-300"}`}>{val}%</span>
                     </div>
                   ))}
                 </div>
@@ -1874,6 +1872,7 @@ export default function AdminDashboard() {
             <span className="font-black text-2xl tracking-tighter text-primary/40">-</span>
             <span className="font-black text-2xl tracking-tighter text-white">BETON</span>
             <span className="ml-3 text-white/30 text-xs font-semibold uppercase tracking-widest hidden sm:block">Admin</span>
+            <VersionBadge className="ml-1 text-white/30 hidden sm:block" />
           </a>
           <button onClick={handleLogout}
             className="flex items-center gap-2 text-white/60 hover:text-white text-sm font-semibold transition-colors">

@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { SEOHead } from "@/components/SEOHead";
 import { Eye, EyeOff, Lock, User, AlertCircle, Clock } from "lucide-react";
 import { checkCredentials, login, isLoggedIn, getAttemptInfo, recordFailedAttempt, resetAttempts } from "@/lib/adminAuth";
+import { VersionBadge } from "@/components/VersionBadge";
 
 function generateCaptcha() {
   const a = Math.floor(Math.random() * 9) + 1;
@@ -243,8 +244,9 @@ export default function AdminLogin() {
           </div>
         </div>
 
-        <p className="text-center text-white/30 text-xs mt-6">
-          © {new Date().getFullYear()} MS-BETON s.r.o. — Administrácia
+        <p className="text-center text-white/30 text-xs mt-6 flex items-center justify-center gap-2">
+          <span>© {new Date().getFullYear()} MS-BETON s.r.o. — Administrácia</span>
+          <VersionBadge className="text-white/30" />
         </p>
       </div>
     </div>
