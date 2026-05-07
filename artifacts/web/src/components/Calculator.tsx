@@ -939,7 +939,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   <table style="border:1px solid #ddd;margin-bottom:5mm">
     ${thead()}
     ${ownNote}
-    ${sectionRow("Produkty")}
+    ${sectionRow(mainBetonLabel ? `Produkty – ${mainBetonLabel}` : "Produkty")}
     ${betonRows}
     ${transportRow}
     ${fillupRow}
@@ -1416,11 +1416,16 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
               ?? itemTypes.find((t) => t.label.includes("C16/20"))
               ?? itemTypes[0];
             return (
-              <div key={item.id} className="border border-primary/25 rounded-lg p-4 space-y-3 bg-primary/5">
+              <div key={item.id} className={cn("border rounded-lg p-4 space-y-3", showResult && !item.quantity ? "border-red-400/60 bg-red-500/5" : "border-primary/25 bg-primary/5")}>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-primary/70 uppercase tracking-widest">
-                    Položka {idx + 1}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-primary/70 uppercase tracking-widest">
+                      Položka {idx + 1}
+                    </span>
+                    {showResult && !item.quantity && (
+                      <span className="text-[10px] font-bold text-red-400 uppercase tracking-wide">— nie je zahrnutá</span>
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={() => { setExtraItems(extraItems.filter((i) => i.id !== item.id)); setShowResult(false); }}
