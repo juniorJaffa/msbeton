@@ -46,14 +46,19 @@ export default function Home() {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
+    const NAVBAR_H = 96;
+    const scrollToEl = (el: Element) => {
+      const top = el.getBoundingClientRect().top + window.scrollY - NAVBAR_H;
+      window.scrollTo({ top, behavior: "smooth" });
+    };
     const scrollToHash = () => {
       const hash = window.location.hash;
       if (!hash) return;
       const el = document.querySelector(hash);
-      if (el) { el.scrollIntoView({ behavior: "smooth" }); return; }
-      // Fallback pre prípad lazy-load oneskorenia
+      if (el) { scrollToEl(el); return; }
       setTimeout(() => {
-        document.querySelector(hash)?.scrollIntoView({ behavior: "smooth" });
+        const delayed = document.querySelector(hash);
+        if (delayed) scrollToEl(delayed);
       }, 150);
     };
     scrollToHash();

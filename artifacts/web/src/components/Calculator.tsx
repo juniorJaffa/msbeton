@@ -219,6 +219,8 @@ export function ConcreteCalculator() {
   const [addressKm, setAddressKm] = useState<number | null>(null);
   const [addressLoading, setAddressLoading] = useState(false);
   const addressInputRef = useRef<HTMLInputElement>(null);
+  const calcWrapRef = useRef<HTMLDivElement>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
   const [categoryName, setCategoryName] = useState<string | null>(null);
   const [concreteTypeLabel, setConcreteTypeLabel] = useState<string | null>(null);
   const [quantity, setQuantity] = useState("");
@@ -246,6 +248,20 @@ export function ConcreteCalculator() {
   const [orderForm, setOrderForm] = useState({ name: loggedClient?.name ?? "", phone: loggedClient?.phone ? formatPhone(loggedClient.phone) : "", email: "", note: "" });
   const [orderSubmitting, setOrderSubmitting] = useState(false);
   const [orderDone, setOrderDone] = useState(false);
+
+  // Na mobile scrollni na výsledok, na desktop scrollni calc wrapper do view s navbar offsetom
+  useEffect(() => {
+    if (!showResult) return;
+    const NAVBAR_H = 96;
+    const isMobile = window.innerWidth < 768;
+    if (isMobile && resultRef.current) {
+      const top = resultRef.current.getBoundingClientRect().top + window.scrollY - NAVBAR_H - 8;
+      window.scrollTo({ top, behavior: "smooth" });
+    } else if (!isMobile && calcWrapRef.current) {
+      const top = calcWrapRef.current.getBoundingClientRect().top + window.scrollY - NAVBAR_H - 8;
+      if (top < window.scrollY) window.scrollTo({ top, behavior: "smooth" });
+    }
+  }, [showResult]);
 
   const resetForm = () => {
     setQuantity("");
@@ -1059,7 +1075,7 @@ export function ConcreteCalculator() {
   const origDisplayItems = isFaktura ? result?.items : result?.hotovostBaseItems;
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-5xl mx-auto" ref={calcWrapRef}>
       <div className="rounded-2xl overflow-hidden shadow-2xl" style={{ background: "#2d3748" }}>
 
         {/* Tabs */}
@@ -1611,7 +1627,7 @@ export function ConcreteCalculator() {
         </div>
 
         {/* RIGHT: Result */}
-        <div className={cn("p-6", !showResult && "hidden md:flex md:items-center md:justify-center")}>
+        <div ref={resultRef} className={cn("p-6", !showResult && "hidden md:flex md:items-center md:justify-center")}>
           {showResult && result && displayItems && origDisplayItems ? (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
               className="rounded-xl border border-primary/30 overflow-hidden md:rounded-xl">
