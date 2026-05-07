@@ -1193,7 +1193,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
               <div className="w-full">
                 <div className="flex items-center justify-between gap-2 min-w-0">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-white/60 text-xs shrink-0">Prihlásený:</span>
+                    <span className="hidden sm:inline text-white/60 text-xs shrink-0">Prihlásený:</span>
                     <span className="text-white text-sm font-semibold truncate min-w-0">{loggedClient.name}</span>
                     {hasDiscount && (
                       <span className="shrink-0 px-1.5 py-0.5 bg-primary text-secondary text-xs font-black rounded-sm tracking-wide">
