@@ -301,7 +301,7 @@ export default function Home() {
       </section>
 
       {/* CALCULATOR SECTION */}
-      <section id="calculator" className="py-12 concrete-light relative overflow-hidden">
+      <section id="calculator" className="py-12 concrete-light relative overflow-hidden" style={{ scrollMarginTop: "96px" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Suspense fallback={<div className="h-64" />}>
             <ConcreteCalculator />

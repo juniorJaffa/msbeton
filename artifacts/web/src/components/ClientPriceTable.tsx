@@ -176,7 +176,7 @@ export function ClientPriceTable({
       <div className={cn("grid grid-cols-3 border-b text-xs", dark ? "border-primary/20" : "border-gray-200")}>
         {tabs.map((t) => (
           <button key={t.id} onClick={() => setSection(t.id)} className={cn(
-            "py-2 font-black tracking-wide sm:tracking-widest transition-all flex flex-wrap items-center justify-center gap-x-1 gap-y-0.5 px-1",
+            "py-2 font-black tracking-wide sm:tracking-widest transition-all flex flex-col items-center justify-center gap-0.5 px-1",
             section === t.id
               ? dark ? "bg-primary/20 text-primary" : "bg-secondary text-white"
               : dark ? "text-white/40 hover:text-white/60 bg-white/3" : "text-gray-400 hover:text-gray-600 bg-gray-50"
