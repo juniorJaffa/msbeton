@@ -247,6 +247,26 @@ export function ConcreteCalculator() {
   const [orderSubmitting, setOrderSubmitting] = useState(false);
   const [orderDone, setOrderDone] = useState(false);
 
+  const resetForm = () => {
+    setQuantity("");
+    setDistance("");
+    setAddress("");
+    setAddressKm(null);
+    setDeliveryMode("distance");
+    setCategoryName(null);
+    setConcreteTypeLabel(null);
+    setPumpHour("1 h");
+    setPumpMin("0 min");
+    setWaitHour("0 h");
+    setWaitMin("0 min");
+    setWaitPiecesPumpa(0);
+    setHoseMeters(0);
+    setWashing(false);
+    setZimneOpatrenia(false);
+    setExtraItems([]);
+    setShowResult(false);
+  };
+
   useEffect(() => {
     const handler = () => setRevision((r) => r + 1);
     window.addEventListener("admin-data-synced", handler);
@@ -1104,6 +1124,18 @@ export function ConcreteCalculator() {
 
         {/* LEFT: Form */}
         <div className="p-6 space-y-5">
+
+          {/* Reset button — zobrazí sa len keď je čo vymazať */}
+          {(quantity || distance || address || categoryName || extraItems.length > 0 || showResult) && (
+            <div className="flex justify-end -mb-2">
+              <button onClick={resetForm}
+                className="flex items-center gap-1.5 text-white/30 hover:text-red-400 transition-colors text-xs cursor-pointer py-1 px-2 rounded hover:bg-white/5"
+                title="Vymazať všetky údaje">
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Vymazať</span>
+              </button>
+            </div>
+          )}
 
           {/* Client login bar */}
           <div className="py-2 border-b border-white/10">
