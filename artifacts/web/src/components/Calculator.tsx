@@ -766,6 +766,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       </tr>`;
     const sectionRow = (title: string) =>
       `<tr><td colspan="5" style="background:#EDC531;color:#001D3D;font-weight:bold;font-size:8.5pt;padding:4px 8px">${title}</td></tr>`;
+    const subSectionRow = (title: string) =>
+      `<tr><td colspan="5" style="background:#fdf6d8;color:#7a6200;font-weight:600;font-size:7.5pt;padding:3px 8px 3px 18px;border-top:1px solid #f0e6b0">↳ ${title}</td></tr>`;
 
     // Build rows — main item only (extras handled separately in extraRows)
     const mainCI = result.concreteBreakdown[0];
@@ -811,8 +813,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       waiting: tab === "pumpa" ? result.waitIntervals * waitServicePricePumpa : tab === "mix" ? result.waitIntervals * waitServicePriceMix : 0,
     };
     const hasMainSluzby = tab === "pumpa" && (mainSluzbyOrig.pump + mainSluzbyOrig.hoses + mainSluzbyOrig.washing + mainSluzbyOrig.chem + mainSluzbyOrig.waiting) > 0;
+    const svcLabel = tab === "pumpa" ? "Služby – Pumpa" : "Čakačky";
     const sluzbyRows = hasMainSluzby
-      ? trow(`Čerpanie betónu – ${result.pumpHrs}&nbsp;h${result.pumpMs > 0 ? `&nbsp;${result.pumpMs}&nbsp;min` : ""}`,
+      ? subSectionRow(svcLabel) +
+        trow(`Čerpanie betónu – ${result.pumpHrs}&nbsp;h${result.pumpMs > 0 ? `&nbsp;${result.pumpMs}&nbsp;min` : ""}`,
           `${result.pumpHrs}&nbsp;h${result.pumpMs > 0 ? `&nbsp;${result.pumpMs}&nbsp;min` : ""}`, `${fmtN(pumpServicePrice)}&nbsp;€/h`, mainSluzbyOrig.pump, mainSluzbyOrig.pump * sluzbyFactor) +
         (hoseMeters > 0 ? trow(`Prídavné hadice`, `${hoseMeters}&nbsp;m`, `${fmtN(hoseServicePrice)}&nbsp;€/m`, mainSluzbyOrig.hoses, mainSluzbyOrig.hoses * sluzbyFactor) : "") +
         (washing ? trow("Umývanie mimo stavby", "1&nbsp;ks", `${fmtN(washServicePrice)}&nbsp;€`, mainSluzbyOrig.washing, mainSluzbyOrig.washing * sluzbyFactor) : "") +
@@ -837,11 +841,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         ? `1×Pumpa${ci.transportTrucks > 1 ? `+${ci.transportTrucks - 1}×Mix` : ""}`
         : `${ci.transportTrucks}×Mix`;
       const dopravaExtraLabel = `${ci.transportIsMin ? "Min. doprava" : "Doprava"}${pdfZone ? ` ${pdfZone}` : ""} · ${pdfExtraTrucks}`;
-      const extraBetonLabel = ci.label.replace(/ – [\d.,]+ m³$/, "");
-      let rows = sectionRow(`Položka ${idx + 2} – ${extraBetonLabel}`);
+      let rows = sectionRow(`Pridaná položka ${idx + 1}`);
       rows += trow(ci.label, `${ci.qty}&nbsp;m³`, unitStr, betonOrig, betonDisc);
       rows += trow(dopravaExtraLabel, `${ci.qty}&nbsp;m³`, "—", transOrig, transDisc);
       rows += trow(`Doťaženie do&nbsp;${ci.transportFillupTarget}&nbsp;m³`, `${ci.transportFillupM3}&nbsp;m³`, "—", fillupOrig, fillupDisc);
+      const hasExtraSvc = ci.svcPumpCost > 0 || ci.svcHoseCost > 0 || ci.svcWashCost > 0 || ci.svcWaitCost > 0;
+      if (hasExtraSvc) rows += subSectionRow(svcLabel);
       if (ci.svcPumpCost > 0) {
         const pumpTimeStr = ci.svcPumpMs > 0 ? `${ci.svcPumpHrs}&nbsp;h&nbsp;${ci.svcPumpMs}&nbsp;min` : `${ci.svcPumpHrs}&nbsp;h`;
         rows += trow(`Čerpanie betónu – ${pumpTimeStr}`, pumpTimeStr, `${fmtN(pumpServicePrice)}&nbsp;€/h`, ci.svcPumpCost, ci.svcPumpCost * sluzbyFactor);
@@ -933,7 +938,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   <table style="border:1px solid #ddd;margin-bottom:5mm">
     ${thead()}
     ${ownNote}
-    ${sectionRow(result.concreteBreakdown.length > 1 ? `Položka 1 – ${mainBetonLabel}` : mainBetonLabel || "Produkty")}
+    ${sectionRow("Produkty")}
     ${betonRows}
     ${transportRow}
     ${fillupRow}
