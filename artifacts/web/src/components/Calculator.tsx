@@ -185,7 +185,7 @@ function TypeRadioGroup({ label, value, onChange, options }: {
 }
 
 function fmt(n: number) { return n.toFixed(2) + " €"; }
-function cleanType(lbl: string) { return lbl.replace(/ – [\d.]+ € \/ m³/, "").replace(/ – [\d,.]+ €\/m³/, ""); }
+function cleanType(lbl: string) { return lbl.replace(/ – [\d.]+ € \/ m³/, "").replace(/ – [\d,.]+ €\/m³/, "").replace(/^Betón\s+/i, ""); }
 
 function PriceRow({ label, original, discounted, hasDiscount, isFillup }: { label: React.ReactNode; original: number; discounted: number; hasDiscount: boolean; isFillup?: boolean }) {
   if (original === 0) return null;
@@ -975,7 +975,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       `${(qty + " x " + unit.toFixed(2) + " €").padEnd(22)}= ${total.toFixed(2)} €`;
 
     const lines: string[] = [];
-    lines.push(div, "            Cenová ponuka", div);
+    lines.push(div, "          MS-BETON", "       Cenová ponuka", div);
     if (address) lines.push(`${address} - ${result.km}km`);
     else if (result.km > 0) lines.push(`${result.km}km`);
     if (result.isOwn) lines.push("Vlastná doprava – odber na prevádzke");
@@ -1008,7 +1008,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             lines.push(rowUnit(`${ci.transportFillupM3}m³`, effectiveRate, fillupDisc));
           }
         } else {
-          lines.push(`Doprava: ${transportDisc.toFixed(2)} €`);
+          lines.push(row("Doprava", transportDisc));
         }
       }
     }
