@@ -1293,11 +1293,19 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             ) : (
               !clientOverride ? (
               <div className="w-full">
-                <button onClick={() => setShowLoginForm(!showLoginForm)}
-                  className="flex items-center gap-2 text-white/50 hover:text-primary text-xs transition-colors cursor-pointer">
-                  <LogIn className="w-3.5 h-3.5" />
-                  <span>Prihlásiť sa ako klient (zľavové ceny)</span>
-                </button>
+                <div className="flex items-center justify-between gap-2">
+                  <button onClick={() => setShowLoginForm(!showLoginForm)}
+                    className="flex items-center gap-2 text-white/50 hover:text-primary text-xs transition-colors cursor-pointer">
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span>Prihlásiť sa ako klient (zľavové ceny)</span>
+                  </button>
+                  {(quantity || distance || address || categoryName || extraItems.length > 0 || showResult) && (
+                    <button onClick={resetForm} title="Vymazať všetky údaje"
+                      className="flex items-center text-white/20 hover:text-red-400 transition-colors cursor-pointer p-1.5 rounded hover:bg-white/5 border border-white/10 hover:border-red-400/30 shrink-0">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
                 <AnimatePresence>
                   {showLoginForm && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
@@ -1319,15 +1327,6 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 </AnimatePresence>
               </div>
               ) : null
-            )}
-            {/* Trash — neprihlásený stav */}
-            {!loggedClient && !clientOverride && (quantity || distance || address || categoryName || extraItems.length > 0 || showResult) && (
-              <div className="flex justify-end mt-1">
-                <button onClick={resetForm} title="Vymazať všetky údaje"
-                  className="flex items-center text-white/20 hover:text-red-400 transition-colors cursor-pointer p-1.5 rounded hover:bg-white/5 border border-white/10 hover:border-red-400/30">
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
             )}
           </div>
 
