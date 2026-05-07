@@ -1068,7 +1068,7 @@ function KlientiTab() {
   const [clientDetailTab, setClientDetailTab] = useState<Record<string, "detail" | "calc">>({});
   const emptyForm = {
     firstName: "", lastName: "", company: "", email: "", phone: "",
-    loginId: "", password: "",
+    loginId: "", password: "1234",
     discountBeton: "20", discountDoprava: "0", discountSluzby: "0", discountCelkovo: "0",
     hotovostDph: "20",
     canHotovost: true, canPridatBeton: true, canZimneOpatrenia: false, active: true,
@@ -1088,6 +1088,8 @@ function KlientiTab() {
     if (!form.firstName.trim() && !form.lastName.trim() && !form.company.trim()) return;
     const newId = adminData.generateId();
     const newLoginId = form.loginId.trim();
+    if (!newLoginId) { alert("Prihlasovacie ID je povinné."); return; }
+    if (!form.password.trim()) { alert("Heslo je povinné."); return; }
     if (newLoginId.toLowerCase() === "msbeton") {
       alert("Login ID 'msbeton' je rezervované pre administrátora. Zvoľ iné ID.");
       return;
