@@ -1444,7 +1444,7 @@ function KlientiTab() {
                     {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                   </span>
                   <button
-                    onClick={(e) => { e.stopPropagation(); setExpanded(c.id); setClientDetailTab(prev => ({ ...prev, [c.id]: "kalkulacka" })); }}
+                    onClick={(e) => { e.stopPropagation(); setExpanded(c.id); setClientDetailTab(prev => ({ ...prev, [c.id]: "calc" })); }}
                     title="Kalkulačka klienta"
                     className="sm:hidden p-1 text-gray-300 hover:text-primary transition-colors">
                     <Calculator className="w-4 h-4" />
