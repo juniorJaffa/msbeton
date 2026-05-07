@@ -1362,34 +1362,45 @@ function KlientiTab() {
             <div key={c.id} className={cn("border shadow-sm overflow-hidden", c.isOwner ? "bg-primary/5 border-primary/40" : "bg-white border-gray-200")}>
               {/* Card header */}
               <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => setExpanded(isExpanded ? null : c.id)}>
-                {/* Avatar */}
-                <div className={cn("w-9 h-9 rounded-full flex items-center justify-center shrink-0", c.isOwner ? "bg-primary/20" : "bg-secondary/10")}>
-                  {c.isOwner
-                    ? <Crown className="w-4 h-4 text-primary" />
-                    : <span className="text-secondary font-black text-sm">{(c.firstName || c.company || "?").charAt(0).toUpperCase()}</span>
-                  }
+                {/* Avatar + active dot */}
+                <div className="relative shrink-0">
+                  <div className={cn("w-9 h-9 rounded-full flex items-center justify-center", c.isOwner ? "bg-primary/20" : "bg-secondary/10")}>
+                    {c.isOwner
+                      ? <Crown className="w-4 h-4 text-primary" />
+                      : <span className="text-secondary font-black text-sm">{(c.firstName || c.company || "?").charAt(0).toUpperCase()}</span>
+                    }
+                  </div>
+                  {hasLogin && (
+                    <span className={`sm:hidden absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-white ${c.active ? "bg-green-500" : "bg-gray-300"}`}
+                      title={c.active ? "Aktívny" : "Neaktívny"} />
+                  )}
                 </div>
 
                 {/* Meno + mobile badges */}
                 <div className="flex-1 min-w-0">
                   <div className="font-bold text-secondary text-sm truncate">{fullName}</div>
-                  <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                    {c.company && <span className="text-xs text-gray-400 truncate">{c.company}</span>}
-                    {/* Mobile-only badges */}
-                    <div className="sm:hidden flex items-center gap-1 flex-wrap">
-                      {maxDisc > 0 && <span className="text-[10px] font-bold text-primary">−{maxDisc}%</span>}
-                      {clientZone && (
-                        <span className="flex items-center gap-0.5 px-1 py-0 text-[10px] font-bold rounded bg-blue-50 text-blue-600 border border-blue-100">
-                          <Truck className="w-2.5 h-2.5" />
-                          {zonePricingType === "km" ? "€/km" : zonePricingType === "auto" ? "€/auto" : "Štd"}
-                        </span>
-                      )}
-                      {c.isOwner && <span className="text-[10px] font-black text-primary/70">Admin</span>}
-                      {hasLogin
-                        ? <span className={`inline-block w-2 h-2 rounded-full ${c.active ? "bg-green-500" : "bg-gray-300"}`} title={c.active ? "Aktívny" : "Neaktívny"} />
-                        : <span className="inline-block w-2 h-2 rounded-full bg-gray-200" title="Bez prístupu" />
-                      }
-                    </div>
+                  {c.company && <div className="text-xs text-gray-400 truncate">{c.company}</div>}
+                  {/* Mobile-only badges — vždy vlastný riadok */}
+                  <div className="sm:hidden flex items-center gap-1 mt-0.5 flex-wrap">
+                    {(() => {
+                      const discPairs = [
+                        { key: "B", val: c.discountBeton ?? 0 },
+                        { key: "D", val: c.discountDoprava ?? 0 },
+                        { key: "S", val: c.discountSluzby ?? 0 },
+                        { key: "C", val: c.discountCelkovo ?? 0 },
+                      ].filter(d => d.val > 0);
+                      if (discPairs.length === 0) return null;
+                      return <span className="text-[10px] font-bold text-primary">
+                        {discPairs.map(d => `${d.key}:−${d.val}%`).join(" ")}
+                      </span>;
+                    })()}
+                    {clientZone && (
+                      <span className="flex items-center gap-0.5 px-1 py-0 text-[10px] font-bold rounded bg-blue-50 text-blue-600 border border-blue-100">
+                        <Truck className="w-2.5 h-2.5" />
+                        {zonePricingType === "km" ? "€/km" : zonePricingType === "auto" ? "€/auto" : "Štd"}
+                      </span>
+                    )}
+                    {c.isOwner && <span className="text-[10px] font-black text-primary/70">Admin</span>}
                   </div>
                 </div>
 
