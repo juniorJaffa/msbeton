@@ -1145,7 +1145,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         <div className="p-6 space-y-5">
 
           {/* Client login bar */}
-          <div className="py-2 border-b border-white/10 relative">
+          <div className="py-2 border-b border-white/10">
             {loggedClient ? (
               <div className="w-full">
                 <div className="flex items-center justify-between gap-2 min-w-0">
@@ -1158,7 +1158,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-5 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={() => setShowPriceTable(!showPriceTable)}
                       className={cn(
@@ -1171,9 +1171,15 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                       <span className="hidden sm:inline whitespace-nowrap">Moje ceny</span>
                     </button>
                     {!clientOverride && (
-                    <button onClick={handleLogout} className="flex items-center gap-1.5 text-white/40 hover:text-white/70 text-xs transition-colors cursor-pointer border border-white/15 rounded px-2.5 py-1.5">
-                      <LogOut className="w-5 h-5" /><span className="whitespace-nowrap hidden sm:inline">Odhlásiť</span>
-                    </button>
+                      <button onClick={handleLogout} className="flex items-center gap-1.5 text-white/40 hover:text-white/70 text-xs transition-colors cursor-pointer border border-white/15 rounded px-2.5 py-1.5">
+                        <LogOut className="w-5 h-5" /><span className="whitespace-nowrap hidden sm:inline">Odhlásiť</span>
+                      </button>
+                    )}
+                    {(quantity || distance || address || categoryName || extraItems.length > 0 || showResult) && (
+                      <button onClick={resetForm} title="Vymazať všetky údaje"
+                        className="flex items-center text-white/20 hover:text-red-400 transition-colors cursor-pointer p-1.5 rounded hover:bg-white/5 border border-white/10 hover:border-red-400/30">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     )}
                   </div>
                 </div>
@@ -1230,12 +1236,14 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
               </div>
               ) : null
             )}
-            {(quantity || distance || address || categoryName || extraItems.length > 0 || showResult) && (
-              <button onClick={resetForm}
-                className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-white/25 hover:text-red-400 transition-colors text-xs cursor-pointer py-1 px-1.5 rounded hover:bg-white/5"
-                title="Vymazať všetky údaje">
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
+            {/* Trash — neprihlásený stav */}
+            {!loggedClient && !clientOverride && (quantity || distance || address || categoryName || extraItems.length > 0 || showResult) && (
+              <div className="flex justify-end mt-1">
+                <button onClick={resetForm} title="Vymazať všetky údaje"
+                  className="flex items-center text-white/20 hover:text-red-400 transition-colors cursor-pointer p-1.5 rounded hover:bg-white/5 border border-white/10 hover:border-red-400/30">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
             )}
           </div>
 
