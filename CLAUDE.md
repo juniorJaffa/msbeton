@@ -54,6 +54,22 @@ Pre každú položku (hlavnú aj extra):
 
 Služby vždy **pod dopravou**.
 
+### Kalkulačka – extra položky (Pridaná položka)
+
+- Input form header: `Položka {idx+1}` (1-based, bez kategórie v nadpise)
+- Result UI header: `Pridaná položka {idx}` kde idx pochádza z `concreteBreakdown.map((ci, idx)`, teda `idx=1` = prvá extra
+- Items s prázdnym množstvom → **vylúčené z výpočtu** (`if (t && q > 0)` v calc loop) → červená karta + badge „nie je zahrnutá" ak `showResult && !item.quantity`
+
+### Admin Klienti – bezpečnostné pravidlá
+
+- loginId `"msbeton"` **blokovaný** pri vytváraní aj editácii
+- Default heslo pri novom klientovi: `"1234"`, loginId prázdny (povinný vstup)
+- `autoComplete="off"` / `"new-password"` zamedzuje browser autofill do formulára
+
+### Admin Klienti – Typ dopravy
+
+Používa **pill toggle tlačidlá** (nie native `<select>`). Dôvod: iOS native `<select>` vždy zobrazí floating picker overlay bez ohľadu na CSS. Platí pre nový formulár aj expanded detail klienta.
+
 ### Testovacie prihlasovacie údaje
 
 | Rola | Login ID | Heslo | Poznámka |
@@ -168,6 +184,8 @@ Všetky operácie používajú `INSERT … ON CONFLICT DO UPDATE` — pri zmená
 - Primárna farba: `#EDC531` (zlatá), Sekundárna: `#001D3D` (navy)
 - Betónové textúry v `src/index.css`: `.concrete-bg` (raw), `.concrete-navy` (tmavé sekcie s navy overlay), `.concrete-light` (svetlé sekcie — overlay `rgba(234,231,226,0.58)` pre viditeľnú textúru)
 - Tailwind v4 (Oxide compiler) — konfig je vo `vite.config.ts` cez `@tailwindcss/vite`, žiadny `tailwind.config.js`
+- **`bg-navy` neexistuje** v Tailwind v4 konfig — správne je `bg-secondary` (`#001D3D`)
+- `VersionChecker` banner: `fixed bottom-20 sm:bottom-4` — `bottom-20` zaručuje priestor nad mobilným nav (h-16)
 
 ### Produkčný deployment
 
@@ -182,6 +200,8 @@ ssh -i ~/.ssh/id_ed25519_claude root@178.104.62.115 "cd /var/www/msbeton && git 
 
 - `pnpm run build` na serveri ZLYHÁ kvôli pre-existujúcim framer-motion TS chybám v `Home.tsx` — vždy build web + API zvlášť
 - `DATABASE_URL` je v `ecosystem.config.cjs` (nie v `.env` súbore)
+- SMTP je v `ecosystem.config.cjs`: `SMTP_HOST: 'mail.webglobe.sk'`, port `587` STARTTLS. Port 465 je na VPS blokovaný.
+- PM2 `--update-env` **nenačíta** nové env z `ecosystem.config.cjs` — treba `pm2 delete msbeton-api && pm2 start ecosystem.config.cjs`
 - SSH kľúč: `id_ed25519_claude` (GitHub Secret: `itikon-claude-code`)
 
 Na serveri beží PostgreSQL — `DATABASE_URL` je nastavená v `ecosystem.config.cjs` pre pm2.

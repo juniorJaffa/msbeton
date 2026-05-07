@@ -13,26 +13,28 @@ Generuje HTML blob, otvorí v novom tabe + `window.print()`.
 ```
 thead: # | Popis | Množstvo | Jedn. cena | Spolu
 
-sectionRow("Produkty")
+sectionRow("Produkty – {mainBetonLabel}")   ← zlatý, mainBetonLabel = ci.label bez qty
   betonRows         ← IBA concreteBreakdown[0] (hlavná položka)
   transportRow      ← concreteBreakdown[0].transport (nie origItems.transport!)
   fillupRow         ← concreteBreakdown[0].transportFillup
   zimneRow          ← totalQty × zimneServicePrice (globálne)
-
-sluzbyRows          ← iba pumpa; per-item hodnoty hlavnej položky (nie aggregate)
-  Čerpanie (main pumpHour/pumpMin)
-  Hadice (main hoseMeters)
-  Umývanie (main washing)
-  Rozbehová chémia
-  Čakačky (main waitIntervals)
+  subSectionRow("Služby – Pumpa" | "Čakačky")  ← svetlo-zlatý, iba ak hasMainSluzby
+    Čerpanie / Hadice / Umývanie / Chémia / Čakačky (main values)
 
 extraRows           ← loop cez concreteBreakdown.slice(1)
-  sectionRow("Položka N – Betón C25/30")
+  sectionRow("Pridaná položka N – {kategória}")   ← N = idx+1 (1-based)
   betón row
   doprava row (ak transport > 0)
   doťaženie row (ak transportFillup > 0)
-  čerpanie / hadice / umývanie / čakačky (ak svcXxxCost > 0)
+  subSectionRow("Služby – Pumpa" | "Čakačky")  ← iba ak hasExtraSvc
+    čerpanie / hadice / umývanie / čakačky (ak svcXxxCost > 0)
 ```
+
+**Dve úrovne section row:**
+- `sectionRow(title)` → `background:#EDC531` (zlatý) — pre položky
+- `subSectionRow(title)` → `background:#fdf6d8` + `padding-left:18px` (svetlo-zlatý) — pre služby pod položkou
+
+Items s `qty=0` (prázdne množstvo) **nie sú** v `concreteBreakdown` → nikdy sa neobjavia v PDF.
 
 > **Kľúčový bug pattern**: `origItems.transport` = **súčet všetkých** položiek. Pre hlavnú položku v PDF vždy použi `concreteBreakdown[0].transport * dopravaFactor`.
 
