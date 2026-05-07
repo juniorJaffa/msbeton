@@ -1388,17 +1388,25 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                   />
                 </div>
                 {tab !== "vlastnadoprava" && (
-                  <label className="flex items-center gap-2.5 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={item.noTransport ?? false}
-                      onChange={(e) => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, noTransport: e.target.checked } : i)); setShowResult(false); }}
-                      className="w-4 h-4 accent-primary cursor-pointer"
-                    />
-                    <span className={cn("text-sm transition-colors", item.noTransport ? "text-primary font-semibold" : "text-white/60 group-hover:text-white/80")}>
-                      Nezapočítať dopravu
-                    </span>
-                  </label>
+                  <div>
+                    <label className="block text-xs font-semibold text-white/50 uppercase tracking-wide mb-1.5">Doprava</label>
+                    <div className="flex bg-white/8 rounded-lg p-0.5 gap-0.5 border border-white/10 w-fit">
+                      <button type="button"
+                        onClick={() => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, noTransport: false } : i)); setShowResult(false); }}
+                        className={cn("px-3 py-1.5 rounded-md text-xs font-black tracking-wide transition-all flex items-center gap-1",
+                          !item.noTransport ? "bg-primary text-navy shadow-sm" : "text-white/40 hover:text-white/70"
+                        )}>
+                        <Truck className="w-3 h-3" /> Započítať
+                      </button>
+                      <button type="button"
+                        onClick={() => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, noTransport: true } : i)); setShowResult(false); }}
+                        className={cn("px-3 py-1.5 rounded-md text-xs font-black tracking-wide transition-all",
+                          item.noTransport ? "bg-white/20 text-white shadow-sm" : "text-white/40 hover:text-white/70"
+                        )}>
+                        Bez dopravy
+                      </button>
+                    </div>
+                  </div>
                 )}
                 {/* + Pridať Služby per extra item */}
                 {!item.svc && tab !== "vlastnadoprava" && (
