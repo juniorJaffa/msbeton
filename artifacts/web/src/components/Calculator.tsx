@@ -1591,7 +1591,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 {/* Čakačky */}
                 <div className="border border-white/10 rounded-lg p-3 bg-white/5">
                   <div className="text-xs font-semibold text-white/70 mb-0.5">Čakačky</div>
-                  <div className="text-[10px] text-white/35 mb-2">{waitServicePricePumpa.toFixed(2)} €/15 min</div>
+                  <div className="text-[10px] text-white/35 mb-2 min-h-[2rem] flex items-start">{waitServicePricePumpa.toFixed(2)} €/15 min</div>
                   <div className="flex items-center gap-2">
                     <button type="button"
                       onClick={() => { setWaitPiecesPumpa(Math.max(0, waitPiecesPumpa - 1)); setShowResult(false); }}
@@ -1618,7 +1618,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 {/* Prídavné hadice */}
                 <div className="border border-white/10 rounded-lg p-3 bg-white/5">
                   <div className="text-xs font-semibold text-white/70 mb-0.5">Prídavné hadice</div>
-                  <div className="text-[10px] text-white/35 mb-2">bežné metre · max {hoseMaxMeters} m</div>
+                  <div className="text-[10px] text-white/35 mb-2 min-h-[2rem] flex items-start">bm · max {hoseMaxMeters} m</div>
                   <div className="flex items-center gap-2">
                     <button type="button"
                       onClick={() => { setHoseMeters(Math.max(0, hoseMeters - 1)); setShowResult(false); }}
