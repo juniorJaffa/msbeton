@@ -1088,6 +1088,14 @@ function KlientiTab() {
     if (!form.firstName.trim() && !form.lastName.trim() && !form.company.trim()) return;
     const newId = adminData.generateId();
     const newLoginId = form.loginId.trim();
+    if (newLoginId.toLowerCase() === "msbeton") {
+      alert("Login ID 'msbeton' je rezervované pre administrátora. Zvoľ iné ID.");
+      return;
+    }
+    if (newLoginId && clients.some(c => c.loginId?.toLowerCase() === newLoginId.toLowerCase())) {
+      alert(`Login ID '${newLoginId}' už existuje. Zvoľ iné ID.`);
+      return;
+    }
     const clientName = [form.firstName.trim(), form.lastName.trim()].filter(Boolean).join(" ") || form.company.trim();
     save([...clients, {
       id: newId,
@@ -1546,7 +1554,11 @@ function KlientiTab() {
                         <div className="border border-gray-200 bg-white divide-y divide-gray-100 mb-2">
                           <div className="flex items-center gap-2 px-3 py-2">
                             <span className="text-gray-400 text-xs w-14 shrink-0">Login ID</span>
-                            <EditableField value={c.loginId || "—"} onSave={v => update(c.id, { loginId: v })} />
+                            <EditableField value={c.loginId || "—"} onSave={v => {
+                              if (v.toLowerCase() === "msbeton") { alert("Login ID 'msbeton' je rezervované."); return; }
+                              if (clients.some(other => other.id !== c.id && other.loginId?.toLowerCase() === v.toLowerCase())) { alert(`Login ID '${v}' už existuje.`); return; }
+                              update(c.id, { loginId: v });
+                            }} />
                           </div>
                           <div className="flex items-center gap-2 px-3 py-2">
                             <span className="text-gray-400 text-xs w-14 shrink-0">Heslo</span>
