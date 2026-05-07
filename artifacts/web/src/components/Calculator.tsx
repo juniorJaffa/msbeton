@@ -260,7 +260,7 @@ export function ConcreteCalculator() {
   }, []);
 
   useEffect(() => {
-    if (loggedClient && !loggedClient.canHotovost && priceMode === "hotovost") {
+    if ((!loggedClient || !loggedClient.canHotovost) && priceMode === "hotovost") {
       setPriceMode("faktura");
     }
     // Auto-zapni zimné opatrenia ak klient má povolené a je aktívne obdobie
@@ -1586,7 +1586,7 @@ export function ConcreteCalculator() {
 
               {/* HOTOVOSŤ / FAKTÚRA tabs */}
               {(() => {
-                const showHotovost = !loggedClient || loggedClient.canHotovost;
+                const showHotovost = !!(loggedClient && (loggedClient.canHotovost ?? true));
                 const modes = showHotovost ? (["faktura", "hotovost"] as PriceMode[]) : (["faktura"] as PriceMode[]);
                 return (
                   <>
