@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { LogOut, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown } from "lucide-react";
+import { LogOut, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
@@ -1439,10 +1439,16 @@ function KlientiTab() {
                       </span>
                     )}
                   </div>
-                  {/* Always: chevron + table + delete */}
+                  {/* Always: chevron + calc (mobile) + table + delete */}
                   <span className="p-1 text-gray-400">
                     {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                   </span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setExpanded(c.id); setClientDetailTab(prev => ({ ...prev, [c.id]: "kalkulacka" })); }}
+                    title="Kalkulačka klienta"
+                    className="sm:hidden p-1 text-gray-300 hover:text-primary transition-colors">
+                    <Calculator className="w-4 h-4" />
+                  </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); setTablePdfModal(c); setTablePdfMode("faktura"); }}
                     title="Zľavové tabuľky"
