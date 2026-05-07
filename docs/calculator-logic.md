@@ -126,11 +126,24 @@ Extra položky sa pridávajú do `concreteBreakdown` (index 1+) v `useMemo`:
 
 ```typescript
 for (const item of extraItems) {
-  const extraTC = (isOwn || item.noTransport) ? zeroTC : calcTransport(km, q, tab, ...)
-  // ... vypočíta betón + transport + per-item svc
-  concreteBreakdown.push({ ... })
+  const q = parseFloat(item.quantity) || 0;
+  if (t && q > 0) {                        // ← qty musí byť > 0, inak položka vynechaná
+    const extraTC = (isOwn || item.noTransport) ? zeroTC : calcTransport(km, q, tab, ...)
+    // ... vypočíta betón + transport + per-item svc
+    concreteBreakdown.push({ ... })
+  }
 }
 ```
+
+> **Dôsledok qty guard**: Item s prázdnym/nulovým množstvom **nikdy nevstúpi** do `concreteBreakdown` — nezobrazí sa v UI výsledku ani v PDF. UI zobrazí červenú kartu + badge „nie je zahrnutá" ak `showResult && !item.quantity`.
+
+### UI labely extra položiek
+
+| Miesto | Formát |
+|--------|--------|
+| Input form header | `Položka {idx+1}` (1-based, bez kategórie) |
+| Result panel | `Pridaná položka {idx}` kde idx = index v `concreteBreakdown.map` (1 = prvá extra) |
+| PDF section header | `Pridaná položka {idx+1} – {kategória}` kde `kategória = ci.label.replace(/ – [\d.,]+ m³$/, "")` |
 
 `origItems.transport` je **súčet** transport nákladov všetkých položiek. Pri PDF exporte **nepoužívaj** `origItems.transport` pre hlavnú položku — použi `concreteBreakdown[0].transport`.
 
