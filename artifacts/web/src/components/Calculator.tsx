@@ -211,7 +211,7 @@ function PriceRow({ label, original, discounted, hasDiscount, isFillup }: { labe
   );
 }
 
-export function ConcreteCalculator() {
+export function ConcreteCalculator({ clientOverride }: { clientOverride?: import("@/lib/clientAuth").LoggedClient } = {}) {
   const [tab, setTab] = useState<Tab>("pumpa");
   const [deliveryMode, setDeliveryMode] = useState<"distance" | "address">("distance");
   const [distance, setDistance] = useState("");
@@ -233,7 +233,7 @@ export function ConcreteCalculator() {
   const [washing, setWashing] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [priceMode, setPriceMode] = useState<PriceMode>("faktura");
-  const [loggedClient, setLoggedClient] = useState<LoggedClient | null>(() => clientAuth.getLoggedClient());
+  const [loggedClient, setLoggedClient] = useState<LoggedClient | null>(() => clientOverride ?? clientAuth.getLoggedClient());
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [loginId, setLoginId] = useState("");
   const [loginPwd, setLoginPwd] = useState("");
@@ -291,6 +291,7 @@ export function ConcreteCalculator() {
   }, []);
 
   useEffect(() => {
+    if (clientOverride) return;
     const handler = () => setLoggedClient(clientAuth.getLoggedClient());
     window.addEventListener("client-session-changed", handler);
     return () => window.removeEventListener("client-session-changed", handler);
@@ -1142,20 +1143,8 @@ export function ConcreteCalculator() {
         {/* LEFT: Form */}
         <div className="p-6 space-y-5">
 
-          {/* Reset button — zobrazí sa len keď je čo vymazať */}
-          {(quantity || distance || address || categoryName || extraItems.length > 0 || showResult) && (
-            <div className="flex justify-end -mb-2">
-              <button onClick={resetForm}
-                className="flex items-center gap-1.5 text-white/30 hover:text-red-400 transition-colors text-xs cursor-pointer py-1 px-2 rounded hover:bg-white/5"
-                title="Vymazať všetky údaje">
-                <Trash2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Vymazať</span>
-              </button>
-            </div>
-          )}
-
           {/* Client login bar */}
-          <div className="py-2 border-b border-white/10">
+          <div className="py-2 border-b border-white/10 relative">
             {loggedClient ? (
               <div className="w-full">
                 <div className="flex items-center justify-between gap-2 min-w-0">
@@ -1180,9 +1169,11 @@ export function ConcreteCalculator() {
                       <Table2 className="w-5 h-5" />
                       <span className="hidden sm:inline whitespace-nowrap">Moje ceny</span>
                     </button>
+                    {!clientOverride && (
                     <button onClick={handleLogout} className="flex items-center gap-1.5 text-white/40 hover:text-white/70 text-xs transition-colors cursor-pointer border border-white/15 rounded px-2.5 py-1.5">
                       <LogOut className="w-5 h-5" /><span className="whitespace-nowrap hidden sm:inline">Odhlásiť</span>
                     </button>
+                    )}
                   </div>
                 </div>
                 <AnimatePresence>
@@ -1214,6 +1205,7 @@ export function ConcreteCalculator() {
                 </AnimatePresence>
               </div>
             ) : (
+              !clientOverride ? (
               <div className="w-full">
                 <button onClick={() => setShowLoginForm(!showLoginForm)}
                   className="flex items-center gap-2 text-white/50 hover:text-primary text-xs transition-colors cursor-pointer">
@@ -1240,6 +1232,14 @@ export function ConcreteCalculator() {
                   )}
                 </AnimatePresence>
               </div>
+              ) : null
+            )}
+            {(quantity || distance || address || categoryName || extraItems.length > 0 || showResult) && (
+              <button onClick={resetForm}
+                className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-white/25 hover:text-red-400 transition-colors text-xs cursor-pointer py-1 px-1.5 rounded hover:bg-white/5"
+                title="Vymazať všetky údaje">
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
             )}
           </div>
 

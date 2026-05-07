@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { LogOut, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator } from "lucide-react";
+import { LogOut, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
+import { ConcreteCalculator } from "@/components/Calculator";
 import { PhoneInput } from "@/components/PhoneInput";
 import { cn, formatPhone } from "@/lib/utils";
 import { isLoggedIn, logout } from "@/lib/adminAuth";
@@ -985,6 +986,7 @@ function KlientiTab() {
   const [tablePdfMode, setTablePdfMode] = useState<"faktura" | "hotovost">("faktura");
   const [search, setSearch] = useState("");
   const [adding, setAdding] = useState(false);
+  const [clientDetailTab, setClientDetailTab] = useState<Record<string, "detail" | "calc">>({});
   const emptyForm = {
     firstName: "", lastName: "", company: "", email: "", phone: "",
     loginId: "", password: "",
@@ -1048,18 +1050,18 @@ function KlientiTab() {
     <div className="space-y-4">
       {/* Systémová DPH — editovateľná */}
       <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
+        <div className="px-4 py-2 border-b border-gray-100 bg-gray-50">
           <h3 className="font-black text-secondary text-sm uppercase tracking-widest">Systémová DPH</h3>
         </div>
         <div className="flex flex-wrap gap-px bg-gray-100">
-          <div className="bg-white px-5 py-3 flex-1 min-w-36">
+          <div className="bg-white px-3 py-2 flex-1 min-w-0">
             <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">DPH Faktúra</div>
             <div className="flex items-center gap-1 font-bold text-secondary text-sm">
               <EditableField value={Math.round((ts.dph ?? 0.23) * 100)} type="number"
                 onSave={v => saveTs({ ...ts, dph: (parseFloat(v) || 23) / 100 })} /> %
             </div>
           </div>
-          <div className="bg-white px-5 py-3 flex-1 min-w-56">
+          <div className="bg-white px-3 py-2 flex-1 min-w-0">
             <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">DPH Hotovosť — default</div>
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-1 font-bold text-secondary text-sm">
@@ -1083,7 +1085,7 @@ function KlientiTab() {
             </div>
             <div className="text-[10px] text-gray-400 mt-1">Platí pre klientov bez vlastnej DPH sadzby</div>
           </div>
-          <div className="bg-white px-5 py-3 flex-1 min-w-48 border-l border-gray-100">
+          <div className="bg-white px-3 py-2 flex-1 min-w-0 border-l border-gray-100">
             {(() => {
               const enabledCount = clients.filter(c => c.canHotovost !== false).length;
               const disabledCount = clients.length - enabledCount;
@@ -1224,7 +1226,7 @@ function KlientiTab() {
                 <div className="px-3 py-3">
                   <div className="text-xs text-gray-400 mb-1.5">Typ dopravy</div>
                   <select value={form.deliveryZoneId} onChange={e => setForm({ ...form, deliveryZoneId: e.target.value })}
-                    className="w-full border border-gray-200 px-2 py-2 text-sm focus:outline-none focus:border-primary bg-white">
+                    className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:border-secondary bg-white text-gray-700 appearance-none cursor-pointer shadow-sm">
                     {zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
                   </select>
                 </div>
@@ -1292,6 +1294,12 @@ function KlientiTab() {
                   <div className="font-bold text-secondary text-sm truncate">{fullName}</div>
                   {c.company && <div className="text-xs text-gray-400 truncate">{c.company}</div>}
                 </div>
+                {/* Mobile: max discount badge */}
+                {maxDisc > 0 && (
+                  <div className="sm:hidden flex items-center">
+                    <span className="text-xs font-bold text-primary">-{maxDisc}%</span>
+                  </div>
+                )}
                 {/* Zľavy — skryté na mobile, viditeľné od sm */}
                 <div className="hidden sm:flex flex-1 items-center">
                   {[
@@ -1350,6 +1358,20 @@ function KlientiTab() {
               {/* Expanded detail */}
               {isExpanded && (
                 <div className="border-t border-gray-100 bg-gray-50/60">
+
+                  {/* Tab bar: Detail | Kalkulačka */}
+                  <div className="flex border-b border-gray-200 bg-white">
+                    <button
+                      onClick={() => setClientDetailTab(prev => ({ ...prev, [c.id]: "detail" }))}
+                      className={cn("flex-1 py-2 text-xs font-black uppercase tracking-wide transition-colors", (clientDetailTab[c.id] ?? "detail") === "detail" ? "border-b-2 border-secondary text-secondary" : "text-gray-400 hover:text-gray-600")}
+                    >Detail</button>
+                    <button
+                      onClick={() => setClientDetailTab(prev => ({ ...prev, [c.id]: "calc" }))}
+                      className={cn("flex-1 py-2 text-xs font-black uppercase tracking-wide transition-colors", clientDetailTab[c.id] === "calc" ? "border-b-2 border-secondary text-secondary" : "text-gray-400 hover:text-gray-600")}
+                    >Kalkulačka</button>
+                  </div>
+
+                  {(clientDetailTab[c.id] ?? "detail") === "detail" && (<>
 
                   {/* Zľavy – prominentný pás hore */}
                   <div className="px-4 py-3 bg-white border-b border-gray-100">
@@ -1545,36 +1567,29 @@ function KlientiTab() {
                     )}
                   </div>
 
-                  {/* Simulovať klienta v kalkulačke */}
-                  <div className="px-4 py-3 border-t border-gray-100 flex justify-end">
-                    <button
-                      onClick={() => {
-                        const session = {
-                          id: c.id,
-                          clientId: c.clientId,
-                          name: c.name,
-                          company: c.company ?? "",
-                          phone: c.phone ?? "",
-                          discountBeton: c.discountBeton ?? 0,
-                          discountDoprava: c.discountDoprava ?? 0,
-                          discountSluzby: c.discountSluzby ?? 0,
-                          discountCelkovo: c.discountCelkovo ?? 0,
-                          canHotovost: c.canHotovost ?? true,
-                          canPridatBeton: c.canPridatBeton ?? true,
-                          canZimneOpatrenia: c.canZimneOpatrenia ?? false,
-                          hotovostDph: c.hotovostDph,
-                          deliveryZoneId: c.deliveryZoneId,
-                          manualPrices: c.manualPrices,
-                        };
-                        localStorage.setItem("msbeton_client_session", JSON.stringify(session));
-                        window.open("/#calculator", "_blank");
-                      }}
-                      className="flex items-center gap-1.5 text-xs bg-secondary text-white px-3 py-1.5 rounded hover:bg-secondary/80 transition-colors"
-                    >
-                      <Calculator className="w-3.5 h-3.5" />
-                      Otvoriť kalkulačku ako klient
-                    </button>
-                  </div>
+                  </>)}
+
+                  {clientDetailTab[c.id] === "calc" && (
+                    <div className="bg-[#1e2a3a]">
+                      <ConcreteCalculator clientOverride={{
+                        id: c.id,
+                        clientId: (c as any).clientId,
+                        name: [c.firstName, c.lastName].filter(Boolean).join(" ") || c.company || c.id,
+                        company: c.company ?? "",
+                        phone: c.phone ?? "",
+                        discountBeton: c.discountBeton ?? 0,
+                        discountDoprava: c.discountDoprava ?? 0,
+                        discountSluzby: c.discountSluzby ?? 0,
+                        discountCelkovo: c.discountCelkovo ?? 0,
+                        canHotovost: c.canHotovost ?? true,
+                        canPridatBeton: c.canPridatBeton ?? true,
+                        canZimneOpatrenia: c.canZimneOpatrenia ?? false,
+                        hotovostDph: c.hotovostDph,
+                        deliveryZoneId: c.deliveryZoneId,
+                        manualPrices: c.manualPrices,
+                      }} />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
