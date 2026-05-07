@@ -792,16 +792,64 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       ? trow(`Zimné opatrenia`, `${result.qty}&nbsp;m³`, `${fmtN(zimneServicePrice)}&nbsp;€/m³`, origItems.zimne, baseItems.zimne)
       : "";
 
-    const hasSluzby = tab === "pumpa" && (origItems.pump + origItems.hoses + origItems.washing + origItems.chem + origItems.waiting) > 0;
-    const sluzbyRows = hasSluzby
+    // Main item services (pumpa only, first item — per-item values, not aggregated)
+    const mainPumpTime = (parseInt(pumpHour) || 1) + (parseInt(pumpMin) || 0) / 60;
+    const mainSluzbyOrig = {
+      pump: tab === "pumpa" ? mainPumpTime * pumpServicePrice : 0,
+      hoses: hoseMeters > 0 ? hoseMeters * hoseServicePrice : 0,
+      washing: washing ? washServicePrice : 0,
+      chem: tab === "pumpa" ? chemServicePrice : 0,
+      waiting: tab === "pumpa" ? result.waitIntervals * waitServicePricePumpa : tab === "mix" ? result.waitIntervals * waitServicePriceMix : 0,
+    };
+    const hasMainSluzby = tab === "pumpa" && (mainSluzbyOrig.pump + mainSluzbyOrig.hoses + mainSluzbyOrig.washing + mainSluzbyOrig.chem + mainSluzbyOrig.waiting) > 0;
+    const sluzbyRows = hasMainSluzby
       ? sectionRow("Služby") +
         trow(`Čerpanie betónu – ${result.pumpHrs}&nbsp;h${result.pumpMs > 0 ? `&nbsp;${result.pumpMs}&nbsp;min` : ""}`,
-          `${result.pumpHrs}&nbsp;h${result.pumpMs > 0 ? `&nbsp;${result.pumpMs}&nbsp;min` : ""}`, `${fmtN(pumpServicePrice)}&nbsp;€/h`, origItems.pump, baseItems.pump) +
-        (hoseMeters > 0 ? trow(`Prídavné hadice`, `${hoseMeters}&nbsp;m`, `${fmtN(hoseServicePrice)}&nbsp;€/m`, origItems.hoses, baseItems.hoses) : "") +
-        (origItems.washing > 0 ? trow("Umývanie mimo stavby", "1&nbsp;ks", `${fmtN(washServicePrice)}&nbsp;€`, origItems.washing, baseItems.washing) : "") +
-        (origItems.chem > 0 ? trow("Rozbehová chémia", "1&nbsp;ks", `${fmtN(chemServicePrice)}&nbsp;€`, origItems.chem, baseItems.chem) : "") +
-        (result.waitIntervals > 0 ? trow(`Čakačky – ${result.waitLabel}`, `${result.waitIntervals}&nbsp;×&nbsp;15&nbsp;min`, `${fmtN(waitServicePricePumpa)}&nbsp;€/int.`, origItems.waiting, baseItems.waiting) : "")
+          `${result.pumpHrs}&nbsp;h${result.pumpMs > 0 ? `&nbsp;${result.pumpMs}&nbsp;min` : ""}`, `${fmtN(pumpServicePrice)}&nbsp;€/h`, mainSluzbyOrig.pump, mainSluzbyOrig.pump * sluzbyFactor) +
+        (hoseMeters > 0 ? trow(`Prídavné hadice`, `${hoseMeters}&nbsp;m`, `${fmtN(hoseServicePrice)}&nbsp;€/m`, mainSluzbyOrig.hoses, mainSluzbyOrig.hoses * sluzbyFactor) : "") +
+        (washing ? trow("Umývanie mimo stavby", "1&nbsp;ks", `${fmtN(washServicePrice)}&nbsp;€`, mainSluzbyOrig.washing, mainSluzbyOrig.washing * sluzbyFactor) : "") +
+        (mainSluzbyOrig.chem > 0 ? trow("Rozbehová chémia", "1&nbsp;ks", `${fmtN(chemServicePrice)}&nbsp;€`, mainSluzbyOrig.chem, mainSluzbyOrig.chem * sluzbyFactor) : "") +
+        (result.waitIntervals > 0 ? trow(`Čakačky – ${result.waitLabel}`, `${result.waitIntervals}&nbsp;×&nbsp;15&nbsp;min`, `${fmtN(waitServicePricePumpa)}&nbsp;€/int.`, mainSluzbyOrig.waiting, mainSluzbyOrig.waiting * sluzbyFactor) : "")
       : "";
+
+    // Extra items (concreteBreakdown[1...])
+    const extraRows = result.concreteBreakdown.slice(1).map((ci, idx) => {
+      const betonOrig = isFaktura ? ci.bezDph : ci.bezDph * (1 + VAT_HOTOVOST);
+      const betonDisc = isFaktura ? ci.bezDphFinal : ci.bezDphFinalHotovost;
+      const unitPriceOrig = ci.qty > 0 ? betonOrig / ci.qty : 0;
+      const unitPrice = ci.qty > 0 ? betonDisc / ci.qty : 0;
+      const unitStr = hasDiscount && Math.abs(unitPriceOrig - unitPrice) > 0.001
+        ? `<span style="text-decoration:line-through;color:#bbb;font-size:7.5pt">${fmtN(unitPriceOrig)}&nbsp;€/m³</span><br>${fmtN(unitPrice)}&nbsp;€/m³`
+        : `${fmtN(unitPrice)}&nbsp;€/m³`;
+      const transOrig = ci.transport;
+      const transDisc = ci.transport * dopravaFactor;
+      const fillupOrig = ci.transportFillup;
+      const fillupDisc = ci.transportFillup * dopravaFactor;
+      const pdfExtraTrucks = tab === "pumpa"
+        ? `1×Pumpa${ci.transportTrucks > 1 ? `+${ci.transportTrucks - 1}×Mix` : ""}`
+        : `${ci.transportTrucks}×Mix`;
+      const dopravaExtraLabel = `${ci.transportIsMin ? "Min. doprava" : "Doprava"}${pdfZone ? ` ${pdfZone}` : ""} · ${pdfExtraTrucks}`;
+      const extraBetonLabel = ci.label.replace(/ – [\d.,]+ m³$/, "");
+      let rows = sectionRow(`Položka ${idx + 2} – ${extraBetonLabel}`);
+      rows += trow(ci.label, `${ci.qty}&nbsp;m³`, unitStr, betonOrig, betonDisc);
+      rows += trow(dopravaExtraLabel, `${ci.qty}&nbsp;m³`, "—", transOrig, transDisc);
+      rows += trow(`Doťaženie do&nbsp;${ci.transportFillupTarget}&nbsp;m³`, `${ci.transportFillupM3}&nbsp;m³`, "—", fillupOrig, fillupDisc);
+      if (ci.svcPumpCost > 0) {
+        const pumpTimeStr = ci.svcPumpMs > 0 ? `${ci.svcPumpHrs}&nbsp;h&nbsp;${ci.svcPumpMs}&nbsp;min` : `${ci.svcPumpHrs}&nbsp;h`;
+        rows += trow(`Čerpanie betónu – ${pumpTimeStr}`, pumpTimeStr, `${fmtN(pumpServicePrice)}&nbsp;€/h`, ci.svcPumpCost, ci.svcPumpCost * sluzbyFactor);
+      }
+      if (ci.svcHoseCost > 0) {
+        rows += trow(`Prídavné hadice`, `${ci.svcHoseMeters}&nbsp;m`, `${fmtN(hoseServicePrice)}&nbsp;€/m`, ci.svcHoseCost, ci.svcHoseCost * sluzbyFactor);
+      }
+      if (ci.svcWashCost > 0) {
+        rows += trow("Umývanie mimo stavby", "1&nbsp;ks", `${fmtN(washServicePrice)}&nbsp;€`, ci.svcWashCost, ci.svcWashCost * sluzbyFactor);
+      }
+      if (ci.svcWaitCost > 0) {
+        const waitRate = tab === "pumpa" ? waitServicePricePumpa : waitServicePriceMix;
+        rows += trow(`Čakačky – ${ci.svcWaitLabel}`, `${ci.svcWaitIntervals}&nbsp;×&nbsp;15&nbsp;min`, `${fmtN(waitRate)}&nbsp;€/int.`, ci.svcWaitCost, ci.svcWaitCost * sluzbyFactor);
+      }
+      return rows;
+    }).join("");
 
     const discountInfo = (() => {
       if (!hasDiscount) return "";
@@ -888,16 +936,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     ${fillupRow}
     ${zimneRow}
     ${sluzbyRows}
+    ${extraRows}
   </table>
 
   <!-- Total -->
   ${totalBlock}
-
-  <!-- Vypracovala spoločnosť -->
-  <div style="margin-top:10mm;text-align:center;font-size:9.5pt;color:#555;margin-bottom:3mm">Vypracovala spoločnosť</div>
-  <div style="border:1.5px solid #c8c8d8;border-radius:4px;padding:8mm 14mm;text-align:center;margin-bottom:8mm">
-    <img src="${window.location.origin}/ms-beton-watermark.png" style="width:80mm;height:auto;opacity:0.18" />
-  </div>
 
   <!-- Footer -->
   <div style="padding-top:4mm;border-top:1px solid #ddd;font-size:7.5pt;color:#888;line-height:1.7">
