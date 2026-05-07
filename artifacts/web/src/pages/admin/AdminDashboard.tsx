@@ -1917,12 +1917,12 @@ export default function AdminDashboard() {
 
   const handleLogout = () => { logout(); navigate("/admin/login"); };
 
-  const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: "klienti", label: "KLIENTI", icon: <Users className="w-4 h-4" /> },
-    { id: "objednavky", label: "OBJEDNÁVKY", icon: <ClipboardList className="w-4 h-4" /> },
-    { id: "doprava", label: "DOPRAVA", icon: <Truck className="w-4 h-4" /> },
-    { id: "sluzby", label: "SLUŽBY", icon: <Wrench className="w-4 h-4" /> },
-    { id: "betony", label: "BETÓNY", icon: <Layers className="w-4 h-4" /> },
+  const tabs: { id: Tab; label: string; short: string; icon: React.ReactNode }[] = [
+    { id: "klienti",    label: "KLIENTI",    short: "KLIENTI",  icon: <Users className="w-5 h-5" /> },
+    { id: "objednavky", label: "OBJEDNÁVKY", short: "OBJED.",   icon: <ClipboardList className="w-5 h-5" /> },
+    { id: "doprava",    label: "DOPRAVA",    short: "DOPRAVA",  icon: <Truck className="w-5 h-5" /> },
+    { id: "sluzby",     label: "SLUŽBY",     short: "SLUŽBY",   icon: <Wrench className="w-5 h-5" /> },
+    { id: "betony",     label: "BETÓNY",     short: "BETÓNY",   icon: <Layers className="w-5 h-5" /> },
   ];
 
   return (
@@ -1945,14 +1945,32 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-        {/* Tab bar */}
-        <div className="flex gap-1 mb-6 bg-white border border-gray-200 p-1 shadow-sm overflow-x-auto">
+      {/* Mobile bottom nav */}
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-[0_-2px_12px_rgba(0,0,0,0.08)]"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <div className="flex items-stretch h-16">
+          {tabs.map(t => (
+            <button key={t.id} onClick={() => { setTab(t.id); window.location.hash = t.id; }}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${
+                tab === t.id ? "text-primary" : "text-gray-400 hover:text-gray-600"
+              }`}>
+              <span className={`transition-transform duration-150 ${tab === t.id ? "scale-110" : ""}`}>{t.icon}</span>
+              <span className={`text-[8px] font-black uppercase tracking-wide leading-none transition-all duration-150 ${tab === t.id ? "opacity-100" : "opacity-0 h-0 overflow-hidden"}`}>
+                {t.short}
+              </span>
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 pb-24 sm:pb-8">
+        {/* Tab bar — desktop only */}
+        <div className="hidden sm:flex gap-1 mb-6 bg-white border border-gray-200 p-1 shadow-sm">
           {tabs.map(t => (
             <button
               key={t.id}
               onClick={() => { setTab(t.id); window.location.hash = t.id; }}
-              className={`flex items-center gap-1.5 px-3 sm:px-5 py-2.5 text-xs sm:text-sm font-black uppercase tracking-wide sm:tracking-widest transition-all shrink-0 ${
+              className={`flex items-center gap-1.5 px-5 py-2.5 text-sm font-black uppercase tracking-widest transition-all shrink-0 ${
                 tab === t.id
                   ? "bg-secondary text-white"
                   : "text-gray-500 hover:text-secondary hover:bg-gray-50"
