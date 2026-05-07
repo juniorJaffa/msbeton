@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Truck, LogIn, LogOut, FileText, MessageSquare, Minus, Plus, Trash2, Table2, ShoppingCart, X, Info } from "lucide-react";
+import { ChevronDown, Truck, LogIn, LogOut, FileText, MessageSquare, Minus, Plus, Trash2, Table2, ShoppingCart, X, Info, Check } from "lucide-react";
 import { cn, formatPhone } from "@/lib/utils";
 import { PhoneInput } from "@/components/PhoneInput";
 import { adminData } from "@/lib/adminData";
@@ -1935,8 +1935,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     className={cn("flex items-center justify-center gap-2 py-3 border transition-all text-sm font-semibold cursor-pointer rounded-sm focus:outline-none",
                       smsCopied ? "border-primary text-primary" : "border-white/20 text-white/70 hover:border-primary hover:text-primary"
                     )}>
-                    <MessageSquare className="w-4 h-4 shrink-0" />
-                    <span className="whitespace-nowrap">{smsCopied ? "SKOPÍROVANÉ!" : "EXPORT SMS"}</span>
+                    {smsCopied ? <Check className="w-4 h-4 shrink-0" /> : <MessageSquare className="w-4 h-4 shrink-0" />}
+                    {smsCopied ? "OK" : "EXPORT SMS"}
                   </button>
                 </div>
 
