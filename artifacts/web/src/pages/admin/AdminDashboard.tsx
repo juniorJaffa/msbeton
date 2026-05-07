@@ -1314,12 +1314,18 @@ function KlientiTab() {
                 </label>
                 <div className="px-3 py-3">
                   <div className="text-xs text-gray-400 mb-1.5">Typ dopravy</div>
-                  <div className="relative">
-                    <select value={form.deliveryZoneId} onChange={e => setForm({ ...form, deliveryZoneId: e.target.value })}
-                      className="w-full border border-gray-200 rounded px-3 py-2.5 pr-8 text-sm focus:outline-none focus:border-secondary bg-white text-gray-700 cursor-pointer">
-                      {zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
-                    </select>
-                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  <div className="flex gap-1">
+                    {zones.map(z => (
+                      <button key={z.id} type="button"
+                        onClick={() => setForm({ ...form, deliveryZoneId: z.id })}
+                        className={`flex-1 py-2 px-1 text-xs font-semibold border rounded transition-colors ${
+                          form.deliveryZoneId === z.id
+                            ? "bg-secondary text-white border-secondary"
+                            : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"
+                        }`}>
+                        {z.name}
+                      </button>
+                    ))}
                   </div>
                 </div>
                 <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
@@ -1616,17 +1622,18 @@ function KlientiTab() {
                           </label>
                           <div className="px-3 py-2.5">
                             <div className="text-xs text-gray-400 mb-1">Typ dopravy</div>
-                            <div className="relative">
-                              <select
-                                value={c.deliveryZoneId ?? ""}
-                                onChange={e => update(c.id, { deliveryZoneId: e.target.value || undefined })}
-                                className="w-full border border-gray-200 px-2 py-1.5 pr-7 text-sm focus:outline-none focus:border-primary bg-white cursor-pointer"
-                              >
-                                {adminData.getDelivery().map(z => (
-                                  <option key={z.id} value={z.id}>{z.name}</option>
-                                ))}
-                              </select>
-                              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                            <div className="flex gap-1">
+                              {adminData.getDelivery().map(z => (
+                                <button key={z.id} type="button"
+                                  onClick={() => update(c.id, { deliveryZoneId: z.id })}
+                                  className={`flex-1 py-1.5 px-1 text-xs font-semibold border rounded transition-colors ${
+                                    (c.deliveryZoneId ?? adminData.getDelivery()[0]?.id) === z.id
+                                      ? "bg-secondary text-white border-secondary"
+                                      : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"
+                                  }`}>
+                                  {z.name}
+                                </button>
+                              ))}
                             </div>
                             {clientZone && (
                               <div className="mt-1 text-[11px] text-blue-600 font-medium">
