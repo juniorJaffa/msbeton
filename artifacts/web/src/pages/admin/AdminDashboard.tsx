@@ -1592,7 +1592,7 @@ function KlientiTab() {
                     <div className="bg-[#1e2a3a]">
                       <ConcreteCalculator clientOverride={{
                         id: c.id,
-                        clientId: (c as any).clientId,
+                        clientId: c.loginId ?? "",
                         name: [c.firstName, c.lastName].filter(Boolean).join(" ") || c.company || c.id,
                         company: c.company ?? "",
                         phone: c.phone ?? "",
