@@ -201,7 +201,7 @@ function MixTruckIcon() {
 
 // ── DOPRAVA tab ───────────────────────────────────────────────────────────────
 const ZONE_TYPES: { key: "standard" | "km" | "auto"; label: string; desc: string; rateLabel: string; rateUnit: string }[] = [
-  { key: "standard", label: "Štandard",    desc: "sadzba €/km × objem",         rateLabel: "Sadzba za km",     rateUnit: "€/km" },
+  { key: "standard", label: "Štandard",    desc: "cena podľa km pásiem × objem", rateLabel: "Sadzba za km",     rateUnit: "€/km" },
   { key: "km",       label: "Kilometre",   desc: "sadzba €/km × m³ × vzdialenosť", rateLabel: "Sadzba €/km × m³", rateUnit: "€/km×m³" },
   { key: "auto",     label: "Počet áut",   desc: "paušál za každé vozidlo",     rateLabel: "Paušál / vozidlo", rateUnit: "€/vozidlo" },
 ];
@@ -345,12 +345,17 @@ function DopravaTab() {
             return (
               <div key={zt.key} className="border-b border-gray-100 last:border-b-0">
                 {/* Numbered type header */}
-                <div className="flex items-center gap-3 px-5 py-2 bg-gray-50/40">
+                <div className="flex items-center gap-3 px-5 py-2 bg-gray-50/40 flex-wrap">
                   <span className="w-5 h-5 rounded-full bg-secondary text-white text-[10px] font-black flex items-center justify-center flex-shrink-0">
                     {idx + 1}
                   </span>
                   <span className="font-black text-secondary text-sm">{zt.label}</span>
                   <span className="text-[11px] text-gray-400">{zt.desc}</span>
+                  {zt.key === "standard" && (
+                    <span className="text-[10px] text-blue-600 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded-sm font-medium">
+                      Cena riadená Pásmami – Cenník → Doprava
+                    </span>
+                  )}
                 </div>
                 {/* Zóny tohto typu */}
                 {typeZones.map(z => (
@@ -362,9 +367,11 @@ function DopravaTab() {
                       <div className="text-right">
                         <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{zt.rateLabel}</div>
                         <div className="font-bold text-secondary">
-                          {zt.key === "auto"
-                            ? <><EditableField value={z.ratePerTruck ?? 0} type="number" onSave={v => updateZone(z.id, { ratePerTruck: parseFloat(v) })} /> {zt.rateUnit}</>
-                            : <><EditableField value={z.ratePerKm} type="number" onSave={v => updateZone(z.id, { ratePerKm: parseFloat(v) })} /> {zt.rateUnit}</>}
+                          {zt.key === "standard"
+                            ? <span className="text-[11px] text-blue-500 italic font-normal">z Pásiem</span>
+                            : zt.key === "auto"
+                              ? <><EditableField value={z.ratePerTruck ?? 0} type="number" onSave={v => updateZone(z.id, { ratePerTruck: parseFloat(v) })} /> {zt.rateUnit}</>
+                              : <><EditableField value={z.ratePerKm} type="number" onSave={v => updateZone(z.id, { ratePerKm: parseFloat(v) })} /> {zt.rateUnit}</>}
                         </div>
                       </div>
                       <div className="text-right">
@@ -397,9 +404,13 @@ function DopravaTab() {
               {addForm.pricingType === "auto" ? (
                 <input placeholder="Paušál / vozidlo (€)" type="number" value={addForm.ratePerTruck} onChange={e => setAddForm({ ...addForm, ratePerTruck: e.target.value })}
                   className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-              ) : (
+              ) : addForm.pricingType === "km" ? (
                 <input placeholder="Sadzba €/km" type="number" step="0.1" value={addForm.ratePerKm} onChange={e => setAddForm({ ...addForm, ratePerKm: e.target.value })}
                   className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+              ) : (
+                <div className="flex items-center px-3 py-2 border border-dashed border-blue-200 bg-blue-50 text-[11px] text-blue-500">
+                  Cena z Pásiem
+                </div>
               )}
               <input placeholder="Čerpanie pumpy (€/hod)" type="number" value={addForm.pumpHourlyRate} onChange={e => setAddForm({ ...addForm, pumpHourlyRate: e.target.value })}
                 className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
