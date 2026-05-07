@@ -1201,6 +1201,33 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         {/* LEFT: Form */}
         <div className="p-6 space-y-5">
 
+          {/* Mobile-only collapsible info — nad login bar, skryté na md+ aj po vypočítaní */}
+          <div className={cn("md:hidden -mt-1", showResult && "hidden")}>
+            <button
+              onClick={() => setTabInfoOpen(o => !o)}
+              className={cn("w-full flex items-center gap-2 px-3 py-2 text-left transition-colors",
+                tabInfoOpen
+                  ? "bg-primary/10 border border-primary/20 rounded-t-lg"
+                  : "bg-primary/10 border border-primary/20 rounded-lg"
+              )}
+            >
+              <Info className="w-4 h-4 text-primary shrink-0" />
+              <span className="text-xs font-semibold text-white/80 flex-1">
+                {tab === "pumpa" ? `Pumpa ${pumpCap}m³ · 28m rameno` : tab === "mix" ? `Domiešavač ${mixCap}m³` : "Vlastná doprava"}
+              </span>
+              <ChevronDown className={cn("w-3.5 h-3.5 text-white/40 transition-transform duration-150", tabInfoOpen && "rotate-180")} />
+            </button>
+            {tabInfoOpen && (
+              <div className="bg-primary/5 border border-primary/10 border-t-0 rounded-b-lg px-3 pb-2.5 pt-1.5">
+                <p className="text-xs text-white/60 leading-relaxed">
+                  {tab === "pumpa" && `Prvé auto ${pumpCap}m³, každé ďalšie ${mixCap}m³ (domiešavač). Čerpanie od príjazdu na stavbu.`}
+                  {tab === "mix" && `Prvých 30 min čakania bez poplatku. Čakanie každých začatých 15 min. Kapacita ${mixCap}m³.`}
+                  {tab === "vlastnadoprava" && "Zákazník si betón vyzdvihne vlastným vozidlom na prevádzke. Doprava sa nepočíta."}
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* Client login bar */}
           <div className="py-2 border-b border-white/10">
             {loggedClient ? (
@@ -1301,27 +1328,6 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
-            )}
-          </div>
-
-          {/* Mobile-only collapsible info — skryté na md+ aj po vypočítaní */}
-          <div className={cn("md:hidden", showResult && "hidden")}>
-            <button
-              onClick={() => setTabInfoOpen(o => !o)}
-              className="w-full flex items-center gap-1.5 px-1 py-1 text-white/40 hover:text-white/60 transition-colors"
-            >
-              <Info className="w-3.5 h-3.5 shrink-0" />
-              <span className="text-[11px]">
-                {tab === "pumpa" ? `Pumpa ${pumpCap}m³ · 28m rameno` : tab === "mix" ? `Domiešavač ${mixCap}m³` : "Vlastná doprava"}
-              </span>
-              <ChevronDown className={cn("w-3 h-3 ml-auto transition-transform", tabInfoOpen && "rotate-180")} />
-            </button>
-            {tabInfoOpen && (
-              <p className="text-xs text-white/50 px-1 pb-1 leading-relaxed">
-                {tab === "pumpa" && `Prvé auto ${pumpCap}m³, každé ďalšie ${mixCap}m³ (domiešavač). Čerpanie od príjazdu na stavbu.`}
-                {tab === "mix" && `Prvých 30 min čakania bez poplatku. Čakanie každých začatých 15 min. Kapacita ${mixCap}m³.`}
-                {tab === "vlastnadoprava" && "Zákazník si betón vyzdvihne vlastným vozidlom na prevádzke. Doprava sa nepočíta."}
-              </p>
             )}
           </div>
 
