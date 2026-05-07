@@ -991,6 +991,7 @@ function KlientiTab() {
     discountBeton: "20", discountDoprava: "0", discountSluzby: "0", discountCelkovo: "0",
     hotovostDph: "20",
     canHotovost: true, canPridatBeton: true, canZimneOpatrenia: false, active: true,
+    deliveryZoneId: zones.find(z => (z.pricingType ?? "standard") === "standard")?.id ?? zones[0]?.id ?? "",
   };
   const [form, setForm] = useState(emptyForm);
   const [showFormPass, setShowFormPass] = useState(false);
@@ -1015,6 +1016,7 @@ function KlientiTab() {
       canHotovost: form.canHotovost, canPridatBeton: form.canPridatBeton,
       canZimneOpatrenia: form.canZimneOpatrenia,
       active: form.active,
+      deliveryZoneId: form.deliveryZoneId || undefined,
     }]);
     setForm(emptyForm); setAdding(false);
   };
@@ -1204,6 +1206,13 @@ function KlientiTab() {
                   <input type="checkbox" checked={form.canZimneOpatrenia} onChange={e => setForm({ ...form, canZimneOpatrenia: e.target.checked })} className="accent-blue-600 w-5 h-5 shrink-0" />
                   <span className="text-sm text-gray-700">Zimné opatrenia (auto-ON v zime)</span>
                 </label>
+                <div className="px-3 py-3">
+                  <div className="text-xs text-gray-400 mb-1.5">Typ dopravy</div>
+                  <select value={form.deliveryZoneId} onChange={e => setForm({ ...form, deliveryZoneId: e.target.value })}
+                    className="w-full border border-gray-200 px-2 py-2 text-sm focus:outline-none focus:border-primary bg-white">
+                    {zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
+                  </select>
+                </div>
                 <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
                   <input type="checkbox" checked={form.active} onChange={e => setForm({ ...form, active: e.target.checked })} className="accent-green-600 w-5 h-5 shrink-0" />
                   <span className="text-sm text-gray-700">Prístup aktívny</span>
