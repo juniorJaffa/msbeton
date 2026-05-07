@@ -248,6 +248,7 @@ export function ConcreteCalculator() {
   const [orderForm, setOrderForm] = useState({ name: loggedClient?.name ?? "", phone: loggedClient?.phone ? formatPhone(loggedClient.phone) : "", email: "", note: "" });
   const [orderSubmitting, setOrderSubmitting] = useState(false);
   const [orderDone, setOrderDone] = useState(false);
+  const [priceTableMode, setPriceTableMode] = useState<"faktura" | "hotovost">("faktura");
 
   // Na mobile scrollni na výsledok, na desktop scrollni calc wrapper do view s navbar offsetom
   useEffect(() => {
@@ -458,7 +459,7 @@ export function ConcreteCalculator() {
 
     if (pType === "km") {
       const rate = dZone?.ratePerKm ?? 1.8;
-      const cost = km * rate * qty;
+      const cost = km * rate * trucks;
       const minCost = trucks * minimumFee;
       const isMin = trucks > 0 && cost / trucks < minimumFee;
       return { cost: isMin ? minCost : cost, isMin, fillupM3: 0, fillupCost: 0 };
@@ -1187,12 +1188,25 @@ export function ConcreteCalculator() {
                 <AnimatePresence>
                   {showPriceTable && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mt-3 overflow-hidden">
+                      <div className="flex gap-1 mb-2">
+                        <button
+                          onClick={() => setPriceTableMode("faktura")}
+                          className={`px-3 py-1 text-xs rounded font-medium transition-colors ${priceTableMode === "faktura" ? "bg-primary text-navy" : "bg-white/10 text-white/60 hover:bg-white/20"}`}
+                        >Faktúra</button>
+                        {loggedClient?.canHotovost && (
+                          <button
+                            onClick={() => setPriceTableMode("hotovost")}
+                            className={`px-3 py-1 text-xs rounded font-medium transition-colors ${priceTableMode === "hotovost" ? "bg-primary text-navy" : "bg-white/10 text-white/60 hover:bg-white/20"}`}
+                          >Hotovosť</button>
+                        )}
+                      </div>
                       <ClientPriceTable
                         discountBeton={discountBeton}
                         discountDoprava={discountDoprava}
                         discountSluzby={discountSluzby}
                         discountCelkovo={discountCelkovo}
                         manualPrices={loggedClient?.manualPrices}
+                        priceMode={priceTableMode}
                         variant="dark"
                       />
                     </motion.div>

@@ -14,6 +14,7 @@ const NotFound = lazy(() => import("@/pages/not-found"));
 const AdminLogin = lazy(() => import("@/pages/admin/AdminLogin"));
 const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard"));
 import { CookieBanner } from "@/components/CookieBanner";
+import { VersionChecker } from "@/components/VersionChecker";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ function App() {
         </WouterRouter>
         <Toaster />
         <CookieBanner />
+        <VersionChecker />
       </TooltipProvider>
     </QueryClientProvider>
   );

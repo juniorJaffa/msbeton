@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, adminConfig } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { invalidateClientCache } from "./client";
+import { sendRegistrationEmail } from "../lib/mailer";
 
 const router = Router();
 
@@ -101,6 +102,16 @@ router.get("/orders", async (req, res) => {
 router.put("/orders", async (req, res) => {
   try { await setConfig(KEYS.orders, req.body); res.json({ ok: true }); }
   catch (err) { req.log.error({ err }, "Failed to save orders"); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.post("/send-registration-email", async (req, res) => {
+  const { toEmail, clientName, clientId, password } = req.body ?? {};
+  if (!toEmail || !clientName || !clientId || !password) {
+    res.status(400).json({ ok: false, error: "Missing required fields" });
+    return;
+  }
+  const result = await sendRegistrationEmail({ toEmail, clientName, clientId, password });
+  res.json(result);
 });
 
 export default router;

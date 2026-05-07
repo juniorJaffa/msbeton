@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { LogOut, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown } from "lucide-react";
+import { LogOut, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { PhoneInput } from "@/components/PhoneInput";
 import { cn, formatPhone } from "@/lib/utils";
@@ -995,19 +995,24 @@ function KlientiTab() {
   };
   const [form, setForm] = useState(emptyForm);
   const [showFormPass, setShowFormPass] = useState(false);
+  const [sendRegEmail, setSendRegEmail] = useState(true);
+  const [emailStatus, setEmailStatus] = useState<"idle" | "sending" | "ok" | "error">("idle");
 
   const save = (data: Client[]) => { setClients(data); adminData.saveClients(data); };
   const remove = (id: string) => { if (id === SYSTEM_OWNER_ID) return; if (confirm("Vymazať klienta?")) save(clients.filter(c => c.id !== id)); };
   const update = (id: string, patch: Partial<Client>) => save(clients.map(c => c.id === id ? { ...c, ...patch } : c));
   const togglePassVis = (id: string) => setShowPass(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
 
-  const add = () => {
+  const add = async () => {
     if (!form.firstName.trim() && !form.lastName.trim() && !form.company.trim()) return;
+    const newId = adminData.generateId();
+    const newLoginId = form.loginId.trim();
+    const clientName = [form.firstName.trim(), form.lastName.trim()].filter(Boolean).join(" ") || form.company.trim();
     save([...clients, {
-      id: adminData.generateId(),
+      id: newId,
       firstName: form.firstName.trim(), lastName: form.lastName.trim(),
       company: form.company.trim(), email: form.email.trim(), phone: form.phone.trim(),
-      loginId: form.loginId.trim(), password: form.password.trim(),
+      loginId: newLoginId, password: form.password.trim(),
       discountBeton:   parseFloat(form.discountBeton)   || 0,
       discountDoprava: parseFloat(form.discountDoprava) || 0,
       discountSluzby:  parseFloat(form.discountSluzby)  || 0,
@@ -1018,6 +1023,16 @@ function KlientiTab() {
       active: form.active,
       deliveryZoneId: form.deliveryZoneId || undefined,
     }]);
+    if (sendRegEmail && form.email.trim()) {
+      setEmailStatus("sending");
+      const res = await fetch("/api/admin/send-registration-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ toEmail: form.email.trim(), clientName, clientId: newLoginId, password: form.password.trim() }),
+      }).then(r => r.json()).catch(() => ({ ok: false }));
+      setEmailStatus(res.ok ? "ok" : "error");
+      setTimeout(() => setEmailStatus("idle"), 4000);
+    }
     setForm(emptyForm); setAdding(false);
   };
 
@@ -1220,9 +1235,22 @@ function KlientiTab() {
               </div>
             </div>
           </div>
-          <div className="px-5 pb-5 flex gap-2">
-            <button onClick={() => setAdding(false)} className="px-4 py-2 bg-gray-100 text-gray-500 text-sm font-bold uppercase tracking-wide">Zrušiť</button>
-            <button onClick={add} className="px-6 py-2 bg-primary text-secondary font-bold text-sm uppercase tracking-wide hover:bg-primary/90">Pridať</button>
+          <div className="px-5 pb-5 space-y-3">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" checked={sendRegEmail} onChange={e => setSendRegEmail(e.target.checked)} className="accent-secondary w-4 h-4" />
+              <span className="text-sm text-gray-600">Poslať registračný email klientovi</span>
+              {!form.email.trim() && sendRegEmail && (
+                <span className="text-xs text-orange-500">(vyžaduje email)</span>
+              )}
+            </label>
+            {emailStatus === "ok" && <p className="text-xs text-green-600">✓ Email odoslaný</p>}
+            {emailStatus === "error" && <p className="text-xs text-red-500">✗ Email sa neodoslal (SMTP nie je nakonfigurované)</p>}
+            <div className="flex gap-2">
+              <button onClick={() => setAdding(false)} className="px-4 py-2 bg-gray-100 text-gray-500 text-sm font-bold uppercase tracking-wide">Zrušiť</button>
+              <button onClick={add} disabled={emailStatus === "sending"} className="px-6 py-2 bg-primary text-secondary font-bold text-sm uppercase tracking-wide hover:bg-primary/90 disabled:opacity-60">
+                {emailStatus === "sending" ? "Ukladám…" : "Pridať"}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1515,6 +1543,37 @@ function KlientiTab() {
                         variant="light"
                       />
                     )}
+                  </div>
+
+                  {/* Simulovať klienta v kalkulačke */}
+                  <div className="px-4 py-3 border-t border-gray-100 flex justify-end">
+                    <button
+                      onClick={() => {
+                        const session = {
+                          id: c.id,
+                          clientId: c.clientId,
+                          name: c.name,
+                          company: c.company ?? "",
+                          phone: c.phone ?? "",
+                          discountBeton: c.discountBeton ?? 0,
+                          discountDoprava: c.discountDoprava ?? 0,
+                          discountSluzby: c.discountSluzby ?? 0,
+                          discountCelkovo: c.discountCelkovo ?? 0,
+                          canHotovost: c.canHotovost ?? true,
+                          canPridatBeton: c.canPridatBeton ?? true,
+                          canZimneOpatrenia: c.canZimneOpatrenia ?? false,
+                          hotovostDph: c.hotovostDph,
+                          deliveryZoneId: c.deliveryZoneId,
+                          manualPrices: c.manualPrices,
+                        };
+                        localStorage.setItem("msbeton_client_session", JSON.stringify(session));
+                        window.open("/#calculator", "_blank");
+                      }}
+                      className="flex items-center gap-1.5 text-xs bg-secondary text-white px-3 py-1.5 rounded hover:bg-secondary/80 transition-colors"
+                    >
+                      <Calculator className="w-3.5 h-3.5" />
+                      Otvoriť kalkulačku ako klient
+                    </button>
                   </div>
                 </div>
               )}
