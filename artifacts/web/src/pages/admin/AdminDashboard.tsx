@@ -1284,24 +1284,38 @@ function KlientiTab() {
             <div key={c.id} className={cn("border shadow-sm overflow-hidden", c.isOwner ? "bg-primary/5 border-primary/40" : "bg-white border-gray-200")}>
               {/* Card header */}
               <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => setExpanded(isExpanded ? null : c.id)}>
-                <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0", c.isOwner ? "bg-primary/20" : "bg-secondary/10")}>
+                {/* Avatar */}
+                <div className={cn("w-9 h-9 rounded-full flex items-center justify-center shrink-0", c.isOwner ? "bg-primary/20" : "bg-secondary/10")}>
                   {c.isOwner
                     ? <Crown className="w-4 h-4 text-primary" />
                     : <span className="text-secondary font-black text-sm">{(c.firstName || c.company || "?").charAt(0).toUpperCase()}</span>
                   }
                 </div>
-                {/* Meno */}
-                <div className="w-36 min-w-0 shrink-0">
+
+                {/* Meno + mobile badges */}
+                <div className="flex-1 min-w-0">
                   <div className="font-bold text-secondary text-sm truncate">{fullName}</div>
-                  {c.company && <div className="text-xs text-gray-400 truncate">{c.company}</div>}
-                </div>
-                {/* Mobile: max discount badge */}
-                {maxDisc > 0 && (
-                  <div className="sm:hidden flex items-center">
-                    <span className="text-xs font-bold text-primary">-{maxDisc}%</span>
+                  <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                    {c.company && <span className="text-xs text-gray-400 truncate">{c.company}</span>}
+                    {/* Mobile-only badges */}
+                    <div className="sm:hidden flex items-center gap-1 flex-wrap">
+                      {maxDisc > 0 && <span className="text-[10px] font-bold text-primary">−{maxDisc}%</span>}
+                      {clientZone && (
+                        <span className="flex items-center gap-0.5 px-1 py-0 text-[10px] font-bold rounded bg-blue-50 text-blue-600 border border-blue-100">
+                          <Truck className="w-2.5 h-2.5" />
+                          {zonePricingType === "km" ? "€/km" : zonePricingType === "auto" ? "€/auto" : "Štd"}
+                        </span>
+                      )}
+                      {c.isOwner && <span className="text-[10px] font-black text-primary/70">Admin</span>}
+                      {hasLogin
+                        ? <span className={`text-[10px] font-bold ${c.active ? "text-green-600" : "text-gray-400"}`}>{c.active ? "Aktívny" : "Neaktívny"}</span>
+                        : <span className="text-[10px] text-gray-400">Bez prístupu</span>
+                      }
+                    </div>
                   </div>
-                )}
-                {/* Zľavy — skryté na mobile, viditeľné od sm */}
+                </div>
+
+                {/* Desktop: zľavy stĺpce */}
                 <div className="hidden sm:flex flex-1 items-center">
                   {[
                     { label: "Betón",   val: c.discountBeton   ?? 0 },
@@ -1311,40 +1325,44 @@ function KlientiTab() {
                   ].map(({ label, val }) => (
                     <div key={label} className="flex-1 text-center">
                       <div className="text-[10px] text-gray-400 uppercase tracking-wide">{label}</div>
-                      <div className={`text-sm font-bold ${val > 0 ? "text-primary" : "text-gray-300"}`}>{val} %</div>
+                      <div className={`text-sm font-bold ${val > 0 ? "text-primary" : "text-gray-300"}`}>{val}%</div>
                     </div>
                   ))}
                 </div>
-                <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
-                  {clientZone && (
-                    <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold rounded-sm bg-blue-50 text-blue-600 border border-blue-200 shrink-0" title={clientZone.name}>
-                      <Truck className="w-3 h-3 shrink-0" />
-                      {zonePricingType === "km" && <span>€/km</span>}
-                      {zonePricingType === "auto" && <span>€/auto</span>}
-                      {zonePricingType === "standard" && <span>Štd</span>}
-                    </span>
-                  )}
-                  {c.isOwner && (
-                    <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-black uppercase rounded-sm bg-primary/20 text-primary/80">
-                      <Crown className="w-3 h-3" /> Admin
-                    </span>
-                  )}
-                  {hasLogin ? (
-                    <span className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase rounded-sm ${c.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                      {c.active ? <ShieldCheck className="w-3 h-3" /> : <ShieldOff className="w-3 h-3" />}
-                      {c.active ? "Aktívny" : "Neaktívny"}
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase rounded-sm bg-gray-100 text-gray-400">
-                      <LogIn className="w-3 h-3" /> Bez prístupu
-                    </span>
-                  )}
+
+                {/* Desktop: action badges + buttons | Mobile: only chevron + action buttons */}
+                <div className="flex items-center gap-1 shrink-0">
+                  {/* Desktop-only badges */}
+                  <div className="hidden sm:flex items-center gap-1">
+                    {clientZone && (
+                      <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold rounded-sm bg-blue-50 text-blue-600 border border-blue-200">
+                        <Truck className="w-3 h-3" />
+                        {zonePricingType === "km" ? "€/km" : zonePricingType === "auto" ? "€/auto" : "Štd"}
+                      </span>
+                    )}
+                    {c.isOwner && (
+                      <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-black uppercase rounded-sm bg-primary/20 text-primary/80">
+                        <Crown className="w-3 h-3" /> Admin
+                      </span>
+                    )}
+                    {hasLogin ? (
+                      <span className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase rounded-sm ${c.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                        {c.active ? <ShieldCheck className="w-3 h-3" /> : <ShieldOff className="w-3 h-3" />}
+                        {c.active ? "Aktívny" : "Neaktívny"}
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase rounded-sm bg-gray-100 text-gray-400">
+                        <LogIn className="w-3 h-3" /> Bez prístupu
+                      </span>
+                    )}
+                  </div>
+                  {/* Always: chevron + table + delete */}
                   <span className="p-1 text-gray-400">
                     {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                   </span>
                   <button
                     onClick={(e) => { e.stopPropagation(); setTablePdfModal(c); setTablePdfMode("faktura"); }}
-                    title="Zľavové tabuľky klienta"
+                    title="Zľavové tabuľky"
                     className="p-1 text-gray-300 hover:text-secondary transition-colors">
                     <Table2 className="w-4 h-4" />
                   </button>
