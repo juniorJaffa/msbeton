@@ -1419,7 +1419,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
               <div key={item.id} className="border border-primary/25 rounded-lg p-4 space-y-3 bg-primary/5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-black text-primary/70 uppercase tracking-widest">
-                    Položka{item.categoryName ? ` – ${item.categoryName}` : ` ${idx + 2}`}
+                    Položka {idx + 1}{item.categoryName ? ` – ${item.categoryName}` : ""}
                   </span>
                   <button
                     type="button"
