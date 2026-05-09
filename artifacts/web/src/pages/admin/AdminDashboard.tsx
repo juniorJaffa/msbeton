@@ -1460,7 +1460,7 @@ function KlientiTab() {
           const clientZone = c.deliveryZoneId ? zones.find(z => z.id === c.deliveryZoneId) : zones[0];
           const zonePricingType = clientZone?.pricingType ?? "standard";
           return (
-            <div key={c.id} className={cn("border shadow-sm overflow-hidden", c.isOwner ? "bg-primary/5 border-primary/40" : "bg-white border-gray-200")}>
+            <div key={c.id} className={cn("border shadow-sm overflow-hidden", c.isOwner ? "bg-amber-50 border-primary/40" : "bg-white border-gray-200")}>
               {/* Card header */}
               <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => setExpanded(isExpanded ? null : c.id)}>
                 {/* Avatar + active dot */}
