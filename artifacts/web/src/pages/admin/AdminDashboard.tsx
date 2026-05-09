@@ -803,6 +803,7 @@ function ObjednavkyTab() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<Order["status"] | "vsetky">("vsetky");
   const [filterTab, setFilterTab] = useState<Order["tab"] | "vsetky">("vsetky");
+  const [filterPriceMode, setFilterPriceMode] = useState<"vsetky" | "faktura" | "hotovost">("vsetky");
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -839,8 +840,9 @@ function ObjednavkyTab() {
   const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const searchTerms = search.trim().split(/\s+/).filter(Boolean);
   const filtered = orders
-    .filter(o => filterStatus === "vsetky" || o.status === filterStatus)
-    .filter(o => filterTab   === "vsetky" || o.tab    === filterTab)
+    .filter(o => filterStatus    === "vsetky" || o.status    === filterStatus)
+    .filter(o => filterTab       === "vsetky" || o.tab       === filterTab)
+    .filter(o => filterPriceMode === "vsetky" || o.priceMode === filterPriceMode)
     .filter(o => {
       if (!searchTerms.length) return true;
       const haystack = [o.clientName, o.company ?? "", o.phone ?? "", o.clientId ?? "", o.address ?? "", o.email ?? ""].join(" ");
@@ -902,6 +904,22 @@ function ObjednavkyTab() {
               </button>
             );
           })}
+        </div>
+        <div className="border-t border-gray-100 mx-4" />
+        {/* Row 2b – faktura / hotovosť */}
+        <div className="flex items-center gap-2 flex-wrap px-4 py-3">
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-7 shrink-0">Typ</span>
+          {([["vsetky", "Všetky"], ["faktura", "Faktúra"], ["hotovost", "Hotovosť"]] as const).map(([val, label]) => (
+            <button key={val} onClick={() => setFilterPriceMode(val)}
+              className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
+                filterPriceMode === val
+                  ? val === "hotovost" ? "bg-amber-500 text-white border-amber-500" : val === "faktura" ? "bg-blue-600 text-white border-blue-600" : "bg-gray-700 text-white border-gray-700"
+                  : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
+              }`}>
+              {label}
+              {val !== "vsetky" && <span className="ml-1 text-[10px] opacity-60">{orders.filter(o => o.priceMode === val).length}</span>}
+            </button>
+          ))}
         </div>
         <div className="border-t border-gray-100 mx-4" />
         {/* Row 3 – vyhľadávanie + dátumový filter */}
@@ -1277,18 +1295,15 @@ function KlientiTab() {
         </div>}
       </div>
 
-      {/* Search + Add — sticky navy bar */}
+      {/* Search — sticky navy bar */}
       <div className="sticky top-14 z-40 -mx-4 sm:-mx-6 bg-secondary shadow-md">
-        <div className="flex items-center justify-between px-4 sm:px-6 pt-2.5 pb-1.5 gap-3">
-          <span className="text-[10px] font-black text-white/40 uppercase tracking-widest hidden sm:block">Klienti</span>
-          <button onClick={() => { setAdding(true); setExpanded(null); }}
-            className="flex items-center gap-2 px-4 py-1.5 bg-primary text-secondary font-bold text-sm hover:bg-primary/90 shrink-0 whitespace-nowrap ml-auto">
-            <Plus className="w-4 h-4" /> Pridať klienta
-          </button>
-        </div>
-        <div className="px-4 sm:px-6 pb-2.5">
+        <div className="px-4 sm:px-6 py-2.5 flex items-center gap-2">
           <input placeholder="Hľadať klienta..." value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full bg-white text-secondary placeholder:text-gray-400 px-4 py-2 text-sm focus:outline-none border-0 border-b-2 border-b-transparent focus:border-b-primary" />
+            className="flex-1 bg-white text-secondary placeholder:text-gray-400 px-4 py-2 text-sm focus:outline-none border-0 border-b-2 border-b-transparent focus:border-b-primary" />
+          <button onClick={() => { setAdding(true); setExpanded(null); }}
+            className="sm:hidden flex items-center gap-1.5 px-3 py-2 bg-primary text-secondary font-bold text-xs hover:bg-primary/90 shrink-0 whitespace-nowrap">
+            <Plus className="w-3.5 h-3.5" /> Pridať
+          </button>
         </div>
       </div>
 
@@ -1446,7 +1461,10 @@ function KlientiTab() {
             <div key={l} className="w-20 text-center text-primary">{l}</div>
           ))}
         </div>
-        <div className="w-44 shrink-0" />
+        <button onClick={() => { setAdding(true); setExpanded(null); }}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-secondary font-black text-[10px] hover:bg-primary/90 shrink-0 whitespace-nowrap uppercase tracking-wide">
+          <Plus className="w-3 h-3" /> Pridať klienta
+        </button>
       </div>
 
       {/* Client cards */}
@@ -1524,11 +1542,7 @@ function KlientiTab() {
                         {zonePricingType === "km" ? "€/km" : zonePricingType === "auto" ? "€/auto" : "Štd"}
                       </span>
                     )}
-                    {c.isOwner && (
-                      <span className="flex items-center px-1.5 py-0.5 text-[10px] rounded-sm bg-primary/20 text-primary/80">
-                        <Crown className="w-3 h-3" />
-                      </span>
-                    )}
+
                     {hasLogin ? (
                       <span className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase rounded-sm ${c.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
                         {c.active ? <ShieldCheck className="w-3 h-3" /> : <ShieldOff className="w-3 h-3" />}
