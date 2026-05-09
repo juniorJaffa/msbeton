@@ -64,7 +64,7 @@ export interface Client {
 export interface Order {
   id: string;
   createdAt: string;
-  status: "nova" | "potvrdena" | "vybavena" | "zrusena";
+  status: "nova" | "potvrdena" | "odoslana" | "vyuctovana" | "vyplatena" | "zrusena" | "vybavena";
   clientName: string;
   clientId?: string;
   company?: string;

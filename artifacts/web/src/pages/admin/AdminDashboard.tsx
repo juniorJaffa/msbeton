@@ -757,15 +757,17 @@ function SluzbyTab() {
 
 // ── OBJEDNÁVKY tab ────────────────────────────────────────────────────────────
 const ORDER_STATUSES: { key: Order["status"]; label: string; color: string }[] = [
-  { key: "nova",       label: "Nová",       color: "bg-blue-100 text-blue-700" },
-  { key: "potvrdena",  label: "Potvrdená",  color: "bg-yellow-100 text-yellow-700" },
-  { key: "vybavena",   label: "Vybavená",   color: "bg-green-100 text-green-700" },
-  { key: "zrusena",    label: "Zrušená",    color: "bg-red-100 text-red-500" },
+  { key: "nova",        label: "Nová",        color: "bg-blue-100 text-blue-700" },
+  { key: "potvrdena",   label: "Potvrdená",   color: "bg-yellow-100 text-yellow-700" },
+  { key: "odoslana",    label: "Odoslaná",    color: "bg-green-100 text-green-700" },
+  { key: "vyuctovana",  label: "Vyúčtovaná",  color: "bg-purple-100 text-purple-700" },
+  { key: "vyplatena",   label: "Vyplatená",   color: "bg-emerald-100 text-emerald-700" },
+  { key: "zrusena",     label: "Zrušená",     color: "bg-red-100 text-red-500" },
 ];
 
 function OrderStatusBadge({ status, onChange }: { status: Order["status"]; onChange: (s: Order["status"]) => void }) {
   const [open, setOpen] = useState(false);
-  const cur = ORDER_STATUSES.find(s => s.key === status)!;
+  const cur = ORDER_STATUSES.find(s => s.key === status) ?? ORDER_STATUSES.find(s => s.key === "odoslana")!;
   return (
     <div className="relative">
       <button onClick={() => setOpen(o => !o)} className={`px-2 py-1 text-xs font-bold rounded-sm cursor-pointer ${cur.color}`}>{cur.label} ▾</button>
@@ -788,10 +790,13 @@ const TAB_STYLES: Record<Order["tab"], { badge: string; activeBg: string; dot: s
 };
 
 const STATUS_ACTIVE_COLORS: Record<Order["status"], string> = {
-  nova:      "bg-blue-500 text-white border-blue-500",
-  potvrdena: "bg-yellow-400 text-white border-yellow-400",
-  vybavena:  "bg-green-600 text-white border-green-600",
-  zrusena:   "bg-red-500 text-white border-red-500",
+  nova:        "bg-blue-500 text-white border-blue-500",
+  potvrdena:   "bg-yellow-400 text-white border-yellow-400",
+  odoslana:    "bg-green-600 text-white border-green-600",
+  vyuctovana:  "bg-purple-600 text-white border-purple-600",
+  vyplatena:   "bg-emerald-600 text-white border-emerald-600",
+  zrusena:     "bg-red-500 text-white border-red-500",
+  vybavena:    "bg-green-600 text-white border-green-600",
 };
 
 function TabBadge({ tab }: { tab: Order["tab"] }) {
@@ -816,6 +821,21 @@ function ObjednavkyTab() {
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [newBadge, setNewBadge] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      await syncFromServer();
+      const fresh = adminData.getOrders();
+      setOrders(prev => {
+        const prevIds = new Set(prev.map(o => o.id));
+        const added = fresh.filter(o => !prevIds.has(o.id)).length;
+        if (added > 0) setNewBadge(n => n + added);
+        return fresh;
+      });
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const save = (data: Order[]) => { setOrders(data); adminData.saveOrders(data); };
   const remove = (id: string) => { if (confirm("Vymazať objednávku?")) save(orders.filter(o => o.id !== id)); };
@@ -852,9 +872,10 @@ function ObjednavkyTab() {
         {/* Row 1 – stav */}
         <div className="flex items-center gap-2 flex-wrap px-4 py-3">
           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-7 shrink-0">Stav</span>
-          <button onClick={() => setFilterStatus("vsetky")}
-            className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${filterStatus === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-secondary/40"}`}>
+          <button onClick={() => { setFilterStatus("vsetky"); setNewBadge(0); }}
+            className={`relative px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${filterStatus === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-secondary/40"}`}>
             Všetky <span className="ml-1 text-[10px] opacity-60">{orders.length}</span>
+            {newBadge > 0 && <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">{newBadge}</span>}
           </button>
           {ORDER_STATUSES.map(s => (
             <button key={s.key} onClick={() => setFilterStatus(s.key)}
@@ -981,46 +1002,72 @@ function ObjednavkyTab() {
                         {(o.fillupM3 ?? 0) > 0 && (
                           <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Doťaženie</span><span className="font-medium text-amber-700">+{o.fillupM3} m³ → {o.fillupTarget} m³</span></div>
                         )}
-                        <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Fakturácia</span><span className="text-gray-600">{o.priceMode === "hotovost" ? "hotovosť" : "faktúra"}</span></div>
+                        <div className="flex gap-2 items-center"><span className="text-gray-400 w-24 shrink-0">Fakturácia</span>
+                          <span className={cn("font-black text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-sm", o.priceMode === "hotovost" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700")}>
+                            {o.priceMode === "hotovost" ? "Hotovosť" : "Faktúra"}
+                          </span>
+                        </div>
                         {o.note && <div className="flex gap-2 pt-1"><span className="text-gray-400 w-24 shrink-0">Poznámka</span><span className="text-gray-600 italic">{o.note}</span></div>}
                       </div>
                     </div>
                     {/* Kalkulácia */}
-                    {o.breakdown && (
-                      <div className="border-t border-gray-100 px-4 py-3">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Kalkulácia</div>
-                        <div className="space-y-1">
-                          {o.breakdown.split("\n").map((line, i) => {
-                            const parts = line.split(": ");
-                            const label = parts[0];
-                            const value = parts.slice(1).join(": ");
-                            return (
-                              <div key={i} className="flex justify-between items-baseline text-xs gap-4">
-                                <span className="text-gray-500">{label}</span>
-                                {value && <span className="font-semibold text-gray-700 shrink-0">{value}</span>}
-                              </div>
-                            );
-                          })}
+                    {(() => {
+                      let parsed: { v: number; s: { h: string; rows: { l: string; v: number; o?: number }[] }[] } | null = null;
+                      try { if (o.breakdown?.startsWith("{")) parsed = JSON.parse(o.breakdown); } catch { /* legacy */ }
+                      return (
+                        <div className="border-t border-gray-100 px-4 py-3">
+                          <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Kalkulácia</div>
+                          {parsed ? (
+                            <div className="space-y-2">
+                              {parsed.s.map((sec, si) => (
+                                <div key={si}>
+                                  <div className={cn("text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 mb-1 rounded-sm",
+                                    sec.h.startsWith("Pridaná") || sec.h.startsWith("Produkty") ? "bg-primary/15 text-primary/80" : "bg-gray-100 text-gray-500 ml-2")}>
+                                    {sec.h}
+                                  </div>
+                                  {sec.rows.map((row, ri) => (
+                                    <div key={ri} className={cn("flex justify-between items-baseline text-xs gap-4 py-0.5", sec.h.startsWith("Pridaná") || sec.h.startsWith("Produkty") ? "pl-1" : "pl-4")}>
+                                      <span className="text-gray-500">{row.l}</span>
+                                      <span className="shrink-0 text-right">
+                                        {row.o !== undefined && <span className="line-through text-gray-300 text-[10px] mr-1">{fmtEur(row.o)}</span>}
+                                        <span className="font-semibold text-gray-700">{fmtEur(row.v)}</span>
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ))}
+                            </div>
+                          ) : o.breakdown ? (
+                            <div className="space-y-1">
+                              {o.breakdown.split("\n").map((line, i) => {
+                                const parts = line.split(": ");
+                                const label = parts[0];
+                                const value = parts.slice(1).join(": ");
+                                return (
+                                  <div key={i} className="flex justify-between items-baseline text-xs gap-4">
+                                    <span className="text-gray-500">{label}</span>
+                                    {value && <span className="font-semibold text-gray-700 shrink-0">{value}</span>}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : null}
+                          <div className="mt-3 pt-2 border-t border-gray-200 flex justify-between items-center">
+                            <span className="text-xs text-gray-500">Spolu bez DPH</span>
+                            <span className="text-sm font-bold text-secondary">{fmtEur(o.totalBezDph)}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs text-gray-400">S DPH</span>
+                              <span className={cn("text-[9px] font-black uppercase px-1.5 py-0.5 rounded-sm", o.priceMode === "hotovost" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700")}>
+                                {o.priceMode === "hotovost" ? "Hotovosť" : "Faktúra"}
+                              </span>
+                            </div>
+                            <span className="text-base font-black text-secondary">{fmtEur(o.totalSDph)}</span>
+                          </div>
                         </div>
-                        <div className="mt-3 pt-2 border-t border-gray-200 flex justify-between items-center">
-                          <span className="text-xs text-gray-500">Spolu bez DPH</span>
-                          <span className="text-sm font-bold text-secondary">{fmtEur(o.totalBezDph)}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-400">S DPH</span>
-                          <span className="text-base font-black text-secondary">{fmtEur(o.totalSDph)}</span>
-                        </div>
-                      </div>
-                    )}
-                    {!o.breakdown && (
-                      <div className="border-t border-gray-100 px-4 py-3 flex justify-between items-center">
-                        <span className="text-xs text-gray-400">Celková suma</span>
-                        <div className="text-right">
-                          <div className="text-xs text-gray-400">{fmtEur(o.totalBezDph)} bez DPH</div>
-                          <div className="text-base font-black text-secondary">{fmtEur(o.totalSDph)}</div>
-                        </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 )}
               </div>
@@ -1487,14 +1534,14 @@ function KlientiTab() {
                 <div className="border-t border-gray-100 bg-gray-50/60">
 
                   {/* Tab bar: Detail | Kalkulačka */}
-                  <div className="flex border-b border-gray-200 bg-white">
+                  <div className="flex border-b border-gray-200">
                     <button
                       onClick={() => setClientDetailTab(prev => ({ ...prev, [c.id]: "detail" }))}
-                      className={cn("flex-1 py-2 text-xs font-black uppercase tracking-wide transition-colors", (clientDetailTab[c.id] ?? "detail") === "detail" ? "border-b-2 border-secondary text-secondary" : "text-gray-400 hover:text-gray-600")}
+                      className={cn("flex-1 py-2.5 text-xs font-black uppercase tracking-wide transition-all", (clientDetailTab[c.id] ?? "detail") === "detail" ? "bg-secondary text-white" : "bg-white text-gray-400 hover:text-secondary hover:bg-secondary/5")}
                     >Detail</button>
                     <button
                       onClick={() => setClientDetailTab(prev => ({ ...prev, [c.id]: "calc" }))}
-                      className={cn("flex-1 py-2 text-xs font-black uppercase tracking-wide transition-colors", clientDetailTab[c.id] === "calc" ? "border-b-2 border-secondary text-secondary" : "text-gray-400 hover:text-gray-600")}
+                      className={cn("flex-1 py-2.5 text-xs font-black uppercase tracking-wide transition-all", clientDetailTab[c.id] === "calc" ? "bg-secondary text-white" : "bg-white text-gray-400 hover:text-secondary hover:bg-secondary/5")}
                     >Kalkulačka</button>
                   </div>
 
@@ -1511,13 +1558,19 @@ function KlientiTab() {
                         { label: "Celkovo", field: "discountCelkovo" as keyof Client },
                       ]).map(({ label, field }) => {
                         const val = (c[field] as number) ?? 0;
+                        const celkovo = (c.discountCelkovo as number) ?? 0;
+                        const isCelkovo = field === "discountCelkovo";
+                        const blockedByCelkovo = !isCelkovo && celkovo > 0 && val === 0;
                         const active = val > 0;
                         return (
                           <div key={field} className={cn(
                             "border px-2 py-2 text-center",
-                            active ? "bg-primary/10 border-primary/40" : "bg-gray-50 border-gray-200"
+                            blockedByCelkovo ? "bg-gray-50 border-gray-100 opacity-50" : active ? "bg-primary/10 border-primary/40" : "bg-gray-50 border-gray-200"
                           )}>
                             <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1.5">{label}</div>
+                            {blockedByCelkovo ? (
+                              <div className="text-[10px] text-gray-400 font-bold py-1.5">= Celkovo</div>
+                            ) : (
                             <div className="flex items-center justify-center gap-0.5">
                               <input
                                 type="number" min="0" max="100"
@@ -1525,16 +1578,20 @@ function KlientiTab() {
                                 onChange={e => update(c.id, { [field]: Math.min(100, Math.max(0, parseInt(e.target.value) || 0)) })}
                                 onFocus={e => e.target.select()}
                                 className={cn(
-                                  "border-0 px-1 py-0 text-xl font-black focus:outline-none w-12 text-center bg-transparent leading-none",
+                                  "border-0 px-0.5 py-0 text-xl font-black focus:outline-none w-16 text-center bg-transparent leading-none",
                                   active ? "text-primary" : "text-gray-300"
                                 )}
                               />
                               <span className={cn("text-sm font-bold leading-none", active ? "text-primary/70" : "text-gray-300")}>%</span>
                             </div>
+                            )}
                           </div>
                         );
                       })}
                     </div>
+                    {((c.discountCelkovo ?? 0) > 0) && (
+                      <p className="text-[10px] text-gray-400 mt-1.5">Celková zľava {c.discountCelkovo}% — individuálne polia sú riadené celkovou zľavou. Nastav ich manuálne ak chceš iné sadzby per kategóriu.</p>
+                    )}
                   </div>
 
                   {/* Hlavná mriežka: Osobné info | Prístup + Možnosti */}

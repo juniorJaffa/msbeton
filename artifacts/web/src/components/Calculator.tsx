@@ -1101,11 +1101,56 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     if (!result || !orderForm.name.trim()) return;
     setOrderSubmitting(true);
     const isFakt = priceMode === "faktura";
-    const breakdown = [
-      ...result.concreteBreakdown.map(ci => `${ci.label}: ${(isFakt ? ci.bezDph * betonFactor : ci.bezDph * (1 + VAT_HOTOVOST) * betonFactor).toFixed(2)} €`),
-      result.items.transport > 0 ? `Doprava: ${(result.items.transport * dopravaFactor).toFixed(2)} €` : "",
-      result.items.pump > 0 ? `Čerpanie: ${(result.items.pump * sluzbyFactor).toFixed(2)} €` : "",
-    ].filter(Boolean).join("\n");
+    const fmt2 = (n: number) => parseFloat(n.toFixed(2));
+    const bdSections: { h: string; rows: { l: string; v: number; o?: number }[] }[] = [];
+    const pdfTrucksLabel = (ci: typeof result.concreteBreakdown[0]) =>
+      tab === "pumpa" ? `1×Pumpa${ci.transportTrucks > 1 ? `+${ci.transportTrucks - 1}×Mix` : ""}` : `${ci.transportTrucks}×Mix`;
+    const zoneStr = result.transportZone ? `${result.transportZone.fromKm}–${result.transportZone.toKm} km` : "";
+
+    result.concreteBreakdown.forEach((ci, idx) => {
+      const bOrig = fmt2(isFakt ? ci.bezDph : ci.bezDph * (1 + VAT_HOTOVOST));
+      const bDisc = fmt2(isFakt ? ci.bezDphFinal : ci.bezDphFinalHotovost);
+      const tOrig = fmt2(ci.transport);
+      const tDisc = fmt2(ci.transport * dopravaFactor);
+      const catLabel = ci.label.replace(/ – [\d.,]+ m³$/, "");
+      const header = idx === 0 ? `Produkty – ${catLabel}` : `Pridaná položka ${idx} – ${catLabel}`;
+      const rows: { l: string; v: number; o?: number }[] = [];
+      rows.push({ l: ci.label, v: bDisc, ...(Math.abs(bOrig - bDisc) > 0.01 ? { o: bOrig } : {}) });
+      if (ci.transport > 0) {
+        const dopravaLbl = `${ci.transportIsMin ? "Min. doprava" : "Doprava"}${zoneStr ? ` ${zoneStr}` : ""} · ${pdfTrucksLabel(ci)}`;
+        rows.push({ l: dopravaLbl, v: tDisc, ...(Math.abs(tOrig - tDisc) > 0.01 ? { o: tOrig } : {}) });
+      }
+      if (ci.transportFillup > 0) {
+        const fDisc = fmt2(ci.transportFillup * dopravaFactor);
+        rows.push({ l: `Doťaženie do ${ci.transportFillupTarget} m³`, v: fDisc });
+      }
+      const svcRows: { l: string; v: number; o?: number }[] = [];
+      if (idx === 0) {
+        const pumpBase = (parseInt(pumpHour) || 1) + (parseInt(pumpMin) || 0) / 60;
+        if (tab === "pumpa" && pumpBase > 0 && pumpServicePrice > 0) {
+          const pOrig = fmt2(pumpBase * pumpServicePrice);
+          svcRows.push({ l: `Čerpanie betónu – ${result.pumpHrs} h${result.pumpMs > 0 ? ` ${result.pumpMs} min` : ""}`, v: fmt2(pOrig * sluzbyFactor), ...(sluzbyFactor < 1 ? { o: pOrig } : {}) });
+        }
+        if (hoseMeters > 0) { const ho = fmt2(hoseMeters * hoseServicePrice); svcRows.push({ l: `Prídavné hadice – ${hoseMeters} m`, v: fmt2(ho * sluzbyFactor), ...(sluzbyFactor < 1 ? { o: ho } : {}) }); }
+        if (tab === "pumpa" && chemServicePrice > 0) { const co = fmt2(chemServicePrice); svcRows.push({ l: "Rozbehová chémia", v: fmt2(co * sluzbyFactor), ...(sluzbyFactor < 1 ? { o: co } : {}) }); }
+        if (washing) { const wo = fmt2(washServicePrice); svcRows.push({ l: "Umývanie mimo stavby", v: fmt2(wo * sluzbyFactor), ...(sluzbyFactor < 1 ? { o: wo } : {}) }); }
+        if (result.waitIntervals > 0) {
+          const wRate = tab === "pumpa" ? waitServicePricePumpa : waitServicePriceMix;
+          const wOrig = fmt2(result.waitIntervals * wRate);
+          svcRows.push({ l: `Čakačky – ${result.waitLabel}`, v: fmt2(wOrig * sluzbyFactor), ...(sluzbyFactor < 1 ? { o: wOrig } : {}) });
+        }
+      } else {
+        if (ci.svcPumpCost > 0) { svcRows.push({ l: `Čerpanie betónu – ${ci.svcPumpHrs} h${ci.svcPumpMs > 0 ? ` ${ci.svcPumpMs} min` : ""}`, v: fmt2(ci.svcPumpCost * sluzbyFactor), ...(sluzbyFactor < 1 ? { o: fmt2(ci.svcPumpCost) } : {}) }); }
+        if (ci.svcHoseCost > 0) { svcRows.push({ l: `Prídavné hadice – ${ci.svcHoseMeters} m`, v: fmt2(ci.svcHoseCost * sluzbyFactor), ...(sluzbyFactor < 1 ? { o: fmt2(ci.svcHoseCost) } : {}) }); }
+        if (ci.svcWashCost > 0) { svcRows.push({ l: "Umývanie mimo stavby", v: fmt2(ci.svcWashCost * sluzbyFactor), ...(sluzbyFactor < 1 ? { o: fmt2(ci.svcWashCost) } : {}) }); }
+        if (ci.svcWaitCost > 0) { svcRows.push({ l: `Čakačky – ${ci.svcWaitLabel}`, v: fmt2(ci.svcWaitCost * sluzbyFactor), ...(sluzbyFactor < 1 ? { o: fmt2(ci.svcWaitCost) } : {}) }); }
+      }
+      bdSections.push({ h: header, rows });
+      if (svcRows.length > 0) {
+        bdSections.push({ h: tab === "pumpa" ? "Služby – Pumpa" : "Čakačky", rows: svcRows });
+      }
+    });
+    const breakdown = JSON.stringify({ v: 2, s: bdSections });
 
     await clientApi.submitOrder({
       id: Math.random().toString(36).slice(2, 10),
