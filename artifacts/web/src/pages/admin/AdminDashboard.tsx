@@ -262,24 +262,11 @@ function DopravaTab() {
         <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
           <h3 className="font-black text-secondary text-sm uppercase tracking-widest">Nastavenia cenníka dopravy</h3>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-px bg-gray-100 m-4 rounded overflow-hidden">
-          {[
-            { label: "Min. cena / auto (€)", field: "minimumFee" as keyof TransportSettings },
-            { label: "Zimný príplatok (€/m³)", field: "winterSurcharge" as keyof TransportSettings },
-            { label: "Čakačka (€/15 min)", field: "waitingRatePer15min" as keyof TransportSettings },
-            { label: "Min. objednávka (m³)", field: "minimumLoadM3" as keyof TransportSettings },
-          ].map(({ label, field }) => (
-            <div key={field} className="bg-gray-50 px-3 py-2.5">
-              <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{label}</div>
-              <div className="font-bold text-secondary text-sm">
-                <EditableField value={ts[field] as number} type="number" onSave={v => saveTs({ ...ts, [field]: parseFloat(v) || 0 })} />
-              </div>
-            </div>
-          ))}
-          <div className="bg-primary/5 px-3 py-2.5">
-            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">DPH Faktúra (%)</div>
-            <div className="font-bold text-secondary text-sm flex items-center gap-1">
-              <EditableField value={Math.round((ts.dph ?? 0.23) * 100)} type="number" onSave={v => saveTs({ ...ts, dph: (parseFloat(v) || 23) / 100 })} /> %
+        <div className="grid grid-cols-1 gap-px bg-gray-100 m-4 rounded overflow-hidden">
+          <div className="bg-gray-50 px-3 py-2.5">
+            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Min. cena / auto (€)</div>
+            <div className="font-bold text-secondary text-sm">
+              <EditableField value={ts.minimumFee as number} type="number" onSave={v => saveTs({ ...ts, minimumFee: parseFloat(v) || 0 })} />
             </div>
           </div>
         </div>
@@ -290,56 +277,6 @@ function DopravaTab() {
         <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
           <h3 className="font-black text-secondary text-sm uppercase tracking-widest">Typy dopravy</h3>
         </div>
-
-        {/* Zdieľaná info: Pumpa + Mixér — platí pre všetky typy */}
-        {(() => {
-          const ref = zones[0];
-          const updateAll = (patch: Partial<DeliveryZone>) => save(zones.map(z => ({ ...z, ...patch })));
-          return (
-            <div className="grid grid-cols-2 gap-3 m-4">
-              <div className="bg-yellow-50 border border-yellow-200 rounded-md px-4 py-3 space-y-2">
-                <div className="flex items-center gap-2">
-                  <PumpTruckIcon />
-                  <span className="text-xs font-black text-secondary uppercase tracking-wide">Pumpa</span>
-                </div>
-                <div className="flex gap-6">
-                  <div>
-                    <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Kapacita</div>
-                    <div className="font-bold text-secondary text-sm">
-                      <EditableField value={ref?.pumpTruckCapacity ?? 7} type="number" onSave={v => updateAll({ pumpTruckCapacity: parseFloat(v) })} /> m³
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Čakačka / 15 min</div>
-                    <div className="font-bold text-secondary text-sm">
-                      <EditableField value={ref?.waitingRatePer15minPumpa ?? ref?.waitingRatePer15min ?? 8} type="number" onSave={v => updateAll({ waitingRatePer15minPumpa: parseFloat(v) })} /> €
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-yellow-50 border border-yellow-200 rounded-md px-4 py-3 space-y-2">
-                <div className="flex items-center gap-2">
-                  <MixTruckIcon />
-                  <span className="text-xs font-black text-secondary uppercase tracking-wide">Mixér</span>
-                </div>
-                <div className="flex gap-6">
-                  <div>
-                    <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Kapacita</div>
-                    <div className="font-bold text-secondary text-sm">
-                      <EditableField value={ref?.truckCapacity ?? 9} type="number" onSave={v => updateAll({ truckCapacity: parseFloat(v) })} /> m³
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Čakačka / 15 min</div>
-                    <div className="font-bold text-secondary text-sm">
-                      <EditableField value={ref?.waitingRatePer15min ?? 8} type="number" onSave={v => updateAll({ waitingRatePer15min: parseFloat(v) })} /> €
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
 
         {/* Číslovaný zoznam typov dopravy */}
         <div className="border-t border-gray-100">
@@ -369,6 +306,54 @@ function DopravaTab() {
                       </div>
                     )}
                   </div>
+                  {isStandard && (() => {
+                    const ref = zones[0];
+                    const updateAll2 = (patch: Partial<DeliveryZone>) => save(zones.map(z => ({ ...z, ...patch })));
+                    return (
+                      <div className="flex flex-wrap gap-3 mt-2 w-full">
+                        <div className="flex items-center gap-4 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <PumpTruckIcon />
+                            <span className="text-[10px] font-black text-secondary uppercase tracking-wide">Pumpa</span>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Kapacita</div>
+                            <div className="font-bold text-secondary text-sm flex items-center gap-1">
+                              <EditableField value={ref?.pumpTruckCapacity ?? 7} type="number" onSave={v => updateAll2({ pumpTruckCapacity: parseFloat(v) })} /> m³
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Čakačka / 15 min</div>
+                            <div className="text-[11px] text-gray-400 italic">→ zo Služieb</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <MixTruckIcon />
+                            <span className="text-[10px] font-black text-secondary uppercase tracking-wide">Mixér</span>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Kapacita</div>
+                            <div className="font-bold text-secondary text-sm flex items-center gap-1">
+                              <EditableField value={ref?.truckCapacity ?? 9} type="number" onSave={v => updateAll2({ truckCapacity: parseFloat(v) })} /> m³
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Čakačka / 15 min</div>
+                            <div className="text-[11px] text-gray-400 italic">→ zo Služieb</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4 bg-gray-50 border border-gray-200 rounded px-3 py-2">
+                          <div>
+                            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Min. objednávka (m³)</div>
+                            <div className="font-bold text-secondary text-sm">
+                              <EditableField value={ts.minimumLoadM3 as number} type="number" onSave={v => saveTs({ ...ts, minimumLoadM3: parseFloat(v) || 0 })} /> m³
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
                 {/* Zóny tohto typu */}
                 {typeZones.map(z => (
@@ -1293,13 +1278,18 @@ function KlientiTab() {
       </div>
 
       {/* Search + Add — sticky navy bar */}
-      <div className="sticky top-14 z-40 -mx-4 sm:-mx-6 px-4 sm:px-6 bg-secondary flex items-center gap-3 py-2.5 shadow-md">
-        <input placeholder="Hľadať klienta..." value={search} onChange={e => setSearch(e.target.value)}
-          className="flex-1 min-w-0 bg-white/10 border border-white/20 text-white placeholder:text-white/40 px-4 py-1.5 text-sm focus:outline-none focus:border-primary" />
-        <button onClick={() => { setAdding(true); setExpanded(null); }}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-secondary font-bold text-sm hover:bg-primary/90 shrink-0 whitespace-nowrap">
-          <Plus className="w-4 h-4" /> Pridať klienta
-        </button>
+      <div className="sticky top-14 z-40 -mx-4 sm:-mx-6 bg-secondary shadow-md">
+        <div className="flex items-center justify-between px-4 sm:px-6 pt-2.5 pb-1.5 gap-3">
+          <span className="text-[10px] font-black text-white/40 uppercase tracking-widest hidden sm:block">Klienti</span>
+          <button onClick={() => { setAdding(true); setExpanded(null); }}
+            className="flex items-center gap-2 px-4 py-1.5 bg-primary text-secondary font-bold text-sm hover:bg-primary/90 shrink-0 whitespace-nowrap ml-auto">
+            <Plus className="w-4 h-4" /> Pridať klienta
+          </button>
+        </div>
+        <div className="px-4 sm:px-6 pb-2.5">
+          <input placeholder="Hľadať klienta..." value={search} onChange={e => setSearch(e.target.value)}
+            className="w-full bg-white text-secondary placeholder:text-gray-400 px-4 py-2 text-sm focus:outline-none border-0 border-b-2 border-b-transparent focus:border-b-primary" />
+        </div>
       </div>
 
       {/* Add form */}
