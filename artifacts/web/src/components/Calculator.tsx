@@ -1388,8 +1388,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
               <input type="number" min="0" step="0.1" value={distance}
                 onChange={(e) => { setDistance(e.target.value); setShowResult(false); }}
                 onWheel={(e) => e.currentTarget.blur()}
+                enterKeyHint="go"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
+                    e.preventDefault();
                     const hasQty = parseFloat(quantity) > 0 && selectedType != null;
                     const hasKm = tab === "vlastnadoprava" || parseFloat(e.currentTarget.value) > 0 || addressKm !== null;
                     if (hasQty && hasKm) setShowResult(true);
@@ -1454,8 +1456,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             <input type="number" min="0" step="0.5" value={quantity}
               onChange={(e) => { setQuantity(e.target.value); setShowResult(false); }}
               onWheel={(e) => e.currentTarget.blur()}
+              enterKeyHint="go"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
+                  e.preventDefault();
                   const hasQty = parseFloat(quantity) > 0 && selectedType != null;
                   const hasKm = tab === "vlastnadoprava" || parseFloat(distance) > 0 || addressKm !== null;
                   if (hasQty && hasKm) setShowResult(true);
@@ -1639,7 +1643,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 </div>
                 <div className="flex-1">
                   <span className="text-sm font-semibold text-white">Zimné opatrenia</span>
-                  <span className="ml-2 text-xs text-white/40">(+{zimneServicePrice.toFixed(2)} €/m³)</span>
+                  <span className="ml-2 text-xs text-white/40">
+                    {betonFactor < 1 && <s className="text-white/25 mr-1">{zimneServicePrice.toFixed(2)}</s>}
+                    +{(zimneServicePrice * betonFactor).toFixed(2)} €/m³
+                  </span>
                 </div>
                 {isZimneActive && (
                   <span className="text-[10px] font-bold text-blue-300 bg-blue-400/15 px-2 py-0.5 rounded tracking-wide">ZIMNÁ SEZÓNA</span>
@@ -1647,7 +1654,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
               </label>
               {zimneOpatrenia && parseFloat(quantity) > 0 && (
                 <p className="text-xs text-blue-300/70 mt-2 ml-8">
-                  {parseFloat(quantity)} m³ betónu × {zimneServicePrice.toFixed(2)} € = <span className="font-semibold text-blue-300">{(parseFloat(quantity) * zimneServicePrice).toFixed(2)} € bez DPH</span>
+                  {parseFloat(quantity)} m³ betónu × {(zimneServicePrice * betonFactor).toFixed(2)} € = <span className="font-semibold text-blue-300">{(parseFloat(quantity) * zimneServicePrice * betonFactor).toFixed(2)} € bez DPH</span>
                 </p>
               )}
             </div>
@@ -1666,7 +1673,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 {/* Čakačky */}
                 <div className="border border-white/10 rounded-lg p-3 bg-white/5">
                   <div className="text-xs font-semibold text-white/70 mb-0.5">Čakačky</div>
-                  <div className="text-[10px] text-white/35 mb-2 min-h-[2rem] flex items-start">{waitServicePricePumpa.toFixed(2)} €/15 min</div>
+                  <div className="text-[10px] text-white/35 mb-2 min-h-[2rem] flex items-start">
+                    {sluzbyFactor < 1 && <s className="text-white/20 mr-1">{waitServicePricePumpa.toFixed(2)}</s>}
+                    {(waitServicePricePumpa * sluzbyFactor).toFixed(2)} €/15 min
+                  </div>
                   <div className="flex items-center gap-2">
                     <button type="button"
                       onClick={() => { setWaitPiecesPumpa(Math.max(0, waitPiecesPumpa - 1)); setShowResult(false); }}
@@ -1686,7 +1696,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     </button>
                   </div>
                   {waitPiecesPumpa > 0 && (
-                    <p className="text-[10px] text-primary mt-1.5 text-center font-semibold">{(waitPiecesPumpa * waitServicePricePumpa).toFixed(2)} €</p>
+                    <p className="text-[10px] text-primary mt-1.5 text-center font-semibold">{(waitPiecesPumpa * waitServicePricePumpa * sluzbyFactor).toFixed(2)} €</p>
                   )}
                 </div>
 
@@ -1732,7 +1742,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-white/80">
                   Čakačky
-                  <span className="ml-2 text-xs font-normal text-white/40">{waitServicePriceMix.toFixed(2)} € / 15 min</span>
+                  <span className="ml-2 text-xs font-normal text-white/40">
+                    {sluzbyFactor < 1 && <s className="text-white/20 mr-1">{waitServicePriceMix.toFixed(2)}</s>}
+                    {(waitServicePriceMix * sluzbyFactor).toFixed(2)} € / 15 min
+                  </span>
                 </span>
                 {(parseInt(waitHour) > 0 || parseInt(waitMin) > 0) && (
                   <span className="text-xs text-primary font-bold">
@@ -2063,8 +2076,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     {[
                       { label: "Kapacita", value: `${pumpCap} m³` },
                       { label: "Výložník", value: "28 m" },
-                      { label: "Čerpanie", value: `${pumpServicePrice.toFixed(2)} €/hod` },
-                      { label: "Rozbeh. chémia", value: `${chemServicePrice.toFixed(2)} € (v cene)` },
+                      { label: "Čerpanie", value: `${(pumpServicePrice * sluzbyFactor).toFixed(2)} €/hod` },
+                      { label: "Rozbeh. chémia", value: `${(chemServicePrice * sluzbyFactor).toFixed(2)} € (v cene)` },
                     ].map(({ label, value }) => (
                       <div key={label} className="bg-secondary/70 px-3 py-2">
                         <div className="text-[10px] text-white/35 uppercase tracking-wide mb-0.5">{label}</div>
@@ -2088,7 +2101,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                   <div className="grid grid-cols-2 gap-px bg-primary/15">
                     {[
                       { label: "Kapacita", value: `${mixCap} m³` },
-                      { label: "Čakačka / 15 min", value: `${waitServicePriceMix.toFixed(2)} €` },
+                      { label: "Čakačka / 15 min", value: `${(waitServicePriceMix * sluzbyFactor).toFixed(2)} €` },
                     ].map(({ label, value }) => (
                       <div key={label} className="bg-secondary/70 px-3 py-2">
                         <div className="text-[10px] text-white/35 uppercase tracking-wide mb-0.5">{label}</div>
