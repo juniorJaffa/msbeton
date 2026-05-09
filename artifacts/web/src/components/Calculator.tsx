@@ -1388,6 +1388,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
               <input type="number" min="0" step="0.1" value={distance}
                 onChange={(e) => { setDistance(e.target.value); setShowResult(false); }}
                 onWheel={(e) => e.currentTarget.blur()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const hasQty = parseFloat(quantity) > 0 && selectedType != null;
+                    const hasKm = tab === "vlastnadoprava" || parseFloat(e.currentTarget.value) > 0 || addressKm !== null;
+                    if (hasQty && hasKm) setShowResult(true);
+                  }
+                }}
                 placeholder="Zadajte vzdialenosť v km"
                 className="w-full bg-white/10 border-b-2 border-b-primary text-white px-4 py-3 focus:outline-none placeholder:text-white/30 text-sm font-medium rounded-sm" />
             ) : (
@@ -1447,6 +1454,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             <input type="number" min="0" step="0.5" value={quantity}
               onChange={(e) => { setQuantity(e.target.value); setShowResult(false); }}
               onWheel={(e) => e.currentTarget.blur()}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const hasQty = parseFloat(quantity) > 0 && selectedType != null;
+                  const hasKm = tab === "vlastnadoprava" || parseFloat(distance) > 0 || addressKm !== null;
+                  if (hasQty && hasKm) setShowResult(true);
+                }
+              }}
               placeholder="Zadajte množstvo"
               className="w-full bg-white/10 border-b-2 border-b-primary text-white px-4 py-3 focus:outline-none placeholder:text-white/30 text-sm font-medium rounded-sm" />
           </div>

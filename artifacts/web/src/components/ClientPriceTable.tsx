@@ -211,8 +211,9 @@ export function ClientPriceTable({
             </div>
             {cat.types.filter((t) => t.price > 0 && t.label.trim()).map((t, i) => {
               const betonOrig = t.price * hotovostMult;
+              // Manual prices stored as faktura price; show with hotovostMult for display, save as faktura
               const betonManual = manualPrices?.[t.id] !== undefined ? manualPrices[t.id] * hotovostMult : undefined;
-              const betonEdit = priceMode === "hotovost" ? undefined : onManualPriceChange;
+              const betonEdit = onManualPriceChange;
               return (
                 <div key={t.id} className={cn(
                   "flex items-center justify-between px-3 py-2 border-b text-sm",

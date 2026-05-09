@@ -1084,15 +1084,15 @@ function genPassword() {
 }
 
 // ── KLIENTI tab ───────────────────────────────────────────────────────────────
-function DiscountInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function DiscountInput({ label, value, onChange, disabled }: { label: string; value: string; onChange: (v: string) => void; disabled?: boolean }) {
   return (
     <div>
-      <label className="text-xs text-gray-500 block mb-1">{label}</label>
+      <label className={cn("text-xs block mb-1", disabled ? "text-gray-300" : "text-gray-500")}>{label}</label>
       <div className="flex items-center gap-1">
         <input type="number" min="0" max="100" value={value} onChange={e => onChange(e.target.value.replace(/^0+(?=\d)/, "") || "0")}
-          onFocus={e => e.target.select()}
-          className="border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:border-primary w-full text-center" />
-        <span className="text-xs text-gray-400 shrink-0">%</span>
+          onFocus={e => e.target.select()} disabled={disabled}
+          className={cn("border px-2 py-1.5 text-sm focus:outline-none w-full text-center", disabled ? "border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed" : "border-gray-200 focus:border-primary")} />
+        <span className={cn("text-xs shrink-0", disabled ? "text-gray-300" : "text-gray-400")}>%</span>
       </div>
     </div>
   );
@@ -1125,8 +1125,24 @@ function KlientiTab() {
   const [showFormPass, setShowFormPass] = useState(false);
   const [sendRegEmail, setSendRegEmail] = useState(true);
   const [emailStatus, setEmailStatus] = useState<"idle" | "sending" | "ok" | "error">("idle");
+  const [sysDphOpen, setSysDphOpen] = useState(false);
 
   const save = (data: Client[]) => { setClients(data); adminData.saveClients(data); };
+  // Auto-cleanup: clients with both celkovo AND individual discounts → celkovo wins, clear individual
+  useEffect(() => {
+    const needFix = clients.filter(c =>
+      (c.discountCelkovo ?? 0) > 0 &&
+      ((c.discountBeton ?? 0) > 0 || (c.discountDoprava ?? 0) > 0 || (c.discountSluzby ?? 0) > 0)
+    );
+    if (needFix.length > 0) {
+      save(clients.map(c =>
+        needFix.some(f => f.id === c.id)
+          ? { ...c, discountBeton: 0, discountDoprava: 0, discountSluzby: 0 }
+          : c
+      ));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const remove = (id: string) => { if (id === SYSTEM_OWNER_ID) return; if (confirm("Vymazať klienta?")) save(clients.filter(c => c.id !== id)); };
   const update = (id: string, patch: Partial<Client>) => save(clients.map(c => c.id === id ? { ...c, ...patch } : c));
   const togglePassVis = (id: string) => setShowPass(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
@@ -1184,12 +1200,17 @@ function KlientiTab() {
 
   return (
     <div className="space-y-4">
-      {/* Systémová DPH — editovateľná */}
+      {/* Systémová DPH — collapsible */}
       <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-4 py-2 border-b border-gray-100 bg-gray-50">
+        <button
+          type="button"
+          onClick={() => setSysDphOpen(o => !o)}
+          className="w-full flex items-center justify-between px-4 py-2 border-b border-gray-100 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+        >
           <h3 className="font-black text-secondary text-sm uppercase tracking-widest">Systémová DPH</h3>
-        </div>
-        <div className="flex flex-wrap gap-px bg-gray-100">
+          {sysDphOpen ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+        </button>
+        {sysDphOpen && <div className="flex flex-wrap gap-px bg-gray-100">
           <div className="bg-white px-3 py-2 flex-1 min-w-0">
             <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">DPH Faktúra</div>
             <div className="flex items-center gap-1 font-bold text-secondary text-sm">
@@ -1258,7 +1279,7 @@ function KlientiTab() {
               );
             })()}
           </div>
-        </div>
+        </div>}
       </div>
 
       {/* Search + Add */}
@@ -1322,12 +1343,26 @@ function KlientiTab() {
             {/* Zľavy */}
             <div className="border-t border-gray-100 pt-4">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Zľavy</p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <DiscountInput label="Zľava/Betón" value={form.discountBeton} onChange={v => setForm({ ...form, discountBeton: v })} />
-                <DiscountInput label="Zľava/Doprava" value={form.discountDoprava} onChange={v => setForm({ ...form, discountDoprava: v })} />
-                <DiscountInput label="Zľava/Služby" value={form.discountSluzby} onChange={v => setForm({ ...form, discountSluzby: v })} />
-                <DiscountInput label="Zľava/Celkovo" value={form.discountCelkovo} onChange={v => setForm({ ...form, discountCelkovo: v })} />
-              </div>
+              {(() => {
+                const fC = parseInt(form.discountCelkovo) || 0;
+                const fB = parseInt(form.discountBeton) || 0;
+                const fD = parseInt(form.discountDoprava) || 0;
+                const fS = parseInt(form.discountSluzby) || 0;
+                const hasInd = fB > 0 || fD > 0 || fS > 0;
+                const hasCelk = fC > 0;
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <DiscountInput label="Zľava/Betón" value={form.discountBeton} disabled={hasCelk}
+                      onChange={v => setForm({ ...form, discountBeton: v, discountCelkovo: "0" })} />
+                    <DiscountInput label="Zľava/Doprava" value={form.discountDoprava} disabled={hasCelk}
+                      onChange={v => setForm({ ...form, discountDoprava: v, discountCelkovo: "0" })} />
+                    <DiscountInput label="Zľava/Služby" value={form.discountSluzby} disabled={hasCelk}
+                      onChange={v => setForm({ ...form, discountSluzby: v, discountCelkovo: "0" })} />
+                    <DiscountInput label="Zľava/Celkovo" value={form.discountCelkovo} disabled={hasInd}
+                      onChange={v => setForm({ ...form, discountCelkovo: v, discountBeton: "0", discountDoprava: "0", discountSluzby: "0" })} />
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Možnosti */}
@@ -1353,7 +1388,7 @@ function KlientiTab() {
                 </label>
                 <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
                   <input type="checkbox" checked={form.canPridatBeton} onChange={e => setForm({ ...form, canPridatBeton: e.target.checked })} className="accent-secondary w-5 h-5 shrink-0" />
-                  <span className="text-sm text-gray-700">Pridať betón</span>
+                  <span className="text-sm text-gray-700">Pridať položku (betón)</span>
                 </label>
                 <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
                   <input type="checkbox" checked={form.canZimneOpatrenia} onChange={e => setForm({ ...form, canZimneOpatrenia: e.target.checked })} className="accent-blue-600 w-5 h-5 shrink-0" />
@@ -1512,7 +1547,7 @@ function KlientiTab() {
                   <button
                     onClick={(e) => { e.stopPropagation(); setExpanded(c.id); setClientDetailTab(prev => ({ ...prev, [c.id]: "calc" })); }}
                     title="Kalkulačka klienta"
-                    className="sm:hidden p-1 text-gray-300 hover:text-primary transition-colors">
+                    className="p-1 text-gray-300 hover:text-primary transition-colors">
                     <Calculator className="w-4 h-4" />
                   </button>
                   <button
@@ -1550,48 +1585,59 @@ function KlientiTab() {
                   {/* Zľavy – prominentný pás hore */}
                   <div className="px-4 py-3 bg-white border-b border-gray-100">
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Zľavy klienta</p>
-                    <div className="grid grid-cols-4 gap-2">
-                      {([
-                        { label: "Betón",   field: "discountBeton" as keyof Client },
-                        { label: "Doprava", field: "discountDoprava" as keyof Client },
-                        { label: "Služby",  field: "discountSluzby" as keyof Client },
-                        { label: "Celkovo", field: "discountCelkovo" as keyof Client },
-                      ]).map(({ label, field }) => {
-                        const val = (c[field] as number) ?? 0;
-                        const celkovo = (c.discountCelkovo as number) ?? 0;
-                        const isCelkovo = field === "discountCelkovo";
-                        const blockedByCelkovo = !isCelkovo && celkovo > 0 && val === 0;
-                        const active = val > 0;
-                        return (
-                          <div key={field} className={cn(
-                            "border px-2 py-2 text-center",
-                            blockedByCelkovo ? "bg-gray-50 border-gray-100 opacity-50" : active ? "bg-primary/10 border-primary/40" : "bg-gray-50 border-gray-200"
-                          )}>
-                            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1.5">{label}</div>
-                            {blockedByCelkovo ? (
-                              <div className="text-[10px] text-gray-400 font-bold py-1.5">= Celkovo</div>
-                            ) : (
-                            <div className="flex items-center justify-center gap-0.5">
-                              <input
-                                type="number" min="0" max="100"
-                                value={String(val)}
-                                onChange={e => update(c.id, { [field]: Math.min(100, Math.max(0, parseInt(e.target.value) || 0)) })}
-                                onFocus={e => e.target.select()}
-                                className={cn(
-                                  "border-0 px-0.5 py-0 text-xl font-black focus:outline-none w-16 text-center bg-transparent leading-none",
-                                  active ? "text-primary" : "text-gray-300"
+                    {(() => {
+                      const celkovo = (c.discountCelkovo as number) ?? 0;
+                      const hasInd = ((c.discountBeton ?? 0) as number) > 0 || ((c.discountDoprava ?? 0) as number) > 0 || ((c.discountSluzby ?? 0) as number) > 0;
+                      return (
+                        <>
+                        <div className="grid grid-cols-4 gap-2">
+                          {([
+                            { label: "Betón",   field: "discountBeton" as keyof Client },
+                            { label: "Doprava", field: "discountDoprava" as keyof Client },
+                            { label: "Služby",  field: "discountSluzby" as keyof Client },
+                            { label: "Celkovo", field: "discountCelkovo" as keyof Client },
+                          ]).map(({ label, field }) => {
+                            const val = (c[field] as number) ?? 0;
+                            const isCelkovo = field === "discountCelkovo";
+                            const blocked = isCelkovo ? hasInd : celkovo > 0;
+                            const active = val > 0;
+                            return (
+                              <div key={field} className={cn(
+                                "border px-2 py-2 text-center",
+                                blocked ? "bg-gray-50 border-gray-100 opacity-40" : active ? "bg-primary/10 border-primary/40" : "bg-gray-50 border-gray-200"
+                              )}>
+                                <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1.5">{label}</div>
+                                {blocked ? (
+                                  <div className="text-[10px] text-gray-400 font-bold py-1.5">{isCelkovo ? "— ind." : "= Celkovo"}</div>
+                                ) : (
+                                <div className="flex items-center justify-center gap-0.5">
+                                  <input
+                                    type="number" min="0" max="100"
+                                    value={String(val)}
+                                    onChange={e => {
+                                      const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                                      if (isCelkovo) update(c.id, { discountCelkovo: v, discountBeton: 0, discountDoprava: 0, discountSluzby: 0 });
+                                      else update(c.id, { [field]: v, discountCelkovo: 0 });
+                                    }}
+                                    onFocus={e => e.target.select()}
+                                    className={cn(
+                                      "border-0 px-0.5 py-0 text-xl font-black focus:outline-none w-16 text-center bg-transparent leading-none",
+                                      active ? "text-primary" : "text-gray-300"
+                                    )}
+                                  />
+                                  <span className={cn("text-sm font-bold leading-none", active ? "text-primary/70" : "text-gray-300")}>%</span>
+                                </div>
                                 )}
-                              />
-                              <span className={cn("text-sm font-bold leading-none", active ? "text-primary/70" : "text-gray-300")}>%</span>
-                            </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {((c.discountCelkovo ?? 0) > 0) && (
-                      <p className="text-[10px] text-gray-400 mt-1.5">Celková zľava {c.discountCelkovo}% — individuálne polia sú riadené celkovou zľavou. Nastav ich manuálne ak chceš iné sadzby per kategóriu.</p>
-                    )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <p className="text-[10px] text-gray-400 mt-1.5">
+                          {celkovo > 0 ? `Celková zľava ${celkovo}% — platí na betón, dopravu aj služby.` : hasInd ? "Individuálne zľavy — Celkovo nie je možné nastaviť súčasne." : "Nastav buď Celkovo alebo jednotlivé zľavy."}
+                        </p>
+                        </>
+                      );
+                    })()}
                   </div>
 
                   {/* Hlavná mriežka: Osobné info | Prístup + Možnosti */}
@@ -1671,7 +1717,7 @@ function KlientiTab() {
                           </label>
                           <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50 select-none">
                             <input type="checkbox" checked={c.canPridatBeton ?? true} onChange={e => update(c.id, { canPridatBeton: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />
-                            <span className="text-sm text-gray-700">Pridať betón</span>
+                            <span className="text-sm text-gray-700">Pridať položku (betón)</span>
                           </label>
                           <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50 select-none">
                             <input type="checkbox" checked={c.canZimneOpatrenia ?? false} onChange={e => update(c.id, { canZimneOpatrenia: e.target.checked })} className="accent-blue-600 w-4 h-4 shrink-0" />
@@ -1732,7 +1778,7 @@ function KlientiTab() {
                         discountSluzby={c.discountSluzby ?? 0}
                         discountCelkovo={c.discountCelkovo ?? 0}
                         manualPrices={c.manualPrices}
-                        onManualPriceChange={inlineTableMode === "faktura" ? (itemId, price) => {
+                        onManualPriceChange={(itemId, price) => {
                           const current = c.manualPrices ?? {};
                           let next: Record<string, number>;
                           if (price === null) {
@@ -1742,7 +1788,7 @@ function KlientiTab() {
                             next = { ...current, [itemId]: price };
                           }
                           update(c.id, { manualPrices: next });
-                        } : undefined}
+                        }}
                         priceMode={inlineTableMode}
                         hotovostDph={c.hotovostDph ?? (ts.defaultHotovostDph ?? 0.20)}
                         variant="light"
@@ -1815,7 +1861,7 @@ function KlientiTab() {
                 discountSluzby={tablePdfModal.discountSluzby ?? 0}
                 discountCelkovo={tablePdfModal.discountCelkovo ?? 0}
                 manualPrices={tablePdfModal.manualPrices}
-                onManualPriceChange={tablePdfMode === "faktura" ? (itemId, price) => {
+                onManualPriceChange={(itemId, price) => {
                   const current = tablePdfModal.manualPrices ?? {};
                   let next: Record<string, number>;
                   if (price === null) {
@@ -1826,7 +1872,7 @@ function KlientiTab() {
                   }
                   update(tablePdfModal.id, { manualPrices: next });
                   setTablePdfModal({ ...tablePdfModal, manualPrices: next });
-                } : undefined}
+                }}
                 priceMode={tablePdfMode}
                 hotovostDph={tablePdfModal.hotovostDph ?? (ts.defaultHotovostDph ?? 0.20)}
                 variant="light"
@@ -2027,7 +2073,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-100 overflow-x-hidden" style={{ fontFamily: "Montserrat, sans-serif" }}>
+    <div className="min-h-screen concrete-light overflow-x-hidden" style={{ fontFamily: "Montserrat, sans-serif" }}>
       {/* Top nav */}
       <header className="bg-secondary shadow-lg sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
