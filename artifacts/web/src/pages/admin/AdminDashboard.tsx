@@ -824,6 +824,16 @@ function ObjednavkyTab() {
   const [newBadge, setNewBadge] = useState(0);
 
   useEffect(() => {
+    // Immediate sync on mount so freshly submitted orders appear right away
+    syncFromServer().then(() => {
+      const fresh = adminData.getOrders();
+      setOrders(prev => {
+        const prevIds = new Set(prev.map(o => o.id));
+        const added = fresh.filter(o => !prevIds.has(o.id)).length;
+        if (added > 0) setNewBadge(n => n + added);
+        return fresh;
+      });
+    });
     const interval = setInterval(async () => {
       await syncFromServer();
       const fresh = adminData.getOrders();
