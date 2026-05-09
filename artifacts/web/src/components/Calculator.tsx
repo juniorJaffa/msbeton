@@ -1335,6 +1335,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                         discountCelkovo={discountCelkovo}
                         manualPrices={loggedClient?.manualPrices}
                         priceMode={priceTableMode}
+                        hotovostDph={VAT_HOTOVOST}
                         variant="dark"
                       />
                     </motion.div>
