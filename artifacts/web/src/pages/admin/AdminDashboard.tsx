@@ -1296,10 +1296,10 @@ function KlientiTab() {
       </div>
 
       {/* Search — sticky navy bar */}
-      <div className="sticky top-14 z-40 -mx-4 sm:-mx-6 bg-secondary shadow-md">
-        <div className="px-4 sm:px-6 py-2.5 flex items-center gap-2">
+      <div className="sticky top-14 z-40 -mx-4 sm:-mx-6 bg-gray-100 border-b border-gray-200 shadow-sm">
+        <div className="px-4 sm:px-6 py-2 flex items-center gap-2">
           <input placeholder="Hľadať klienta..." value={search} onChange={e => setSearch(e.target.value)}
-            className="flex-1 bg-white text-secondary placeholder:text-gray-400 px-4 py-2 text-sm focus:outline-none border-0 border-b-2 border-b-transparent focus:border-b-primary" />
+            className="flex-1 bg-white text-secondary placeholder:text-gray-400 px-3 py-1.5 text-sm focus:outline-none rounded border border-gray-200 focus:border-primary" />
           <button onClick={() => { setAdding(true); setExpanded(null); }}
             className="sm:hidden flex items-center gap-1.5 px-3 py-2 bg-primary text-secondary font-bold text-xs hover:bg-primary/90 shrink-0 whitespace-nowrap">
             <Plus className="w-3.5 h-3.5" /> Pridať
