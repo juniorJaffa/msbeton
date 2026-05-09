@@ -1441,9 +1441,9 @@ function KlientiTab() {
       <div className="hidden sm:flex items-center gap-3 px-4 py-2 bg-secondary text-white text-xs font-black uppercase tracking-widest">
         <div className="w-9 shrink-0" />
         <div className="flex-1 min-w-0">Klient</div>
-        <div className="flex flex-1">
+        <div className="flex w-52 shrink-0">
           {["Betón", "Doprava", "Služby", "Celkovo"].map(l => (
-            <div key={l} className="flex-1 text-center text-primary">{l}</div>
+            <div key={l} className="w-13 text-center text-primary">{l}</div>
           ))}
         </div>
         <div className="w-44 shrink-0" />
@@ -1506,9 +1506,9 @@ function KlientiTab() {
                 </div>
 
                 {/* Desktop: zľavy stĺpce */}
-                <div className="hidden sm:flex flex-1 items-center">
+                <div className="hidden sm:flex w-52 shrink-0 items-center">
                   {[c.discountBeton ?? 0, c.discountDoprava ?? 0, c.discountSluzby ?? 0, c.discountCelkovo ?? 0].map((val, i) => (
-                    <div key={i} className="flex-1 text-center">
+                    <div key={i} className="w-13 text-center">
                       <span className={`text-sm font-bold ${val > 0 ? "text-primary" : "text-gray-300"}`}>{val}%</span>
                     </div>
                   ))}
@@ -1525,8 +1525,8 @@ function KlientiTab() {
                       </span>
                     )}
                     {c.isOwner && (
-                      <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-black uppercase rounded-sm bg-primary/20 text-primary/80">
-                        <Crown className="w-3 h-3" /> Admin
+                      <span className="flex items-center px-1.5 py-0.5 text-[10px] rounded-sm bg-primary/20 text-primary/80">
+                        <Crown className="w-3 h-3" />
                       </span>
                     )}
                     {hasLogin ? (
