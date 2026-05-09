@@ -19,7 +19,7 @@ function EditableField({ value, onSave, type = "text" }: { value: string | numbe
   const save = () => { onSave(val); setEditing(false); };
   const startEdit = () => { setVal(String(value)); setEditing(true); };
   if (!editing) return (
-    <span className="cursor-pointer hover:text-primary transition-colors group flex items-center gap-1" onClick={startEdit}>
+    <span className="cursor-pointer hover:text-primary transition-colors group flex items-center gap-1" onClick={e => { e.stopPropagation(); startEdit(); }}>
       {value}
       <Pencil className="w-3 h-3 opacity-0 group-hover:opacity-50 transition-opacity" />
     </span>
@@ -1292,12 +1292,12 @@ function KlientiTab() {
         </div>}
       </div>
 
-      {/* Search + Add */}
-      <div className="flex gap-3 flex-wrap">
+      {/* Search + Add — sticky navy bar */}
+      <div className="sticky top-14 z-40 -mx-4 sm:-mx-6 px-4 sm:px-6 bg-secondary flex items-center gap-3 py-2.5 shadow-md">
         <input placeholder="Hľadať klienta..." value={search} onChange={e => setSearch(e.target.value)}
-          className="flex-1 min-w-40 border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:border-primary" />
+          className="flex-1 min-w-0 bg-white/10 border border-white/20 text-white placeholder:text-white/40 px-4 py-1.5 text-sm focus:outline-none focus:border-primary" />
         <button onClick={() => { setAdding(true); setExpanded(null); }}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-secondary font-bold text-sm hover:bg-primary/90 shrink-0">
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-secondary font-bold text-sm hover:bg-primary/90 shrink-0 whitespace-nowrap">
           <Plus className="w-4 h-4" /> Pridať klienta
         </button>
       </div>
@@ -1451,9 +1451,9 @@ function KlientiTab() {
       <div className="hidden sm:flex items-center gap-3 px-4 py-2 bg-secondary text-white text-xs font-black uppercase tracking-widest">
         <div className="w-9 shrink-0" />
         <div className="flex-1 min-w-0">Klient</div>
-        <div className="flex w-52 shrink-0">
+        <div className="flex w-80 shrink-0">
           {["Betón", "Doprava", "Služby", "Celkovo"].map(l => (
-            <div key={l} className="w-13 text-center text-primary">{l}</div>
+            <div key={l} className="w-20 text-center text-primary">{l}</div>
           ))}
         </div>
         <div className="w-44 shrink-0" />
@@ -1516,9 +1516,9 @@ function KlientiTab() {
                 </div>
 
                 {/* Desktop: zľavy stĺpce */}
-                <div className="hidden sm:flex w-52 shrink-0 items-center">
+                <div className="hidden sm:flex w-80 shrink-0 items-center">
                   {[c.discountBeton ?? 0, c.discountDoprava ?? 0, c.discountSluzby ?? 0, c.discountCelkovo ?? 0].map((val, i) => (
-                    <div key={i} className="w-13 text-center">
+                    <div key={i} className="w-20 text-center">
                       <span className={`text-sm font-bold ${val > 0 ? "text-primary" : "text-gray-300"}`}>{val}%</span>
                     </div>
                   ))}
