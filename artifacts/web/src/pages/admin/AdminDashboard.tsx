@@ -1778,7 +1778,7 @@ function KlientiTab() {
                         discountSluzby={c.discountSluzby ?? 0}
                         discountCelkovo={c.discountCelkovo ?? 0}
                         manualPrices={c.manualPrices}
-                        onManualPriceChange={(itemId, price) => {
+                        onManualPriceChange={inlineTableMode === "faktura" ? (itemId, price) => {
                           const current = c.manualPrices ?? {};
                           let next: Record<string, number>;
                           if (price === null) {
@@ -1788,7 +1788,7 @@ function KlientiTab() {
                             next = { ...current, [itemId]: price };
                           }
                           update(c.id, { manualPrices: next });
-                        }}
+                        } : undefined}
                         priceMode={inlineTableMode}
                         hotovostDph={c.hotovostDph ?? (ts.defaultHotovostDph ?? 0.20)}
                         variant="light"
@@ -1861,7 +1861,7 @@ function KlientiTab() {
                 discountSluzby={tablePdfModal.discountSluzby ?? 0}
                 discountCelkovo={tablePdfModal.discountCelkovo ?? 0}
                 manualPrices={tablePdfModal.manualPrices}
-                onManualPriceChange={(itemId, price) => {
+                onManualPriceChange={tablePdfMode === "faktura" ? (itemId, price) => {
                   const current = tablePdfModal.manualPrices ?? {};
                   let next: Record<string, number>;
                   if (price === null) {
@@ -1872,7 +1872,7 @@ function KlientiTab() {
                   }
                   update(tablePdfModal.id, { manualPrices: next });
                   setTablePdfModal({ ...tablePdfModal, manualPrices: next });
-                }}
+                } : undefined}
                 priceMode={tablePdfMode}
                 hotovostDph={tablePdfModal.hotovostDph ?? (ts.defaultHotovostDph ?? 0.20)}
                 variant="light"
