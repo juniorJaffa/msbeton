@@ -2205,7 +2205,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     <div className="bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm space-y-1">
                       <div className="flex justify-between">
                         <span className="text-white/50">{result.totalQty} m³ · {selectedType?.label.replace(/ – .*/, "")}</span>
-                        <span className="text-primary font-bold">{isFaktura ? result.totalDiscSDph.toFixed(2) : result.hotovostTotal.toFixed(2)} €</span>
+                        <span className="text-primary font-bold">{(isFaktura ? result.totalDiscSDph : result.hotovostTotal).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
                       </div>
                       <div className="text-white/30 text-xs">{tab === "pumpa" ? "Pumpa" : tab === "mix" ? "Mix" : "Vlastná doprava"}{address ? ` · ${address}` : ""}</div>
                     </div>
