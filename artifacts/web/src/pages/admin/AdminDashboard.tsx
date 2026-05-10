@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { LogOut, Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator } from "lucide-react";
+import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
@@ -257,21 +257,6 @@ function DopravaTab() {
 
   return (
     <div className="space-y-3">
-      {/* ── Nastavenia cenníka dopravy ── */}
-      <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
-          <h3 className="font-black text-secondary text-sm uppercase tracking-widest">Nastavenia cenníka dopravy</h3>
-        </div>
-        <div className="grid grid-cols-1 gap-px bg-gray-100 m-4 rounded overflow-hidden">
-          <div className="bg-gray-50 px-3 py-2.5">
-            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Min. cena / auto (€)</div>
-            <div className="font-bold text-secondary text-sm">
-              <EditableField value={ts.minimumFee as number} type="number" onSave={v => saveTs({ ...ts, minimumFee: parseFloat(v) || 0 })} />
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* ── Typy dopravy ── */}
       <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
@@ -348,6 +333,14 @@ function DopravaTab() {
                             <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Min. objednávka (m³)</div>
                             <div className="font-bold text-secondary text-sm">
                               <EditableField value={ts.minimumLoadM3 as number} type="number" onSave={v => saveTs({ ...ts, minimumLoadM3: parseFloat(v) || 0 })} /> m³
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4 bg-gray-50 border border-gray-200 rounded px-3 py-2">
+                          <div>
+                            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Min. cena / auto (€)</div>
+                            <div className="font-bold text-secondary text-sm">
+                              <EditableField value={ts.minimumFee as number} type="number" onSave={v => saveTs({ ...ts, minimumFee: parseFloat(v) || 0 })} />
                             </div>
                           </div>
                         </div>
@@ -1305,7 +1298,7 @@ function KlientiTab() {
       {adding && (
         <div className="bg-white border-2 border-primary shadow-md">
           <div className="bg-primary/10 border-b border-primary/20 px-5 py-3 flex items-center justify-between">
-            <span className="font-black text-secondary text-sm uppercase tracking-widest">Pridať užívateľa</span>
+            <span className="font-black text-secondary text-sm uppercase tracking-widest">Pridať klienta</span>
             <button onClick={() => setAdding(false)} className="text-gray-400 hover:text-red-500"><X className="w-4 h-4" /></button>
           </div>
           <div className="p-5 space-y-5">
@@ -1455,10 +1448,12 @@ function KlientiTab() {
             <div key={l} className="w-20 text-center text-primary">{l}</div>
           ))}
         </div>
-        <button onClick={() => { setAdding(true); setExpanded(null); }}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-secondary font-black text-[10px] hover:bg-primary/90 shrink-0 whitespace-nowrap uppercase tracking-wide">
-          <Plus className="w-3 h-3" /> <span className="hidden sm:inline">Pridať klienta</span><span className="sm:hidden">Pridať</span>
-        </button>
+        <div className="flex items-center justify-end sm:w-64 shrink-0">
+          <button onClick={() => { setAdding(true); setExpanded(null); }} title="Pridať klienta"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-primary text-secondary font-black text-[10px] hover:bg-primary/90 shrink-0 uppercase tracking-wide">
+            <UserPlus className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       {/* Client cards */}
@@ -1527,7 +1522,7 @@ function KlientiTab() {
                 </div>
 
                 {/* Desktop: action badges + buttons | Mobile: only chevron + action buttons */}
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-1 shrink-0 sm:w-64 sm:justify-end">
                   {/* Desktop-only badges */}
                   <div className="hidden sm:flex items-center gap-1">
                     {clientZone && (
