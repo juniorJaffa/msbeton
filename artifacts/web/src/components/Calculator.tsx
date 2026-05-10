@@ -813,16 +813,23 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       chem: tab === "pumpa" ? chemServicePrice : 0,
       waiting: tab === "pumpa" ? result.waitIntervals * waitServicePricePumpa : tab === "mix" ? result.waitIntervals * waitServicePriceMix : 0,
     };
-    const hasMainSluzby = tab === "pumpa" && (mainSluzbyOrig.pump + mainSluzbyOrig.hoses + mainSluzbyOrig.washing + mainSluzbyOrig.chem + mainSluzbyOrig.waiting) > 0;
+    const hasMainSluzby =
+      (tab === "pumpa" && (mainSluzbyOrig.pump + mainSluzbyOrig.hoses + mainSluzbyOrig.washing + mainSluzbyOrig.chem + mainSluzbyOrig.waiting) > 0) ||
+      (tab === "mix" && mainSluzbyOrig.waiting > 0);
     const svcLabel = tab === "pumpa" ? "Služby – Pumpa" : "Čakačky";
     const sluzbyRows = hasMainSluzby
       ? subSectionRow(svcLabel) +
-        trow(`Čerpanie betónu – ${result.pumpHrs}&nbsp;h${result.pumpMs > 0 ? `&nbsp;${result.pumpMs}&nbsp;min` : ""}`,
-          `${result.pumpHrs}&nbsp;h${result.pumpMs > 0 ? `&nbsp;${result.pumpMs}&nbsp;min` : ""}`, `${fmtN(pumpServicePrice)}&nbsp;€/h`, mainSluzbyOrig.pump, mainSluzbyOrig.pump * sluzbyFactor) +
-        (hoseMeters > 0 ? trow(`Prídavné hadice`, `${hoseMeters}&nbsp;m`, `${fmtN(hoseServicePrice)}&nbsp;€/m`, mainSluzbyOrig.hoses, mainSluzbyOrig.hoses * sluzbyFactor) : "") +
-        (washing ? trow("Umývanie mimo stavby", "1&nbsp;ks", `${fmtN(washServicePrice)}&nbsp;€`, mainSluzbyOrig.washing, mainSluzbyOrig.washing * sluzbyFactor) : "") +
-        (mainSluzbyOrig.chem > 0 ? trow("Rozbehová chémia", "1&nbsp;ks", `${fmtN(chemServicePrice)}&nbsp;€`, mainSluzbyOrig.chem, mainSluzbyOrig.chem * sluzbyFactor) : "") +
-        (result.waitIntervals > 0 ? trow(`Čakačky – ${result.waitLabel}`, `${result.waitIntervals}&nbsp;×&nbsp;15&nbsp;min`, `${fmtN(waitServicePricePumpa)}&nbsp;€/int.`, mainSluzbyOrig.waiting, mainSluzbyOrig.waiting * sluzbyFactor) : "")
+        (tab === "pumpa"
+          ? trow(`Čerpanie betónu – ${result.pumpHrs}&nbsp;h${result.pumpMs > 0 ? `&nbsp;${result.pumpMs}&nbsp;min` : ""}`,
+              `${result.pumpHrs}&nbsp;h${result.pumpMs > 0 ? `&nbsp;${result.pumpMs}&nbsp;min` : ""}`, `${fmtN(pumpServicePrice)}&nbsp;€/h`, mainSluzbyOrig.pump, mainSluzbyOrig.pump * sluzbyFactor) +
+            (hoseMeters > 0 ? trow(`Prídavné hadice`, `${hoseMeters}&nbsp;m`, `${fmtN(hoseServicePrice)}&nbsp;€/m`, mainSluzbyOrig.hoses, mainSluzbyOrig.hoses * sluzbyFactor) : "") +
+            (washing ? trow("Umývanie mimo stavby", "1&nbsp;ks", `${fmtN(washServicePrice)}&nbsp;€`, mainSluzbyOrig.washing, mainSluzbyOrig.washing * sluzbyFactor) : "") +
+            (mainSluzbyOrig.chem > 0 ? trow("Rozbehová chémia", "1&nbsp;ks", `${fmtN(chemServicePrice)}&nbsp;€`, mainSluzbyOrig.chem, mainSluzbyOrig.chem * sluzbyFactor) : "") +
+            (result.waitIntervals > 0 ? trow(`Čakačky – ${result.waitLabel}`, `${result.waitIntervals}&nbsp;×&nbsp;15&nbsp;min`, `${fmtN(waitServicePricePumpa)}&nbsp;€/int.`, mainSluzbyOrig.waiting, mainSluzbyOrig.waiting * sluzbyFactor) : "")
+          : "") +
+        (tab === "mix" && result.waitIntervals > 0
+          ? trow(`Čas na stavbe – ${result.waitLabel}`, `${result.waitIntervals}&nbsp;×&nbsp;15&nbsp;min`, `${fmtN(waitServicePriceMix)}&nbsp;€/int.`, mainSluzbyOrig.waiting, mainSluzbyOrig.waiting * sluzbyFactor)
+          : "")
       : "";
 
     // Extra items (concreteBreakdown[1...])
@@ -876,13 +883,17 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       return `<div style="color:#EDC531;font-size:8pt;margin-top:3px">Zľavy: ${dp.join(", ")}</div>`;
     })();
 
+    const tabLabel = tab === "pumpa" ? "Pumpa" : tab === "mix" ? "Miešačka" : "Vlastná doprava";
+    const zoneLabel = clientDeliveryZone?.name ?? "";
+    const transportModeInfo = `<div style="color:#555;font-size:8pt;margin-top:2px">Doprava: ${tabLabel}${zoneLabel ? ` – ${zoneLabel}` : ""}</div>`;
     const clientBlock = loggedClient ? `
       <div style="border:1px solid #ddd;border-radius:3px;padding:6px 10px;margin-bottom:5mm;font-size:8.5pt">
         <div style="font-weight:bold;color:#001D3D">${loggedClient.name}${loggedClient.company ? ` – ${loggedClient.company}` : ""}</div>
         ${loggedClient.clientId ? `<div style="color:#777;font-size:8pt">ID klienta: ${loggedClient.clientId}</div>` : ""}
         ${loggedClient.name ? `<div style="color:#555">${loggedClient.name}</div>` : ""}
+        ${transportModeInfo}
         ${discountInfo}
-      </div>` : (hasDiscount ? `<div style="margin-bottom:5mm">${discountInfo}</div>` : "");
+      </div>` : `<div style="margin-bottom:5mm">${transportModeInfo}${hasDiscount ? discountInfo : ""}</div>`;
 
     const ownNote = result.isOwn
       ? `<tr><td colspan="5" style="font-style:italic;color:#888;font-size:8pt;padding:5px 8px;border-bottom:1px solid #eee">Vlastná doprava – zákazník zabezpečuje dopravu vlastným vozidlom</td></tr>` : "";

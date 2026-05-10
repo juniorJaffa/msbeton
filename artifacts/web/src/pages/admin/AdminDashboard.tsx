@@ -39,6 +39,8 @@ function EditableField({ value, onSave, type = "text" }: { value: string | numbe
 function BetonTab() {
   const [cats, setCats] = useState<ConcreteCategory[]>(adminData.getCategories());
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [renamingCat, setRenamingCat] = useState<string | null>(null);
+  const [renameCatVal, setRenameCatVal] = useState("");
   const [newCatName, setNewCatName] = useState("");
   const [addingCat, setAddingCat] = useState(false);
   const [addingType, setAddingType] = useState<string | null>(null);
@@ -68,19 +70,34 @@ function BetonTab() {
     <div className="space-y-3">
       {cats.map(cat => (
         <div key={cat.id} className="border border-gray-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-gray-50 transition-colors"
-            onClick={() => setExpanded(expanded === cat.id ? null : cat.id)}>
-            <div className="flex items-center gap-3">
-              {expanded === cat.id ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-              <span className="font-semibold text-secondary"><EditableField value={cat.name} onSave={v => updateCatName(cat.id, v)} /></span>
+          <div className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-gray-50 transition-colors select-none"
+            onClick={() => { setExpanded(expanded === cat.id ? null : cat.id); setRenamingCat(null); }}>
+            <div className="flex items-center gap-3 min-w-0">
+              {expanded === cat.id ? <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" /> : <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />}
+              <span className="font-semibold text-secondary truncate">{cat.name}</span>
             </div>
-            <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-2 shrink-0" onClick={e => e.stopPropagation()}>
               <span className="text-xs text-gray-400">{cat.types.length} typov</span>
+              <button onClick={() => { setRenamingCat(renamingCat === cat.id ? null : cat.id); setRenameCatVal(cat.name); setExpanded(cat.id); }}
+                className="p-1.5 bg-gray-100 text-gray-500 hover:bg-primary hover:text-secondary transition-colors rounded-sm" title="Premenovať">
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
               <button onClick={() => deleteCategory(cat.id)} className="p-1.5 bg-secondary text-primary hover:bg-secondary/80 transition-colors rounded-sm">
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
           </div>
+          {renamingCat === cat.id && (
+            <div className="flex gap-2 px-5 pb-3 border-b border-gray-100" onClick={e => e.stopPropagation()}>
+              <input value={renameCatVal} onChange={e => setRenameCatVal(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") { updateCatName(cat.id, renameCatVal); setRenamingCat(null); } if (e.key === "Escape") setRenamingCat(null); }}
+                className="flex-1 border-2 border-primary px-3 py-1.5 text-sm focus:outline-none" autoFocus />
+              <button onClick={() => { updateCatName(cat.id, renameCatVal); setRenamingCat(null); }}
+                className="px-3 py-1.5 bg-primary text-secondary text-sm font-bold hover:bg-primary/90"><Check className="w-4 h-4" /></button>
+              <button onClick={() => setRenamingCat(null)}
+                className="px-3 py-1.5 bg-gray-100 text-gray-500 text-sm hover:bg-gray-200"><X className="w-4 h-4" /></button>
+            </div>
+          )}
 
           {expanded === cat.id && (
             <div className="border-t border-gray-100 px-5 py-3 bg-gray-50/50">
@@ -140,7 +157,7 @@ function BetonTab() {
         </div>
       ) : (
         <button onClick={() => setAddingCat(true)}
-          className="flex items-center gap-2 w-full border-2 border-dashed border-gray-300 text-gray-400 hover:border-primary hover:text-primary font-bold text-sm py-4 justify-center transition-colors">
+          className="flex items-center gap-2 w-full border-2 border-dashed border-gray-300 bg-white text-gray-500 hover:border-primary hover:text-primary font-bold text-sm py-4 justify-center transition-colors rounded-md">
           <Plus className="w-4 h-4" /> Pridať kategóriu kameniva
         </button>
       )}
@@ -726,7 +743,7 @@ function SluzbyTab() {
         </div>
       ) : (
         <button onClick={() => setAdding(true)}
-          className="flex items-center gap-2 w-full border-2 border-dashed border-gray-300 text-gray-400 hover:border-primary hover:text-primary font-bold text-sm py-4 justify-center transition-colors">
+          className="flex items-center gap-2 w-full border-2 border-dashed border-gray-300 bg-white text-gray-500 hover:border-primary hover:text-primary font-bold text-sm py-4 justify-center transition-colors rounded-md">
           <Plus className="w-4 h-4" /> Pridať službu
         </button>
       )}
