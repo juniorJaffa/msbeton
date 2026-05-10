@@ -235,7 +235,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [washing, setWashing] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [priceMode, setPriceMode] = useState<PriceMode>("faktura");
-  const [loggedClient, setLoggedClient] = useState<LoggedClient | null>(() => clientOverride ?? clientAuth.getLoggedClient());
+  const [loggedClientState, setLoggedClient] = useState<LoggedClient | null>(() => clientOverride ? null : clientAuth.getLoggedClient());
+  const loggedClient = clientOverride ?? loggedClientState;
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [loginId, setLoginId] = useState("");
   const [loginPwd, setLoginPwd] = useState("");

@@ -739,7 +739,7 @@ const ORDER_STATUSES: { key: Order["status"]; label: string; color: string }[] =
   { key: "potvrdena",   label: "Potvrdená",   color: "bg-yellow-100 text-yellow-700" },
   { key: "odoslana",    label: "Odoslaná",    color: "bg-green-100 text-green-700" },
   { key: "vyuctovana",  label: "Vyúčtovaná",  color: "bg-purple-100 text-purple-700" },
-  { key: "vyplatena",   label: "Vyplatená",   color: "bg-emerald-100 text-emerald-700" },
+  { key: "vyplatena",   label: "Vyplatená",   color: "bg-teal-100 text-teal-700" },
   { key: "zrusena",     label: "Zrušená",     color: "bg-red-100 text-red-500" },
 ];
 
@@ -772,9 +772,9 @@ const STATUS_ACTIVE_COLORS: Record<Order["status"], string> = {
   potvrdena:   "bg-yellow-400 text-white border-yellow-400",
   odoslana:    "bg-green-600 text-white border-green-600",
   vyuctovana:  "bg-purple-600 text-white border-purple-600",
-  vyplatena:   "bg-emerald-600 text-white border-emerald-600",
+  vyplatena:   "bg-teal-600 text-white border-teal-600",
   zrusena:     "bg-red-500 text-white border-red-500",
-  vybavena:    "bg-green-600 text-white border-green-600",
+  vybavena:    "bg-indigo-600 text-white border-indigo-600",
 };
 
 function TabBadge({ tab }: { tab: Order["tab"] }) {
@@ -1293,7 +1293,7 @@ function KlientiTab() {
       {/* Search */}
       <div className="py-3">
         <input placeholder="Hľadať klienta..." value={search} onChange={e => setSearch(e.target.value)}
-          className="w-full bg-white text-secondary placeholder:text-gray-400 px-3 py-1.5 text-sm focus:outline-none rounded border border-gray-200 focus:border-primary" />
+          className="w-full bg-white text-secondary placeholder:text-gray-400 px-4 py-3 text-base focus:outline-none rounded border border-gray-200 focus:border-primary" />
       </div>
 
       {/* Add form */}
@@ -1444,7 +1444,10 @@ function KlientiTab() {
       {/* Table header */}
       <div className="flex items-center gap-3 px-4 py-2 bg-secondary text-white text-xs font-black uppercase tracking-widest">
         <div className="w-9 shrink-0" />
-        <div className="flex-1 min-w-0">Klient</div>
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          Klient
+          <span className="text-primary/60 font-normal text-[11px] normal-case tracking-normal">{filtered.length}</span>
+        </div>
         <div className="hidden sm:flex w-80 shrink-0">
           {["Betón", "Doprava", "Služby", "Celkovo"].map(l => (
             <div key={l} className="w-20 text-center text-primary">{l}</div>
