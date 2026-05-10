@@ -1443,11 +1443,10 @@ function KlientiTab() {
 
       {/* Table header */}
       <div className="flex items-center gap-3 px-4 py-2 bg-secondary text-white text-xs font-black uppercase tracking-widest">
-        <div className="w-9 shrink-0" />
-        <div className="flex-1 min-w-0 flex items-center gap-2">
-          Klient
-          <span className="text-primary/60 font-normal text-[11px] normal-case tracking-normal">{filtered.length}</span>
+        <div className="w-9 shrink-0 flex items-center justify-center">
+          <span className="text-primary/70 font-bold text-[11px] normal-case tracking-normal">{filtered.length}</span>
         </div>
+        <div className="flex-1 min-w-0">Klient</div>
         <div className="hidden sm:flex w-80 shrink-0">
           {["Betón", "Doprava", "Služby", "Celkovo"].map(l => (
             <div key={l} className="w-20 text-center text-primary">{l}</div>
