@@ -2107,17 +2107,26 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     </p>
                   </div>
                   <div className="grid grid-cols-2 gap-px bg-primary/15">
-                    {[
-                      { label: "Kapacita", value: `${pumpCap} m³` },
-                      { label: "Výložník", value: "28 m" },
-                      { label: "Čerpanie", value: `${(pumpServicePrice * sluzbyFactor).toFixed(2)} €/hod` },
-                      { label: "Rozbeh. chémia", value: `${(chemServicePrice * sluzbyFactor).toFixed(2)} € (v cene)` },
-                    ].map(({ label, value }) => (
-                      <div key={label} className="bg-secondary/70 px-3 py-2">
-                        <div className="text-[10px] text-white/35 uppercase tracking-wide mb-0.5">{label}</div>
-                        <div className="text-sm font-bold text-primary">{value}</div>
-                      </div>
-                    ))}
+                    {(() => {
+                      const sluzbyDisc = effectiveSluzby > 0 && sluzbyFactor < 1;
+                      const svcCell = (orig: number, suffix: string) => sluzbyDisc ? (
+                        <div>
+                          <span className="line-through text-primary/40 text-xs mr-1">{orig.toFixed(2)} €{suffix}</span>
+                          <span className="block">{(orig * sluzbyFactor).toFixed(2)} €{suffix}</span>
+                        </div>
+                      ) : `${(orig * sluzbyFactor).toFixed(2)} €${suffix}`;
+                      return ([
+                        { label: "Kapacita", value: `${pumpCap} m³` },
+                        { label: "Výložník", value: "28 m" },
+                        { label: "Čerpanie", value: svcCell(pumpServicePrice, "/hod") },
+                        { label: "Rozbeh. chémia", value: svcCell(chemServicePrice, " (v cene)") },
+                      ] as { label: string; value: React.ReactNode }[]).map(({ label, value }) => (
+                        <div key={label} className="bg-secondary/70 px-3 py-2">
+                          <div className="text-[10px] text-white/35 uppercase tracking-wide mb-0.5">{label}</div>
+                          <div className="text-sm font-bold text-primary">{value}</div>
+                        </div>
+                      ));
+                    })()}
                   </div>
                 </div>
               )}
