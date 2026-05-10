@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
@@ -7,6 +7,7 @@ import { PriceModeToggle } from "@/components/PriceModeToggle";
 import { VersionBadge } from "@/components/VersionBadge";
 import { PhoneInput } from "@/components/PhoneInput";
 import { cn, formatPhone } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 import { isLoggedIn, logout } from "@/lib/adminAuth";
 import { adminData, adminApi, syncFromServer, SYSTEM_OWNER_ID, ConcreteCategory, ConcreteType, DeliveryZone, Service, Client, TransportPricingZone, TransportSettings, Order } from "@/lib/adminData";
 
@@ -2072,6 +2073,38 @@ export default function AdminDashboard() {
     return () => window.removeEventListener("admin-data-synced", handler);
   }, []);
 
+  const [orderBadge, setOrderBadge] = useState(0);
+  const knownOrderIds = useRef<Set<string>>(new Set(adminData.getOrders().map(o => o.id)));
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (tab === "objednavky") {
+      setOrderBadge(0);
+      adminData.getOrders().forEach(o => knownOrderIds.current.add(o.id));
+      return;
+    }
+    const poll = async () => {
+      try {
+        const result = await adminApi.getOrders();
+        if (result?.data) {
+          const orders = result.data as Order[];
+          const newOnes = orders.filter(o => !knownOrderIds.current.has(o.id));
+          if (newOnes.length > 0) {
+            newOnes.forEach(o => knownOrderIds.current.add(o.id));
+            setOrderBadge(n => n + newOnes.length);
+            toast({
+              title: `${newOnes.length === 1 ? "Nová objednávka" : `${newOnes.length} nové objednávky`}`,
+              description: newOnes.map(o => o.clientName).join(", "),
+              duration: 6000,
+            });
+          }
+        }
+      } catch {}
+    };
+    const interval = setInterval(poll, 30000);
+    return () => clearInterval(interval);
+  }, [tab]);
+
   const handleLogout = () => { logout(); navigate("/admin/login"); };
 
   const tabs: { id: Tab; label: string; short: string; icon: React.ReactNode }[] = [
@@ -2111,7 +2144,14 @@ export default function AdminDashboard() {
               className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${
                 tab === t.id ? "text-primary" : "text-gray-400 hover:text-gray-600"
               }`}>
-              <span className={`transition-transform duration-150 ${tab === t.id ? "scale-110" : ""}`}>{t.icon}</span>
+              <span className={`relative transition-transform duration-150 ${tab === t.id ? "scale-110" : ""}`}>
+                {t.icon}
+                {t.id === "objednavky" && orderBadge > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center leading-none">
+                    {orderBadge > 9 ? "9+" : orderBadge}
+                  </span>
+                )}
+              </span>
               <span className={`text-[8px] font-black uppercase tracking-wide leading-none transition-all duration-150 ${tab === t.id ? "opacity-100" : "opacity-0 h-0 overflow-hidden"}`}>
                 {t.short}
               </span>
@@ -2133,7 +2173,14 @@ export default function AdminDashboard() {
                   : "text-gray-500 hover:text-secondary hover:bg-gray-50"
               }`}
             >
-              {t.icon}
+              <span className="relative">
+                {t.icon}
+                {t.id === "objednavky" && orderBadge > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center leading-none">
+                    {orderBadge > 9 ? "9+" : orderBadge}
+                  </span>
+                )}
+              </span>
               {t.label}
             </button>
           ))}
