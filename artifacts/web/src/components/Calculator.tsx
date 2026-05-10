@@ -813,6 +813,14 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       chem: tab === "pumpa" ? chemServicePrice : 0,
       waiting: tab === "pumpa" ? result.waitIntervals * waitServicePricePumpa : tab === "mix" ? result.waitIntervals * waitServicePriceMix : 0,
     };
+    // Helper: jednotková cena so zľavou a strikethrough pre Spolu stĺpec
+    const svcRateStr = (rate: number, suffix: string) => {
+      const discRate = rate * sluzbyFactor;
+      if (hasDiscount && Math.abs(rate - discRate) > 0.001)
+        return `<span style="text-decoration:line-through;color:#bbb;font-size:7.5pt">${fmtN(rate)}&nbsp;${suffix}</span><br>${fmtN(discRate)}&nbsp;${suffix}`;
+      return `${fmtN(discRate)}&nbsp;${suffix}`;
+    };
+
     const hasMainSluzby =
       (tab === "pumpa" && (mainSluzbyOrig.pump + mainSluzbyOrig.hoses + mainSluzbyOrig.washing + mainSluzbyOrig.chem + mainSluzbyOrig.waiting) > 0) ||
       (tab === "mix" && mainSluzbyOrig.waiting > 0);
@@ -821,14 +829,14 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       ? subSectionRow(svcLabel) +
         (tab === "pumpa"
           ? trow(`Čerpanie betónu – ${result.pumpHrs}&nbsp;h${result.pumpMs > 0 ? `&nbsp;${result.pumpMs}&nbsp;min` : ""}`,
-              `${result.pumpHrs}&nbsp;h${result.pumpMs > 0 ? `&nbsp;${result.pumpMs}&nbsp;min` : ""}`, `${fmtN(pumpServicePrice)}&nbsp;€/h`, mainSluzbyOrig.pump, mainSluzbyOrig.pump * sluzbyFactor) +
-            (hoseMeters > 0 ? trow(`Prídavné hadice`, `${hoseMeters}&nbsp;m`, `${fmtN(hoseServicePrice)}&nbsp;€/m`, mainSluzbyOrig.hoses, mainSluzbyOrig.hoses * sluzbyFactor) : "") +
-            (washing ? trow("Umývanie mimo stavby", "1&nbsp;ks", `${fmtN(washServicePrice)}&nbsp;€`, mainSluzbyOrig.washing, mainSluzbyOrig.washing * sluzbyFactor) : "") +
-            (mainSluzbyOrig.chem > 0 ? trow("Rozbehová chémia", "1&nbsp;ks", `${fmtN(chemServicePrice)}&nbsp;€`, mainSluzbyOrig.chem, mainSluzbyOrig.chem * sluzbyFactor) : "") +
-            (result.waitIntervals > 0 ? trow(`Čakačky – ${result.waitLabel}`, `${result.waitIntervals}&nbsp;×&nbsp;15&nbsp;min`, `${fmtN(waitServicePricePumpa)}&nbsp;€/int.`, mainSluzbyOrig.waiting, mainSluzbyOrig.waiting * sluzbyFactor) : "")
+              `${result.pumpHrs}&nbsp;h${result.pumpMs > 0 ? `&nbsp;${result.pumpMs}&nbsp;min` : ""}`, svcRateStr(pumpServicePrice, "€/h"), mainSluzbyOrig.pump, mainSluzbyOrig.pump * sluzbyFactor) +
+            (hoseMeters > 0 ? trow(`Prídavné hadice`, `${hoseMeters}&nbsp;m`, svcRateStr(hoseServicePrice, "€/m"), mainSluzbyOrig.hoses, mainSluzbyOrig.hoses * sluzbyFactor) : "") +
+            (washing ? trow("Umývanie mimo stavby", "1&nbsp;ks", svcRateStr(washServicePrice, "€"), mainSluzbyOrig.washing, mainSluzbyOrig.washing * sluzbyFactor) : "") +
+            (mainSluzbyOrig.chem > 0 ? trow("Rozbehová chémia", "1&nbsp;ks", svcRateStr(chemServicePrice, "€"), mainSluzbyOrig.chem, mainSluzbyOrig.chem * sluzbyFactor) : "") +
+            (result.waitIntervals > 0 ? trow(`Čakačky – ${result.waitLabel}`, `${result.waitIntervals}&nbsp;×&nbsp;15&nbsp;min`, svcRateStr(waitServicePricePumpa, "€/int."), mainSluzbyOrig.waiting, mainSluzbyOrig.waiting * sluzbyFactor) : "")
           : "") +
         (tab === "mix" && result.waitIntervals > 0
-          ? trow(`Čas na stavbe – ${result.waitLabel}`, `${result.waitIntervals}&nbsp;×&nbsp;15&nbsp;min`, `${fmtN(waitServicePriceMix)}&nbsp;€/int.`, mainSluzbyOrig.waiting, mainSluzbyOrig.waiting * sluzbyFactor)
+          ? trow(`Čas na stavbe – ${result.waitLabel}`, `${result.waitIntervals}&nbsp;×&nbsp;15&nbsp;min`, svcRateStr(waitServicePriceMix, "€/int."), mainSluzbyOrig.waiting, mainSluzbyOrig.waiting * sluzbyFactor)
           : "")
       : "";
 
@@ -858,17 +866,17 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       if (hasExtraSvc) rows += subSectionRow(svcLabel);
       if (ci.svcPumpCost > 0) {
         const pumpTimeStr = ci.svcPumpMs > 0 ? `${ci.svcPumpHrs}&nbsp;h&nbsp;${ci.svcPumpMs}&nbsp;min` : `${ci.svcPumpHrs}&nbsp;h`;
-        rows += trow(`Čerpanie betónu – ${pumpTimeStr}`, pumpTimeStr, `${fmtN(pumpServicePrice)}&nbsp;€/h`, ci.svcPumpCost, ci.svcPumpCost * sluzbyFactor);
+        rows += trow(`Čerpanie betónu – ${pumpTimeStr}`, pumpTimeStr, svcRateStr(pumpServicePrice, "€/h"), ci.svcPumpCost, ci.svcPumpCost * sluzbyFactor);
       }
       if (ci.svcHoseCost > 0) {
-        rows += trow(`Prídavné hadice`, `${ci.svcHoseMeters}&nbsp;m`, `${fmtN(hoseServicePrice)}&nbsp;€/m`, ci.svcHoseCost, ci.svcHoseCost * sluzbyFactor);
+        rows += trow(`Prídavné hadice`, `${ci.svcHoseMeters}&nbsp;m`, svcRateStr(hoseServicePrice, "€/m"), ci.svcHoseCost, ci.svcHoseCost * sluzbyFactor);
       }
       if (ci.svcWashCost > 0) {
-        rows += trow("Umývanie mimo stavby", "1&nbsp;ks", `${fmtN(washServicePrice)}&nbsp;€`, ci.svcWashCost, ci.svcWashCost * sluzbyFactor);
+        rows += trow("Umývanie mimo stavby", "1&nbsp;ks", svcRateStr(washServicePrice, "€"), ci.svcWashCost, ci.svcWashCost * sluzbyFactor);
       }
       if (ci.svcWaitCost > 0) {
         const waitRate = tab === "pumpa" ? waitServicePricePumpa : waitServicePriceMix;
-        rows += trow(`Čakačky – ${ci.svcWaitLabel}`, `${ci.svcWaitIntervals}&nbsp;×&nbsp;15&nbsp;min`, `${fmtN(waitRate)}&nbsp;€/int.`, ci.svcWaitCost, ci.svcWaitCost * sluzbyFactor);
+        rows += trow(`Čakačky – ${ci.svcWaitLabel}`, `${ci.svcWaitIntervals}&nbsp;×&nbsp;15&nbsp;min`, svcRateStr(waitRate, "€/int."), ci.svcWaitCost, ci.svcWaitCost * sluzbyFactor);
       }
       return rows;
     }).join("");
