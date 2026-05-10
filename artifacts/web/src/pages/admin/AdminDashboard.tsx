@@ -157,7 +157,7 @@ function BetonTab() {
         </div>
       ) : (
         <button onClick={() => setAddingCat(true)}
-          className="flex items-center gap-2 w-full border-2 border-dashed border-gray-300 bg-white text-gray-500 hover:border-primary hover:text-primary font-bold text-sm py-4 justify-center transition-colors rounded-md">
+          className="flex items-center gap-2 w-full border-2 border-dashed border-gray-400 bg-white shadow-sm text-gray-600 hover:border-primary hover:text-primary font-bold text-sm py-4 justify-center transition-colors rounded-md">
           <Plus className="w-4 h-4" /> Pridať kategóriu kameniva
         </button>
       )}
@@ -743,7 +743,7 @@ function SluzbyTab() {
         </div>
       ) : (
         <button onClick={() => setAdding(true)}
-          className="flex items-center gap-2 w-full border-2 border-dashed border-gray-300 bg-white text-gray-500 hover:border-primary hover:text-primary font-bold text-sm py-4 justify-center transition-colors rounded-md">
+          className="flex items-center gap-2 w-full border-2 border-dashed border-gray-400 bg-white shadow-sm text-gray-600 hover:border-primary hover:text-primary font-bold text-sm py-4 justify-center transition-colors rounded-md">
           <Plus className="w-4 h-4" /> Pridať službu
         </button>
       )}
@@ -1597,12 +1597,18 @@ function KlientiTab() {
                   <div className="flex border-b border-gray-200">
                     <button
                       onClick={() => setClientDetailTab(prev => ({ ...prev, [c.id]: "detail" }))}
-                      className={cn("flex-1 py-2.5 text-xs font-black uppercase tracking-wide transition-all", (clientDetailTab[c.id] ?? "detail") === "detail" ? "bg-secondary text-white" : "bg-white text-gray-400 hover:text-secondary hover:bg-secondary/5")}
-                    >Detail</button>
+                      className={cn("flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-black uppercase tracking-wide transition-all", (clientDetailTab[c.id] ?? "detail") === "detail" ? "bg-secondary text-white" : "bg-white text-gray-400 hover:text-secondary hover:bg-secondary/5")}
+                    >
+                      <ClipboardList className={cn("w-3.5 h-3.5 shrink-0", (clientDetailTab[c.id] ?? "detail") === "detail" ? "text-primary" : "")} />
+                      Detail
+                    </button>
                     <button
                       onClick={() => setClientDetailTab(prev => ({ ...prev, [c.id]: "calc" }))}
-                      className={cn("flex-1 py-2.5 text-xs font-black uppercase tracking-wide transition-all", clientDetailTab[c.id] === "calc" ? "bg-secondary text-white" : "bg-white text-gray-400 hover:text-secondary hover:bg-secondary/5")}
-                    >Kalkulačka</button>
+                      className={cn("flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-black uppercase tracking-wide transition-all", clientDetailTab[c.id] === "calc" ? "bg-secondary text-white" : "bg-white text-gray-400 hover:text-secondary hover:bg-secondary/5")}
+                    >
+                      <Calculator className={cn("w-3.5 h-3.5 shrink-0", clientDetailTab[c.id] === "calc" ? "text-primary" : "")} />
+                      Kalkulačka
+                    </button>
                   </div>
 
                   {(clientDetailTab[c.id] ?? "detail") === "detail" && (<>
