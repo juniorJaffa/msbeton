@@ -1761,22 +1761,23 @@ function KlientiTab() {
 
                   {/* Zľavové tabuľky */}
                   <div className="border-t border-gray-100 px-4 py-3">
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2 mb-3">
                       <button
                         onClick={() => setShowTableFor(showTableFor === c.id ? null : c.id)}
-                        className="flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-secondary transition-colors cursor-pointer"
+                        title={showTableFor === c.id ? "Skryť zľavové tabuľky" : "Zobraziť zľavové tabuľky"}
+                        className={cn("flex items-center gap-1 p-1.5 rounded transition-colors border shrink-0", showTableFor === c.id ? "bg-secondary text-primary border-secondary" : "text-gray-400 hover:text-secondary border-gray-200 hover:border-secondary")}
                       >
-                        <Table2 className="w-3.5 h-3.5" />
-                        {showTableFor === c.id ? "Skryť zľavové tabuľky" : "Zobraziť zľavové tabuľky klienta"}
+                        <Table2 className="w-4 h-4" />
+                        {showTableFor === c.id ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                       </button>
                       {showTableFor === c.id && (
-                        <div className="flex items-center gap-2">
+                        <>
                           <PriceModeToggle mode={inlineTableMode} onChange={setInlineTableMode} showHotovost={c.canHotovost ?? true} size="sm" />
                           <button onClick={() => exportClientPricePDF(c, inlineTableMode, ts)}
-                            className="flex items-center gap-1.5 px-3 py-1 bg-primary text-secondary font-black text-xs hover:bg-primary/90 transition-colors cursor-pointer rounded-sm">
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-secondary font-black text-xs hover:bg-primary/90 transition-colors cursor-pointer rounded-sm shrink-0">
                             <FileText className="w-3.5 h-3.5" /> PDF
                           </button>
-                        </div>
+                        </>
                       )}
                     </div>
                     {showTableFor === c.id && (
