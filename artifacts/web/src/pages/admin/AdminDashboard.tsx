@@ -8,7 +8,7 @@ import { VersionBadge } from "@/components/VersionBadge";
 import { PhoneInput } from "@/components/PhoneInput";
 import { cn, formatPhone } from "@/lib/utils";
 import { isLoggedIn, logout } from "@/lib/adminAuth";
-import { adminData, syncFromServer, SYSTEM_OWNER_ID, ConcreteCategory, ConcreteType, DeliveryZone, Service, Client, TransportPricingZone, TransportSettings, Order } from "@/lib/adminData";
+import { adminData, adminApi, syncFromServer, SYSTEM_OWNER_ID, ConcreteCategory, ConcreteType, DeliveryZone, Service, Client, TransportPricingZone, TransportSettings, Order } from "@/lib/adminData";
 
 type Tab = "betony" | "sluzby" | "doprava" | "klienti" | "objednavky";
 
@@ -803,26 +803,23 @@ function ObjednavkyTab() {
   const [newBadge, setNewBadge] = useState(0);
 
   useEffect(() => {
-    // Immediate sync on mount so freshly submitted orders appear right away
-    syncFromServer().then(() => {
-      const fresh = adminData.getOrders();
-      setOrders(prev => {
-        const prevIds = new Set(prev.map(o => o.id));
-        const added = fresh.filter(o => !prevIds.has(o.id)).length;
-        if (added > 0) setNewBadge(n => n + added);
-        return fresh;
-      });
-    });
-    const interval = setInterval(async () => {
-      await syncFromServer();
-      const fresh = adminData.getOrders();
-      setOrders(prev => {
-        const prevIds = new Set(prev.map(o => o.id));
-        const added = fresh.filter(o => !prevIds.has(o.id)).length;
-        if (added > 0) setNewBadge(n => n + added);
-        return fresh;
-      });
-    }, 30000);
+    const fetchOrders = async () => {
+      try {
+        const result = await adminApi.getOrders();
+        if (result?.data) {
+          const data = result.data as Order[];
+          adminData.saveOrders(data);
+          setOrders(prev => {
+            const prevIds = new Set(prev.map(o => o.id));
+            const added = data.filter(o => !prevIds.has(o.id)).length;
+            if (added > 0) setNewBadge(n => n + added);
+            return data;
+          });
+        }
+      } catch {}
+    };
+    fetchOrders();
+    const interval = setInterval(fetchOrders, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -887,12 +884,17 @@ function ObjednavkyTab() {
           </button>
           {(["pumpa", "mix", "vlastnadoprava"] as Order["tab"][]).map(t => {
             const s = TAB_STYLES[t];
+            const icon = t === "pumpa"
+              ? <svg width="14" height="9" viewBox="0 0 38 22" fill="currentColor"><rect x="1" y="12" width="24" height="6" rx="1"/><rect x="22" y="9" width="9" height="9" rx="1"/><rect x="8" y="8" width="3" height="4" rx="0.5"/><line x1="9.5" y1="8" x2="3" y2="2" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/><line x1="3" y1="2" x2="22" y2="2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><circle cx="6" cy="19" r="3"/><circle cx="14" cy="19" r="3"/><circle cx="27" cy="19" r="3"/></svg>
+              : t === "mix"
+              ? <svg width="14" height="9" viewBox="0 0 38 22" fill="currentColor"><rect x="1" y="12" width="24" height="6" rx="1"/><rect x="22" y="9" width="9" height="9" rx="1"/><ellipse cx="12" cy="9" rx="9" ry="6"/><circle cx="6" cy="19" r="3"/><circle cx="20" cy="19" r="3"/><circle cx="27" cy="19" r="3"/></svg>
+              : <svg width="14" height="9" viewBox="0 0 38 22" fill="currentColor"><rect x="1" y="10" width="30" height="8" rx="1"/><path d="M4 10 L9 4 L24 4 L28 10"/><circle cx="8" cy="19" r="3"/><circle cx="24" cy="19" r="3"/></svg>;
             return (
               <button key={t} onClick={() => setFilterTab(t)}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
                   filterTab === t ? s.activeBg : `bg-white border-gray-200 text-gray-500 hover:border-gray-400`
                 }`}>
-                <span className={`w-2 h-2 rounded-full ${filterTab === t ? "bg-white" : s.dot}`} />
+                {icon}
                 {s.label} <span className="text-[10px] opacity-60">{orders.filter(o => o.tab === t).length}</span>
               </button>
             );
@@ -1781,7 +1783,7 @@ function KlientiTab() {
                         discountSluzby={c.discountSluzby ?? 0}
                         discountCelkovo={c.discountCelkovo ?? 0}
                         manualPrices={c.manualPrices}
-                        onManualPriceChange={inlineTableMode === "faktura" ? (itemId, price) => {
+                        onManualPriceChange={(itemId, price) => {
                           const current = c.manualPrices ?? {};
                           let next: Record<string, number>;
                           if (price === null) {
@@ -1791,7 +1793,7 @@ function KlientiTab() {
                             next = { ...current, [itemId]: price };
                           }
                           update(c.id, { manualPrices: next });
-                        } : undefined}
+                        }}
                         priceMode={inlineTableMode}
                         hotovostDph={c.hotovostDph ?? (ts.defaultHotovostDph ?? 0.20)}
                         variant="light"
@@ -1864,7 +1866,7 @@ function KlientiTab() {
                 discountSluzby={tablePdfModal.discountSluzby ?? 0}
                 discountCelkovo={tablePdfModal.discountCelkovo ?? 0}
                 manualPrices={tablePdfModal.manualPrices}
-                onManualPriceChange={tablePdfMode === "faktura" ? (itemId, price) => {
+                onManualPriceChange={(itemId, price) => {
                   const current = tablePdfModal.manualPrices ?? {};
                   let next: Record<string, number>;
                   if (price === null) {
@@ -1875,7 +1877,7 @@ function KlientiTab() {
                   }
                   update(tablePdfModal.id, { manualPrices: next });
                   setTablePdfModal({ ...tablePdfModal, manualPrices: next });
-                } : undefined}
+                }}
                 priceMode={tablePdfMode}
                 hotovostDph={tablePdfModal.hotovostDph ?? (ts.defaultHotovostDph ?? 0.20)}
                 variant="light"

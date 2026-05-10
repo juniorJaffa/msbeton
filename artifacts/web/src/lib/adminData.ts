@@ -1,4 +1,5 @@
 import { adminApi } from "./api";
+export { adminApi };
 
 export interface ConcreteType {
   id: string;

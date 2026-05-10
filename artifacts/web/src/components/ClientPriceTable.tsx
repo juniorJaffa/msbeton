@@ -212,7 +212,10 @@ export function ClientPriceTable({
             {cat.types.filter((t) => t.price > 0 && t.label.trim()).map((t, i) => {
               const betonOrig = t.price * hotovostMult;
               const betonManual = manualPrices?.[t.id] !== undefined ? manualPrices[t.id] * hotovostMult : undefined;
-              const betonEdit = priceMode === "hotovost" ? undefined : onManualPriceChange;
+              const betonEdit = onManualPriceChange
+                ? (id: string, price: number | null) =>
+                    onManualPriceChange(id, price !== null ? price / hotovostMult : null)
+                : undefined;
               return (
                 <div key={t.id} className={cn(
                   "flex items-center justify-between px-3 py-2 border-b text-sm",
