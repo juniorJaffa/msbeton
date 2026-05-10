@@ -1770,13 +1770,15 @@ function KlientiTab() {
                         {showTableFor === c.id ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                       </button>
                       {showTableFor === c.id && (
-                        <>
-                          <PriceModeToggle mode={inlineTableMode} onChange={setInlineTableMode} showHotovost={c.canHotovost ?? true} size="sm" />
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <div className="flex-1 min-w-0 overflow-hidden">
+                            <PriceModeToggle mode={inlineTableMode} onChange={setInlineTableMode} showHotovost={c.canHotovost ?? true} size="sm" />
+                          </div>
                           <button onClick={() => exportClientPricePDF(c, inlineTableMode, ts)}
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-secondary font-black text-xs hover:bg-primary/90 transition-colors cursor-pointer rounded-sm shrink-0">
                             <FileText className="w-3.5 h-3.5" /> PDF
                           </button>
-                        </>
+                        </div>
                       )}
                     </div>
                     {showTableFor === c.id && (
