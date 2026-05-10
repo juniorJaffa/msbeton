@@ -1455,11 +1455,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
           {/* Quantity */}
           <div>
             <label className="block text-sm font-semibold text-white/80 mb-2">Množstvo betónu (m³)</label>
-            <input type="number" min="0" step="0.5" value={quantity}
+            <input type="number" min="0" step="0.5" value={quantity} inputMode="decimal"
               onChange={(e) => { setQuantity(e.target.value); setShowResult(false); }}
               onWheel={(e) => e.currentTarget.blur()}
               enterKeyHint="go"
               onKeyDown={(e) => {
+                if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault();
                 if (e.key === "Enter") {
                   e.preventDefault();
                   const hasQty = parseFloat(quantity) > 0 && selectedType != null;
@@ -1516,9 +1517,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 <div>
                   <label className="block text-sm font-semibold text-white/80 mb-2">Množstvo betónu (m³)</label>
                   <input
-                    type="number" min="0" step="0.5" value={item.quantity}
+                    type="number" min="0" step="0.5" value={item.quantity} inputMode="decimal"
                     onChange={(e) => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, quantity: e.target.value } : i)); setShowResult(false); }}
                     onWheel={(e) => e.currentTarget.blur()}
+                    onKeyDown={(e) => { if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault(); }}
                     placeholder="Zadajte množstvo"
                     className={cn("w-full bg-white/10 border-b-2 text-white px-4 py-3 focus:outline-none placeholder:text-white/30 text-sm font-medium rounded-sm",
                       showResult && !item.quantity ? "border-b-red-400" : "border-b-primary"
