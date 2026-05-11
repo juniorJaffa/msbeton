@@ -332,10 +332,41 @@ function DopravaTab() {
                     const updateAll2 = (patch: Partial<DeliveryZone>) => save(zones.map(z => ({ ...z, ...patch })));
                     return (
                       <div className="flex flex-wrap gap-3 mt-2 w-full">
-                        <div className="flex items-center gap-4 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <PumpTruckIcon />
+                        {/* Min. objednávka */}
+                        <div className="flex items-center gap-4 bg-gray-50 border border-gray-200 rounded px-3 py-2">
+                          <div>
+                            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Min. objednávka (m³)</div>
+                            <div className="font-bold text-secondary text-sm">
+                              <EditableField value={ts.minimumLoadM3 as number} type="number" onSave={v => saveTs({ ...ts, minimumLoadM3: parseFloat(v) || 0 })} /> m³
+                            </div>
+                          </div>
+                        </div>
+                        {/* Min. cena / auto */}
+                        <div className="flex items-center gap-4 bg-gray-50 border border-gray-200 rounded px-3 py-2">
+                          <div>
+                            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Min. cena / auto (€)</div>
+                            <div className="font-bold text-secondary text-sm">
+                              <EditableField value={ts.minimumFee as number} type="number" onSave={v => saveTs({ ...ts, minimumFee: parseFloat(v) || 0 })} />
+                            </div>
+                          </div>
+                        </div>
+                        {/* Čerpanie pumpy */}
+                        {typeZones[0] && (
+                          <div className="flex items-center gap-4 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
+                            <div>
+                              <div className="text-[10px] text-yellow-600 uppercase tracking-wide font-bold mb-0.5">Čerpanie pumpy</div>
+                              <div className="font-bold text-secondary text-sm flex items-center gap-1">
+                                <EditableField value={typeZones[0].pumpHourlyRate} type="number"
+                                  onSave={v => save(zones.map(z => typeZones.some(tz => tz.id === z.id) ? { ...z, pumpHourlyRate: parseFloat(v) || 0 } : z))} /> €/hod
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        {/* Pumpa — kapacita (kompaktné) */}
+                        <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
+                          <div className="flex flex-col items-center gap-0.5 shrink-0">
                             <span className="text-[10px] font-black text-secondary uppercase tracking-wide">Pumpa</span>
+                            <PumpTruckIcon />
                           </div>
                           <div>
                             <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Kapacita</div>
@@ -348,10 +379,11 @@ function DopravaTab() {
                             <div className="text-[11px] text-gray-400 italic">→ zo Služieb</div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-4 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <MixTruckIcon />
+                        {/* Mixér — kapacita (kompaktné) */}
+                        <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
+                          <div className="flex flex-col items-center gap-0.5 shrink-0">
                             <span className="text-[10px] font-black text-secondary uppercase tracking-wide">Mixér</span>
+                            <MixTruckIcon />
                           </div>
                           <div>
                             <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Kapacita</div>
@@ -364,33 +396,6 @@ function DopravaTab() {
                             <div className="text-[11px] text-gray-400 italic">→ zo Služieb</div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-4 bg-gray-50 border border-gray-200 rounded px-3 py-2">
-                          <div>
-                            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Min. objednávka (m³)</div>
-                            <div className="font-bold text-secondary text-sm">
-                              <EditableField value={ts.minimumLoadM3 as number} type="number" onSave={v => saveTs({ ...ts, minimumLoadM3: parseFloat(v) || 0 })} /> m³
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4 bg-gray-50 border border-gray-200 rounded px-3 py-2">
-                          <div>
-                            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Min. cena / auto (€)</div>
-                            <div className="font-bold text-secondary text-sm">
-                              <EditableField value={ts.minimumFee as number} type="number" onSave={v => saveTs({ ...ts, minimumFee: parseFloat(v) || 0 })} />
-                            </div>
-                          </div>
-                        </div>
-                        {typeZones[0] && (
-                          <div className="flex items-center gap-4 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
-                            <div>
-                              <div className="text-[10px] text-yellow-600 uppercase tracking-wide font-bold mb-0.5">Čerpanie pumpy</div>
-                              <div className="font-bold text-secondary text-sm flex items-center gap-1">
-                                <EditableField value={typeZones[0].pumpHourlyRate} type="number"
-                                  onSave={v => save(zones.map(z => typeZones.some(tz => tz.id === z.id) ? { ...z, pumpHourlyRate: parseFloat(v) || 0 } : z))} /> €/hod
-                              </div>
-                            </div>
-                          </div>
-                        )}
                       </div>
                     );
                   })()}
