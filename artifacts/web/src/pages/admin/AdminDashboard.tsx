@@ -381,53 +381,67 @@ function DopravaTab() {
                 </div>
                 {/* Zóny tohto typu */}
                 {(!isStandard || standardOpen) && typeZones.map(z => (
-                  <div key={z.id} className="flex items-center gap-3 px-5 py-2.5 pl-14 border-t border-gray-50 hover:bg-gray-50/50">
-                    <div className="font-semibold text-secondary text-sm flex-1">
-                      <EditableField value={z.name} onSave={v => updateZone(z.id, { name: v })} />
+                  <div key={z.id} className="border-t border-gray-100">
+                    {/* Zone name row */}
+                    <div className="flex items-center gap-2 px-5 py-2 pl-14 bg-gray-50/60">
+                      <div className="font-semibold text-secondary text-sm flex-1">
+                        <EditableField value={z.name} onSave={v => updateZone(z.id, { name: v })} />
+                      </div>
+                      <button onClick={() => removeZone(z.id)} className="p-1 text-gray-300 hover:text-red-500 transition-colors cursor-pointer flex-shrink-0">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                    <div className="flex items-center gap-6 text-sm">
+                    {/* Fields grid — chlieviky */}
+                    <div className="flex flex-wrap gap-2 px-5 py-2.5 pl-14">
                       {!isStandard && (
-                        <div className="text-right">
-                          <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{zt.rateLabel}</div>
-                          <div className="font-bold text-secondary">
-                            {zt.key === "auto"
-                              ? <><EditableField value={z.ratePerTruck ?? 0} type="number" onSave={v => updateZone(z.id, { ratePerTruck: parseFloat(v) })} /> {zt.rateUnit}</>
-                              : <><EditableField value={z.ratePerKm} type="number" onSave={v => updateZone(z.id, { ratePerKm: parseFloat(v) })} /> {zt.rateUnit}</>}
+                        <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded px-3 py-2 min-w-[100px]">
+                          <div>
+                            <div className="text-[10px] text-blue-500 uppercase tracking-wide font-bold mb-0.5">{zt.rateLabel}</div>
+                            <div className="font-bold text-secondary text-sm flex items-center gap-1">
+                              {zt.key === "auto"
+                                ? <><EditableField value={z.ratePerTruck ?? 0} type="number" onSave={v => updateZone(z.id, { ratePerTruck: parseFloat(v) })} /> {zt.rateUnit}</>
+                                : <><EditableField value={z.ratePerKm} type="number" onSave={v => updateZone(z.id, { ratePerKm: parseFloat(v) })} /> {zt.rateUnit}</>}
+                            </div>
                           </div>
                         </div>
                       )}
                       {zt.key === "km" && (
                         <>
-                          <div className="text-right">
-                            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Min. km</div>
-                            <div className="font-bold text-secondary">
-                              <EditableField value={z.minKm ?? 0} type="number" onSave={v => updateZone(z.id, { minKm: parseFloat(v) || undefined })} /> km
+                          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded px-3 py-2 min-w-[90px]">
+                            <div>
+                              <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Min. km</div>
+                              <div className="font-bold text-secondary text-sm flex items-center gap-1">
+                                <EditableField value={z.minKm ?? 0} type="number" onSave={v => updateZone(z.id, { minKm: parseFloat(v) || undefined })} /> km
+                              </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Max. km</div>
-                            <div className="font-bold text-secondary">
-                              <EditableField value={z.maxKm ?? 0} type="number" onSave={v => updateZone(z.id, { maxKm: parseFloat(v) || undefined })} /> km
+                          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded px-3 py-2 min-w-[90px]">
+                            <div>
+                              <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Max. km</div>
+                              <div className="font-bold text-secondary text-sm flex items-center gap-1">
+                                <EditableField value={z.maxKm ?? 0} type="number" onSave={v => updateZone(z.id, { maxKm: parseFloat(v) || undefined })} /> km
+                              </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Min. poplatok</div>
-                            <div className="font-bold text-secondary">
-                              <EditableField value={z.minimumFeeKm ?? 0} type="number" onSave={v => updateZone(z.id, { minimumFeeKm: parseFloat(v) || undefined })} /> €/auto
+                          <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded px-3 py-2 min-w-[110px]">
+                            <div>
+                              <div className="text-[10px] text-amber-600 uppercase tracking-wide font-bold mb-0.5">Min. poplatok</div>
+                              <div className="font-bold text-secondary text-sm flex items-center gap-1">
+                                <EditableField value={z.minimumFeeKm ?? 0} type="number" onSave={v => updateZone(z.id, { minimumFeeKm: parseFloat(v) || undefined })} /> €/auto
+                              </div>
                             </div>
                           </div>
                         </>
                       )}
-                      <div className="text-right">
-                        <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Čerpanie pumpy</div>
-                        <div className="font-bold text-secondary">
-                          <EditableField value={z.pumpHourlyRate} type="number" onSave={v => updateZone(z.id, { pumpHourlyRate: parseFloat(v) })} /> €/hod
+                      <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded px-3 py-2 min-w-[110px]">
+                        <div>
+                          <div className="text-[10px] text-yellow-600 uppercase tracking-wide font-bold mb-0.5">Čerpanie pumpy</div>
+                          <div className="font-bold text-secondary text-sm flex items-center gap-1">
+                            <EditableField value={z.pumpHourlyRate} type="number" onSave={v => updateZone(z.id, { pumpHourlyRate: parseFloat(v) })} /> €/hod
+                          </div>
                         </div>
                       </div>
                     </div>
-                    <button onClick={() => removeZone(z.id)} className="p-1 text-gray-300 hover:text-red-500 transition-colors cursor-pointer flex-shrink-0">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
                   </div>
                 ))}
 
@@ -546,7 +560,7 @@ function DopravaTab() {
           <div className="border-t border-gray-100">
             <button onClick={() => setAdding(true)}
               className="flex items-center gap-2 w-full text-gray-400 hover:text-primary font-bold text-sm py-3 px-5 justify-start transition-colors hover:bg-gray-50">
-              <Plus className="w-4 h-4" /> Pridať dopravu
+              <Plus className="w-4 h-4" /> Pridať Typ Dopravy
             </button>
           </div>
         )}

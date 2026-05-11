@@ -482,8 +482,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     }
 
     // standard – km pásma: fill-up logika zhodná s pôvodnou WP kalkulačkou
+    const mpStd = loggedClient?.manualPrices ?? {};
     const zone = tzones.find((z) => km >= z.fromKm && km < z.toKm) ?? tzones[tzones.length - 1];
-    const ratePerM3 = zone?.ratePerM3 ?? 0;
+    const baseRatePerM3 = zone?.ratePerM3 ?? 0;
+    const ratePerM3 = mpStd[zone?.id ?? ""] !== undefined ? mpStd[zone!.id] : baseRatePerM3;
+    const effectiveMinFee = mpStd["min_fee"] !== undefined ? mpStd["min_fee"] : minimumFee;
 
     let fillupM3 = 0;
     if (tabType === "pumpa") {
@@ -497,8 +500,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const baseCost = qty * ratePerM3;
     const fillupCost = fillupM3 * ratePerM3;
     const totalVolumeCost = baseCost + fillupCost;
-    const minCost = trucks * minimumFee;
-    const isMin = trucks > 0 && totalVolumeCost / trucks < minimumFee;
+    const minCost = trucks * effectiveMinFee;
+    const isMin = trucks > 0 && totalVolumeCost / trucks < effectiveMinFee;
     if (isMin) return { cost: minCost, isMin, fillupM3: 0, fillupCost: 0 };
     return { cost: baseCost, isMin, fillupM3, fillupCost };
   }
@@ -1956,12 +1959,19 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                       const kmLabel = effectiveKm !== distKm ? `${distKm}→${effectiveKm} km` : `${distKm} km`;
                       return `${kmLabel} × ${fmtR(rate)} €/km × ${trucks} ${autaLabel}`;
                     }
-                    if (ci.transportIsMin) return `min. sadzba ${fmtR(minFee * dopravaFactor)} €/auto × ${trucks} ${autaLabel}`;
+                    if (ci.transportIsMin) {
+                      const mpStd2 = loggedClient?.manualPrices ?? {};
+                      const effMinFee = mpStd2["min_fee"] !== undefined ? mpStd2["min_fee"] : minFee;
+                      return `min. sadzba ${fmtR(effMinFee * dopravaFactor)} €/auto × ${trucks} ${autaLabel}`;
+                    }
                     if (pType === "auto") {
-                      const rate = (clientDeliveryZone?.ratePerTruck ?? 0) * dopravaFactor;
+                      const mpAuto = loggedClient?.manualPrices ?? {};
+                      const rate = (mpAuto[`auto_rate_${clientDeliveryZone?.id}`] ?? (clientDeliveryZone?.ratePerTruck ?? 0)) * dopravaFactor;
                       return `${trucks} ${autaLabel} × ${fmtR(rate)} €/auto`;
                     }
-                    const rate = (result.transportZone?.ratePerM3 ?? 0) * dopravaFactor;
+                    const mpStd3 = loggedClient?.manualPrices ?? {};
+                    const baseStdRate = result.transportZone?.ratePerM3 ?? 0;
+                    const rate = (mpStd3[result.transportZone?.id ?? ""] !== undefined ? mpStd3[result.transportZone!.id] : baseStdRate) * dopravaFactor;
                     const qtyStr = extraQ > 0 ? `${ci.qty}+${fmtR(extraQ)}` : `${ci.qty}`;
                     return `${qtyStr} m³ × ${fmtR(rate)} €/m³`;
                   };
