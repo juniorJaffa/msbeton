@@ -389,7 +389,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const pumpServicePrice = clientDeliveryZone?.pumpHourlyRate
     ?? allServices.find((s) => s.name.includes("Čerpanie"))?.price ?? 112.50;
   const chemServicePrice = allServices.find((s) => s.name.toLowerCase().includes("rozbeh"))?.price ?? 31.25;
-  const washServicePrice = allServices.find((s) => s.name.toLowerCase().includes("umýv"))?.price ?? 56.25;
+  const washSvc = allServices.find((s) => s.name.toLowerCase().includes("umýv"));
+  const washServicePrice = mp[washSvc?.id ?? ""] ?? washSvc?.price ?? 56.25;
   // Čakačka: per-mode sadzba z delivery zóny (pumpa vs mix)
   const waitServicePricePumpa = clientDeliveryZone?.waitingRatePer15minPumpa
     ?? clientDeliveryZone?.waitingRatePer15min
@@ -401,7 +402,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     ?? allServices.find((s) => s.name.toLowerCase().includes("čakačk"))?.price
     ?? 8.00;
   const hoseService = allServices.find((s) => s.name.toLowerCase().includes("hadice"));
-  const hoseServicePrice = hoseService?.price ?? 10.00;
+  const hoseServicePrice = mp[hoseService?.id ?? ""] ?? hoseService?.price ?? 10.00;
   const hoseMaxMeters = hoseService?.maxMeters ?? 10;
   const zimneService = allServices.find((s) => s.name.toLowerCase().includes("zimn"));
   const zimneServicePrice = zimneService?.price ?? 10.00;
@@ -1589,6 +1590,15 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                         Bez dopravy
                       </button>
                     </div>
+                    {(!item.transportMode || item.transportMode === "own") && (
+                      <p className="text-[10px] text-white/35 mt-1">Vlastná doprava — táto položka má vlastný výpočet km/vzdialenosti.</p>
+                    )}
+                    {item.transportMode === "addToMain" && item.quantity && (
+                      <p className="text-[10px] text-blue-400/80 mt-1">+{item.quantity} m³ sa pripočíta k mn. hlavnej položky pri výpočte dopravy.</p>
+                    )}
+                    {item.transportMode === "none" && (
+                      <p className="text-[10px] text-white/35 mt-1">Bez dopravy — táto položka nebude mať dopravu.</p>
+                    )}
                   </div>
                 )}
                 {/* + Pridať Služby per extra item */}
@@ -1919,7 +1929,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                   const pType = clientDeliveryZone?.pricingType ?? "standard";
                   const minFee = tsettings.minimumFee ?? 62.50;
                   const fmtR = (n: number) => (Math.round(n * 100) / 100).toFixed(2);
-                  const transportFormula = (ci: typeof result.concreteBreakdown[0]) => {
+                  const addToMainQtyDisplay = extraItems.reduce((s, i) => {
+                    const q = parseFloat(i.quantity) || 0;
+                    return (q > 0 && i.transportMode === "addToMain") ? s + q : s;
+                  }, 0);
+                  const transportFormula = (ci: typeof result.concreteBreakdown[0], extraQ = 0) => {
                     if (result.isOwn) return null;
                     const trucks = ci.transportTrucks;
                     const autaLabel = trucks === 1 ? "auto" : "autá";
@@ -1934,7 +1948,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                       return `${trucks} ${autaLabel} × ${fmtR(rate)} €/auto`;
                     }
                     const rate = (result.transportZone?.ratePerM3 ?? 0) * dopravaFactor;
-                    return `${ci.qty} m³ × ${fmtR(rate)} €/m³`;
+                    const qtyStr = extraQ > 0 ? `${ci.qty}+${fmtR(extraQ)}` : `${ci.qty}`;
+                    return `${qtyStr} m³ × ${fmtR(rate)} €/m³`;
                   };
 
                   const mainPumpBase = tab === "pumpa" ? (result.pumpHrs + result.pumpMs / 60) * pumpServicePrice : 0;
@@ -1957,6 +1972,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                         const origVal = isFaktura ? ci.bezDph : ci.bezDph * (1 + VAT_HOTOVOST);
                         const discVal = isFaktura ? ci.bezDphFinal : ci.bezDphFinalHotovost;
                         const isExtra = idx > 0;
+                        const isAddToMain = isExtra && extraItems[idx - 1]?.transportMode === "addToMain";
                         const itemHasSvc = idx === 0
                           ? mainHasServices
                           : (ci.svcPumpCost > 0 || ci.svcHoseCost > 0 || ci.svcWashCost > 0 || ci.svcWaitCost > 0);
@@ -1978,14 +1994,21 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                                     {ci.transportIsMin
                                       ? <span>Min. doprava – <strong>{ci.transportTrucks}x auto</strong></span>
                                       : idx === 0
-                                        ? <span>{prefix}{zoneStr ? ` ${zoneStr}` : ""} · <strong>{trucksLabel}</strong> · {ci.qty}&thinsp;m³</span>
+                                        ? <span>{prefix}{zoneStr ? ` ${zoneStr}` : ""} · <strong>{trucksLabel}</strong>
+                                            {addToMainQtyDisplay > 0
+                                              ? <> · {ci.qty}+{fmtR(addToMainQtyDisplay)}&thinsp;m³</>
+                                              : <> · {ci.qty}&thinsp;m³</>}
+                                          </span>
                                         : <span>Doprava · {ci.qty}&thinsp;m³</span>}
-                                    {transportFormula(ci) && (
-                                      <span className="text-[10px] text-white/35 block mt-0.5">{transportFormula(ci)}</span>
+                                    {transportFormula(ci, idx === 0 ? addToMainQtyDisplay : 0) && (
+                                      <span className="text-[10px] text-white/35 block mt-0.5">{transportFormula(ci, idx === 0 ? addToMainQtyDisplay : 0)}</span>
                                     )}
                                   </span>
                                 }
                                 original={ci.transport} discounted={ci.transport * dopravaFactor} hasDiscount={hasDiscount} />
+                            )}
+                            {isAddToMain && (
+                              <div className="text-[10px] text-blue-400/70 ml-1 mt-0.5">↑ doprava zahrnutá v Položke 1 (+{ci.qty}&thinsp;m³)</div>
                             )}
                             {ci.transportFillup > 0 && (
                               <PriceRow
