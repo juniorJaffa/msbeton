@@ -86,6 +86,10 @@ export interface Order {
   fillupTarget?: number;
   deliveryZoneType?: string;   // "standard" | "km" | "auto"
   deliveryZoneName?: string;
+  discountBeton?: number;
+  discountDoprava?: number;
+  discountSluzby?: number;
+  discountCelkovo?: number;
 }
 
 export interface ClientAccount {

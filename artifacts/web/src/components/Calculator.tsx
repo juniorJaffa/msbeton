@@ -1195,6 +1195,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       fillupTarget: result.fillupM3 > 0 ? result.fillupTarget : undefined,
       deliveryZoneType: clientDeliveryZone?.pricingType ?? "standard",
       deliveryZoneName: clientDeliveryZone?.name ?? undefined,
+      discountBeton:   discountBeton   > 0 ? discountBeton   : undefined,
+      discountDoprava: discountDoprava > 0 ? discountDoprava : undefined,
+      discountSluzby:  discountSluzby  > 0 ? discountSluzby  : undefined,
+      discountCelkovo: discountCelkovo > 0 ? discountCelkovo : undefined,
     });
     setOrderSubmitting(false);
     setOrderDone(true);

@@ -890,7 +890,9 @@ function ObjednavkyTab() {
               {s.label} <span className="ml-1 text-[10px] opacity-70">{orders.filter(o => o.status === s.key).length}</span>
             </button>
           ))}
-          <span className="ml-auto text-xs text-gray-400 shrink-0">{sorted.length} objednávok</span>
+          <span className="ml-auto text-xs font-bold text-secondary shrink-0">
+            {sorted.length} {sorted.length === 1 ? "objednávka" : sorted.length >= 2 && sorted.length <= 4 ? "objednávky" : "objednávok"}
+          </span>
         </div>
         <div className="border-t border-gray-100 mx-4" />
         {/* Row 2 – typ vozidla */}
@@ -1006,6 +1008,20 @@ function ObjednavkyTab() {
                         {o.phone && <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Telefón</span><span className="text-gray-600">{formatPhone(o.phone)}</span></div>}
                         {o.email && <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Email</span><span className="text-gray-600">{o.email}</span></div>}
                         {o.clientId && <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">ID klienta</span><span className="text-gray-500">{o.clientId}</span></div>}
+                        {(o.discountBeton || o.discountDoprava || o.discountSluzby || o.discountCelkovo) ? (
+                          <div className="flex gap-2 items-start pt-0.5">
+                            <span className="text-gray-400 w-20 shrink-0 mt-0.5">Zľavy</span>
+                            <div className="flex flex-wrap gap-1">
+                              {o.discountCelkovo ? (
+                                <span className="bg-primary text-secondary text-[10px] font-black px-2 py-0.5 rounded-sm">Celkovo −{o.discountCelkovo}%</span>
+                              ) : (<>
+                                {o.discountBeton   ? <span className="bg-primary/15 text-secondary text-[10px] font-black px-1.5 py-0.5 rounded-sm">Betón −{o.discountBeton}%</span>   : null}
+                                {o.discountDoprava ? <span className="bg-primary/15 text-secondary text-[10px] font-black px-1.5 py-0.5 rounded-sm">Doprava −{o.discountDoprava}%</span> : null}
+                                {o.discountSluzby  ? <span className="bg-primary/15 text-secondary text-[10px] font-black px-1.5 py-0.5 rounded-sm">Služby −{o.discountSluzby}%</span>  : null}
+                              </>)}
+                            </div>
+                          </div>
+                        ) : null}
                       </div>
                       {/* Detail dopravy + poznámka */}
                       <div className="px-4 py-3 space-y-1.5 text-xs">
@@ -1041,55 +1057,62 @@ function ObjednavkyTab() {
                       let parsed: { v: number; s: { h: string; rows: { l: string; v: number; o?: number }[] }[] } | null = null;
                       try { if (o.breakdown?.startsWith("{")) parsed = JSON.parse(o.breakdown); } catch { /* legacy */ }
                       return (
-                        <div className="border-t border-gray-100 px-4 py-3">
-                          <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Kalkulácia</div>
-                          {parsed ? (
-                            <div className="space-y-2">
-                              {parsed.s.map((sec, si) => (
-                                <div key={si}>
-                                  <div className={cn("text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 mb-1 rounded-sm",
-                                    sec.h.startsWith("Pridaná") || sec.h.startsWith("Produkty") ? "bg-primary/15 text-primary/80" : "bg-gray-100 text-gray-500 ml-2")}>
-                                    {sec.h}
-                                  </div>
-                                  {sec.rows.map((row, ri) => (
-                                    <div key={ri} className={cn("flex justify-between items-baseline text-xs gap-4 py-0.5", sec.h.startsWith("Pridaná") || sec.h.startsWith("Produkty") ? "pl-1" : "pl-4")}>
-                                      <span className="text-gray-500">{row.l}</span>
-                                      <span className="shrink-0 text-right">
-                                        {row.o !== undefined && <span className="line-through text-gray-300 text-[10px] mr-1">{fmtEur(row.o)}</span>}
-                                        <span className="font-semibold text-gray-700">{fmtEur(row.v)}</span>
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              ))}
-                            </div>
-                          ) : o.breakdown ? (
-                            <div className="space-y-1">
-                              {o.breakdown.split("\n").map((line, i) => {
-                                const parts = line.split(": ");
-                                const label = parts[0];
-                                const value = parts.slice(1).join(": ");
-                                return (
-                                  <div key={i} className="flex justify-between items-baseline text-xs gap-4">
-                                    <span className="text-gray-500">{label}</span>
-                                    {value && <span className="font-semibold text-gray-700 shrink-0">{value}</span>}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          ) : null}
-                          <div className="mt-3 pt-2 border-t border-gray-200 flex justify-between items-center">
-                            <span className="text-xs text-gray-500">Spolu bez DPH</span>
-                            <span className="text-sm font-bold text-secondary">{fmtEur(o.totalBezDph)}</span>
+                        <div className="border-t-2 border-primary/20">
+                          {/* Kalkulácia header */}
+                          <div className="flex items-center gap-2 px-4 py-2 bg-secondary/5 border-b border-secondary/10">
+                            <Calculator className="w-3.5 h-3.5 text-primary shrink-0" />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-secondary">Kalkulácia</span>
+                            <span className={cn("ml-auto text-[9px] font-black uppercase px-2 py-0.5 rounded-sm", o.priceMode === "hotovost" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700")}>
+                              {o.priceMode === "hotovost" ? "Hotovosť" : "Faktúra"}
+                            </span>
                           </div>
-                          <div className="flex justify-between items-center">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs text-gray-400">S DPH</span>
-                              <span className={cn("text-[9px] font-black uppercase px-1.5 py-0.5 rounded-sm", o.priceMode === "hotovost" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700")}>
-                                {o.priceMode === "hotovost" ? "Hotovosť" : "Faktúra"}
-                              </span>
+                          <div className="px-4 py-3">
+                            {parsed ? (
+                              <div className="space-y-2">
+                                {parsed.s.map((sec, si) => (
+                                  <div key={si}>
+                                    <div className={cn("text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 mb-1 rounded-sm",
+                                      sec.h.startsWith("Pridaná") || sec.h.startsWith("Produkty") ? "bg-primary/20 text-secondary" : "bg-gray-100 text-gray-500 ml-2")}>
+                                      {sec.h}
+                                    </div>
+                                    {sec.rows.map((row, ri) => (
+                                      <div key={ri} className={cn("flex justify-between items-baseline text-xs gap-4 py-0.5", sec.h.startsWith("Pridaná") || sec.h.startsWith("Produkty") ? "pl-1" : "pl-4")}>
+                                        <span className="text-gray-500">{row.l}</span>
+                                        <span className="shrink-0 text-right">
+                                          {row.o !== undefined && <span className="line-through text-gray-300 text-[10px] mr-1">{fmtEur(row.o)}</span>}
+                                          <span className={cn("font-bold", row.o !== undefined ? "text-primary" : "text-gray-700")}>{fmtEur(row.v)}</span>
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : o.breakdown ? (
+                              <div className="space-y-1">
+                                {o.breakdown.split("\n").map((line, i) => {
+                                  const parts = line.split(": ");
+                                  const label = parts[0];
+                                  const value = parts.slice(1).join(": ");
+                                  return (
+                                    <div key={i} className="flex justify-between items-baseline text-xs gap-4">
+                                      <span className="text-gray-500">{label}</span>
+                                      {value && <span className="font-semibold text-gray-700 shrink-0">{value}</span>}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : null}
+                            {/* Celková suma */}
+                            <div className="mt-3 pt-2.5 border-t border-gray-200 space-y-1">
+                              <div className="flex justify-between items-center text-xs">
+                                <span className="text-gray-400">Bez DPH</span>
+                                <span className="font-semibold text-gray-600">{fmtEur(o.totalBezDph)}</span>
+                              </div>
+                              <div className="flex justify-between items-center bg-secondary rounded-sm px-3 py-2">
+                                <span className="text-xs font-bold text-white/70">Spolu s DPH</span>
+                                <span className="text-lg font-black text-primary">{fmtEur(o.totalSDph)}</span>
+                              </div>
                             </div>
-                            <span className="text-base font-black text-secondary">{fmtEur(o.totalSDph)}</span>
                           </div>
                         </div>
                       );
