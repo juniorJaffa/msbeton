@@ -2226,15 +2226,23 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 </div>
               ) : (
                 <>
-                  {result && (
-                    <div className="bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm space-y-1">
-                      <div className="flex justify-between">
-                        <span className="text-white/50">{result.totalQty} m³ · {selectedType?.label.replace(/ – .*/, "")}</span>
-                        <span className="text-primary font-bold">{(isFaktura ? result.totalDiscSDph : result.hotovostTotal).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+                  {result && (() => {
+                    const now = new Date();
+                    const dayNames = ["Nedeľa","Pondelok","Utorok","Streda","Štvrtok","Piatok","Sobota"];
+                    const dayLabel = `${dayNames[now.getDay()]}, ${now.getDate()}. ${now.getMonth()+1}. ${now.getFullYear()}`;
+                    return (
+                      <div className="bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm space-y-1">
+                        <div className="flex justify-between items-start">
+                          <span className="text-white/50">{result.totalQty} m³ · {selectedType?.label.replace(/ – .*/, "")}</span>
+                          <span className="text-primary font-bold">{(isFaktura ? result.totalDiscSDph : result.hotovostTotal).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-white/30 text-xs">{tab === "pumpa" ? "Pumpa" : tab === "mix" ? "Mix" : "Vlastná doprava"}{address ? ` · ${address}` : ""}</span>
+                          <span className="text-white/30 text-xs">{dayLabel}</span>
+                        </div>
                       </div>
-                      <div className="text-white/30 text-xs">{tab === "pumpa" ? "Pumpa" : tab === "mix" ? "Mix" : "Vlastná doprava"}{address ? ` · ${address}` : ""}</div>
-                    </div>
-                  )}
+                    );
+                  })()}
                   <div className="space-y-3">
                     <div>
                       <label className="text-xs text-white/60 mb-1 block">Meno a priezvisko *</label>

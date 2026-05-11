@@ -986,7 +986,18 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                       {o.km && <span className="text-xs text-gray-400">{o.km} km</span>}
                       {o.address && <span className="text-xs text-gray-400 truncate max-w-[140px]">{o.address}</span>}
                     </div>
-                    <div className="text-[10px] text-gray-400 mt-0.5">{fmtDate(o.createdAt)}</div>
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                      <span className="text-[10px] text-gray-400">{fmtDate(o.createdAt)}</span>
+                      {(o.discountBeton || o.discountDoprava || o.discountSluzby || o.discountCelkovo) ? (
+                        o.discountCelkovo ? (
+                          <span className="bg-primary text-secondary text-[9px] font-black px-1.5 py-0.5 rounded-sm">−{o.discountCelkovo}%</span>
+                        ) : (<>
+                          {o.discountBeton   ? <span className="bg-primary/20 text-secondary text-[9px] font-black px-1 py-0.5 rounded-sm">B−{o.discountBeton}%</span>   : null}
+                          {o.discountDoprava ? <span className="bg-primary/20 text-secondary text-[9px] font-black px-1 py-0.5 rounded-sm">D−{o.discountDoprava}%</span> : null}
+                          {o.discountSluzby  ? <span className="bg-primary/20 text-secondary text-[9px] font-black px-1 py-0.5 rounded-sm">S−{o.discountSluzby}%</span>  : null}
+                        </>)
+                      ) : null}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2 sm:gap-3 shrink-0" onClick={e => e.stopPropagation()}>
                     <div className="text-right">
@@ -1194,11 +1205,8 @@ function DiscountGroupEditor({
 }) {
   const [mode, setMode] = useState<"ind" | "celk">(() => celkovo > 0 ? "celk" : "ind");
 
-  const activate = (m: "ind" | "celk") => {
-    setMode(m);
-    if (m === "celk") onChange({ beton: 0, doprava: 0, sluzby: 0, celkovo });
-    else onChange({ beton, doprava, sluzby, celkovo: 0 });
-  };
+  // Len zmení lokálny mode — žiadny onChange, DB sa neaktualizuje
+  const activate = (m: "ind" | "celk") => setMode(m);
 
   const boxes: { label: string; value: number; group: "ind" | "celk"; onCh: (v: number) => void }[] = [
     { label: "Betón",   value: beton,   group: "ind",  onCh: v => onChange({ beton: v, doprava, sluzby, celkovo: 0 }) },
@@ -1211,13 +1219,15 @@ function DiscountGroupEditor({
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
       {boxes.map(({ label, value, group, onCh }) => {
         const blocked = group !== mode;
-        const active = value > 0 && !blocked;
+        const hasValue = value > 0;
         return (
           <div key={label}
             className={cn("border px-2 py-2 text-center transition-all",
-              blocked ? "bg-gray-50 border-gray-100 opacity-40 cursor-pointer hover:opacity-60"
-              : active ? "bg-primary/10 border-primary/40"
-              : "bg-gray-50 border-gray-200")}
+              blocked
+                ? "bg-gray-50 border-gray-100 opacity-40 cursor-pointer hover:opacity-60"
+                : hasValue
+                  ? "bg-primary/10 border-primary/40"
+                  : "bg-primary/5 border-primary/20")}
             onClick={() => { if (blocked) activate(group); }}>
             <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1.5">{label}</div>
             {blocked ? (
@@ -1230,9 +1240,9 @@ function DiscountGroupEditor({
                   onChange={e => { const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0)); onCh(v); }}
                   onFocus={e => e.target.select()}
                   className={cn("border-0 px-0.5 py-0 text-xl font-black focus:outline-none w-16 text-center bg-transparent leading-none",
-                    active ? "text-primary" : "text-gray-300")}
+                    hasValue ? "text-primary" : "text-gray-300")}
                 />
-                <span className={cn("text-sm font-bold leading-none", active ? "text-primary/70" : "text-gray-300")}>%</span>
+                <span className={cn("text-sm font-bold leading-none", hasValue ? "text-primary/70" : "text-gray-300")}>%</span>
               </div>
             )}
           </div>
