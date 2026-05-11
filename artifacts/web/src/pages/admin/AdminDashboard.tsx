@@ -988,10 +988,14 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                     </div>
                     <div className="text-[10px] text-gray-400 mt-0.5">{fmtDate(o.createdAt)}</div>
                   </div>
-                  <div className="flex items-center gap-3 shrink-0" onClick={e => e.stopPropagation()}>
-                    <div className="text-right hidden sm:block">
-                      <div className="text-sm font-black text-secondary">{fmtEur(o.totalSDph)}</div>
-                      <div className="text-[10px] text-gray-400">{o.priceMode === "hotovost" ? "hotovosť" : "faktúra"}</div>
+                  <div className="flex items-center gap-2 sm:gap-3 shrink-0" onClick={e => e.stopPropagation()}>
+                    <div className="text-right">
+                      <div className="font-mono font-black text-secondary text-sm tabular-nums tracking-tight">{fmtEur(o.totalSDph)}</div>
+                      <div className={cn("text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-sm mt-0.5 inline-block",
+                        o.priceMode === "hotovost" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
+                      )}>
+                        {o.priceMode === "hotovost" ? "HOT." : "FA"}
+                      </div>
                     </div>
                     <OrderStatusBadge status={o.status} onChange={s => updateStatus(o.id, s)} />
                     <button onClick={() => remove(o.id)} className="p-1 text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
