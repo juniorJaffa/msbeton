@@ -1798,35 +1798,39 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                             <EditableField value={field === "phone" ? formatPhone((c[field] as string) || "") || "—" : (c[field] as string) || "—"} type={field === "phone" ? "tel" : "text"} onSave={v => update(c.id, { [field]: field === "phone" ? formatPhone(v) : v })} />
                           </div>
                         ))}
-                        <div className="flex gap-2 items-start">
-                          <span className="text-gray-400 text-xs w-20 shrink-0 pt-0.5">Odkaz</span>
-                          <div className="min-w-0 flex-1">
-                            {editingLinkFor === c.id ? (
-                              <div className="flex items-center gap-1">
-                                <input autoFocus type="url" value={linkDraft} onChange={e => setLinkDraft(e.target.value)}
-                                  onKeyDown={e => { if (e.key === "Enter") { update(c.id, { sharedLink: linkDraft.trim() || undefined }); setEditingLinkFor(null); } if (e.key === "Escape") setEditingLinkFor(null); }}
-                                  className="flex-1 min-w-0 border border-primary px-2 py-0.5 text-xs focus:outline-none" />
-                                <button onClick={() => { update(c.id, { sharedLink: linkDraft.trim() || undefined }); setEditingLinkFor(null); }} className="text-green-600 hover:text-green-700 shrink-0"><Check className="w-3.5 h-3.5" /></button>
-                                <button onClick={() => setEditingLinkFor(null)} className="text-gray-400 hover:text-red-500 shrink-0"><X className="w-3.5 h-3.5" /></button>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                {c.sharedLink ? (
-                                  <a href={c.sharedLink} target="_blank" rel="noopener noreferrer" title={c.sharedLink}
-                                    className="flex items-center gap-1 min-w-0 text-primary hover:text-primary/80 transition-colors">
-                                    <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-                                    <span className="text-xs truncate">{c.sharedLink.replace(/^https?:\/\//, "")}</span>
-                                  </a>
-                                ) : (
-                                  <span className="text-gray-400 text-xs">—</span>
-                                )}
-                                <button onClick={() => { setLinkDraft(c.sharedLink || ""); setEditingLinkFor(c.id); }}
-                                  className="shrink-0 text-gray-300 hover:text-secondary transition-colors ml-auto">
-                                  <Pencil className="w-3 h-3" />
+                        <div className="flex gap-2 items-center">
+                          <span className="text-gray-400 text-xs w-20 shrink-0">Odkaz</span>
+                          {editingLinkFor === c.id ? (
+                            <div className="flex items-center gap-1 flex-1 min-w-0">
+                              <input autoFocus type="url" value={linkDraft} onChange={e => setLinkDraft(e.target.value)}
+                                placeholder="https://…"
+                                onKeyDown={e => { if (e.key === "Enter") { update(c.id, { sharedLink: linkDraft.trim() || undefined }); setEditingLinkFor(null); } if (e.key === "Escape") setEditingLinkFor(null); }}
+                                className="flex-1 min-w-0 border border-primary px-2 py-0.5 text-xs focus:outline-none" />
+                              <button onClick={() => { update(c.id, { sharedLink: linkDraft.trim() || undefined }); setEditingLinkFor(null); }} className="text-green-600 hover:text-green-700 shrink-0"><Check className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => setEditingLinkFor(null)} className="text-gray-400 hover:text-red-500 shrink-0"><X className="w-3.5 h-3.5" /></button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              {c.sharedLink ? (
+                                <a href={c.sharedLink} target="_blank" rel="noopener noreferrer" title={c.sharedLink}
+                                  className="text-primary hover:text-primary/80 transition-colors">
+                                  <ExternalLink className="w-4 h-4" />
+                                </a>
+                              ) : (
+                                <span className="text-gray-400 text-xs">—</span>
+                              )}
+                              <button onClick={() => { setLinkDraft(c.sharedLink || ""); setEditingLinkFor(c.id); }}
+                                className="text-gray-300 hover:text-secondary transition-colors">
+                                <Pencil className="w-3 h-3" />
+                              </button>
+                              {c.sharedLink && (
+                                <button onClick={() => update(c.id, { sharedLink: undefined })}
+                                  className="text-gray-300 hover:text-red-500 transition-colors">
+                                  <X className="w-3 h-3" />
                                 </button>
-                              </div>
-                            )}
-                          </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
