@@ -1911,7 +1911,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     if (ci.transportIsMin) return `min. sadzba ${minFee.toFixed(2)} €/auto × ${ci.transportTrucks} ${ci.transportTrucks === 1 ? "auto" : "autá"}`;
                     if (pType === "km") {
                       const rate = clientDeliveryZone?.ratePerKm ?? 1.8;
-                      return `${km} km × ${rate} €/km × ${ci.transportTrucks} ${ci.transportTrucks === 1 ? "auto" : "autá"}`;
+                      const distKm = parseFloat(distance) || 0;
+                      return `${distKm} km × ${rate} €/km × ${ci.transportTrucks} ${ci.transportTrucks === 1 ? "auto" : "autá"}`;
                     }
                     if (pType === "auto") {
                       const rate = clientDeliveryZone?.ratePerTruck ?? 0;
