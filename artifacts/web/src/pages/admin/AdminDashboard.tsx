@@ -809,7 +809,7 @@ function TabBadge({ tab }: { tab: Order["tab"] }) {
   );
 }
 
-function ObjednavkyTab() {
+function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => void }) {
   const [orders, setOrders] = useState<Order[]>(() => adminData.getOrders());
   const [expanded, setExpanded] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<Order["status"] | "vsetky">("vsetky");
@@ -1008,6 +1008,17 @@ function ObjednavkyTab() {
                         {o.phone && <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Telefón</span><span className="text-gray-600">{formatPhone(o.phone)}</span></div>}
                         {o.email && <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Email</span><span className="text-gray-600">{o.email}</span></div>}
                         {o.clientId && <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">ID klienta</span><span className="text-gray-500">{o.clientId}</span></div>}
+                        {o.clientId && onGoToClient && (
+                          <div className="flex gap-2 items-center pt-1">
+                            <span className="text-gray-400 w-20 shrink-0" />
+                            <button
+                              onClick={e => { e.stopPropagation(); onGoToClient(o.clientId!); }}
+                              className="text-[10px] font-bold text-secondary hover:text-primary underline underline-offset-2 transition-colors flex items-center gap-1"
+                            >
+                              <Users className="w-3 h-3" /> Zobraziť v klientoch →
+                            </button>
+                          </div>
+                        )}
                         {(o.discountBeton || o.discountDoprava || o.discountSluzby || o.discountCelkovo) ? (
                           <div className="flex gap-2 items-start pt-0.5">
                             <span className="text-gray-400 w-20 shrink-0 mt-0.5">Zľavy</span>
@@ -1027,10 +1038,6 @@ function ObjednavkyTab() {
                       <div className="px-4 py-3 space-y-1.5 text-xs">
                         <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Objednávka</div>
                         <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Dátum</span><span className="text-gray-500">{fmtDate(o.createdAt)}</span></div>
-                        <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Režim</span><span className="font-bold text-gray-800">{tabLabel[o.tab]}</span></div>
-                        <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Množstvo</span><span className="font-bold text-gray-800">{o.totalQty} m³</span></div>
-                        {o.km && <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Vzdialenosť</span><span className="font-medium text-gray-700">{o.km} km</span></div>}
-                        {o.address && <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Adresa</span><span className="text-gray-600 break-words">{o.address}</span></div>}
                         {o.deliveryZoneName && (
                           <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Typ dopravy</span>
                             <span className="font-medium text-gray-700">
@@ -1041,9 +1048,25 @@ function ObjednavkyTab() {
                             </span>
                           </div>
                         )}
+                        <div className="flex gap-2 items-center"><span className="text-gray-400 w-24 shrink-0">Typ</span>
+                          <span className="inline-flex items-center gap-1 font-bold text-gray-800">
+                            <span className={`inline-flex items-center justify-center ${o.tab === "pumpa" ? "text-blue-600" : o.tab === "mix" ? "text-green-600" : "text-gray-600"}`}>
+                              {o.tab === "pumpa"
+                                ? <svg width="14" height="9" viewBox="0 0 38 22" fill="currentColor"><rect x="1" y="12" width="24" height="6" rx="1"/><rect x="22" y="9" width="9" height="9" rx="1"/><rect x="8" y="8" width="3" height="4" rx="0.5"/><line x1="9.5" y1="8" x2="3" y2="2" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/><line x1="3" y1="2" x2="22" y2="2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><circle cx="6" cy="19" r="3"/><circle cx="14" cy="19" r="3"/><circle cx="27" cy="19" r="3"/></svg>
+                                : o.tab === "mix"
+                                ? <svg width="14" height="9" viewBox="0 0 38 22" fill="currentColor"><rect x="1" y="12" width="24" height="6" rx="1"/><rect x="22" y="9" width="9" height="9" rx="1"/><ellipse cx="12" cy="9" rx="9" ry="6"/><circle cx="6" cy="19" r="3"/><circle cx="20" cy="19" r="3"/><circle cx="27" cy="19" r="3"/></svg>
+                                : <svg width="14" height="9" viewBox="0 0 38 22" fill="currentColor"><rect x="1" y="10" width="30" height="8" rx="1"/><path d="M4 10 L9 4 L24 4 L28 10"/><circle cx="8" cy="19" r="3"/><circle cx="24" cy="19" r="3"/></svg>
+                              }
+                            </span>
+                            {tabLabel[o.tab]}
+                          </span>
+                        </div>
+                        <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Množstvo</span><span className="font-bold text-gray-800">{o.totalQty} m³</span></div>
                         {(o.fillupM3 ?? 0) > 0 && (
                           <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Doťaženie</span><span className="font-medium text-amber-700">+{o.fillupM3} m³ → {o.fillupTarget} m³</span></div>
                         )}
+                        {o.km && <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Vzdialenosť</span><span className="font-medium text-gray-700">{o.km} km</span></div>}
+                        {o.address && <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Adresa</span><span className="text-gray-600 break-words">{o.address}</span></div>}
                         <div className="flex gap-2 items-center"><span className="text-gray-400 w-24 shrink-0">Fakturácia</span>
                           <span className={cn("font-black text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-sm", o.priceMode === "hotovost" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700")}>
                             {o.priceMode === "hotovost" ? "Hotovosť" : "Faktúra"}
@@ -1147,7 +1170,71 @@ function DiscountInput({ label, value, onChange, disabled }: { label: string; va
   );
 }
 
-function KlientiTab() {
+function DiscountGroupEditor({
+  beton, doprava, sluzby, celkovo, onChange,
+}: {
+  beton: number; doprava: number; sluzby: number; celkovo: number;
+  onChange: (v: { beton: number; doprava: number; sluzby: number; celkovo: number }) => void;
+}) {
+  const [mode, setMode] = useState<"ind" | "celk">(() => celkovo > 0 ? "celk" : "ind");
+
+  const switchTo = (m: "ind" | "celk") => {
+    setMode(m);
+    if (m === "celk") onChange({ beton: 0, doprava: 0, sluzby: 0, celkovo });
+    else onChange({ beton, doprava, sluzby, celkovo: 0 });
+  };
+
+  const indActive = mode === "ind";
+
+  return (
+    <div className="space-y-3">
+      {/* Toggle */}
+      <div className="flex gap-0.5 bg-gray-100 p-0.5 rounded-md w-fit border border-gray-200">
+        <button type="button" onClick={() => switchTo("ind")}
+          className={cn("px-3 py-1.5 text-[11px] font-black uppercase tracking-wide rounded-sm transition-all",
+            indActive ? "bg-secondary text-white shadow-sm" : "text-gray-400 hover:text-gray-600")}>
+          Individuálne
+        </button>
+        <button type="button" onClick={() => switchTo("celk")}
+          className={cn("px-3 py-1.5 text-[11px] font-black uppercase tracking-wide rounded-sm transition-all",
+            !indActive ? "bg-secondary text-white shadow-sm" : "text-gray-400 hover:text-gray-600")}>
+          Celkovo
+        </button>
+      </div>
+
+      {/* Group 1: Betón / Doprava / Služby */}
+      <div className={cn("grid grid-cols-3 gap-2 transition-opacity", !indActive && "opacity-30 pointer-events-none")}>
+        <DiscountInput label="Betón" value={String(beton)} disabled={!indActive}
+          onChange={v => onChange({ beton: parseInt(v) || 0, doprava, sluzby, celkovo: 0 })} />
+        <DiscountInput label="Doprava" value={String(doprava)} disabled={!indActive}
+          onChange={v => onChange({ beton, doprava: parseInt(v) || 0, sluzby, celkovo: 0 })} />
+        <DiscountInput label="Služby" value={String(sluzby)} disabled={!indActive}
+          onChange={v => onChange({ beton, doprava, sluzby: parseInt(v) || 0, celkovo: 0 })} />
+      </div>
+
+      {/* Divider */}
+      <div className="flex items-center gap-2">
+        <div className="flex-1 h-px bg-gray-100" />
+        <span className="text-[10px] text-gray-300 uppercase tracking-widest font-bold">alebo</span>
+        <div className="flex-1 h-px bg-gray-100" />
+      </div>
+
+      {/* Group 2: Celkovo */}
+      <div className={cn("transition-opacity", indActive && "opacity-30 pointer-events-none")}>
+        <DiscountInput label="Celkovo (betón + doprava + služby)" value={String(celkovo)} disabled={indActive}
+          onChange={v => onChange({ beton: 0, doprava: 0, sluzby: 0, celkovo: parseInt(v) || 0 })} />
+      </div>
+
+      <p className="text-[10px] text-gray-400">
+        {!indActive
+          ? `Celková zľava ${celkovo}% — platí rovnako na betón, dopravu aj služby.`
+          : "Každá kategória má vlastnú zľavu. Celkovo nie je aktívne."}
+      </p>
+    </div>
+  );
+}
+
+function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | null; onExpanded?: () => void }) {
   const [clients, setClients] = useState<Client[]>(adminData.getClients());
   const [zones] = useState(() => adminData.getDelivery());
   const [pZones] = useState(() => adminData.getTransportZones());
@@ -1177,6 +1264,19 @@ function KlientiTab() {
   const [sysDphOpen, setSysDphOpen] = useState(false);
 
   const save = (data: Client[]) => { setClients(data); adminData.saveClients(data); };
+
+  useEffect(() => {
+    if (!expandClientId) return;
+    const c = clients.find(cl => cl.loginId === expandClientId);
+    if (c) {
+      setExpanded(c.id);
+      setTimeout(() => {
+        document.getElementById(`client-card-${c.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
+    }
+    onExpanded?.();
+  }, [expandClientId]);
+
   // Auto-cleanup: clients with both celkovo AND individual discounts → celkovo wins, clear individual
   useEffect(() => {
     const needFix = clients.filter(c =>
@@ -1388,26 +1488,19 @@ function KlientiTab() {
             {/* Zľavy */}
             <div className="border-t border-gray-100 pt-4">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Zľavy</p>
-              {(() => {
-                const fC = parseInt(form.discountCelkovo) || 0;
-                const fB = parseInt(form.discountBeton) || 0;
-                const fD = parseInt(form.discountDoprava) || 0;
-                const fS = parseInt(form.discountSluzby) || 0;
-                const hasInd = fB > 0 || fD > 0 || fS > 0;
-                const hasCelk = fC > 0;
-                return (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <DiscountInput label="Zľava/Betón" value={form.discountBeton} disabled={hasCelk}
-                      onChange={v => setForm({ ...form, discountBeton: v, discountCelkovo: "0" })} />
-                    <DiscountInput label="Zľava/Doprava" value={form.discountDoprava} disabled={hasCelk}
-                      onChange={v => setForm({ ...form, discountDoprava: v, discountCelkovo: "0" })} />
-                    <DiscountInput label="Zľava/Služby" value={form.discountSluzby} disabled={hasCelk}
-                      onChange={v => setForm({ ...form, discountSluzby: v, discountCelkovo: "0" })} />
-                    <DiscountInput label="Zľava/Celkovo" value={form.discountCelkovo} disabled={hasInd}
-                      onChange={v => setForm({ ...form, discountCelkovo: v, discountBeton: "0", discountDoprava: "0", discountSluzby: "0" })} />
-                  </div>
-                );
-              })()}
+              <DiscountGroupEditor
+                beton={parseInt(form.discountBeton) || 0}
+                doprava={parseInt(form.discountDoprava) || 0}
+                sluzby={parseInt(form.discountSluzby) || 0}
+                celkovo={parseInt(form.discountCelkovo) || 0}
+                onChange={v => setForm({
+                  ...form,
+                  discountBeton: String(v.beton),
+                  discountDoprava: String(v.doprava),
+                  discountSluzby: String(v.sluzby),
+                  discountCelkovo: String(v.celkovo),
+                })}
+              />
             </div>
 
             {/* Možnosti */}
@@ -1512,7 +1605,7 @@ function KlientiTab() {
           const clientZone = c.deliveryZoneId ? zones.find(z => z.id === c.deliveryZoneId) : zones[0];
           const zonePricingType = clientZone?.pricingType ?? "standard";
           return (
-            <div key={c.id} className={cn("border shadow-sm overflow-hidden", c.isOwner ? "bg-amber-50 border-primary/40" : "bg-white border-gray-200")}>
+            <div key={c.id} id={`client-card-${c.id}`} className={cn("border shadow-sm overflow-hidden", c.isOwner ? "bg-amber-50 border-primary/40" : "bg-white border-gray-200")}>
               {/* Card header */}
               <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => setExpanded(isExpanded ? null : c.id)}>
                 {/* Avatar + active dot */}
@@ -1636,62 +1729,21 @@ function KlientiTab() {
 
                   {(clientDetailTab[c.id] ?? "detail") === "detail" && (<>
 
-                  {/* Zľavy – prominentný pás hore */}
-                  <div className="px-4 py-3 bg-white border-b border-gray-100">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Zľavy klienta</p>
-                    {(() => {
-                      const celkovo = (c.discountCelkovo as number) ?? 0;
-                      const hasInd = ((c.discountBeton ?? 0) as number) > 0 || ((c.discountDoprava ?? 0) as number) > 0 || ((c.discountSluzby ?? 0) as number) > 0;
-                      return (
-                        <>
-                        <div className="grid grid-cols-4 gap-2">
-                          {([
-                            { label: "Betón",   field: "discountBeton" as keyof Client },
-                            { label: "Doprava", field: "discountDoprava" as keyof Client },
-                            { label: "Služby",  field: "discountSluzby" as keyof Client },
-                            { label: "Celkovo", field: "discountCelkovo" as keyof Client },
-                          ]).map(({ label, field }) => {
-                            const val = (c[field] as number) ?? 0;
-                            const isCelkovo = field === "discountCelkovo";
-                            const blocked = isCelkovo ? hasInd : celkovo > 0;
-                            const active = val > 0;
-                            return (
-                              <div key={field} className={cn(
-                                "border px-2 py-2 text-center",
-                                blocked ? "bg-gray-50 border-gray-100 opacity-40" : active ? "bg-primary/10 border-primary/40" : "bg-gray-50 border-gray-200"
-                              )}>
-                                <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1.5">{label}</div>
-                                {blocked ? (
-                                  <div className="text-[10px] text-gray-400 font-bold py-1.5">{isCelkovo ? "— ind." : "= Celkovo"}</div>
-                                ) : (
-                                <div className="flex items-center justify-center gap-0.5">
-                                  <input
-                                    type="number" min="0" max="100"
-                                    value={String(val)}
-                                    onChange={e => {
-                                      const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                                      if (isCelkovo) update(c.id, { discountCelkovo: v, discountBeton: 0, discountDoprava: 0, discountSluzby: 0 });
-                                      else update(c.id, { [field]: v, discountCelkovo: 0 });
-                                    }}
-                                    onFocus={e => e.target.select()}
-                                    className={cn(
-                                      "border-0 px-0.5 py-0 text-xl font-black focus:outline-none w-16 text-center bg-transparent leading-none",
-                                      active ? "text-primary" : "text-gray-300"
-                                    )}
-                                  />
-                                  <span className={cn("text-sm font-bold leading-none", active ? "text-primary/70" : "text-gray-300")}>%</span>
-                                </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                        <p className="text-[10px] text-gray-400 mt-1.5">
-                          {celkovo > 0 ? `Celková zľava ${celkovo}% — platí na betón, dopravu aj služby.` : hasInd ? "Individuálne zľavy — Celkovo nie je možné nastaviť súčasne." : "Nastav buď Celkovo alebo jednotlivé zľavy."}
-                        </p>
-                        </>
-                      );
-                    })()}
+                  {/* Zľavy klienta */}
+                  <div className="px-4 py-4 bg-white border-b border-gray-100">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Zľavy klienta</p>
+                    <DiscountGroupEditor
+                      beton={(c.discountBeton as number) ?? 0}
+                      doprava={(c.discountDoprava as number) ?? 0}
+                      sluzby={(c.discountSluzby as number) ?? 0}
+                      celkovo={(c.discountCelkovo as number) ?? 0}
+                      onChange={v => update(c.id, {
+                        discountBeton: v.beton,
+                        discountDoprava: v.doprava,
+                        discountSluzby: v.sluzby,
+                        discountCelkovo: v.celkovo,
+                      })}
+                    />
                   </div>
 
                   {/* Hlavná mriežka: Osobné info | Prístup + Možnosti */}
@@ -2104,6 +2156,7 @@ export default function AdminDashboard() {
     return valid.includes(hash) ? hash : "klienti";
   });
   const [syncKey, setSyncKey] = useState(0);
+  const [goToClientId, setGoToClientId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoggedIn()) navigate("/admin/login");
@@ -2245,8 +2298,8 @@ export default function AdminDashboard() {
           {tab === "betony" && <BetonTab key={syncKey} />}
           {tab === "sluzby" && <SluzbyTab key={syncKey} />}
           {tab === "doprava" && <DopravaTab key={syncKey} />}
-          {tab === "klienti" && <KlientiTab key={syncKey} />}
-          {tab === "objednavky" && <ObjednavkyTab key={syncKey} />}
+          {tab === "klienti" && <KlientiTab key={syncKey} expandClientId={goToClientId} onExpanded={() => setGoToClientId(null)} />}
+          {tab === "objednavky" && <ObjednavkyTab key={syncKey} onGoToClient={(loginId) => { setTab("klienti"); setGoToClientId(loginId); }} />}
         </div>
       </div>
     </div>
