@@ -1904,6 +1904,23 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     : "";
                   const prefix = result.transportIsMin ? "Min. doprava" : "Doprava";
 
+                  const pType = clientDeliveryZone?.pricingType ?? "standard";
+                  const minFee = tsettings.minimumFee ?? 62.50;
+                  const transportFormula = (ci: typeof result.concreteBreakdown[0]) => {
+                    if (result.isOwn) return null;
+                    if (ci.transportIsMin) return `min. sadzba ${minFee.toFixed(2)} €/auto × ${ci.transportTrucks} ${ci.transportTrucks === 1 ? "auto" : "autá"}`;
+                    if (pType === "km") {
+                      const rate = clientDeliveryZone?.ratePerKm ?? 1.8;
+                      return `${km} km × ${rate} €/km × ${ci.transportTrucks} ${ci.transportTrucks === 1 ? "auto" : "autá"}`;
+                    }
+                    if (pType === "auto") {
+                      const rate = clientDeliveryZone?.ratePerTruck ?? 0;
+                      return `${ci.transportTrucks} ${ci.transportTrucks === 1 ? "auto" : "autá"} × ${rate} €/auto`;
+                    }
+                    const rate = result.transportZone?.ratePerM3 ?? 0;
+                    return `${ci.qty} m³ × ${rate} €/m³`;
+                  };
+
                   const mainPumpBase = tab === "pumpa" ? (result.pumpHrs + result.pumpMs / 60) * pumpServicePrice : 0;
                   const mainHoseBase = tab === "pumpa" && hoseMeters > 0 ? hoseMeters * hoseServicePrice : 0;
                   const mainWashBase = tab === "pumpa" && washing ? washServicePrice : 0;
@@ -1940,11 +1957,18 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                             {/* Doprava pre tento item */}
                             {!result.isOwn && ci.transport > 0 && (
                               <PriceRow
-                                label={ci.transportIsMin
-                                  ? <span>Min. doprava – <strong>{ci.transportTrucks}x auto</strong></span>
-                                  : idx === 0
-                                    ? <span>{prefix}{zoneStr ? ` ${zoneStr}` : ""} · <strong>{trucksLabel}</strong> · {ci.qty}&thinsp;m³</span>
-                                    : <span>Doprava · {ci.qty}&thinsp;m³</span>}
+                                label={
+                                  <span>
+                                    {ci.transportIsMin
+                                      ? <span>Min. doprava – <strong>{ci.transportTrucks}x auto</strong></span>
+                                      : idx === 0
+                                        ? <span>{prefix}{zoneStr ? ` ${zoneStr}` : ""} · <strong>{trucksLabel}</strong> · {ci.qty}&thinsp;m³</span>
+                                        : <span>Doprava · {ci.qty}&thinsp;m³</span>}
+                                    {transportFormula(ci) && (
+                                      <span className="text-[10px] text-white/35 block mt-0.5">{transportFormula(ci)}</span>
+                                    )}
+                                  </span>
+                                }
                                 original={ci.transport} discounted={ci.transport * dopravaFactor} hasDiscount={hasDiscount} />
                             )}
                             {ci.transportFillup > 0 && (
