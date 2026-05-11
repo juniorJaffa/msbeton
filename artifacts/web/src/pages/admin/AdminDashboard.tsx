@@ -1963,7 +1963,10 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
             {/* Header */}
             <div className="bg-secondary text-white px-6 py-4 flex items-center justify-between">
               <div>
-                <div className="font-black text-base uppercase tracking-widest">Zľavové tabuľky klienta</div>
+                <div className="flex items-center gap-2">
+                  {tablePdfModal.isOwner && <Crown className="w-4 h-4 text-primary shrink-0" />}
+                  <div className="font-black text-base uppercase tracking-widest">Zľavové tabuľky klienta</div>
+                </div>
                 <div className="text-sm text-white/60 mt-0.5">
                   {[tablePdfModal.firstName, tablePdfModal.lastName].filter(Boolean).join(" ")}
                   {tablePdfModal.company && ` · ${tablePdfModal.company}`}
