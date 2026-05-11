@@ -1906,20 +1906,23 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
                   const pType = clientDeliveryZone?.pricingType ?? "standard";
                   const minFee = tsettings.minimumFee ?? 62.50;
+                  const fmtR = (n: number) => (Math.round(n * 100) / 100).toFixed(2);
                   const transportFormula = (ci: typeof result.concreteBreakdown[0]) => {
                     if (result.isOwn) return null;
-                    if (ci.transportIsMin) return `min. sadzba ${minFee.toFixed(2)} €/auto × ${ci.transportTrucks} ${ci.transportTrucks === 1 ? "auto" : "autá"}`;
+                    const trucks = ci.transportTrucks;
+                    const autaLabel = trucks === 1 ? "auto" : "autá";
+                    if (ci.transportIsMin) return `min. sadzba ${fmtR(minFee * dopravaFactor)} €/auto × ${trucks} ${autaLabel}`;
                     if (pType === "km") {
-                      const rate = clientDeliveryZone?.ratePerKm ?? 1.8;
+                      const rate = (clientDeliveryZone?.ratePerKm ?? 1.8) * dopravaFactor;
                       const distKm = parseFloat(distance) || 0;
-                      return `${distKm} km × ${rate} €/km × ${ci.transportTrucks} ${ci.transportTrucks === 1 ? "auto" : "autá"}`;
+                      return `${distKm} km × ${fmtR(rate)} €/km × ${trucks} ${autaLabel}`;
                     }
                     if (pType === "auto") {
-                      const rate = clientDeliveryZone?.ratePerTruck ?? 0;
-                      return `${ci.transportTrucks} ${ci.transportTrucks === 1 ? "auto" : "autá"} × ${rate} €/auto`;
+                      const rate = (clientDeliveryZone?.ratePerTruck ?? 0) * dopravaFactor;
+                      return `${trucks} ${autaLabel} × ${fmtR(rate)} €/auto`;
                     }
-                    const rate = result.transportZone?.ratePerM3 ?? 0;
-                    return `${ci.qty} m³ × ${rate} €/m³`;
+                    const rate = (result.transportZone?.ratePerM3 ?? 0) * dopravaFactor;
+                    return `${ci.qty} m³ × ${fmtR(rate)} €/m³`;
                   };
 
                   const mainPumpBase = tab === "pumpa" ? (result.pumpHrs + result.pumpMs / 60) * pumpServicePrice : 0;
