@@ -247,6 +247,9 @@ function DopravaTab() {
 
   const [pZones, setPZones] = useState<TransportPricingZone[]>(adminData.getTransportZones());
   const [ts, setTs] = useState<TransportSettings>(adminData.getTransportSettings());
+  const svcs = adminData.getServices();
+  const waitingRateMix   = svcs.find(s => s.serviceMode === "mix")?.price;
+  const waitingRatePumpa = svcs.find(s => s.serviceMode === "pumpa")?.price;
   const [addingPZ, setAddingPZ] = useState(false);
   const [pzForm, setPzForm] = useState({ fromKm: "", toKm: "", ratePerM3: "" });
   const [stdZonesOpen, setStdZonesOpen] = useState(false);
@@ -376,7 +379,9 @@ function DopravaTab() {
                           </div>
                           <div>
                             <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Čakačka / 15 min</div>
-                            <div className="text-[11px] text-gray-400 italic">→ zo Služieb</div>
+                            {waitingRatePumpa != null
+                              ? <div className="font-bold text-secondary text-sm">{waitingRatePumpa.toFixed(2)} €</div>
+                              : <div className="text-[11px] text-gray-400 italic">—</div>}
                           </div>
                         </div>
                         {/* Mixér — kapacita (kompaktné) */}
@@ -393,7 +398,9 @@ function DopravaTab() {
                           </div>
                           <div>
                             <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Čakačka / 15 min</div>
-                            <div className="text-[11px] text-gray-400 italic">→ zo Služieb</div>
+                            {waitingRateMix != null
+                              ? <div className="font-bold text-secondary text-sm">{waitingRateMix.toFixed(2)} €</div>
+                              : <div className="text-[11px] text-gray-400 italic">—</div>}
                           </div>
                         </div>
                       </div>
