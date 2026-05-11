@@ -249,7 +249,8 @@ function DopravaTab() {
   const [ts, setTs] = useState<TransportSettings>(adminData.getTransportSettings());
   const [addingPZ, setAddingPZ] = useState(false);
   const [pzForm, setPzForm] = useState({ fromKm: "", toKm: "", ratePerM3: "" });
-  const [standardOpen, setStandardOpen] = useState(true);
+  const [stdZonesOpen, setStdZonesOpen] = useState(false);
+  const [stdDotazenieOpen, setStdDotazenieOpen] = useState(false);
 
   const savePZ = (data: TransportPricingZone[]) => { setPZones(data); adminData.saveTransportZones(data); };
   const saveTs = (data: TransportSettings) => { setTs(data); adminData.saveTransportSettings(data); };
@@ -312,12 +313,7 @@ function DopravaTab() {
                       <span className="text-[11px] text-gray-400">{zt.desc}</span>
                     </div>
                     {isStandard && (
-                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                        <button type="button" onClick={() => setStandardOpen(o => !o)}
-                          className="flex items-center gap-1 text-[10px] text-blue-600 bg-blue-100 border border-blue-200 px-1.5 py-0.5 rounded font-bold hover:bg-blue-200 transition-colors cursor-pointer">
-                          Zóny a Doťaženie
-                          {standardOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                        </button>
+                      <div className="mt-1">
                         <span className="text-[10px] text-blue-400">cena €/m³ podľa vzdialenosti · pravidlá fill-up</span>
                       </div>
                     )}
@@ -380,7 +376,7 @@ function DopravaTab() {
                   })()}
                 </div>
                 {/* Zóny tohto typu */}
-                {(!isStandard || standardOpen) && typeZones.map(z => (
+                {!isStandard && typeZones.map(z => (
                   <div key={z.id} className="border-t border-gray-100">
                     {/* Zone name row */}
                     <div className="flex items-center gap-2 px-5 py-2 pl-14 bg-gray-50/60">
@@ -445,79 +441,115 @@ function DopravaTab() {
                   </div>
                 ))}
 
-                {/* Zóny a Doťaženie — collapsible, iba pre Standard */}
-                {isStandard && standardOpen && (() => {
+                {/* Zóny a Doťaženie — dve independent collapsible sekcie */}
+                {isStandard && (() => {
                   const pumpCap = zones[0]?.pumpTruckCapacity ?? 7;
                   const mixCap  = zones[0]?.truckCapacity     ?? 9;
                   const minFeeV  = ts.minimumFee ?? 62.50;
                   return (
                     <div className="border-t-2 border-blue-100">
-                      {/* Zóny cenník */}
+                      {/* Zóny dopravy — collapsible */}
                       <div className="bg-blue-50/40">
-                        <div className="px-5 py-2 border-b border-blue-100 flex items-center gap-2">
+                        <button type="button" onClick={() => setStdZonesOpen(o => !o)}
+                          className="w-full flex items-center gap-2 px-5 py-2 border-b border-blue-100 hover:bg-blue-100/50 transition-colors text-left cursor-pointer select-none">
                           <span className="font-black text-secondary text-xs uppercase tracking-widest">Zóny dopravy</span>
                           <span className="text-[10px] text-blue-500 font-semibold">cenník €/m³</span>
-                        </div>
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b border-blue-100 bg-blue-50/30">
-                              <th className="text-left px-5 py-2 text-[10px] font-bold text-blue-400 uppercase tracking-wide">Od km</th>
-                              <th className="text-left px-4 py-2 text-[10px] font-bold text-blue-400 uppercase tracking-wide">Do km</th>
-                              <th className="text-right px-4 py-2 text-[10px] font-bold text-blue-400 uppercase tracking-wide">€/m³</th>
-                              <th className="w-8" />
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {pZones.map((z, i) => (
-                              <tr key={z.id} className={`border-b border-gray-50 hover:bg-primary/5 ${i % 2 === 0 ? "" : "bg-gray-50/40"}`}>
-                                <td className="px-5 py-2 text-secondary font-medium"><EditableField value={z.fromKm} type="number" onSave={v => updatePZ(z.id, "fromKm", v)} /></td>
-                                <td className="px-4 py-2 text-secondary font-medium"><EditableField value={z.toKm} type="number" onSave={v => updatePZ(z.id, "toKm", v)} /></td>
-                                <td className="px-4 py-2 text-right font-bold text-secondary"><EditableField value={z.ratePerM3.toFixed(2)} type="number" onSave={v => updatePZ(z.id, "ratePerM3", v)} /></td>
-                                <td className="px-2 py-2 text-right"><button onClick={() => removePZ(z.id)} className="p-1 text-gray-300 hover:text-red-500 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button></td>
-                              </tr>
+                          <div className="ml-auto">{stdZonesOpen ? <ChevronUp className="w-3.5 h-3.5 text-blue-400" /> : <ChevronDown className="w-3.5 h-3.5 text-blue-400" />}</div>
+                        </button>
+                        {stdZonesOpen && (
+                          <>
+                            {/* Standard delivery zone rows */}
+                            {typeZones.map(z => (
+                              <div key={z.id} className="border-t border-blue-100">
+                                <div className="flex items-center gap-2 px-5 py-2 pl-14 bg-blue-50/30">
+                                  <div className="font-semibold text-secondary text-sm flex-1">
+                                    <EditableField value={z.name} onSave={v => updateZone(z.id, { name: v })} />
+                                  </div>
+                                  <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded px-3 py-1.5">
+                                    <div>
+                                      <div className="text-[10px] text-yellow-600 uppercase tracking-wide font-bold mb-0.5">Čerpanie pumpy</div>
+                                      <div className="font-bold text-secondary text-sm flex items-center gap-1">
+                                        <EditableField value={z.pumpHourlyRate} type="number" onSave={v => updateZone(z.id, { pumpHourlyRate: parseFloat(v) })} /> €/hod
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <button onClick={() => removeZone(z.id)} className="p-1 text-gray-300 hover:text-red-500 transition-colors cursor-pointer flex-shrink-0">
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
                             ))}
-                          </tbody>
-                        </table>
-                        {addingPZ ? (
-                          <div className="border-t border-gray-100 bg-gray-50/40 px-5 py-3 flex flex-wrap gap-2">
-                            <input placeholder="Od km" type="number" value={pzForm.fromKm} onChange={e => setPzForm({ ...pzForm, fromKm: e.target.value })}
-                              className="w-24 border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" autoFocus />
-                            <input placeholder="Do km" type="number" value={pzForm.toKm} onChange={e => setPzForm({ ...pzForm, toKm: e.target.value })}
-                              className="w-24 border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-                            <input placeholder="€/m³" type="number" step="0.01" value={pzForm.ratePerM3} onChange={e => setPzForm({ ...pzForm, ratePerM3: e.target.value })}
-                              className="w-28 border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-                            <button onClick={addPZ} className="px-3 py-2 bg-primary text-secondary font-bold text-sm hover:bg-primary/90"><Check className="w-4 h-4" /></button>
-                            <button onClick={() => setAddingPZ(false)} className="px-3 py-2 bg-gray-100 text-gray-500 hover:bg-gray-200"><X className="w-4 h-4" /></button>
-                          </div>
-                        ) : (
-                          <div className="border-t border-gray-100">
-                            <button onClick={() => setAddingPZ(true)}
-                              className="flex items-center gap-2 w-full text-gray-400 hover:text-primary font-bold text-sm py-2.5 px-5 justify-start transition-colors hover:bg-gray-50">
-                              <Plus className="w-4 h-4" /> Pridať zónu
-                            </button>
-                          </div>
+                            {/* Pricing bands table */}
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b border-blue-100 bg-blue-50/30">
+                                  <th className="text-left px-5 py-2 text-[10px] font-bold text-blue-400 uppercase tracking-wide">Od km</th>
+                                  <th className="text-left px-4 py-2 text-[10px] font-bold text-blue-400 uppercase tracking-wide">Do km</th>
+                                  <th className="text-right px-4 py-2 text-[10px] font-bold text-blue-400 uppercase tracking-wide">€/m³</th>
+                                  <th className="w-8" />
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {pZones.map((z, i) => (
+                                  <tr key={z.id} className={`border-b border-gray-50 hover:bg-primary/5 ${i % 2 === 0 ? "" : "bg-gray-50/40"}`}>
+                                    <td className="px-5 py-2 text-secondary font-medium"><EditableField value={z.fromKm} type="number" onSave={v => updatePZ(z.id, "fromKm", v)} /></td>
+                                    <td className="px-4 py-2 text-secondary font-medium"><EditableField value={z.toKm} type="number" onSave={v => updatePZ(z.id, "toKm", v)} /></td>
+                                    <td className="px-4 py-2 text-right font-bold text-secondary"><EditableField value={z.ratePerM3.toFixed(2)} type="number" onSave={v => updatePZ(z.id, "ratePerM3", v)} /></td>
+                                    <td className="px-2 py-2 text-right"><button onClick={() => removePZ(z.id)} className="p-1 text-gray-300 hover:text-red-500 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button></td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                            {addingPZ ? (
+                              <div className="border-t border-gray-100 bg-gray-50/40 px-5 py-3 flex flex-wrap gap-2">
+                                <input placeholder="Od km" type="number" value={pzForm.fromKm} onChange={e => setPzForm({ ...pzForm, fromKm: e.target.value })}
+                                  className="w-24 border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" autoFocus />
+                                <input placeholder="Do km" type="number" value={pzForm.toKm} onChange={e => setPzForm({ ...pzForm, toKm: e.target.value })}
+                                  className="w-24 border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+                                <input placeholder="€/m³" type="number" step="0.01" value={pzForm.ratePerM3} onChange={e => setPzForm({ ...pzForm, ratePerM3: e.target.value })}
+                                  className="w-28 border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+                                <button onClick={addPZ} className="px-3 py-2 bg-primary text-secondary font-bold text-sm hover:bg-primary/90"><Check className="w-4 h-4" /></button>
+                                <button onClick={() => setAddingPZ(false)} className="px-3 py-2 bg-gray-100 text-gray-500 hover:bg-gray-200"><X className="w-4 h-4" /></button>
+                              </div>
+                            ) : (
+                              <div className="border-t border-gray-100">
+                                <button onClick={() => setAddingPZ(true)}
+                                  className="flex items-center gap-2 w-full text-gray-400 hover:text-primary font-bold text-sm py-2.5 px-5 justify-start transition-colors hover:bg-gray-50">
+                                  <Plus className="w-4 h-4" /> Pridať zónu
+                                </button>
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
 
-                      {/* Doťaženie */}
-                      <div className="px-5 py-3 bg-white border-t border-gray-100">
-                        <div className="text-xs font-black text-secondary uppercase tracking-widest mb-2">Pravidlá doťaženia</div>
-                        <div className="grid sm:grid-cols-2 gap-2 text-xs text-gray-600">
-                          <div className="bg-gray-50 border border-gray-100 rounded p-2.5 space-y-1">
-                            <div className="font-black text-secondary text-[10px] uppercase">🚛 Pumpa</div>
-                            <div>množstvo &lt; 5 m³ → doťaž na 5 m³</div>
-                            <div>{pumpCap} m³ &lt; mn. &lt; 10 m³ → doťaž na 10 m³</div>
+                      {/* Doťaženie — collapsible */}
+                      <div className="bg-white border-t border-gray-100">
+                        <button type="button" onClick={() => setStdDotazenieOpen(o => !o)}
+                          className="w-full flex items-center gap-2 px-5 py-2 border-b border-gray-100 hover:bg-gray-50 transition-colors text-left cursor-pointer select-none">
+                          <span className="text-xs font-black text-secondary uppercase tracking-widest">Pravidlá doťaženia</span>
+                          <div className="ml-auto">{stdDotazenieOpen ? <ChevronUp className="w-3.5 h-3.5 text-gray-400" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400" />}</div>
+                        </button>
+                        {stdDotazenieOpen && (
+                          <div className="px-5 py-3">
+                            <div className="grid sm:grid-cols-2 gap-2 text-xs text-gray-600">
+                              <div className="bg-gray-50 border border-gray-100 rounded p-2.5 space-y-1">
+                                <div className="font-black text-secondary text-[10px] uppercase">🚛 Pumpa</div>
+                                <div>množstvo &lt; 5 m³ → doťaž na 5 m³</div>
+                                <div>{pumpCap} m³ &lt; mn. &lt; 10 m³ → doťaž na 10 m³</div>
+                              </div>
+                              <div className="bg-gray-50 border border-gray-100 rounded p-2.5 space-y-1">
+                                <div className="font-black text-secondary text-[10px] uppercase">🔄 Mixér</div>
+                                <div>množstvo &lt; 5 m³ → doťaž na 5 m³</div>
+                                <div>{mixCap} m³ &lt; mn. &lt; 10 m³ → doťaž na 10 m³</div>
+                              </div>
+                            </div>
+                            <div className="mt-2 flex items-start gap-1.5 bg-amber-50 border border-amber-200 rounded px-2.5 py-1.5 text-xs text-amber-800">
+                              <span className="shrink-0">⚠️</span>
+                              <span>Pri min. doprave ({minFeeV.toFixed(2)} €/auto) sa doťaženie <strong>nepočíta</strong>.</span>
+                            </div>
                           </div>
-                          <div className="bg-gray-50 border border-gray-100 rounded p-2.5 space-y-1">
-                            <div className="font-black text-secondary text-[10px] uppercase">🔄 Mixér</div>
-                            <div>množstvo &lt; 5 m³ → doťaž na 5 m³</div>
-                            <div>{mixCap} m³ &lt; mn. &lt; 10 m³ → doťaž na 10 m³</div>
-                          </div>
-                        </div>
-                        <div className="mt-2 flex items-start gap-1.5 bg-amber-50 border border-amber-200 rounded px-2.5 py-1.5 text-xs text-amber-800">
-                          <span className="shrink-0">⚠️</span>
-                          <span>Pri min. doprave ({minFeeV.toFixed(2)} €/auto) sa doťaženie <strong>nepočíta</strong>.</span>
-                        </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -1555,6 +1587,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                           onChange={e => setForm({ ...form, hotovostDph: e.target.value })}
                           className="border border-gray-200 px-2 py-0.5 text-xs focus:outline-none focus:border-primary w-16 text-center" />
                         <span className="text-xs text-gray-400">%</span>
+                        <span className="text-[10px] text-gray-400 italic">· iba betón</span>
                       </div>
                     ) : (
                       <div className="mt-1 text-xs text-gray-400">Iba faktúra · DPH <span className="font-bold text-gray-500">23 %</span></div>
@@ -1584,6 +1617,31 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                       </button>
                     ))}
                   </div>
+                  {(() => {
+                    const selZ = zones.find(z => z.id === form.deliveryZoneId) ?? zones[0];
+                    if (!selZ) return null;
+                    const pt = selZ.pricingType ?? "standard";
+                    if (pt === "km") return (
+                      <div className="mt-1.5 text-[11px] text-blue-600 font-medium space-y-0.5">
+                        <div>Sadzba: <strong>{selZ.ratePerKm?.toFixed(2)} €/km</strong></div>
+                        {selZ.minimumFeeKm != null && <div>Min. poplatok: <strong>{selZ.minimumFeeKm.toFixed(2)} €/auto</strong></div>}
+                        {(selZ.minKm ?? 0) > 0 && <div>Min. vzdialenosť: <strong>{selZ.minKm} km</strong></div>}
+                        {(selZ.maxKm ?? 0) > 0 && <div>Max. polomer: <strong>{selZ.maxKm} km</strong></div>}
+                      </div>
+                    );
+                    if (pt === "auto") return (
+                      <div className="mt-1.5 text-[11px] text-blue-600 font-medium">
+                        Paušál: <strong>{selZ.ratePerTruck?.toFixed(2)} €/auto</strong>
+                      </div>
+                    );
+                    const pz = adminData.getTransportZones();
+                    if (pz.length > 0) return (
+                      <div className="mt-1.5 text-[11px] text-blue-600 font-medium">
+                        Pásma: <strong>{pz[0].ratePerM3.toFixed(2)} – {pz[pz.length - 1].ratePerM3.toFixed(2)} €/m³</strong>
+                      </div>
+                    );
+                    return null;
+                  })()}
                 </div>
                 <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
                   <input type="checkbox" checked={form.active} onChange={e => setForm({ ...form, active: e.target.checked })} className="accent-green-600 w-5 h-5 shrink-0" />
