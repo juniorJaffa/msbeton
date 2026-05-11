@@ -389,6 +389,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const pumpServicePrice = clientDeliveryZone?.pumpHourlyRate
     ?? allServices.find((s) => s.name.includes("Čerpanie"))?.price ?? 112.50;
   const chemServicePrice = allServices.find((s) => s.name.toLowerCase().includes("rozbeh"))?.price ?? 31.25;
+  const mp = loggedClient?.manualPrices ?? {};
   const washSvc = allServices.find((s) => s.name.toLowerCase().includes("umýv"));
   const washServicePrice = mp[washSvc?.id ?? ""] ?? washSvc?.price ?? 56.25;
   // Čakačka: per-mode sadzba z delivery zóny (pumpa vs mix)
