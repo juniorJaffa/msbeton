@@ -1192,32 +1192,52 @@ function DiscountGroupEditor({
   beton: number; doprava: number; sluzby: number; celkovo: number;
   onChange: (v: { beton: number; doprava: number; sluzby: number; celkovo: number }) => void;
 }) {
+  const [mode, setMode] = useState<"ind" | "celk">(() => celkovo > 0 ? "celk" : "ind");
+
+  const activate = (m: "ind" | "celk") => {
+    setMode(m);
+    if (m === "celk") onChange({ beton: 0, doprava: 0, sluzby: 0, celkovo });
+    else onChange({ beton, doprava, sluzby, celkovo: 0 });
+  };
+
+  const boxes: { label: string; value: number; group: "ind" | "celk"; onCh: (v: number) => void }[] = [
+    { label: "Betón",   value: beton,   group: "ind",  onCh: v => onChange({ beton: v, doprava, sluzby, celkovo: 0 }) },
+    { label: "Doprava", value: doprava, group: "ind",  onCh: v => onChange({ beton, doprava: v, sluzby, celkovo: 0 }) },
+    { label: "Služby",  value: sluzby,  group: "ind",  onCh: v => onChange({ beton, doprava, sluzby: v, celkovo: 0 }) },
+    { label: "Celkovo", value: celkovo, group: "celk", onCh: v => onChange({ beton: 0, doprava: 0, sluzby: 0, celkovo: v }) },
+  ];
+
   return (
-    <div className="space-y-2">
-      {/* Group 1: Individuálne */}
-      <div className="border border-gray-200 rounded-sm p-2.5 bg-gray-50/60">
-        <div className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-2">Individuálne</div>
-        <div className="grid grid-cols-3 gap-2">
-          <DiscountInput label="Betón" value={String(beton)}
-            onChange={v => onChange({ beton: parseInt(v) || 0, doprava, sluzby, celkovo: 0 })} />
-          <DiscountInput label="Doprava" value={String(doprava)}
-            onChange={v => onChange({ beton, doprava: parseInt(v) || 0, sluzby, celkovo: 0 })} />
-          <DiscountInput label="Služby" value={String(sluzby)}
-            onChange={v => onChange({ beton, doprava, sluzby: parseInt(v) || 0, celkovo: 0 })} />
-        </div>
-      </div>
-      {/* Divider */}
-      <div className="flex items-center gap-2">
-        <div className="flex-1 h-px bg-gray-100" />
-        <span className="text-[10px] text-gray-300 uppercase tracking-widest font-bold">alebo</span>
-        <div className="flex-1 h-px bg-gray-100" />
-      </div>
-      {/* Group 2: Celkovo */}
-      <div className="border border-gray-200 rounded-sm p-2.5 bg-gray-50/60">
-        <div className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-2">Celkovo</div>
-        <DiscountInput label="Betón + Doprava + Služby" value={String(celkovo)}
-          onChange={v => onChange({ beton: 0, doprava: 0, sluzby: 0, celkovo: parseInt(v) || 0 })} />
-      </div>
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      {boxes.map(({ label, value, group, onCh }) => {
+        const blocked = group !== mode;
+        const active = value > 0 && !blocked;
+        return (
+          <div key={label}
+            className={cn("border px-2 py-2 text-center transition-all",
+              blocked ? "bg-gray-50 border-gray-100 opacity-40 cursor-pointer hover:opacity-60"
+              : active ? "bg-primary/10 border-primary/40"
+              : "bg-gray-50 border-gray-200")}
+            onClick={() => { if (blocked) activate(group); }}>
+            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1.5">{label}</div>
+            {blocked ? (
+              <div className="text-[10px] text-gray-400 font-bold py-1.5">{group === "celk" ? "— ind." : "= Celkovo"}</div>
+            ) : (
+              <div className="flex items-center justify-center gap-0.5" onClick={e => e.stopPropagation()}>
+                <input
+                  type="number" min="0" max="100"
+                  value={String(value)}
+                  onChange={e => { const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0)); onCh(v); }}
+                  onFocus={e => e.target.select()}
+                  className={cn("border-0 px-0.5 py-0 text-xl font-black focus:outline-none w-16 text-center bg-transparent leading-none",
+                    active ? "text-primary" : "text-gray-300")}
+                />
+                <span className={cn("text-sm font-bold leading-none", active ? "text-primary/70" : "text-gray-300")}>%</span>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
