@@ -380,7 +380,7 @@ function DopravaTab() {
                   })()}
                 </div>
                 {/* Zóny tohto typu */}
-                {typeZones.map(z => (
+                {(!isStandard || standardOpen) && typeZones.map(z => (
                   <div key={z.id} className="flex items-center gap-3 px-5 py-2.5 pl-14 border-t border-gray-50 hover:bg-gray-50/50">
                     <div className="font-semibold text-secondary text-sm flex-1">
                       <EditableField value={z.name} onSave={v => updateZone(z.id, { name: v })} />
