@@ -1281,6 +1281,8 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
   const [sendRegEmail, setSendRegEmail] = useState(true);
   const [emailStatus, setEmailStatus] = useState<"idle" | "sending" | "ok" | "error">("idle");
   const [sysDphOpen, setSysDphOpen] = useState(false);
+  const [editingLinkFor, setEditingLinkFor] = useState<string | null>(null);
+  const [linkDraft, setLinkDraft] = useState("");
 
   const save = (data: Client[]) => { setClients(data); adminData.saveClients(data); };
 
@@ -1739,7 +1741,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
 
               {/* Expanded detail */}
               {isExpanded && (
-                <div className="border-t border-gray-100 bg-gray-50/60">
+                <div className="border-t border-gray-100 bg-gray-50">
 
                   {/* Tab bar: Detail | Kalkulačka */}
                   <div className="flex border-b border-gray-200">
@@ -1798,13 +1800,31 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                         ))}
                         <div className="flex gap-2 items-start">
                           <span className="text-gray-400 text-xs w-20 shrink-0 pt-0.5">Odkaz</span>
-                          <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                            <EditableField value={c.sharedLink || "—"} type="url" onSave={v => update(c.id, { sharedLink: v.trim() || undefined })} />
-                            {c.sharedLink && (
-                              <a href={c.sharedLink} target="_blank" rel="noopener noreferrer" title="Otvoriť odkaz"
-                                className="shrink-0 text-gray-400 hover:text-primary transition-colors">
-                                <ExternalLink className="w-3.5 h-3.5" />
-                              </a>
+                          <div className="min-w-0 flex-1">
+                            {editingLinkFor === c.id ? (
+                              <div className="flex items-center gap-1">
+                                <input autoFocus type="url" value={linkDraft} onChange={e => setLinkDraft(e.target.value)}
+                                  onKeyDown={e => { if (e.key === "Enter") { update(c.id, { sharedLink: linkDraft.trim() || undefined }); setEditingLinkFor(null); } if (e.key === "Escape") setEditingLinkFor(null); }}
+                                  className="flex-1 min-w-0 border border-primary px-2 py-0.5 text-xs focus:outline-none" />
+                                <button onClick={() => { update(c.id, { sharedLink: linkDraft.trim() || undefined }); setEditingLinkFor(null); }} className="text-green-600 hover:text-green-700 shrink-0"><Check className="w-3.5 h-3.5" /></button>
+                                <button onClick={() => setEditingLinkFor(null)} className="text-gray-400 hover:text-red-500 shrink-0"><X className="w-3.5 h-3.5" /></button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                {c.sharedLink ? (
+                                  <a href={c.sharedLink} target="_blank" rel="noopener noreferrer" title={c.sharedLink}
+                                    className="flex items-center gap-1 min-w-0 text-primary hover:text-primary/80 transition-colors">
+                                    <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                                    <span className="text-xs truncate">{c.sharedLink.replace(/^https?:\/\//, "")}</span>
+                                  </a>
+                                ) : (
+                                  <span className="text-gray-400 text-xs">—</span>
+                                )}
+                                <button onClick={() => { setLinkDraft(c.sharedLink || ""); setEditingLinkFor(c.id); }}
+                                  className="shrink-0 text-gray-300 hover:text-secondary transition-colors ml-auto">
+                                  <Pencil className="w-3 h-3" />
+                                </button>
+                              </div>
                             )}
                           </div>
                         </div>
