@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink } from "lucide-react";
+import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2 } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
@@ -12,6 +12,17 @@ import { isLoggedIn, logout } from "@/lib/adminAuth";
 import { adminData, adminApi, syncFromServer, SYSTEM_OWNER_ID, ConcreteCategory, ConcreteType, DeliveryZone, Service, Client, TransportPricingZone, TransportSettings, Order } from "@/lib/adminData";
 
 type Tab = "betony" | "sluzby" | "doprava" | "klienti" | "objednavky";
+
+function sharedLinkIcon(url: string): { Icon: React.ElementType; cls: string } {
+  const u = url.toLowerCase();
+  if (u.includes("spreadsheet") || u.includes(".xlsx") || u.includes(".xls") || u.includes("excel"))
+    return { Icon: FileSpreadsheet, cls: "text-green-600" };
+  if (u.includes(".pdf") || u.includes("/pdf"))
+    return { Icon: FileText, cls: "text-red-500" };
+  if (u.includes("document") || u.includes(".docx") || u.includes(".doc") || u.includes("word"))
+    return { Icon: FileType2, cls: "text-blue-600" };
+  return { Icon: ExternalLink, cls: "text-primary" };
+}
 
 // ── Inline editable cell ──────────────────────────────────────────────────────
 function EditableField({ value, onSave, type = "text" }: { value: string | number; onSave: (v: string) => void; type?: string }) {
@@ -1721,8 +1732,8 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                   {c.sharedLink && (
                     <a href={c.sharedLink} target="_blank" rel="noopener noreferrer" title="Zdielaný odkaz"
                       onClick={e => e.stopPropagation()}
-                      className="p-1 text-gray-300 hover:text-primary transition-colors">
-                      <ExternalLink className="w-4 h-4" />
+                      className="p-1 transition-colors hover:opacity-70">
+                      {(() => { const { Icon, cls } = sharedLinkIcon(c.sharedLink); return <Icon className={`w-4 h-4 ${cls}`} />; })()}
                     </a>
                   )}
                   <button
@@ -1813,8 +1824,8 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                             <div className="flex items-center gap-2">
                               {c.sharedLink ? (
                                 <a href={c.sharedLink} target="_blank" rel="noopener noreferrer" title={c.sharedLink}
-                                  className="text-primary hover:text-primary/80 transition-colors">
-                                  <ExternalLink className="w-4 h-4" />
+                                  className="transition-colors hover:opacity-70">
+                                  {(() => { const { Icon, cls } = sharedLinkIcon(c.sharedLink); return <Icon className={`w-4 h-4 ${cls}`} />; })()}
                                 </a>
                               ) : (
                                 <span className="text-gray-400 text-xs">—</span>
