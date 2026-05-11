@@ -1111,10 +1111,15 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       lines.push(`(zľavy: ${dp.join(", ")})`);
     }
     lines.push("Tel: +421 909 205 205");
-    navigator.clipboard.writeText(lines.join("\n")).then(() => {
-      setSmsCopied(true);
-      setTimeout(() => setSmsCopied(false), 3000);
-    });
+    const text = lines.join("\n");
+    if (navigator.share) {
+      navigator.share({ text }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(text).then(() => {
+        setSmsCopied(true);
+        setTimeout(() => setSmsCopied(false), 3000);
+      });
+    }
   }
 
   async function handleSubmitOrder() {
