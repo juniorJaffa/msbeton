@@ -60,6 +60,34 @@ Služby vždy **pod dopravou**.
 - Result UI header: `Pridaná položka {idx}` kde idx pochádza z `concreteBreakdown.map((ci, idx)`, teda `idx=1` = prvá extra
 - Items s prázdnym množstvom → **vylúčené z výpočtu** (`if (t && q > 0)` v calc loop) → červená karta + badge „nie je zahrnutá" ak `showResult && !item.quantity`
 
+### Zobrazovanie zľavových cien — pravidlo pre VŠETKY kontexty
+
+Keď je klient prihlásený (alebo je aktívny `clientOverride`) a má nejakú zľavu, **každý cenový výstup musí vždy zobraziť OBIDVE hodnoty** — pôvodnú (preškrtnutú) aj zľavnenú (tučnú). Toto platí pre každý typ zľavy nezávisle:
+
+| Typ zľavy | Platí na |
+|-----------|----------|
+| `effectiveBeton` | cena betónu (€/m³, celková sum) |
+| `effectiveDoprava` | doprava + doťaženie |
+| `effectiveSluzby` | všetky služby (čerpanie, hadice, umývanie, chémia, čakačky) |
+
+`effectiveX = discountX > 0 ? discountX : discountCelkovo` — kategória bez špecifickej zľavy zdedí celkovú.
+
+**Kalkulačka UI** (`PriceRow`): `~~pôvodnáCena~~` sivá + tučná zľavnená pod ňou.
+
+**PDF** (`exportPDF`):
+- Betón *Jedn. cena*: `~~origRate~~<br>discRate €/m³` (ak `Math.abs(origRate - discRate) > 0.001`)
+- Betón *Spolu*: `~~origTotal~~` (preškrtnuté) + discTotal
+- Doprava *Jedn. cena*: `—` (vždy), *Spolu*: `~~origTotal~~` + discTotal
+- Služby *Jedn. cena*: `svcRateStr(rate, suffix)` → `~~origRate~~<br>discRate` ak zľava
+- Služby *Spolu*: `~~origTotal~~` + discTotal
+- Podmienka pre preškrtnutie: `hasDiscount && Math.abs(orig - disc) > 0.001`
+
+**SMS** (`exportSMS`): zobrazuje discountované ceny; sekcia `(zľavy: betón X%, ...)` na konci.
+
+**Admin ClientPriceTable**: per-tab zobrazenie (Betóny / Služby / Doprava) s badge `−X%` pri aktívnych zľavách; editovateľné manuálne ceny (M badge) ukladajú **base cenu** (pred hotovostným DPH) do `manualPrices`.
+
+> **Kľúčové**: v hotovostnom režime sa `VAT_HOTOVOST` aplikuje **iba na betón**, nie na dopravu/služby. PDF/SMS export musí rešpektovať `isFaktura` flag.
+
 ### Admin Klienti – bezpečnostné pravidlá
 
 - loginId `"msbeton"` **blokovaný** pri vytváraní aj editácii

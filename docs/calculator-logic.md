@@ -65,6 +65,19 @@ sluzbyFactor  = 1 - effectiveSluzby  / 100
 
 V UI sa zobrazujú **raw nakonfigurované hodnoty** (nie odvodené efektívne).
 
+### Pravidlo dvojitého zobrazovania cien
+
+Keď je `hasDiscount = effectiveBeton > 0 || effectiveDoprava > 0 || effectiveSluzby > 0`, každý cenový výstup zobrazuje **obe hodnoty** — pôvodnú (preškrtnutú) aj zľavnenú:
+
+- **Betón** (`betonFactor`): orig cena preškrtnutá, zľavnená tučná pod ňou
+- **Doprava** (`dopravaFactor`): preškrtnuté + zľavnené — iba ak `effectiveDoprava > 0` ALEBO `discountCelkovo > 0`
+- **Služby** (`sluzbyFactor`): preškrtnuté + zľavnené — iba ak `effectiveSluzby > 0` ALEBO `discountCelkovo > 0`
+
+Podmienka preškrtnutia vždy: `hasDiscount && Math.abs(orig - disc) > 0.001`
+
+Kategória BEZ špecifickej zľavy ale S `discountCelkovo` zdedí efektívnu zľavu → zobrazí preškrtnutie.
+Kategória BEZ akejkoľvek zľavy (`factor = 1`) → `Math.abs(orig - disc) = 0` → žiadne preškrtnutie (správne).
+
 ---
 
 ## Transportná logika

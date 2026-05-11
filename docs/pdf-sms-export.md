@@ -43,15 +43,58 @@ Items s `qty=0` (prázdne množstvo) **nie sú** v `concreteBreakdown` → nikdy
 - Background watermark: **ODSTRÁNENÝ** (spôsoboval prázdne strany)
 - Signing box (zostal): `"Vypracovala spoločnosť"` + malé auto (36mm, opacity 0.22) + `"Podpis zákazníka"` rámček — side-by-side layout, kompaktný
 
-### Ceny v PDF
+### Ceny v PDF — dvojité zobrazenie so zľavou
 
-| Stav | Betón orig | Betón disc |
-|------|-----------|-----------|
+Keď má klient zľavu (`hasDiscount = true`), každý riadok zobrazuje **pôvodnú (preškrtnutú) aj zľavnenú hodnotu**.
+
+#### Betón
+
+| Stav | orig | disc |
+|------|------|------|
 | Faktura | `ci.bezDph` | `ci.bezDphFinal` |
 | Hotovosť | `ci.bezDph * (1 + VAT_HOTOVOST)` | `ci.bezDphFinalHotovost` |
 
-Doprava/fillup orig = `ci.transport`, disc = `ci.transport * dopravaFactor`.
-Služby orig = raw cost, disc = `rawCost * sluzbyFactor`.
+*Jedn. cena stĺpec*: `~~origRate~~<br>discRate €/m³` — podmienka `Math.abs(origRate - discRate) > 0.001`
+*Spolu stĺpec*: `trow(...)` → `crossed` span (preškrtnutý orig) + disc value
+
+#### Doprava
+
+- *Jedn. cena*: vždy `"—"`
+- *orig*: `ci.transport` (raw z `calcTransport`)
+- *disc*: `ci.transport * dopravaFactor`
+- Preškrtnutie: iba ak `effectiveDoprava > 0` alebo `discountCelkovo > 0` (inak `dopravaFactor = 1` → `Math.abs = 0`)
+
+#### Služby (čerpanie, hadice, umývanie, chémia, čakačky)
+
+Pomocná funkcia `svcRateStr(rate, suffix)`:
+```typescript
+const svcRateStr = (rate: number, suffix: string) => {
+  const discRate = rate * sluzbyFactor;
+  if (hasDiscount && Math.abs(rate - discRate) > 0.001)
+    return `~~${rate}~~ ${suffix}<br>${discRate} ${suffix}`;  // HTML s preškrtnutím
+  return `${discRate} ${suffix}`;
+};
+```
+
+- *Jedn. cena*: `svcRateStr(pumpServicePrice, "€/h")` atď.
+- *orig*: `rawCost` (napr. `mainPumpTime * pumpServicePrice`)
+- *disc*: `rawCost * sluzbyFactor`
+- Platí pre hlavnú aj extra položky
+
+#### Hotovosť vs Faktúra
+
+`VAT_HOTOVOST` sa aplikuje **iba na betón**. Doprava a služby sú rovnaké v oboch režimoch:
+```typescript
+hotovostBaseItems.transport = items.transport  // bez VAT_HOTOVOST
+hotovostBaseItems.pump      = items.pump       // bez VAT_HOTOVOST
+```
+
+#### clientBlock v PDF
+
+Vždy obsahuje:
+- Meno + firma klienta (ak prihlásený)
+- `Doprava: Pumpa/Miešačka/Vlastná doprava – {zoneName}`
+- `Zľavy: Betón X%, Doprava Y%, ...` (iba ak `hasDiscount`)
 
 ---
 
