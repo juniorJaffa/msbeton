@@ -1027,14 +1027,25 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                         {(o.discountBeton || o.discountDoprava || o.discountSluzby || o.discountCelkovo) ? (
                           <div className="flex gap-2 items-start pt-0.5">
                             <span className="text-gray-400 w-20 shrink-0 mt-0.5">Zľavy</span>
-                            <div className="flex flex-wrap gap-1">
+                            <div className="space-y-1.5 flex-1">
+                              {/* Individuálne skupina */}
+                              {(o.discountBeton || o.discountDoprava || o.discountSluzby) ? (
+                                <div className="border border-gray-200 rounded-sm px-2 py-1 bg-gray-50/60">
+                                  <div className="text-[8px] font-black uppercase tracking-widest text-gray-300 mb-1">Individuálne</div>
+                                  <div className="flex flex-wrap gap-1">
+                                    {o.discountBeton   ? <span className="bg-primary/15 text-secondary text-[10px] font-black px-1.5 py-0.5 rounded-sm">Betón −{o.discountBeton}%</span>   : null}
+                                    {o.discountDoprava ? <span className="bg-primary/15 text-secondary text-[10px] font-black px-1.5 py-0.5 rounded-sm">Doprava −{o.discountDoprava}%</span> : null}
+                                    {o.discountSluzby  ? <span className="bg-primary/15 text-secondary text-[10px] font-black px-1.5 py-0.5 rounded-sm">Služby −{o.discountSluzby}%</span>  : null}
+                                  </div>
+                                </div>
+                              ) : null}
+                              {/* Celkovo skupina */}
                               {o.discountCelkovo ? (
-                                <span className="bg-primary text-secondary text-[10px] font-black px-2 py-0.5 rounded-sm">Celkovo −{o.discountCelkovo}%</span>
-                              ) : (<>
-                                {o.discountBeton   ? <span className="bg-primary/15 text-secondary text-[10px] font-black px-1.5 py-0.5 rounded-sm">Betón −{o.discountBeton}%</span>   : null}
-                                {o.discountDoprava ? <span className="bg-primary/15 text-secondary text-[10px] font-black px-1.5 py-0.5 rounded-sm">Doprava −{o.discountDoprava}%</span> : null}
-                                {o.discountSluzby  ? <span className="bg-primary/15 text-secondary text-[10px] font-black px-1.5 py-0.5 rounded-sm">Služby −{o.discountSluzby}%</span>  : null}
-                              </>)}
+                                <div className="border border-primary/30 rounded-sm px-2 py-1 bg-primary/5">
+                                  <div className="text-[8px] font-black uppercase tracking-widest text-primary/50 mb-1">Celkovo</div>
+                                  <span className="bg-primary text-secondary text-[10px] font-black px-2 py-0.5 rounded-sm">−{o.discountCelkovo}%</span>
+                                </div>
+                              ) : null}
                             </div>
                           </div>
                         ) : null}
@@ -1181,60 +1192,32 @@ function DiscountGroupEditor({
   beton: number; doprava: number; sluzby: number; celkovo: number;
   onChange: (v: { beton: number; doprava: number; sluzby: number; celkovo: number }) => void;
 }) {
-  const [mode, setMode] = useState<"ind" | "celk">(() => celkovo > 0 ? "celk" : "ind");
-
-  const switchTo = (m: "ind" | "celk") => {
-    setMode(m);
-    if (m === "celk") onChange({ beton: 0, doprava: 0, sluzby: 0, celkovo });
-    else onChange({ beton, doprava, sluzby, celkovo: 0 });
-  };
-
-  const indActive = mode === "ind";
-
   return (
-    <div className="space-y-3">
-      {/* Toggle */}
-      <div className="flex gap-0.5 bg-gray-100 p-0.5 rounded-md w-fit border border-gray-200">
-        <button type="button" onClick={() => switchTo("ind")}
-          className={cn("px-3 py-1.5 text-[11px] font-black uppercase tracking-wide rounded-sm transition-all",
-            indActive ? "bg-secondary text-white shadow-sm" : "text-gray-400 hover:text-gray-600")}>
-          Individuálne
-        </button>
-        <button type="button" onClick={() => switchTo("celk")}
-          className={cn("px-3 py-1.5 text-[11px] font-black uppercase tracking-wide rounded-sm transition-all",
-            !indActive ? "bg-secondary text-white shadow-sm" : "text-gray-400 hover:text-gray-600")}>
-          Celkovo
-        </button>
+    <div className="space-y-2">
+      {/* Group 1: Individuálne */}
+      <div className="border border-gray-200 rounded-sm p-2.5 bg-gray-50/60">
+        <div className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-2">Individuálne</div>
+        <div className="grid grid-cols-3 gap-2">
+          <DiscountInput label="Betón" value={String(beton)}
+            onChange={v => onChange({ beton: parseInt(v) || 0, doprava, sluzby, celkovo: 0 })} />
+          <DiscountInput label="Doprava" value={String(doprava)}
+            onChange={v => onChange({ beton, doprava: parseInt(v) || 0, sluzby, celkovo: 0 })} />
+          <DiscountInput label="Služby" value={String(sluzby)}
+            onChange={v => onChange({ beton, doprava, sluzby: parseInt(v) || 0, celkovo: 0 })} />
+        </div>
       </div>
-
-      {/* Group 1: Betón / Doprava / Služby */}
-      <div className={cn("grid grid-cols-3 gap-2 transition-opacity", !indActive && "opacity-30 pointer-events-none")}>
-        <DiscountInput label="Betón" value={String(beton)} disabled={!indActive}
-          onChange={v => onChange({ beton: parseInt(v) || 0, doprava, sluzby, celkovo: 0 })} />
-        <DiscountInput label="Doprava" value={String(doprava)} disabled={!indActive}
-          onChange={v => onChange({ beton, doprava: parseInt(v) || 0, sluzby, celkovo: 0 })} />
-        <DiscountInput label="Služby" value={String(sluzby)} disabled={!indActive}
-          onChange={v => onChange({ beton, doprava, sluzby: parseInt(v) || 0, celkovo: 0 })} />
-      </div>
-
       {/* Divider */}
       <div className="flex items-center gap-2">
         <div className="flex-1 h-px bg-gray-100" />
         <span className="text-[10px] text-gray-300 uppercase tracking-widest font-bold">alebo</span>
         <div className="flex-1 h-px bg-gray-100" />
       </div>
-
       {/* Group 2: Celkovo */}
-      <div className={cn("transition-opacity", indActive && "opacity-30 pointer-events-none")}>
-        <DiscountInput label="Celkovo (betón + doprava + služby)" value={String(celkovo)} disabled={indActive}
+      <div className="border border-gray-200 rounded-sm p-2.5 bg-gray-50/60">
+        <div className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-2">Celkovo</div>
+        <DiscountInput label="Betón + Doprava + Služby" value={String(celkovo)}
           onChange={v => onChange({ beton: 0, doprava: 0, sluzby: 0, celkovo: parseInt(v) || 0 })} />
       </div>
-
-      <p className="text-[10px] text-gray-400">
-        {!indActive
-          ? `Celková zľava ${celkovo}% — platí rovnako na betón, dopravu aj služby.`
-          : "Každá kategória má vlastnú zľavu. Celkovo nie je aktívne."}
-      </p>
     </div>
   );
 }
