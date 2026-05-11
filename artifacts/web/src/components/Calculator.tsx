@@ -302,18 +302,17 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   }, []);
 
   useEffect(() => {
-    if ((!loggedClient || !loggedClient.canHotovost) && priceMode === "hotovost") {
+    if ((!loggedClientBase || !loggedClientBase.canHotovost) && priceMode === "hotovost") {
       setPriceMode("faktura");
     }
-    // Auto-zapni zimné opatrenia ak klient má povolené a je aktívne obdobie
-    if (loggedClient?.canZimneOpatrenia) {
+    if (loggedClientBase?.canZimneOpatrenia) {
       const from = "11-15"; const to = "03-15";
       const now = new Date();
       const mmdd = `${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
       const inPeriod = from > to ? (mmdd >= from || mmdd <= to) : (mmdd >= from && mmdd <= to);
       if (inPeriod) setZimneOpatrenia(true);
     }
-  }, [loggedClient, priceMode]);
+  }, [loggedClientBase, priceMode]);
 
   // Google Maps Autocomplete + DistanceMatrix pre adresný režim
   useEffect(() => {
