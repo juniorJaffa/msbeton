@@ -236,7 +236,6 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [showResult, setShowResult] = useState(false);
   const [priceMode, setPriceMode] = useState<PriceMode>("faktura");
   const [loggedClientState, setLoggedClient] = useState<LoggedClient | null>(() => clientOverride ? null : clientAuth.getLoggedClient());
-  const loggedClient = clientOverride ?? loggedClientState;
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [loginId, setLoginId] = useState("");
   const [loginPwd, setLoginPwd] = useState("");
@@ -357,10 +356,32 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   }, [deliveryMode]);
 
   const allCategories = useMemo(() => adminData.getCategories(), [revision]);
-  const allServices = useMemo(() => adminData.getServices(), [revision]);
-  const allDelivery = useMemo(() => adminData.getDelivery(), [revision]);
-  const tzones = useMemo(() => adminData.getTransportZones(), [revision]);
-  const tsettings = useMemo(() => adminData.getTransportSettings(), [revision]);
+  const allServices   = useMemo(() => adminData.getServices(), [revision]);
+  const allDelivery   = useMemo(() => adminData.getDelivery(), [revision]);
+  const tzones        = useMemo(() => adminData.getTransportZones(), [revision]);
+  const tsettings     = useMemo(() => adminData.getTransportSettings(), [revision]);
+  const allClients    = useMemo(() => adminData.getClients(), [revision]);
+
+  // loggedClient: clientOverride je živý (z parent state) — priamo ho použij.
+  // Pre session prípad (klient prihlásený cez login form) mergni čerstvé polia z allClients,
+  // aby manuálne ceny a zľavy nastavené v admin paneli boli okamžite viditeľné bez re-login.
+  const loggedClient = useMemo<LoggedClient | null>(() => {
+    if (clientOverride) return clientOverride;
+    if (!loggedClientState || loggedClientState.id === "admin") return loggedClientState;
+    const fresh = allClients.find(c => c.id === loggedClientState.id);
+    if (!fresh) return loggedClientState;
+    return {
+      ...loggedClientState,
+      manualPrices:      fresh.manualPrices,
+      discountBeton:     fresh.discountBeton     ?? loggedClientState.discountBeton,
+      discountDoprava:   fresh.discountDoprava   ?? loggedClientState.discountDoprava,
+      discountSluzby:    fresh.discountSluzby    ?? loggedClientState.discountSluzby,
+      discountCelkovo:   fresh.discountCelkovo   ?? loggedClientState.discountCelkovo,
+      canHotovost:       fresh.canHotovost       ?? loggedClientState.canHotovost,
+      hotovostDph:       fresh.hotovostDph,
+      deliveryZoneId:    fresh.deliveryZoneId,
+    };
+  }, [clientOverride, loggedClientState, allClients]);
 
   // Klientova zóna dopravy (podľa deliveryZoneId, fallback = prvá zóna)
   const clientDeliveryZone = useMemo(() => {
@@ -385,23 +406,27 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     ?? typesForCategory.find((t) => t.label.includes("C16/20"))
     ?? typesForCategory[0];
 
-  // Čerpanie: ak má klient priradenú zónu s vlastnou sadzbou pumpy, použij ju
-  const pumpServicePrice = clientDeliveryZone?.pumpHourlyRate
-    ?? allServices.find((s) => s.name.includes("Čerpanie"))?.price ?? 112.50;
-  const chemServicePrice = allServices.find((s) => s.name.toLowerCase().includes("rozbeh"))?.price ?? 31.25;
   const mp = loggedClient?.manualPrices ?? {};
-  const washSvc = allServices.find((s) => s.name.toLowerCase().includes("umýv"));
+  const pumpSvc   = allServices.find((s) => s.name.includes("Čerpanie"));
+  const chemSvc   = allServices.find((s) => s.name.toLowerCase().includes("rozbeh"));
+  const washSvc   = allServices.find((s) => s.name.toLowerCase().includes("umýv"));
+  const waitPumpaSvc = allServices.find((s) => s.serviceMode === "pumpa");
+  const waitMixSvc   = allServices.find((s) => s.serviceMode === "mix");
+  // Čerpanie: manual override > zona > service price
+  const pumpServicePrice = mp[pumpSvc?.id ?? ""] !== undefined
+    ? mp[pumpSvc!.id]
+    : (clientDeliveryZone?.pumpHourlyRate ?? pumpSvc?.price ?? 112.50);
+  const chemServicePrice = mp[chemSvc?.id ?? ""] !== undefined ? mp[chemSvc!.id] : (chemSvc?.price ?? 31.25);
   const washServicePrice = mp[washSvc?.id ?? ""] ?? washSvc?.price ?? 56.25;
-  // Čakačka: per-mode sadzba z delivery zóny (pumpa vs mix)
-  const waitServicePricePumpa = clientDeliveryZone?.waitingRatePer15minPumpa
-    ?? clientDeliveryZone?.waitingRatePer15min
-    ?? allServices.find((s) => s.serviceMode === "pumpa")?.price
-    ?? allServices.find((s) => s.name.toLowerCase().includes("čakačk"))?.price
-    ?? 8.00;
-  const waitServicePriceMix = clientDeliveryZone?.waitingRatePer15min
-    ?? allServices.find((s) => s.serviceMode === "mix")?.price
-    ?? allServices.find((s) => s.name.toLowerCase().includes("čakačk"))?.price
-    ?? 8.00;
+  // Čakačka: manual override > zona fallback > service price
+  const waitServicePricePumpa = mp[waitPumpaSvc?.id ?? ""] !== undefined
+    ? mp[waitPumpaSvc!.id]
+    : (clientDeliveryZone?.waitingRatePer15minPumpa
+        ?? clientDeliveryZone?.waitingRatePer15min
+        ?? waitPumpaSvc?.price ?? 8.00);
+  const waitServicePriceMix = mp[waitMixSvc?.id ?? ""] !== undefined
+    ? mp[waitMixSvc!.id]
+    : (clientDeliveryZone?.waitingRatePer15min ?? waitMixSvc?.price ?? 8.00);
   const hoseService = allServices.find((s) => s.name.toLowerCase().includes("hadice"));
   const hoseServicePrice = mp[hoseService?.id ?? ""] ?? hoseService?.price ?? 10.00;
   const hoseMaxMeters = hoseService?.maxMeters ?? 10;

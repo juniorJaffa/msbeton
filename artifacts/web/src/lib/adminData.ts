@@ -388,6 +388,7 @@ export const adminData = {
     const safe = ensureOwner(data);
     saveData("msbeton_clients", safe);
     adminApi.saveClients(safe);
+    window.dispatchEvent(new Event("admin-data-synced"));
   },
 
   getTransportZones: (): TransportPricingZone[] => loadData("msbeton_transport_zones", DEFAULT_TRANSPORT_ZONES),
