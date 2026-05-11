@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator } from "lucide-react";
+import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
@@ -900,7 +900,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-7 shrink-0">Typ</span>
           <button onClick={() => setFilterTab("vsetky")}
             className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${filterTab === "vsetky" ? "bg-gray-700 text-white border-gray-700" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"}`}>
-            Všetky typy
+            Všetky
           </button>
           {(["pumpa", "mix", "vlastnadoprava"] as Order["tab"][]).map(t => {
             const s = TAB_STYLES[t];
@@ -1274,6 +1274,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
     hotovostDph: "20",
     canHotovost: true, canPridatBeton: true, canZimneOpatrenia: false, active: true,
     deliveryZoneId: zones.find(z => (z.pricingType ?? "standard") === "standard")?.id ?? zones[0]?.id ?? "",
+    sharedLink: "",
   };
   const [form, setForm] = useState(emptyForm);
   const [showFormPass, setShowFormPass] = useState(false);
@@ -1343,6 +1344,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
       canZimneOpatrenia: form.canZimneOpatrenia,
       active: form.active,
       deliveryZoneId: form.deliveryZoneId || undefined,
+      sharedLink: form.sharedLink.trim() || undefined,
     }]);
     if (sendRegEmail && form.email.trim()) {
       setEmailStatus("sending");
@@ -1478,6 +1480,11 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                   className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
                 <input placeholder="Spoločnosť" value={form.company} onChange={e => setForm({ ...form, company: e.target.value })}
                   className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary sm:col-span-2" />
+                <div className="relative sm:col-span-2">
+                  <ExternalLink className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                  <input placeholder="Zdielaný odkaz (Google Sheet, PDF…)" value={form.sharedLink} onChange={e => setForm({ ...form, sharedLink: e.target.value })}
+                    className="w-full border border-gray-200 pl-8 pr-3 py-2 text-sm focus:outline-none focus:border-primary" type="url" />
+                </div>
               </div>
             </div>
 
@@ -1709,6 +1716,13 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                     className="p-1 text-gray-300 hover:text-primary transition-colors">
                     <Calculator className="w-4 h-4" />
                   </button>
+                  {c.sharedLink && (
+                    <a href={c.sharedLink} target="_blank" rel="noopener noreferrer" title="Zdielaný odkaz"
+                      onClick={e => e.stopPropagation()}
+                      className="p-1 text-gray-300 hover:text-primary transition-colors">
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  )}
                   <button
                     onClick={(e) => { e.stopPropagation(); setTablePdfModal(c); setTablePdfMode("faktura"); }}
                     title="Zľavové tabuľky"
@@ -1782,6 +1796,18 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                             <EditableField value={field === "phone" ? formatPhone((c[field] as string) || "") || "—" : (c[field] as string) || "—"} type={field === "phone" ? "tel" : "text"} onSave={v => update(c.id, { [field]: field === "phone" ? formatPhone(v) : v })} />
                           </div>
                         ))}
+                        <div className="flex gap-2 items-start">
+                          <span className="text-gray-400 text-xs w-20 shrink-0 pt-0.5">Odkaz</span>
+                          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                            <EditableField value={c.sharedLink || "—"} type="url" onSave={v => update(c.id, { sharedLink: v.trim() || undefined })} />
+                            {c.sharedLink && (
+                              <a href={c.sharedLink} target="_blank" rel="noopener noreferrer" title="Otvoriť odkaz"
+                                className="shrink-0 text-gray-400 hover:text-primary transition-colors">
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
 

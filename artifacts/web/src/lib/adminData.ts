@@ -60,6 +60,7 @@ export interface Client {
   hotovostDph?: number;        // vlastná DPH pre hotovosť (napr. 0.20), default 0.20
   manualPrices?: Record<string, number>; // manuálne ceny per položka (ID → €), override zľavovej ceny
   isOwner?: boolean; // vlastník / hlavný účet — nedá sa vymazať
+  sharedLink?: string; // zdieľaný odkaz (Google Sheet, PDF, prezentácia...)
 }
 
 export interface Order {
