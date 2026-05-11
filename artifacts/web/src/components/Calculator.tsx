@@ -463,15 +463,21 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const minimumFee = tsettings.minimumFee ?? 62.50;
 
     if (pType === "km") {
-      const rate = dZone?.ratePerKm ?? 1.8;
-      const cost = km * rate * trucks;
-      const minCost = trucks * minimumFee;
-      const isMin = trucks > 0 && cost / trucks < minimumFee;
+      const mp = loggedClient?.manualPrices ?? {};
+      const baseRate = dZone?.ratePerKm ?? 1.8;
+      const rate = mp[`km_rate_${dZone?.id}`] ?? baseRate;
+      const effectiveKm = Math.max(km, dZone?.minKm ?? 0);
+      const cost = effectiveKm * rate * trucks;
+      const kmMinFee = dZone?.minimumFeeKm;
+      const minCost = kmMinFee ? trucks * kmMinFee : 0;
+      const isMin = !!(kmMinFee && trucks > 0 && cost / trucks < kmMinFee);
       return { cost: isMin ? minCost : cost, isMin, fillupM3: 0, fillupCost: 0 };
     }
 
     if (pType === "auto") {
-      const rpt = dZone?.ratePerTruck ?? 0;
+      const mp = loggedClient?.manualPrices ?? {};
+      const baseRpt = dZone?.ratePerTruck ?? 0;
+      const rpt = mp[`auto_rate_${dZone?.id}`] ?? baseRpt;
       return { cost: trucks * rpt, isMin: false, fillupM3: 0, fillupCost: 0 };
     }
 
@@ -1371,6 +1377,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                         manualPrices={loggedClient?.manualPrices}
                         priceMode={priceTableMode}
                         hotovostDph={VAT_HOTOVOST}
+                        deliveryZoneId={loggedClient?.deliveryZoneId}
                         variant="dark"
                       />
                     </motion.div>
@@ -1937,12 +1944,19 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     if (result.isOwn) return null;
                     const trucks = ci.transportTrucks;
                     const autaLabel = trucks === 1 ? "auto" : "autá";
-                    if (ci.transportIsMin) return `min. sadzba ${fmtR(minFee * dopravaFactor)} €/auto × ${trucks} ${autaLabel}`;
                     if (pType === "km") {
-                      const rate = (clientDeliveryZone?.ratePerKm ?? 1.8) * dopravaFactor;
+                      const mp2 = loggedClient?.manualPrices ?? {};
+                      const baseKmRate = clientDeliveryZone?.ratePerKm ?? 1.8;
+                      const rate = (mp2[`km_rate_${clientDeliveryZone?.id}`] ?? baseKmRate) * dopravaFactor;
                       const distKm = parseFloat(distance) || 0;
-                      return `${distKm} km × ${fmtR(rate)} €/km × ${trucks} ${autaLabel}`;
+                      const kmMinDist = clientDeliveryZone?.minKm ?? 0;
+                      const effectiveKm = Math.max(distKm, kmMinDist);
+                      const kmMinFee = clientDeliveryZone?.minimumFeeKm;
+                      if (ci.transportIsMin && kmMinFee) return `min. poplatok ${fmtR(kmMinFee * dopravaFactor)} €/auto × ${trucks} ${autaLabel}`;
+                      const kmLabel = effectiveKm !== distKm ? `${distKm}→${effectiveKm} km` : `${distKm} km`;
+                      return `${kmLabel} × ${fmtR(rate)} €/km × ${trucks} ${autaLabel}`;
                     }
+                    if (ci.transportIsMin) return `min. sadzba ${fmtR(minFee * dopravaFactor)} €/auto × ${trucks} ${autaLabel}`;
                     if (pType === "auto") {
                       const rate = (clientDeliveryZone?.ratePerTruck ?? 0) * dopravaFactor;
                       return `${trucks} ${autaLabel} × ${fmtR(rate)} €/auto`;
@@ -2010,6 +2024,17 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                             {isAddToMain && (
                               <div className="text-[10px] text-blue-400/70 ml-1 mt-0.5">↑ doprava zahrnutá v Položke 1 (+{ci.qty}&thinsp;m³)</div>
                             )}
+                            {!result.isOwn && idx === 0 && pType === "km" && (() => {
+                              const distKm = parseFloat(distance) || 0;
+                              const kmMinDist = clientDeliveryZone?.minKm ?? 0;
+                              const kmMinFee = clientDeliveryZone?.minimumFeeKm;
+                              const notes: React.ReactNode[] = [];
+                              if (kmMinDist > 0 && distKm < kmMinDist)
+                                notes.push(<div key="minKm" className="text-[10px] text-amber-400/80 ml-1 mt-0.5">⚠ Vzdialenosť zaokrúhlená na min. {kmMinDist} km</div>);
+                              if (kmMinFee && ci.transportIsMin)
+                                notes.push(<div key="minFee" className="text-[10px] text-amber-400/80 ml-1 mt-0.5">⚠ Aplikovaný min. poplatok za dopravu {fmtR(kmMinFee * dopravaFactor)} €/auto</div>);
+                              return notes.length > 0 ? <>{notes}</> : null;
+                            })()}
                             {ci.transportFillup > 0 && (
                               <PriceRow
                                 label={`Doťaženie do ${ci.transportFillupTarget}m³ – ${ci.transportFillupM3}m³`}

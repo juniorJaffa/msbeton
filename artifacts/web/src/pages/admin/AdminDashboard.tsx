@@ -396,6 +396,28 @@ function DopravaTab() {
                           </div>
                         </div>
                       )}
+                      {zt.key === "km" && (
+                        <>
+                          <div className="text-right">
+                            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Min. km</div>
+                            <div className="font-bold text-secondary">
+                              <EditableField value={z.minKm ?? 0} type="number" onSave={v => updateZone(z.id, { minKm: parseFloat(v) || undefined })} /> km
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Max. km</div>
+                            <div className="font-bold text-secondary">
+                              <EditableField value={z.maxKm ?? 0} type="number" onSave={v => updateZone(z.id, { maxKm: parseFloat(v) || undefined })} /> km
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Min. poplatok</div>
+                            <div className="font-bold text-secondary">
+                              <EditableField value={z.minimumFeeKm ?? 0} type="number" onSave={v => updateZone(z.id, { minimumFeeKm: parseFloat(v) || undefined })} /> €/auto
+                            </div>
+                          </div>
+                        </>
+                      )}
                       <div className="text-right">
                         <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Čerpanie pumpy</div>
                         <div className="font-bold text-secondary">
@@ -1857,6 +1879,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                                     onChange={e => update(c.id, { hotovostDph: (parseFloat(e.target.value) || 20) / 100 })}
                                     className="border border-gray-200 px-2 py-0.5 text-xs focus:outline-none focus:border-primary w-12 text-center" />
                                   <span className="text-xs text-gray-400">%</span>
+                                  <span className="text-[10px] text-gray-400 italic">· iba betón</span>
                                 </div>
                               ) : (
                                 <div className="text-xs text-gray-400">Iba faktúra · DPH <span className="font-bold text-gray-500">23 %</span></div>
@@ -1942,6 +1965,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                         }}
                         priceMode={inlineTableMode}
                         hotovostDph={c.hotovostDph ?? (ts.defaultHotovostDph ?? 0.20)}
+                        deliveryZoneId={c.deliveryZoneId}
                         variant="light"
                       />
                     )}
@@ -2029,6 +2053,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                 }}
                 priceMode={tablePdfMode}
                 hotovostDph={tablePdfModal.hotovostDph ?? (ts.defaultHotovostDph ?? 0.20)}
+                deliveryZoneId={tablePdfModal.deliveryZoneId}
                 variant="light"
               />
             </div>
@@ -2055,6 +2080,9 @@ function exportClientPricePDF(client: Client, priceMode: "faktura" | "hotovost",
   const categories = adminData.getCategories();
   const services = adminData.getServices().filter(s => s.active);
   const zones = adminData.getTransportZones();
+  const deliveryZones = adminData.getDelivery();
+  const clientDZone = deliveryZones.find(z => z.id === client.deliveryZoneId) ?? deliveryZones[0];
+  const pType = clientDZone?.pricingType ?? "standard";
 
   const effectiveBeton   = (client.discountBeton   ?? 0) > 0 ? (client.discountBeton   ?? 0) : (client.discountCelkovo ?? 0);
   const effectiveDoprava = (client.discountDoprava ?? 0) > 0 ? (client.discountDoprava ?? 0) : (client.discountCelkovo ?? 0);
@@ -2119,22 +2147,58 @@ function exportClientPricePDF(client: Client, priceMode: "faktura" | "hotovost",
       : [s.name, s.unit || "—", fmtP(s.price)] as [string, string, string];
   });
 
-  // Doprava
+  // Doprava — per type
   const minFee = tsettings.minimumFee ?? 62.50;
-  const minFeeManual = mp["min_fee"];
-  const minFeeDisc = minFeeManual !== undefined ? minFeeManual : minFee * dopravaFactor;
   const dopravaRows: Array<[string, string, string, string?]> = [];
-  dopravaRows.push(hasDiscount
-    ? ["Min. doprava / auto", "1×", fmtP(minFee), Math.abs(minFee - minFeeDisc) > 0.001 ? fmtP(minFeeDisc) : undefined]
-    : ["Min. doprava / auto", "1×", fmtP(minFee)]);
-  zones.forEach(z => {
-    const disc = z.ratePerM3 * dopravaFactor;
-    const hasItemDisc = Math.abs(z.ratePerM3 - disc) > 0.001;
+  let dopravaHdr: string[];
+
+  if (pType === "km" && clientDZone) {
+    dopravaHdr = hasDiscount ? ["Typ / Zóna", "Sadzba", "Pôvodná", "Zľavnená"] : ["Typ / Zóna", "Sadzba", "Cena"];
+    const baseRate = clientDZone.ratePerKm ?? 1.8;
+    const kmRateManual = mp[`km_rate_${clientDZone.id}`];
+    const kmRateOrig = baseRate;
+    const kmRateDisc = kmRateManual !== undefined ? kmRateManual : baseRate * dopravaFactor;
+    const hasKmDisc = Math.abs(kmRateOrig - kmRateDisc) > 0.001;
     dopravaRows.push(hasDiscount
-      ? [`Od ${z.fromKm} – ${z.toKm} km`, "1 m³×", fmtP(z.ratePerM3), hasItemDisc ? fmtP(disc) : undefined]
-      : [`Od ${z.fromKm} – ${z.toKm} km`, "1 m³×", fmtP(z.ratePerM3)]);
-  });
-  const dopravaHdr = hasDiscount ? ["Vzdialenosť", "Množstvo", "Pôvodná cena", "Zľavnená cena"] : ["Vzdialenosť", "Množstvo", "Cena"];
+      ? [`${clientDZone.name} – sadzba`, "€/km", fmtP(kmRateOrig), hasKmDisc ? fmtP(kmRateDisc) : undefined]
+      : [`${clientDZone.name} – sadzba`, "€/km", fmtP(kmRateOrig)]);
+    if (clientDZone.minimumFeeKm != null) {
+      const mfDisc = clientDZone.minimumFeeKm * dopravaFactor;
+      const hasMfDisc = Math.abs(clientDZone.minimumFeeKm - mfDisc) > 0.001;
+      dopravaRows.push(hasDiscount
+        ? ["Min. poplatok / auto", "1×", fmtP(clientDZone.minimumFeeKm), hasMfDisc ? fmtP(mfDisc) : undefined]
+        : ["Min. poplatok / auto", "1×", fmtP(clientDZone.minimumFeeKm)]);
+    }
+    if (clientDZone.minKm != null && clientDZone.minKm > 0)
+      dopravaRows.push(["Min. vzdialenosť", "—", `${clientDZone.minKm} km`]);
+    if (clientDZone.maxKm != null && clientDZone.maxKm > 0)
+      dopravaRows.push(["Max. polomer", "—", `${clientDZone.maxKm} km`]);
+  } else if (pType === "auto" && clientDZone) {
+    dopravaHdr = hasDiscount ? ["Typ / Zóna", "Sadzba", "Pôvodná", "Zľavnená"] : ["Typ / Zóna", "Sadzba", "Cena"];
+    const baseRpt = clientDZone.ratePerTruck ?? 0;
+    const autoRateManual = mp[`auto_rate_${clientDZone.id}`];
+    const autoRateOrig = baseRpt;
+    const autoRateDisc = autoRateManual !== undefined ? autoRateManual : baseRpt * dopravaFactor;
+    const hasAutoDisc = Math.abs(autoRateOrig - autoRateDisc) > 0.001;
+    dopravaRows.push(hasDiscount
+      ? [`${clientDZone.name} – paušál`, "€/auto", fmtP(autoRateOrig), hasAutoDisc ? fmtP(autoRateDisc) : undefined]
+      : [`${clientDZone.name} – paušál`, "€/auto", fmtP(autoRateOrig)]);
+  } else {
+    // standard
+    dopravaHdr = hasDiscount ? ["Vzdialenosť", "Množstvo", "Pôvodná cena", "Zľavnená cena"] : ["Vzdialenosť", "Množstvo", "Cena"];
+    const minFeeManual = mp["min_fee"];
+    const minFeeDisc = minFeeManual !== undefined ? minFeeManual : minFee * dopravaFactor;
+    dopravaRows.push(hasDiscount
+      ? ["Min. doprava / auto", "1×", fmtP(minFee), Math.abs(minFee - minFeeDisc) > 0.001 ? fmtP(minFeeDisc) : undefined]
+      : ["Min. doprava / auto", "1×", fmtP(minFee)]);
+    zones.forEach(z => {
+      const disc = z.ratePerM3 * dopravaFactor;
+      const hasItemDisc = Math.abs(z.ratePerM3 - disc) > 0.001;
+      dopravaRows.push(hasDiscount
+        ? [`Od ${z.fromKm} – ${z.toKm} km`, "1 m³×", fmtP(z.ratePerM3), hasItemDisc ? fmtP(disc) : undefined]
+        : [`Od ${z.fromKm} – ${z.toKm} km`, "1 m³×", fmtP(z.ratePerM3)]);
+    });
+  }
 
   const discInfo = hasDiscount
     ? `<div style="color:#c9a800;font-size:8pt;margin-top:3px">Zľavy: Betón ${effectiveBeton}% | Doprava ${effectiveDoprava}% | Služby ${effectiveSluzby}%</div>`

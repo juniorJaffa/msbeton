@@ -15,6 +15,7 @@ interface Props {
   variant?: "dark" | "light";
   priceMode?: "faktura" | "hotovost";
   hotovostDph?: number;
+  deliveryZoneId?: string;
 }
 
 function fmt(n: number) {
@@ -146,7 +147,7 @@ function EditRow({ id, orig, factor, manualPrice, dark, onManualPriceChange }: E
 export function ClientPriceTable({
   discountBeton, discountDoprava, discountSluzby, discountCelkovo,
   manualPrices, onManualPriceChange, variant = "dark",
-  priceMode = "faktura", hotovostDph = 0.20,
+  priceMode = "faktura", hotovostDph = 0.20, deliveryZoneId,
 }: Props) {
   const [section, setSection] = useState<Section>("betony");
   const hotovostMult = priceMode === "hotovost" ? 1 + hotovostDph : 1;
@@ -162,6 +163,9 @@ export function ClientPriceTable({
   const services = adminData.getServices().filter((s) => s.active);
   const zones = adminData.getTransportZones();
   const ts = adminData.getTransportSettings();
+  const deliveryZones = adminData.getDelivery();
+  const clientDZone = deliveryZones.find(z => z.id === deliveryZoneId) ?? deliveryZones[0];
+  const pType = clientDZone?.pricingType ?? "standard";
   const dark = variant === "dark";
 
   const tabs: { id: Section; label: string; disc: number }[] = [
@@ -266,46 +270,104 @@ export function ClientPriceTable({
         {/* ── DOPRAVA ── */}
         {section === "doprava" && (
           <div>
-            <div className={cn(
-              "flex items-center justify-between px-3 py-2.5 border-b text-sm font-bold",
-              dark ? "border-white/5 bg-primary/8" : "border-gray-100 bg-primary/5"
-            )}>
-              <div>
-                <div className={dark ? "text-white/85" : "text-secondary"}>Min. doprava / auto</div>
-                {effectiveDoprava > 0 && (
-                  <div className={cn("text-[10px] font-normal", dark ? "text-white/40" : "text-gray-400")}>
-                    Zľava {effectiveDoprava}% sa vzťahuje na celkovú dopravu
-                  </div>
-                )}
-              </div>
-              <EditRow id="min_fee" orig={ts.minimumFee} factor={dopravaFactor}
-                manualPrice={manualPrices?.["min_fee"]} dark={dark} onManualPriceChange={onManualPriceChange} />
-            </div>
-
-            <div className={cn(
-              "flex items-center justify-between px-3 py-1.5 text-[10px] font-black uppercase tracking-widest border-b",
-              dark ? "bg-white/5 text-white/45 border-white/5" : "bg-gray-100 text-gray-500 border-gray-200"
-            )}>
-              <span>Vzdialenosť</span>
-              <span className="flex items-center gap-1">
-                Cena / m³
-                <DiscBadge pct={effectiveDoprava} dark={dark} />
-              </span>
-            </div>
-
-            {zones.map((z, i) => (
-              <div key={z.id} className={cn(
-                "flex items-center justify-between px-3 py-2 border-b text-sm",
-                dark ? "border-white/5" : "border-gray-50",
-                i % 2 !== 0 ? dark ? "bg-white/3" : "bg-gray-50/60" : ""
+            {/* Typ zóny header */}
+            {clientDZone && (
+              <div className={cn(
+                "px-3 py-1.5 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest border-b",
+                dark ? "bg-white/5 text-white/45 border-white/5" : "bg-gray-100 text-gray-500 border-gray-200"
               )}>
-                <span className={dark ? "text-white/60" : "text-secondary"}>
-                  {z.fromKm} – {z.toKm} km
-                </span>
-                <EditRow id={z.id} orig={z.ratePerM3} factor={dopravaFactor}
-                  manualPrice={manualPrices?.[z.id]} dark={dark} onManualPriceChange={onManualPriceChange} />
+                <span>{clientDZone.name}</span>
+                {pType !== "standard" && (
+                  <span className={cn("px-1 py-0.5 rounded-sm text-[9px]", dark ? "bg-primary/20 text-primary" : "bg-secondary/10 text-secondary")}>
+                    {pType === "km" ? "€/km" : "€/auto"}
+                  </span>
+                )}
+                <DiscBadge pct={effectiveDoprava} dark={dark} />
               </div>
-            ))}
+            )}
+
+            {/* STANDARD: min fee + km pásma */}
+            {pType === "standard" && (
+              <>
+                <div className={cn(
+                  "flex items-center justify-between px-3 py-2.5 border-b text-sm font-bold",
+                  dark ? "border-white/5 bg-primary/8" : "border-gray-100 bg-primary/5"
+                )}>
+                  <div>
+                    <div className={dark ? "text-white/85" : "text-secondary"}>Min. doprava / auto</div>
+                    {effectiveDoprava > 0 && (
+                      <div className={cn("text-[10px] font-normal", dark ? "text-white/40" : "text-gray-400")}>
+                        Zľava {effectiveDoprava}%
+                      </div>
+                    )}
+                  </div>
+                  <EditRow id="min_fee" orig={ts.minimumFee} factor={dopravaFactor}
+                    manualPrice={manualPrices?.["min_fee"]} dark={dark} onManualPriceChange={onManualPriceChange} />
+                </div>
+                <div className={cn(
+                  "flex items-center justify-between px-3 py-1.5 text-[10px] font-black uppercase tracking-widest border-b",
+                  dark ? "bg-white/5 text-white/45 border-white/5" : "bg-gray-100 text-gray-500 border-gray-200"
+                )}>
+                  <span>Vzdialenosť</span>
+                  <span>Cena / m³</span>
+                </div>
+                {zones.map((z, i) => (
+                  <div key={z.id} className={cn(
+                    "flex items-center justify-between px-3 py-2 border-b text-sm",
+                    dark ? "border-white/5" : "border-gray-50",
+                    i % 2 !== 0 ? dark ? "bg-white/3" : "bg-gray-50/60" : ""
+                  )}>
+                    <span className={dark ? "text-white/60" : "text-secondary"}>
+                      {z.fromKm} – {z.toKm} km
+                    </span>
+                    <EditRow id={z.id} orig={z.ratePerM3} factor={dopravaFactor}
+                      manualPrice={manualPrices?.[z.id]} dark={dark} onManualPriceChange={onManualPriceChange} />
+                  </div>
+                ))}
+              </>
+            )}
+
+            {/* KM: sadzba/km + info o min/max/minFee */}
+            {pType === "km" && clientDZone && (() => {
+              const infoRow = (label: string, value: string, i: number) => (
+                <div key={label} className={cn(
+                  "flex items-center justify-between px-3 py-2.5 border-b text-sm",
+                  dark ? "border-white/5" : "border-gray-50",
+                  i % 2 !== 0 ? dark ? "bg-white/3" : "bg-gray-50/60" : ""
+                )}>
+                  <span className={dark ? "text-white/60" : "text-secondary"}>{label}</span>
+                  <span className={cn("font-bold", dark ? "text-white/85" : "text-secondary")}>{value}</span>
+                </div>
+              );
+              const fmtE = (n: number) => `${(n * dopravaFactor).toFixed(2)} €`;
+              return (
+                <>
+                  <div className={cn(
+                    "flex items-center justify-between px-3 py-2.5 border-b text-sm font-bold",
+                    dark ? "border-white/5 bg-primary/8" : "border-gray-100 bg-primary/5"
+                  )}>
+                    <div className={dark ? "text-white/85" : "text-secondary"}>Sadzba</div>
+                    <EditRow id={`km_rate_${clientDZone.id}`} orig={clientDZone.ratePerKm ?? 1.8} factor={dopravaFactor}
+                      manualPrice={manualPrices?.[`km_rate_${clientDZone.id}`]} dark={dark} onManualPriceChange={onManualPriceChange} />
+                  </div>
+                  {clientDZone.minimumFeeKm != null && infoRow("Min. poplatok / auto", fmtE(clientDZone.minimumFeeKm), 1)}
+                  {clientDZone.minKm != null && clientDZone.minKm > 0 && infoRow("Min. vzdialenosť", `${clientDZone.minKm} km`, 2)}
+                  {clientDZone.maxKm != null && clientDZone.maxKm > 0 && infoRow("Max. polomer", `${clientDZone.maxKm} km`, 3)}
+                </>
+              );
+            })()}
+
+            {/* AUTO: paušál/auto */}
+            {pType === "auto" && clientDZone && (
+              <div className={cn(
+                "flex items-center justify-between px-3 py-2.5 border-b text-sm font-bold",
+                dark ? "border-white/5 bg-primary/8" : "border-gray-100 bg-primary/5"
+              )}>
+                <div className={dark ? "text-white/85" : "text-secondary"}>Paušál / auto</div>
+                <EditRow id={`auto_rate_${clientDZone.id}`} orig={clientDZone.ratePerTruck ?? 0} factor={dopravaFactor}
+                  manualPrice={manualPrices?.[`auto_rate_${clientDZone.id}`]} dark={dark} onManualPriceChange={onManualPriceChange} />
+              </div>
+            )}
           </div>
         )}
       </div>
