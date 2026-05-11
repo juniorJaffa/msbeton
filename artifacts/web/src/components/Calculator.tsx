@@ -34,7 +34,7 @@ interface ExtraItem {
   categoryName: string | null;
   typeLabel: string | null;
   quantity: string;
-  noTransport?: boolean;
+  transportMode?: "own" | "none" | "addToMain";
   svc?: ExtraItemServices;
   showSvc?: boolean;
 }
@@ -521,7 +521,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     };
     const concreteBreakdown: BreakdownItem[] = [];
     const mainManual = mp[selectedType.id];
-    const mainTC = isOwn ? zeroTC : calcTransport(km, qty, tab, clientDeliveryZone);
+    const addToMainQty = extraItems.reduce((s, i) => {
+      const q = parseFloat(i.quantity) || 0;
+      const t = getItemType(i.categoryName, i.typeLabel);
+      return (t && q > 0 && i.transportMode === "addToMain") ? s + q : s;
+    }, 0);
+    const mainTC = isOwn ? zeroTC : calcTransport(km, qty + addToMainQty, tab, clientDeliveryZone);
     const mainTrucks = tab === "pumpa" ? calcPumpTrucks(qty) : Math.ceil(qty / mixCap);
     concreteBreakdown.push({
       label: `Betón ${cleanType(selectedType.label)} – ${qty} m³`,
@@ -545,7 +550,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const q = parseFloat(item.quantity) || 0;
       if (t && q > 0) {
         const itemManual = mp[t.id];
-        const extraTC = (isOwn || item.noTransport) ? zeroTC : calcTransport(km, q, tab, clientDeliveryZone);
+        const extraTC = (isOwn || item.transportMode === "none" || item.transportMode === "addToMain") ? zeroTC : calcTransport(km, q, tab, clientDeliveryZone);
         const extraTrucks = tab === "pumpa" ? calcPumpTrucks(q) : Math.ceil(q / mixCap);
         // Per-item services
         let svcPumpHrs = 0, svcPumpMs = 0, svcPumpCost = 0;
@@ -1563,16 +1568,23 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     <label className="block text-xs font-semibold text-white/50 uppercase tracking-wide mb-1.5">Doprava</label>
                     <div className="flex bg-white/8 rounded-lg p-0.5 gap-0.5 border border-white/10 w-fit">
                       <button type="button"
-                        onClick={() => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, noTransport: false } : i)); setShowResult(false); }}
+                        onClick={() => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, transportMode: "own" } : i)); setShowResult(false); }}
                         className={cn("px-3 py-1.5 rounded-md text-xs font-black tracking-wide transition-all flex items-center gap-1",
-                          !item.noTransport ? "bg-primary text-navy shadow-sm" : "text-white/40 hover:text-white/70"
+                          (!item.transportMode || item.transportMode === "own") ? "bg-primary text-navy shadow-sm" : "text-white/40 hover:text-white/70"
                         )}>
                         <Truck className="w-3 h-3" /> Započítať
                       </button>
                       <button type="button"
-                        onClick={() => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, noTransport: true } : i)); setShowResult(false); }}
+                        onClick={() => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, transportMode: "addToMain" } : i)); setShowResult(false); }}
+                        className={cn("px-3 py-1.5 rounded-md text-xs font-black tracking-wide transition-all flex items-center gap-1",
+                          item.transportMode === "addToMain" ? "bg-blue-500/80 text-white shadow-sm" : "text-white/40 hover:text-white/70"
+                        )}>
+                        <Plus className="w-3 h-3" /> K hlavnej
+                      </button>
+                      <button type="button"
+                        onClick={() => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, transportMode: "none" } : i)); setShowResult(false); }}
                         className={cn("px-3 py-1.5 rounded-md text-xs font-black tracking-wide transition-all",
-                          item.noTransport ? "bg-white/20 text-white shadow-sm" : "text-white/40 hover:text-white/70"
+                          item.transportMode === "none" ? "bg-white/20 text-white shadow-sm" : "text-white/40 hover:text-white/70"
                         )}>
                         Bez dopravy
                       </button>

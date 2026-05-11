@@ -1828,7 +1828,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                                   {(() => { const { Icon, cls } = sharedLinkIcon(c.sharedLink); return <Icon className={`w-4 h-4 ${cls}`} />; })()}
                                 </a>
                               ) : (
-                                <span className="text-gray-400 text-xs">—</span>
+                                <span className="text-gray-400 text-[10px]">— Google Sheet, PDF, Word</span>
                               )}
                               <button onClick={() => { setLinkDraft(c.sharedLink || ""); setEditingLinkFor(c.id); }}
                                 className="text-gray-300 hover:text-secondary transition-colors">
