@@ -296,17 +296,24 @@ function DopravaTab() {
           <h3 className="font-black text-secondary text-sm uppercase tracking-widest">Typy dopravy</h3>
         </div>
 
-        {/* Číslovaný zoznam typov dopravy */}
-        <div className="border-t border-gray-100">
+        {/* Karty typov dopravy */}
+        <div className="py-3 space-y-3 px-4">
           {ZONE_TYPES.map((zt, idx) => {
             const typeZones = zones.filter(z => (z.pricingType ?? "standard") === zt.key);
             if (typeZones.length === 0) return null;
             const isStandard = zt.key === "standard";
+            const isAuto = zt.key === "auto";
+            const cardBorder = isStandard ? "border-blue-200" : isAuto ? "border-amber-200" : "border-slate-300";
+            const accentBg   = isStandard ? "bg-blue-500"   : isAuto ? "bg-amber-400"   : "bg-secondary";
+            const headerBg   = isStandard ? "bg-blue-50/70 border-b border-blue-200"  : isAuto ? "bg-amber-50/50 border-b border-amber-100" : "bg-slate-50 border-b border-slate-200";
+            const badgeBg    = isStandard ? "bg-blue-600"   : isAuto ? "bg-amber-500"   : "bg-secondary";
             return (
-              <div key={zt.key} className={`border-b border-gray-100 last:border-b-0 ${isStandard ? "bg-blue-50/30" : ""}`}>
+              <div key={zt.key} className={`rounded-xl overflow-hidden shadow-sm border-2 ${cardBorder}`}>
+                {/* Farebný accent pruh */}
+                <div className={`h-1.5 ${accentBg}`} />
                 {/* Type header */}
-                <div className={`flex items-start gap-3 px-5 py-3 flex-wrap ${isStandard ? "bg-blue-50/60 border-b border-blue-100" : "bg-gray-50/40"}`}>
-                  <span className={`w-5 h-5 rounded-full text-white text-[10px] font-black flex items-center justify-center flex-shrink-0 mt-0.5 ${isStandard ? "bg-blue-600" : "bg-secondary"}`}>
+                <div className={`flex items-start gap-3 px-5 py-3 flex-wrap ${headerBg}`}>
+                  <span className={`w-5 h-5 rounded-full text-white text-[10px] font-black flex items-center justify-center flex-shrink-0 mt-0.5 ${badgeBg}`}>
                     {idx + 1}
                   </span>
                   <div className="flex-1 min-w-0">
