@@ -282,6 +282,8 @@ function DopravaTab() {
       pumpTruckCapacity: parseFloat(addForm.pumpTruckCapacity) || 7,
       pumpHourlyRate: parseFloat(addForm.pumpHourlyRate) || 112.50,
       waitingRatePer15min: parseFloat(addForm.waitingRatePer15min) || 8,
+      ...(type === "km" ? { minKm: 5, maxKm: 100, minimumFeeKm: ts.minimumFee ?? 62.50 } : {}),
+      ...(type === "auto" ? { minKm: 5, maxKm: 100, minimumFeeAuto: ts.minimumFee ?? 62.50 } : {}),
     }]);
     setAddForm(emptyAddForm); setAdding(false);
   };
@@ -401,7 +403,7 @@ function DopravaTab() {
                           </div>
                         </div>
                       )}
-                      {zt.key === "km" && (
+                      {(zt.key === "km" || zt.key === "auto") && (
                         <>
                           <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded px-3 py-2 min-w-[90px]">
                             <div>
@@ -409,6 +411,7 @@ function DopravaTab() {
                               <div className="font-bold text-secondary text-sm flex items-center gap-1">
                                 <EditableField value={z.minKm ?? 0} type="number" onSave={v => updateZone(z.id, { minKm: parseFloat(v) || undefined })} /> km
                               </div>
+                              <div className="text-[9px] text-gray-400 mt-0.5 leading-tight">{zt.key === "km" ? "zaokrúhlená fakturácia" : "min. vzdialenosť (info)"}</div>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded px-3 py-2 min-w-[90px]">
@@ -417,14 +420,18 @@ function DopravaTab() {
                               <div className="font-bold text-secondary text-sm flex items-center gap-1">
                                 <EditableField value={z.maxKm ?? 0} type="number" onSave={v => updateZone(z.id, { maxKm: parseFloat(v) || undefined })} /> km
                               </div>
+                              <div className="text-[9px] text-gray-400 mt-0.5 leading-tight">max. polomer obsluhy</div>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded px-3 py-2 min-w-[110px]">
                             <div>
                               <div className="text-[10px] text-amber-600 uppercase tracking-wide font-bold mb-0.5">Min. poplatok</div>
                               <div className="font-bold text-secondary text-sm flex items-center gap-1">
-                                <EditableField value={z.minimumFeeKm ?? 0} type="number" onSave={v => updateZone(z.id, { minimumFeeKm: parseFloat(v) || undefined })} /> €/auto
+                                {zt.key === "km"
+                                  ? <><EditableField value={z.minimumFeeKm ?? 0} type="number" onSave={v => updateZone(z.id, { minimumFeeKm: parseFloat(v) || undefined })} /> €/auto</>
+                                  : <><EditableField value={z.minimumFeeAuto ?? 0} type="number" onSave={v => updateZone(z.id, { minimumFeeAuto: parseFloat(v) || undefined })} /> €/auto</>}
                               </div>
+                              <div className="text-[9px] text-amber-600/70 mt-0.5 leading-tight">min. finančná doprava</div>
                             </div>
                           </div>
                         </>
@@ -2255,6 +2262,17 @@ function exportClientPricePDF(client: Client, priceMode: "faktura" | "hotovost",
     dopravaRows.push(hasDiscount
       ? [`${clientDZone.name} – paušál`, "€/auto", fmtP(autoRateOrig), hasAutoDisc ? fmtP(autoRateDisc) : undefined]
       : [`${clientDZone.name} – paušál`, "€/auto", fmtP(autoRateOrig)]);
+    if (clientDZone.minimumFeeAuto != null) {
+      const mfDisc = clientDZone.minimumFeeAuto * dopravaFactor;
+      const hasMfDisc = Math.abs(clientDZone.minimumFeeAuto - mfDisc) > 0.001;
+      dopravaRows.push(hasDiscount
+        ? ["Min. poplatok / auto", "1×", fmtP(clientDZone.minimumFeeAuto), hasMfDisc ? fmtP(mfDisc) : undefined]
+        : ["Min. poplatok / auto", "1×", fmtP(clientDZone.minimumFeeAuto)]);
+    }
+    if (clientDZone.minKm != null && clientDZone.minKm > 0)
+      dopravaRows.push(["Min. vzdialenosť", "—", `${clientDZone.minKm} km`]);
+    if (clientDZone.maxKm != null && clientDZone.maxKm > 0)
+      dopravaRows.push(["Max. polomer", "—", `${clientDZone.maxKm} km`]);
   } else {
     // standard
     dopravaHdr = hasDiscount ? ["Vzdialenosť", "Množstvo", "Pôvodná cena", "Zľavnená cena"] : ["Vzdialenosť", "Množstvo", "Cena"];

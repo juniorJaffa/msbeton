@@ -357,17 +357,35 @@ export function ClientPriceTable({
               );
             })()}
 
-            {/* AUTO: paušál/auto */}
-            {pType === "auto" && clientDZone && (
-              <div className={cn(
-                "flex items-center justify-between px-3 py-2.5 border-b text-sm font-bold",
-                dark ? "border-white/5 bg-primary/8" : "border-gray-100 bg-primary/5"
-              )}>
-                <div className={dark ? "text-white/85" : "text-secondary"}>Paušál / auto</div>
-                <EditRow id={`auto_rate_${clientDZone.id}`} orig={clientDZone.ratePerTruck ?? 0} factor={dopravaFactor}
-                  manualPrice={manualPrices?.[`auto_rate_${clientDZone.id}`]} dark={dark} onManualPriceChange={onManualPriceChange} />
-              </div>
-            )}
+            {/* AUTO: paušál/auto + info */}
+            {pType === "auto" && clientDZone && (() => {
+              const infoRow = (label: string, value: string, i: number) => (
+                <div key={label} className={cn(
+                  "flex items-center justify-between px-3 py-2.5 border-b text-sm",
+                  dark ? "border-white/5" : "border-gray-50",
+                  i % 2 !== 0 ? dark ? "bg-white/3" : "bg-gray-50/60" : ""
+                )}>
+                  <span className={dark ? "text-white/60" : "text-secondary"}>{label}</span>
+                  <span className={cn("font-bold", dark ? "text-white/85" : "text-secondary")}>{value}</span>
+                </div>
+              );
+              const fmtE = (n: number) => `${(n * dopravaFactor).toFixed(2)} €`;
+              return (
+                <>
+                  <div className={cn(
+                    "flex items-center justify-between px-3 py-2.5 border-b text-sm font-bold",
+                    dark ? "border-white/5 bg-primary/8" : "border-gray-100 bg-primary/5"
+                  )}>
+                    <div className={dark ? "text-white/85" : "text-secondary"}>Paušál / auto</div>
+                    <EditRow id={`auto_rate_${clientDZone.id}`} orig={clientDZone.ratePerTruck ?? 0} factor={dopravaFactor}
+                      manualPrice={manualPrices?.[`auto_rate_${clientDZone.id}`]} dark={dark} onManualPriceChange={onManualPriceChange} />
+                  </div>
+                  {clientDZone.minimumFeeAuto != null && infoRow("Min. poplatok / auto", fmtE(clientDZone.minimumFeeAuto), 1)}
+                  {clientDZone.minKm != null && clientDZone.minKm > 0 && infoRow("Min. vzdialenosť", `${clientDZone.minKm} km`, 2)}
+                  {clientDZone.maxKm != null && clientDZone.maxKm > 0 && infoRow("Max. polomer", `${clientDZone.maxKm} km`, 3)}
+                </>
+              );
+            })()}
           </div>
         )}
       </div>
