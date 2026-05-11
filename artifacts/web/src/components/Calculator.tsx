@@ -236,6 +236,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [showResult, setShowResult] = useState(false);
   const [priceMode, setPriceMode] = useState<PriceMode>("faktura");
   const [loggedClientState, setLoggedClient] = useState<LoggedClient | null>(() => clientOverride ? null : clientAuth.getLoggedClient());
+  // Priama hodnota pre useState initializery nižšie (pred useMemo deklaráciou loggedClient)
+  const loggedClientBase = clientOverride ?? loggedClientState;
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [loginId, setLoginId] = useState("");
   const [loginPwd, setLoginPwd] = useState("");
@@ -247,7 +249,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [revision, setRevision] = useState(0);
   const [extraItems, setExtraItems] = useState<ExtraItem[]>([]);
   const [showOrderModal, setShowOrderModal] = useState(false);
-  const [orderForm, setOrderForm] = useState({ name: loggedClient?.name ?? "", phone: loggedClient?.phone ? formatPhone(loggedClient.phone) : "", email: "", note: "" });
+  const [orderForm, setOrderForm] = useState({ name: loggedClientBase?.name ?? "", phone: loggedClientBase?.phone ? formatPhone(loggedClientBase.phone) : "", email: "", note: "" });
   const [orderSubmitting, setOrderSubmitting] = useState(false);
   const [orderDone, setOrderDone] = useState(false);
   const [priceTableMode, setPriceTableMode] = useState<"faktura" | "hotovost">("faktura");
