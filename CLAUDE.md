@@ -179,9 +179,42 @@ Všetky operácie používajú `INSERT … ON CONFLICT DO UPDATE` — pri zmená
 
 1. **Štart aplikácie** (`App.tsx` → `syncFromServer()`): načíta všetkých 6 admin kľúčov paralelne, uloží do localStorage (`msbeton_*`). Ak kľúč v DB chýba ale je v localStorage, automaticky ho odošle na server (prvotné naplnenie DB).
 
-2. **Kalkulačka** (`Calculator.tsx`): číta výlučne z localStorage cez `adminData.*` gettery — žiadne API volania počas výpočtu. Celá logika (zóny, fill-up, pumpa, zľavy) je client-side.
+2. **Kalkulačka** (`Calculator.tsx`): číta výlučne z localStorage cez `adminData.*` gettery — žiadne API volania počas výpočtu. Celá logika (zóny, doťaženie, pumpa, zľavy) je client-side.
 
 3. **Admin dashboard**: číta z localStorage, zapisuje do localStorage + `PUT` na API na pozadí (bez čakania). Zlyhania sú tiché (bez vrátenia zmien).
+
+### Manuálne ceny (manualPrices) — kľúčové pravidlá
+
+`manualPrices: Record<string, number>` je per-klient mapa `itemId → cena`. Kľúče:
+
+| Kľúč | Platí na |
+|------|----------|
+| `t.id` (typ betónu) | cena betónu €/m³ |
+| `s.id` (služba) | cena služby (čerpanie s1, chémia s2, umývanie s3, čakačka mix s4, čakačka pumpa s7, hadice s5) |
+| `"min_fee"` | Standard min. cena/auto |
+| `zone.id` | Standard sadzba danej zóny €/m³ |
+| `km_rate_{zoneId}` | KM sadzba €/km |
+| `auto_rate_{zoneId}` | AUTO paušál €/auto |
+
+**Architektonické pravidlo:** `loggedClient` v `Calculator.tsx` je `useMemo` ktorý merguje čerstvé `manualPrices` + zľavy z `allClients` (čítaného z localStorage). Tým klient vidí zmeny ihneď po admin save bez potreby re-login. `adminData.saveClients` dispatches `admin-data-synced` → `revision` bump → `allClients` recompute.
+
+**Všetky service prices** musia čítať `mp[svc.id]` PRED fallbackom na zónu/default:
+```
+pumpServicePrice = mp[pumpSvc.id] ?? zone.pumpHourlyRate ?? svc.price
+waitServicePricePumpa = mp[waitPumpaSvc.id] ?? zone.waitingRate ?? svc.price  
+chemServicePrice = mp[chemSvc.id] ?? svc.price
+washServicePrice = mp[washSvc.id] ?? svc.price
+hoseServicePrice = mp[hoseSvc.id] ?? svc.price
+```
+
+### Admin Doprava – typy dopravy UI
+
+Každý typ dopravy (Standard / Kilometre / Počet aut) je vlastná karta s farebnými akcentmi:
+- **Standard**: modrý lem `border-blue-200`, `h-1.5 bg-blue-500` accent pruh, header `bg-blue-50/70`
+- **Kilometre**: navy lem `border-slate-300`, `h-1.5 bg-secondary` pruh, header `bg-slate-50`
+- **Počet aut**: jantárový lem `border-amber-200`, `h-1.5 bg-amber-400` pruh, header `bg-amber-50/50`
+
+Standard má dve nezávislé collapsible sekcie: `stdZonesOpen` (Zóny dopravy) a `stdDotazenieOpen` (Pravidlá doťaženia) — obe defaultne zatvorené.
 
 ### Autentifikácia
 
