@@ -1,7 +1,18 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Truck, LogIn, LogOut, FileText, MessageSquare, Minus, Plus, Trash2, Table2, ShoppingCart, X, Info, Check, ExternalLink } from "lucide-react";
+import { ChevronDown, Truck, LogIn, LogOut, FileText, FileSpreadsheet, FileType2, MessageSquare, Minus, Plus, Trash2, Table2, ShoppingCart, X, Info, Check, ExternalLink } from "lucide-react";
 import { cn, formatPhone } from "@/lib/utils";
+
+function sharedLinkIcon(url: string): { Icon: React.ElementType; cls: string } {
+  const u = url.toLowerCase();
+  if (u.includes("spreadsheet") || u.includes(".xlsx") || u.includes(".xls") || u.includes("excel"))
+    return { Icon: FileSpreadsheet, cls: "text-green-500" };
+  if (u.includes(".pdf") || u.includes("/pdf"))
+    return { Icon: FileText, cls: "text-red-400" };
+  if (u.includes("document") || u.includes(".docx") || u.includes(".doc") || u.includes("word"))
+    return { Icon: FileType2, cls: "text-blue-400" };
+  return { Icon: ExternalLink, cls: "text-primary" };
+}
 import { PhoneInput } from "@/components/PhoneInput";
 import { adminData } from "@/lib/adminData";
 import { clientAuth, type LoggedClient } from "@/lib/clientAuth";
@@ -1415,9 +1426,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     {loggedClient.sharedLink && (
                       <a href={loggedClient.sharedLink} target="_blank" rel="noopener noreferrer"
                         title="Zdielaný odkaz"
-                        className="flex items-center gap-1 text-xs text-white/40 hover:text-primary transition-colors">
-                        <ExternalLink className="w-5 h-5" />
-                        <span className="hidden sm:inline whitespace-nowrap">Odkaz</span>
+                        className="flex items-center gap-1 text-xs hover:opacity-80 transition-opacity">
+                        {(() => { const { Icon, cls } = sharedLinkIcon(loggedClient.sharedLink); return <Icon className={`w-5 h-5 ${cls}`} />; })()}
+                        <span className="hidden sm:inline whitespace-nowrap text-white/40">Odkaz</span>
                       </a>
                     )}
                     <button

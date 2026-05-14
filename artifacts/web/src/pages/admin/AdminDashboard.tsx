@@ -90,11 +90,11 @@ function BetonTab() {
             <div className="flex items-center gap-2 shrink-0" onClick={e => e.stopPropagation()}>
               <span className="text-xs text-gray-400">{cat.types.length} typov</span>
               <button onClick={() => { setRenamingCat(renamingCat === cat.id ? null : cat.id); setRenameCatVal(cat.name); setExpanded(cat.id); }}
-                className="p-1.5 bg-gray-100 text-gray-500 hover:bg-primary hover:text-secondary transition-colors rounded-sm" title="Premenovať">
-                <Pencil className="w-3.5 h-3.5" />
+                className="p-2.5 sm:p-1.5 bg-gray-100 text-gray-500 hover:bg-primary hover:text-secondary transition-colors rounded-sm" title="Premenovať">
+                <Pencil className="w-5 h-5 sm:w-3.5 sm:h-3.5" />
               </button>
-              <button onClick={() => deleteCategory(cat.id)} className="p-1.5 bg-secondary text-primary hover:bg-secondary/80 transition-colors rounded-sm">
-                <Trash2 className="w-4 h-4" />
+              <button onClick={() => deleteCategory(cat.id)} className="p-2.5 sm:p-1.5 bg-secondary text-primary hover:bg-secondary/80 transition-colors rounded-sm">
+                <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
               </button>
             </div>
           </div>
@@ -130,8 +130,8 @@ function BetonTab() {
                         <EditableField value={t.price.toFixed(2)} type="number" onSave={v => updateType(cat.id, t.id, "price", v)} />
                       </td>
                       <td className="py-2 text-right">
-                        <button onClick={() => deleteType(cat.id, t.id)} className="p-1 text-red-400 hover:text-red-600 transition-colors">
-                          <Trash2 className="w-3.5 h-3.5" />
+                        <button onClick={() => deleteType(cat.id, t.id)} className="p-2 sm:p-1 text-red-400 hover:text-red-600 transition-colors">
+                          <Trash2 className="w-5 h-5 sm:w-3.5 sm:h-3.5" />
                         </button>
                       </td>
                     </tr>
@@ -406,8 +406,8 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                       <div className="font-semibold text-secondary text-sm flex-1">
                         <EditableField value={z.name} onSave={v => updateZone(z.id, { name: v })} />
                       </div>
-                      <button onClick={() => removeZone(z.id)} className="p-1 text-gray-300 hover:text-red-500 transition-colors cursor-pointer flex-shrink-0">
-                        <Trash2 className="w-3.5 h-3.5" />
+                      <button onClick={() => removeZone(z.id)} className="p-2 sm:p-1 text-gray-300 hover:text-red-500 transition-colors cursor-pointer flex-shrink-0">
+                        <Trash2 className="w-5 h-5 sm:w-3.5 sm:h-3.5" />
                       </button>
                     </div>
                     {/* Fields grid — nový clean layout */}
@@ -480,78 +480,62 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                   const minFeeV  = ts.minimumFee ?? 62.50;
                   return (
                     <div className="border-t-2 border-blue-100">
-                      {/* Zóny dopravy — collapsible */}
+                      {/* Zóny dopravy — inline, bez collapsible */}
                       <div className="bg-blue-50/40">
-                        <button type="button" onClick={() => setStdZonesOpen(o => !o)}
-                          className="w-full flex items-center gap-2 px-5 py-2 border-b border-blue-100 hover:bg-blue-100/50 transition-colors text-left cursor-pointer select-none">
+                        <div className="flex items-center gap-2 px-5 py-2 border-b border-blue-100">
                           <span className="font-black text-secondary text-xs uppercase tracking-widest">Zóny dopravy</span>
                           <span className="text-[10px] text-blue-500 font-semibold">cenník €/m³</span>
-                          <div className="ml-auto">{stdZonesOpen ? <ChevronUp className="w-3.5 h-3.5 text-blue-400" /> : <ChevronDown className="w-3.5 h-3.5 text-blue-400" />}</div>
-                        </button>
-                        {stdZonesOpen && (
-                          <>
-                            {/* Standard delivery zone rows */}
-                            {typeZones.map(z => (
-                              <div key={z.id} className="border-t border-blue-100">
-                                <div className="flex items-center gap-2 px-5 py-2 pl-14 bg-blue-50/30">
-                                  <div className="font-semibold text-secondary text-sm flex-1">
-                                    <EditableField value={z.name} onSave={v => updateZone(z.id, { name: v })} />
-                                  </div>
-                                  <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded px-3 py-1.5">
-                                    <div>
-                                      <div className="text-[10px] text-yellow-600 uppercase tracking-wide font-bold mb-0.5">Čerpanie pumpy</div>
-                                      <div className="font-bold text-secondary text-sm flex items-center gap-1">
-                                        <EditableField value={z.pumpHourlyRate} type="number" onSave={v => updateZone(z.id, { pumpHourlyRate: parseFloat(v) })} /> €/hod
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <button onClick={() => removeZone(z.id)} className="p-1 text-gray-300 hover:text-red-500 transition-colors cursor-pointer flex-shrink-0">
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              </div>
+                        </div>
+                        {/* Standard zone names — bez Čerpania */}
+                        {typeZones.map(z => (
+                          <div key={z.id} className="border-t border-blue-100 flex items-center gap-2 px-5 py-2 pl-8 bg-blue-50/20">
+                            <div className="font-semibold text-secondary text-sm flex-1">
+                              <EditableField value={z.name} onSave={v => updateZone(z.id, { name: v })} />
+                            </div>
+                            <button onClick={() => removeZone(z.id)} className="p-2 sm:p-1 text-gray-300 hover:text-red-500 transition-colors cursor-pointer flex-shrink-0">
+                              <Trash2 className="w-5 h-5 sm:w-3.5 sm:h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                        {/* Pricing bands table */}
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-blue-100 bg-blue-50/30">
+                              <th className="text-left px-5 py-2 text-[10px] font-bold text-blue-400 uppercase tracking-wide">Od km</th>
+                              <th className="text-left px-4 py-2 text-[10px] font-bold text-blue-400 uppercase tracking-wide">Do km</th>
+                              <th className="text-right px-4 py-2 text-[10px] font-bold text-blue-400 uppercase tracking-wide">€/m³</th>
+                              <th className="w-8" />
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {pZones.map((z, i) => (
+                              <tr key={z.id} className={`border-b border-gray-50 hover:bg-primary/5 ${i % 2 === 0 ? "" : "bg-gray-50/40"}`}>
+                                <td className="px-5 py-2 text-secondary font-medium"><EditableField value={z.fromKm} type="number" onSave={v => updatePZ(z.id, "fromKm", v)} /></td>
+                                <td className="px-4 py-2 text-secondary font-medium"><EditableField value={z.toKm} type="number" onSave={v => updatePZ(z.id, "toKm", v)} /></td>
+                                <td className="px-4 py-2 text-right font-bold text-secondary"><EditableField value={z.ratePerM3.toFixed(2)} type="number" onSave={v => updatePZ(z.id, "ratePerM3", v)} /></td>
+                                <td className="px-2 py-2 text-right"><button onClick={() => removePZ(z.id)} className="p-2 sm:p-1 text-gray-300 hover:text-red-500 transition-colors"><Trash2 className="w-5 h-5 sm:w-3.5 sm:h-3.5" /></button></td>
+                              </tr>
                             ))}
-                            {/* Pricing bands table */}
-                            <table className="w-full text-sm">
-                              <thead>
-                                <tr className="border-b border-blue-100 bg-blue-50/30">
-                                  <th className="text-left px-5 py-2 text-[10px] font-bold text-blue-400 uppercase tracking-wide">Od km</th>
-                                  <th className="text-left px-4 py-2 text-[10px] font-bold text-blue-400 uppercase tracking-wide">Do km</th>
-                                  <th className="text-right px-4 py-2 text-[10px] font-bold text-blue-400 uppercase tracking-wide">€/m³</th>
-                                  <th className="w-8" />
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {pZones.map((z, i) => (
-                                  <tr key={z.id} className={`border-b border-gray-50 hover:bg-primary/5 ${i % 2 === 0 ? "" : "bg-gray-50/40"}`}>
-                                    <td className="px-5 py-2 text-secondary font-medium"><EditableField value={z.fromKm} type="number" onSave={v => updatePZ(z.id, "fromKm", v)} /></td>
-                                    <td className="px-4 py-2 text-secondary font-medium"><EditableField value={z.toKm} type="number" onSave={v => updatePZ(z.id, "toKm", v)} /></td>
-                                    <td className="px-4 py-2 text-right font-bold text-secondary"><EditableField value={z.ratePerM3.toFixed(2)} type="number" onSave={v => updatePZ(z.id, "ratePerM3", v)} /></td>
-                                    <td className="px-2 py-2 text-right"><button onClick={() => removePZ(z.id)} className="p-1 text-gray-300 hover:text-red-500 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button></td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                            {addingPZ ? (
-                              <div className="border-t border-gray-100 bg-gray-50/40 px-5 py-3 flex flex-wrap gap-2">
-                                <input placeholder="Od km" type="number" value={pzForm.fromKm} onChange={e => setPzForm({ ...pzForm, fromKm: e.target.value })}
-                                  className="w-24 border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" autoFocus />
-                                <input placeholder="Do km" type="number" value={pzForm.toKm} onChange={e => setPzForm({ ...pzForm, toKm: e.target.value })}
-                                  className="w-24 border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-                                <input placeholder="€/m³" type="number" step="0.01" value={pzForm.ratePerM3} onChange={e => setPzForm({ ...pzForm, ratePerM3: e.target.value })}
-                                  className="w-28 border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-                                <button onClick={addPZ} className="px-3 py-2 bg-primary text-secondary font-bold text-sm hover:bg-primary/90"><Check className="w-4 h-4" /></button>
-                                <button onClick={() => setAddingPZ(false)} className="px-3 py-2 bg-gray-100 text-gray-500 hover:bg-gray-200"><X className="w-4 h-4" /></button>
-                              </div>
-                            ) : (
-                              <div className="border-t border-gray-100">
-                                <button onClick={() => setAddingPZ(true)}
-                                  className="flex items-center gap-2 w-full text-gray-400 hover:text-primary font-bold text-sm py-2.5 px-5 justify-start transition-colors hover:bg-gray-50">
-                                  <Plus className="w-4 h-4" /> Pridať zónu
-                                </button>
-                              </div>
-                            )}
-                          </>
+                          </tbody>
+                        </table>
+                        {addingPZ ? (
+                          <div className="border-t border-gray-100 bg-gray-50/40 px-5 py-3 flex flex-wrap gap-2">
+                            <input placeholder="Od km" type="number" value={pzForm.fromKm} onChange={e => setPzForm({ ...pzForm, fromKm: e.target.value })}
+                              className="w-24 border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" autoFocus />
+                            <input placeholder="Do km" type="number" value={pzForm.toKm} onChange={e => setPzForm({ ...pzForm, toKm: e.target.value })}
+                              className="w-24 border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+                            <input placeholder="€/m³" type="number" step="0.01" value={pzForm.ratePerM3} onChange={e => setPzForm({ ...pzForm, ratePerM3: e.target.value })}
+                              className="w-28 border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+                            <button onClick={addPZ} className="px-3 py-2 bg-primary text-secondary font-bold text-sm hover:bg-primary/90"><Check className="w-4 h-4" /></button>
+                            <button onClick={() => setAddingPZ(false)} className="px-3 py-2 bg-gray-100 text-gray-500 hover:bg-gray-200"><X className="w-4 h-4" /></button>
+                          </div>
+                        ) : (
+                          <div className="border-t border-gray-100">
+                            <button onClick={() => setAddingPZ(true)}
+                              className="flex items-center gap-2 w-full text-gray-400 hover:text-primary font-bold text-sm py-2.5 px-5 justify-start transition-colors hover:bg-gray-50">
+                              <Plus className="w-4 h-4" /> Pridať zónu
+                            </button>
+                          </div>
                         )}
                       </div>
 
@@ -676,7 +660,6 @@ function SluzbyTab({ onGoToDoprava }: { onGoToDoprava?: () => void }) {
     <div className="flex flex-wrap items-center gap-2">
       <div className="flex items-center gap-1">
         {mode === "pumpa" ? <PumpTruckIcon /> : <MixTruckIcon />}
-        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">{mode === "pumpa" ? "Iba Pumpa" : "Iba Mixér"}</span>
       </div>
       {onGoToDoprava && (
         <button onClick={onGoToDoprava} className="flex items-center gap-0.5 text-[9px] text-blue-400 hover:text-blue-600 transition-colors font-semibold">
@@ -702,7 +685,7 @@ function SluzbyTab({ onGoToDoprava }: { onGoToDoprava?: () => void }) {
                 <button onClick={() => toggle(s.id)} className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wide transition-colors ${s.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
                   {s.active ? "Aktívna" : "Neakt."}
                 </button>
-                <button onClick={() => remove(s.id)} className="p-1 text-red-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
+                <button onClick={() => remove(s.id)} className="p-2 sm:p-1 text-red-400 hover:text-red-600"><Trash2 className="w-5 h-5 sm:w-3.5 sm:h-3.5" /></button>
               </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap mt-2">
@@ -763,7 +746,7 @@ function SluzbyTab({ onGoToDoprava }: { onGoToDoprava?: () => void }) {
                     {s.active ? "Aktívna" : "Neaktívna"}
                   </button>
                 </td>
-                <td className="px-2 py-3 text-right"><button onClick={() => remove(s.id)} className="p-1 text-red-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button></td>
+                <td className="px-2 py-3 text-right"><button onClick={() => remove(s.id)} className="p-2 sm:p-1 text-red-400 hover:text-red-600"><Trash2 className="w-5 h-5 sm:w-3.5 sm:h-3.5" /></button></td>
               </tr>
             ))}
           </tbody>
@@ -1108,7 +1091,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                       </div>
                     </div>
                     <OrderStatusBadge status={o.status} onChange={s => updateStatus(o.id, s)} />
-                    <button onClick={() => remove(o.id)} className="p-1 text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => remove(o.id)} className="p-2 sm:p-1 text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-5 h-5 sm:w-3.5 sm:h-3.5" /></button>
                   </div>
                 </div>
                 {isExp && (
@@ -1965,13 +1948,13 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                                 <span className="text-gray-400 text-[10px]">— Google Sheet, PDF, Word</span>
                               )}
                               <button onClick={() => { setLinkDraft(c.sharedLink || ""); setEditingLinkFor(c.id); }}
-                                className="text-gray-300 hover:text-secondary transition-colors">
-                                <Pencil className="w-3 h-3" />
+                                className="p-2 sm:p-0 text-gray-300 hover:text-secondary transition-colors">
+                                <Pencil className="w-5 h-5 sm:w-3 sm:h-3" />
                               </button>
                               {c.sharedLink && (
                                 <button onClick={() => update(c.id, { sharedLink: undefined })}
-                                  className="text-gray-300 hover:text-red-500 transition-colors">
-                                  <X className="w-3 h-3" />
+                                  className="p-2 sm:p-0 text-gray-300 hover:text-red-500 transition-colors">
+                                  <X className="w-5 h-5 sm:w-3 sm:h-3" />
                                 </button>
                               )}
                             </div>
