@@ -78,6 +78,7 @@ interface UnifiedClient {
   // legacy fallback fields
   name?: string;
   discountPct?: number;
+  sharedLink?: string;
 }
 
 interface LegacyClientAccount {

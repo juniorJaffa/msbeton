@@ -39,7 +39,7 @@ function EditableField({ value, onSave, type = "text" }: { value: string | numbe
   return (
     <span className="flex items-center gap-1">
       <input type={type} value={val} onChange={e => setVal(e.target.value)} onKeyDown={e => { if (e.key === "Enter") save(); if (e.key === "Escape") setEditing(false); }}
-        className="bg-white border border-primary px-2 py-0.5 text-secondary text-sm w-32 focus:outline-none" autoFocus onFocus={e => e.target.select()} />
+        className={`bg-white border border-primary px-2 py-0.5 text-secondary text-sm ${type === "number" ? "w-20" : "w-32"} focus:outline-none`} autoFocus onFocus={e => e.target.select()} />
       <button onClick={save} className="text-green-600 hover:text-green-700"><Check className="w-4 h-4" /></button>
       <button onClick={() => setEditing(false)} className="text-red-500 hover:text-red-600"><X className="w-4 h-4" /></button>
     </span>
@@ -1070,7 +1070,16 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                   onClick={() => {
                     const next = isExp ? null : o.id;
                     setExpanded(next);
-                    if (next) document.getElementById("admin-content")?.scrollTo({ top: 0, behavior: "smooth" });
+                    if (next) {
+                      requestAnimationFrame(() => {
+                        const container = document.getElementById("admin-content");
+                        const el = document.getElementById(`order-card-${next}`);
+                        if (!container || !el) return;
+                        const cR = container.getBoundingClientRect();
+                        const eR = el.getBoundingClientRect();
+                        container.scrollTo({ top: container.scrollTop + (eR.top - cR.top) - 8, behavior: "smooth" });
+                      });
+                    }
                   }}>
                   {/* Left */}
                   <div className="flex-1 min-w-0 space-y-1">
@@ -1373,7 +1382,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
     loginId: "", password: "1234",
     discountBeton: "20", discountDoprava: "0", discountSluzby: "0", discountCelkovo: "0",
     hotovostDph: "20",
-    canHotovost: true, canPridatBeton: true, canZimneOpatrenia: false, active: true,
+    canHotovost: true, canPridatBeton: true, canZimneOpatrenia: false, active: true, registeredViaSms: false,
     deliveryZoneId: zones.find(z => (z.pricingType ?? "standard") === "standard")?.id ?? zones[0]?.id ?? "",
     sharedLink: "",
   };
@@ -1457,6 +1466,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
       hotovostDph: parseFloat(form.hotovostDph) / 100 || 0.20,
       canHotovost: form.canHotovost, canPridatBeton: form.canPridatBeton,
       canZimneOpatrenia: form.canZimneOpatrenia,
+      registeredViaSms: form.registeredViaSms || undefined,
       active: form.active,
       deliveryZoneId: form.deliveryZoneId || undefined,
       sharedLink: form.sharedLink.trim() || undefined,
@@ -1697,6 +1707,10 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                 <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
                   <input type="checkbox" checked={form.canZimneOpatrenia} onChange={e => setForm({ ...form, canZimneOpatrenia: e.target.checked })} className="accent-blue-600 w-5 h-5 shrink-0" />
                   <span className="text-sm text-gray-700">Zimné opatrenia (auto-ON v zime)</span>
+                </label>
+                <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
+                  <input type="checkbox" checked={form.registeredViaSms ?? false} onChange={e => setForm({ ...form, registeredViaSms: e.target.checked })} className="accent-green-600 w-5 h-5 shrink-0" />
+                  <span className="text-sm text-gray-700">Zaregistrovaný cez SMS</span>
                 </label>
                 <div className="px-3 py-3">
                   <div className="text-xs text-gray-400 mb-1.5">Typ dopravy</div>
@@ -2046,6 +2060,10 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                             <input type="checkbox" checked={c.canZimneOpatrenia ?? false} onChange={e => update(c.id, { canZimneOpatrenia: e.target.checked })} className="accent-blue-600 w-4 h-4 shrink-0" />
                             <span className="text-sm text-gray-700">Zimné opatrenia</span>
                           </label>
+                          <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50 select-none">
+                            <input type="checkbox" checked={c.registeredViaSms ?? false} onChange={e => update(c.id, { registeredViaSms: e.target.checked })} className="accent-green-600 w-4 h-4 shrink-0" />
+                            <span className="text-sm text-gray-700">Zaregistrovaný cez SMS</span>
+                          </label>
                           <div className="px-3 py-2.5">
                             <div className="text-xs text-gray-400 mb-1">Typ dopravy</div>
                             <div className="flex gap-1">
@@ -2257,7 +2275,7 @@ function exportClientPricePDF(client: Client, priceMode: "faktura" | "hotovost",
   const discS = `padding:4px 8px;font-size:8.5pt;border-bottom:1px solid #eee;text-align:right;color:#1a7c2e;font-weight:bold;background:#f0fff0`;
 
   const buildTable = (headers: string[], rows: Array<[string, string, string, string?]>, bg?: string) => {
-    const head = headers.map((h, i) => `<th style="background:${bg ?? "#001D3D"};color:#fff;${i < 2 ? thS : thRS}">${h}</th>`).join("");
+    const head = headers.map((h, i) => `<th style="background:${bg ?? "#001D3D"};color:#fff;${i === 0 ? thS : thRS}">${h}</th>`).join("");
     const body = rows.map((row, ri) => {
       const rowBg = ri % 2 === 1 ? "background:#f9f9f9;" : "";
       const cols = [
@@ -2481,14 +2499,6 @@ export default function AdminDashboard() {
 
   const handleLogout = () => { logout(); navigate("/admin/login"); };
 
-  const [showScrollTop, setShowScrollTop] = useState(false);
-  useEffect(() => {
-    const el = document.getElementById("admin-content");
-    if (!el) return;
-    const onScroll = () => setShowScrollTop(el.scrollTop > 300);
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
-  }, []);
 
   const tabs: { id: Tab; label: string; short: string; icon: React.ReactNode }[] = [
     { id: "klienti",    label: "KLIENTI",    short: "KLIENTI",  icon: <Users className="w-5 h-5" /> },
@@ -2575,16 +2585,6 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Scroll-to-top button */}
-      {showScrollTop && (
-        <button
-          onClick={() => document.getElementById("admin-content")?.scrollTo({ top: 0, behavior: "smooth" })}
-          className="fixed bottom-24 sm:bottom-6 right-4 z-50 w-10 h-10 bg-secondary text-primary border border-primary/40 shadow-lg flex items-center justify-center hover:bg-primary hover:text-secondary transition-colors"
-          title="Späť nahor"
-        >
-          <ChevronUp className="w-5 h-5" />
-        </button>
-      )}
     </div>
   );
 }

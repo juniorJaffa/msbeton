@@ -1,7 +1,18 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Truck, LogIn, LogOut, FileText, FileSpreadsheet, FileType2, MessageSquare, Minus, Plus, Trash2, Table2, ShoppingCart, X, Info, Check, ExternalLink } from "lucide-react";
+import { ChevronDown, Truck, LogIn, LogOut, FileText, FileSpreadsheet, FileType2, MessageSquare, Minus, Plus, Trash2, Table2, ShoppingCart, X, Info, Check, ExternalLink, MapPin, Copy, Navigation } from "lucide-react";
+import { OpenLocationCode } from "open-location-code";
 import { cn, formatPhone } from "@/lib/utils";
+
+const _olc = new OpenLocationCode();
+function encodeOLC(lat: number, lng: number): string {
+  try { return _olc.encode(lat, lng, 10); } catch { return `${lat.toFixed(4)},${lng.toFixed(4)}`; }
+}
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371, dLat = (lat2 - lat1) * Math.PI / 180, dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
 
 function sharedLinkIcon(url: string): { Icon: React.ElementType; cls: string } {
   const u = url.toLowerCase();
@@ -226,12 +237,17 @@ function PriceRow({ label, original, discounted, hasDiscount, isFillup }: { labe
 export function ConcreteCalculator({ clientOverride }: { clientOverride?: import("@/lib/clientAuth").LoggedClient } = {}) {
   const [tab, setTab] = useState<Tab>("pumpa");
   const [tabInfoOpen, setTabInfoOpen] = useState(false);
-  const [deliveryMode, setDeliveryMode] = useState<"distance" | "address">("distance");
+  const [deliveryMode, setDeliveryMode] = useState<"distance" | "address" | "map">("distance");
   const [distance, setDistance] = useState("");
   const [address, setAddress] = useState("");
   const [addressKm, setAddressKm] = useState<number | null>(null);
   const [addressLoading, setAddressLoading] = useState(false);
   const addressInputRef = useRef<HTMLInputElement>(null);
+  const [mapPin, setMapPin] = useState<{lat: number; lng: number} | null>(null);
+  const [mapPlusCode, setMapPlusCode] = useState("");
+  const [mapKmConfirmed, setMapKmConfirmed] = useState(false);
+  const [mapCopied, setMapCopied] = useState(false);
+  const mapLocateFnRef = useRef<(() => void) | null>(null);
   const calcWrapRef = useRef<HTMLDivElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const [categoryName, setCategoryName] = useState<string | null>(null);
@@ -285,6 +301,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     setAddress("");
     setAddressKm(null);
     setDeliveryMode("distance");
+    setMapPin(null); setMapPlusCode(""); setMapKmConfirmed(false);
     setCategoryName(null);
     setConcreteTypeLabel(null);
     setPumpHour("1 h");
@@ -367,6 +384,81 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     return () => { if (intervalId) clearInterval(intervalId); };
   }, [deliveryMode]);
 
+  // Map mode — Google Maps interactive picker
+  useEffect(() => {
+    if (deliveryMode !== "map" || mapKmConfirmed) return;
+    const ORIGIN = { lat: 49.204417, lng: 18.729029 };
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    const initMapMode = () => {
+      const mapEl = document.getElementById("calculator-map");
+      if (!mapEl || mapEl.childElementCount > 0) return;
+
+      const map = new google.maps.Map(mapEl, {
+        center: ORIGIN, zoom: 11,
+        disableDefaultUI: true, zoomControl: true,
+        gestureHandling: "cooperative",
+      });
+
+      let marker: google.maps.Marker | null = null;
+
+      const setPinAt = (lat: number, lng: number) => {
+        const pos = { lat, lng };
+        if (marker) marker.setPosition(pos);
+        else marker = new google.maps.Marker({ position: pos, map, animation: google.maps.Animation.DROP });
+        map.panTo(pos);
+        setMapPin({ lat, lng });
+        const oneWayKm = haversineKm(ORIGIN.lat, ORIGIN.lng, lat, lng);
+        setDistance(String(Math.round((oneWayKm * 2 + 2) * 10) / 10));
+        setAddressKm(oneWayKm);
+        setShowResult(false);
+        setMapPlusCode(encodeOLC(lat, lng));
+      };
+
+      mapLocateFnRef.current = () => {
+        navigator.geolocation?.getCurrentPosition(
+          pos => { map.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude }); map.setZoom(13); },
+          () => {}
+        );
+      };
+
+      // Auto-locate on open
+      navigator.geolocation?.getCurrentPosition(
+        pos => { map.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude }); map.setZoom(13); },
+        () => {}
+      );
+
+      map.addListener("click", (e: google.maps.MapMouseEvent) => {
+        if (e.latLng) setPinAt(e.latLng.lat(), e.latLng.lng());
+      });
+
+      const searchInput = document.getElementById("map-search-input") as HTMLInputElement | null;
+      if (searchInput) {
+        const ac = new google.maps.places.Autocomplete(searchInput, { types: ["geocode"] });
+        ac.addListener("place_changed", () => {
+          const place = ac.getPlace();
+          const loc = place?.geometry?.location;
+          if (!loc) return;
+          map.setCenter({ lat: loc.lat(), lng: loc.lng() });
+          map.setZoom(15);
+          setPinAt(loc.lat(), loc.lng());
+        });
+      }
+    };
+
+    const tryInit = () => {
+      if (typeof google === "undefined" || !google.maps?.places) return false;
+      if (!document.getElementById("calculator-map")) return false;
+      initMapMode();
+      return true;
+    };
+
+    if (!tryInit()) {
+      intervalId = setInterval(() => { if (tryInit()) clearInterval(intervalId!); }, 200);
+    }
+    return () => { if (intervalId) clearInterval(intervalId); mapLocateFnRef.current = null; };
+  }, [deliveryMode, mapKmConfirmed]);
+
   const allCategories = useMemo(() => adminData.getCategories(), [revision]);
   const allServices   = useMemo(() => adminData.getServices(), [revision]);
   const allDelivery   = useMemo(() => adminData.getDelivery(), [revision]);
@@ -379,7 +471,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   // aby manuálne ceny a zľavy nastavené v admin paneli boli okamžite viditeľné bez re-login.
   const loggedClient = useMemo<LoggedClient | null>(() => {
     if (clientOverride) return clientOverride;
-    if (!loggedClientState || loggedClientState.id === "admin") return loggedClientState;
+    if (!loggedClientState) return loggedClientState;
+    if (loggedClientState.id === "admin") {
+      const owner = allClients.find(c => c.isOwner);
+      return owner?.sharedLink ? { ...loggedClientState, sharedLink: owner.sharedLink } : loggedClientState;
+    }
     const fresh = allClients.find(c => c.id === loggedClientState.id);
     if (!fresh) return loggedClientState;
     return {
@@ -1115,7 +1211,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       `${(qty + " x " + unit.toFixed(2) + " €").padEnd(22)}= ${total.toFixed(2)} €`;
 
     const lines: string[] = [];
-    lines.push(div, "          MS-BETON", "       Cenová ponuka", div);
+    lines.push(div, "          MS-BETON", "    Záväzná objednávka", div);
     if (address) lines.push(`${address} - ${result.km}km`);
     else if (result.km > 0) lines.push(`${result.km}km`);
     if (result.isOwn) lines.push("Vlastná doprava – odber na prevádzke");
@@ -1539,7 +1635,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 }}
                 placeholder="Zadajte vzdialenosť v km"
                 className="w-full bg-white/10 border-b-2 border-b-primary text-white px-4 py-3 focus:outline-none placeholder:text-white/30 text-sm font-medium rounded-sm" />
-            ) : (
+            ) : deliveryMode === "address" ? (
               <div className="space-y-2">
                 <div className="relative">
                   <input
@@ -1557,16 +1653,70 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                   </p>
                 )}
               </div>
+            ) : (
+              /* Map mode wrapper — map div stays in DOM to prevent Google Maps escape */
+              <div className="space-y-2">
+                {!mapKmConfirmed && (
+                  <div className="flex gap-2">
+                    <input id="map-search-input" type="text"
+                      placeholder="Hľadajte adresu na mape..."
+                      className="flex-1 bg-white/10 border-b-2 border-b-primary text-white px-4 py-3 focus:outline-none placeholder:text-white/30 text-sm font-medium rounded-sm" />
+                    <button onClick={() => mapLocateFnRef.current?.()}
+                      className="bg-white/10 border-b-2 border-b-primary px-3 text-white/50 hover:text-primary transition-colors" title="Moja poloha">
+                      <Navigation className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+                <div id="calculator-map" className="w-full rounded overflow-hidden border border-white/20"
+                  style={{ height: mapKmConfirmed ? 0 : "220px", display: mapKmConfirmed ? "none" : "block" }} />
+                {mapKmConfirmed ? (
+                  <div className="bg-white/10 px-3 py-2.5 flex items-center gap-3 rounded-sm">
+                    <MapPin className="w-4 h-4 text-primary shrink-0" />
+                    <div className="flex-1 min-w-0 space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-primary text-xs font-bold tracking-wide">{mapPlusCode}</span>
+                        <button onClick={() => { navigator.clipboard?.writeText(mapPlusCode); setMapCopied(true); setTimeout(() => setMapCopied(false), 1500); }}
+                          className="text-white/40 hover:text-primary transition-colors" title="Kopírovať Plus Code">
+                          {mapCopied ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
+                        </button>
+                      </div>
+                      <p className="text-xs text-white/50"><strong className="text-primary">{distance} km</strong> (pre výpočet dopravy)</p>
+                    </div>
+                    <button onClick={() => { setMapKmConfirmed(false); setMapPin(null); setMapPlusCode(""); setDistance(""); setAddressKm(null); }}
+                      className="text-xs text-white/40 hover:text-white/70 transition-colors shrink-0">Zmeniť</button>
+                  </div>
+                ) : mapPin ? (
+                  <div className="bg-white/10 px-3 py-2.5 rounded-sm space-y-2">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <span className="font-mono text-primary text-sm font-bold tracking-wide">{mapPlusCode || "…"}</span>
+                      {mapPlusCode && (
+                        <button onClick={() => { navigator.clipboard?.writeText(mapPlusCode); setMapCopied(true); setTimeout(() => setMapCopied(false), 1500); }}
+                          className="text-white/40 hover:text-primary transition-colors" title="Kopírovať">
+                          {mapCopied ? <Check className="w-3.5 h-3.5 text-primary" /> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-xs text-white/60">Vzdialenosť od MS-BETON: <strong className="text-primary">{distance} km</strong></p>
+                    <button onClick={() => setMapKmConfirmed(true)}
+                      className="w-full bg-primary text-secondary font-black text-xs uppercase tracking-widest py-2.5 hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
+                      <MapPin className="w-3.5 h-3.5" /> Potvrdiť polohu
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-white/40 px-1">Kliknite na mapu alebo zadajte adresu</p>
+                )}
+              </div>
             )}
             <div className="flex items-center gap-6 pt-1">
-              {(["distance", "address"] as const).map((m) => (
+              {(["distance", "address", "map"] as const).map((m) => (
                 <label key={m} className="flex items-center gap-2 cursor-pointer">
-                  <div onClick={() => setDeliveryMode(m)}
+                  <div onClick={() => { setDeliveryMode(m); if (m !== "map") { setMapPin(null); setMapPlusCode(""); setMapKmConfirmed(false); } }}
                     className={cn("w-4 h-4 border-2 flex items-center justify-center transition-all flex-shrink-0",
                       deliveryMode === m ? "bg-primary border-primary" : "bg-white/10 border-white/30")}>
                     {deliveryMode === m && <span className="text-white text-[9px] font-bold">✓</span>}
                   </div>
-                  <span className="text-sm text-white/70">{m === "distance" ? "Vzdialenosť" : "Adresa"}</span>
+                  <span className="text-sm text-white/70">{m === "distance" ? "Vzdialenosť" : m === "address" ? "Adresa" : "Mapa"}</span>
                 </label>
               ))}
             </div>

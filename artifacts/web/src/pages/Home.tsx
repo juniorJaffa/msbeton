@@ -160,7 +160,7 @@ export default function Home() {
 
         {/* Scroll arrow */}
         <motion.a
-          href="#cta-bar"
+          href="#about"
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.2, duration: 0.6 }}
@@ -244,10 +244,10 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
-              { icon: Truck, count: "5000+", label: "Doručených zásielok" },
-              { icon: Calculator, count: "15M+", label: "Kubíkov betónu" },
+              { icon: Truck, count: "10 000+", label: "Doručených zásielok" },
+              { icon: Calculator, count: "30 000+", label: "Kubíkov betónu" },
               { icon: ShieldCheck, count: "100%", label: "Certifikovaná kvalita" },
-              { icon: Hammer, count: "850+", label: "Spokojných klientov" }
+              { icon: Hammer, count: "2 000+", label: "Spokojných klientov" }
             ].map((stat, i) => (
               <div key={i} className="flex flex-col items-center p-4">
                 <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-4 text-primary">
