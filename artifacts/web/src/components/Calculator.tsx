@@ -195,7 +195,7 @@ function PriceRow({ label, original, discounted, hasDiscount, isFillup }: { labe
         <span className="text-primary font-semibold flex-1 pr-2">{label}</span>
         <div className="flex-1 mx-3 h-px" style={{ background: "linear-gradient(90deg,#EDC531 0%,transparent 100%)" }} />
         <span className="text-right flex-shrink-0">
-          {hasDiscount && <span className="line-through text-primary/35 text-xs block">{fmt(original)}</span>}
+          {hasDiscount && Math.abs(original - discounted) > 0.001 && <span className="line-through text-primary/35 text-xs block">{fmt(original)}</span>}
           <span className="font-bold text-primary">{fmt(discounted)}</span>
         </span>
       </div>
@@ -205,7 +205,7 @@ function PriceRow({ label, original, discounted, hasDiscount, isFillup }: { labe
     <div className="flex justify-between items-start text-sm py-1">
       <span className="text-white/70 flex-1 pr-2">{label}</span>
       <span className="text-right flex-shrink-0">
-        {hasDiscount && <span className="line-through text-white/35 text-xs block">{fmt(original)}</span>}
+        {hasDiscount && Math.abs(original - discounted) > 0.001 && <span className="line-through text-white/35 text-xs block">{fmt(original)}</span>}
         <span className="font-semibold text-white">{fmt(discounted)}</span>
       </span>
     </div>
