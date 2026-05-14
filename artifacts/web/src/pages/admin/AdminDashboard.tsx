@@ -960,7 +960,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
   return (
     <div className="space-y-3">
       {/* Filter panel — sticky, collapsible */}
-      <div className="sticky top-20 z-30 bg-white border border-gray-200 shadow-sm">
+      <div className="sticky top-12 sm:top-20 z-30 bg-white border border-gray-200 shadow-sm">
         {/* Compact header — vždy viditeľný, toggle */}
         <button onClick={() => setFilterOpen(o => !o)}
           className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-gray-50 transition-colors cursor-pointer">
@@ -1553,7 +1553,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
       </div>
 
       {/* Search — sticky */}
-      <div className="sticky top-20 z-30 py-2 bg-white border-b border-gray-100 shadow-sm">
+      <div className="sticky top-12 sm:top-20 z-30 py-2 bg-white border-b border-gray-100 shadow-sm">
         <input placeholder="Hľadať klienta..." value={search} onChange={e => setSearch(e.target.value)}
           className="w-full bg-gray-50 text-secondary placeholder:text-gray-400 px-4 py-2.5 text-sm focus:outline-none rounded border border-gray-200 focus:border-primary" />
       </div>
@@ -2472,7 +2472,7 @@ export default function AdminDashboard() {
     <div className="min-h-screen concrete-light" style={{ fontFamily: "Montserrat, sans-serif", overflowX: "clip" }}>
       {/* Top nav */}
       {/* Combined sticky header — logo row + desktop tab row */}
-      <header className="bg-secondary shadow-lg sticky top-0 z-50">
+      <header className="bg-secondary shadow-lg fixed top-0 left-0 right-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-12">
           <a href="/" className="flex items-center gap-0.5 select-none">
             <span className="font-black text-2xl tracking-tighter text-primary">MS</span>
@@ -2542,7 +2542,7 @@ export default function AdminDashboard() {
         </div>
       </nav>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 pb-24 sm:pb-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-24 sm:pb-8">
         {/* Tab content */}
         <div>
           {tab === "betony" && <BetonTab key={syncKey} />}
