@@ -432,14 +432,6 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const hoseServicePrice = mp[hoseService?.id ?? ""] ?? hoseService?.price ?? 10.00;
   const hoseMaxMeters = hoseService?.maxMeters ?? 10;
 
-  // Per-service effective discount factors — manual price = žiadna zľava (factor 1)
-  const fPump  = (pumpSvc  && mp[pumpSvc.id]  !== undefined) ? 1 : sluzbyFactor;
-  const fChem  = (chemSvc  && mp[chemSvc.id]  !== undefined) ? 1 : sluzbyFactor;
-  const fWash  = (washSvc  && mp[washSvc.id]  !== undefined) ? 1 : sluzbyFactor;
-  const fHose  = (hoseService && mp[hoseService.id] !== undefined) ? 1 : sluzbyFactor;
-  const fWaitP = (waitPumpaSvc && mp[waitPumpaSvc.id] !== undefined) ? 1 : sluzbyFactor;
-  const fWaitM = (waitMixSvc  && mp[waitMixSvc.id]   !== undefined) ? 1 : sluzbyFactor;
-
   const zimneService = allServices.find((s) => s.name.toLowerCase().includes("zimn"));
   const zimneServicePrice = zimneService?.price ?? 10.00;
 
@@ -464,6 +456,14 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const betonFactor   = 1 - effectiveBeton   / 100;
   const dopravaFactor = 1 - effectiveDoprava / 100;
   const sluzbyFactor  = 1 - effectiveSluzby  / 100;
+
+  // Per-service effective discount factors — manual price = žiadna zľava (factor 1)
+  const fPump  = (pumpSvc  && mp[pumpSvc.id]  !== undefined) ? 1 : sluzbyFactor;
+  const fChem  = (chemSvc  && mp[chemSvc.id]  !== undefined) ? 1 : sluzbyFactor;
+  const fWash  = (washSvc  && mp[washSvc.id]  !== undefined) ? 1 : sluzbyFactor;
+  const fHose  = (hoseService && mp[hoseService.id] !== undefined) ? 1 : sluzbyFactor;
+  const fWaitP = (waitPumpaSvc && mp[waitPumpaSvc.id] !== undefined) ? 1 : sluzbyFactor;
+  const fWaitM = (waitMixSvc  && mp[waitMixSvc.id]   !== undefined) ? 1 : sluzbyFactor;
 
   const waitTotalMins = useMemo(() => (parseInt(waitHour) || 0) * 60 + (parseInt(waitMin) || 0), [waitHour, waitMin]);
 
