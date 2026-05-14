@@ -2469,7 +2469,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="min-h-screen concrete-light overflow-x-hidden" style={{ fontFamily: "Montserrat, sans-serif" }}>
+    <div className="min-h-screen concrete-light" style={{ fontFamily: "Montserrat, sans-serif", overflowX: "clip" }}>
       {/* Top nav */}
       {/* Combined sticky header — logo row + desktop tab row */}
       <header className="bg-secondary shadow-lg sticky top-0 z-50">
