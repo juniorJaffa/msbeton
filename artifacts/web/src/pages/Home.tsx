@@ -80,17 +80,29 @@ export default function Home() {
   // Contact Form State
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [contactName, setContactName] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactMessage, setContactMessage] = useState("");
 
-
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    // Simulate network request
-    setTimeout(() => {
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: contactName, phone: contactPhone, email: contactEmail, message: contactMessage }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setSubmitted(true);
+        setContactName(""); setContactPhone(""); setContactEmail(""); setContactMessage("");
+        setTimeout(() => setSubmitted(false), 6000);
+      }
+    } catch { /* silent */ } finally {
       setIsSubmitting(false);
-      setSubmitted(true);
-      setTimeout(() => setSubmitted(false), 5000);
-    }, 1500);
+    }
   };
 
   return (
@@ -398,18 +410,22 @@ export default function Home() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-bold text-secondary mb-2">Meno a Priezvisko</label>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         required
+                        value={contactName}
+                        onChange={e => setContactName(e.target.value)}
                         className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
                         placeholder="Jozef Novák"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-bold text-secondary mb-2">Telefónne číslo</label>
-                      <input 
-                        type="tel" 
+                      <input
+                        type="tel"
                         required
+                        value={contactPhone}
+                        onChange={e => setContactPhone(e.target.value)}
                         className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
                         placeholder="+421 9XX XXX XXX"
                       />
@@ -418,9 +434,11 @@ export default function Home() {
                   
                   <div>
                     <label className="block text-sm font-bold text-secondary mb-2">E-mail</label>
-                    <input 
-                      type="email" 
+                    <input
+                      type="email"
                       required
+                      value={contactEmail}
+                      onChange={e => setContactEmail(e.target.value)}
                       className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
                       placeholder="jozef@priklad.sk"
                     />
@@ -428,9 +446,11 @@ export default function Home() {
 
                   <div>
                     <label className="block text-sm font-bold text-secondary mb-2">Vaša správa / Požiadavka</label>
-                    <textarea 
+                    <textarea
                       required
                       rows={4}
+                      value={contactMessage}
+                      onChange={e => setContactMessage(e.target.value)}
                       className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all resize-none"
                       placeholder="Mám záujem o cenovú ponuku na betón pre základovú dosku..."
                     ></textarea>

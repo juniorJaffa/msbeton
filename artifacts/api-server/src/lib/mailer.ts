@@ -120,3 +120,50 @@ export async function sendRegistrationEmail(opts: {
     return { ok: false, error: String(err) };
   }
 }
+
+export async function sendContactEmail(opts: {
+  name: string; phone: string; email: string; message: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  const conn = createTransport();
+  if (!conn) return { ok: false, error: "SMTP not configured" };
+
+  const { name, phone, email, message } = opts;
+  const row = (label: string, val: string) =>
+    `<tr><td style="padding:5px 0;color:#888;width:120px;vertical-align:top">${label}</td><td style="padding:5px 0;color:#333">${val}</td></tr>`;
+
+  const html = `<!DOCTYPE html><html lang="sk"><head><meta charset="UTF-8">
+<title>Dopyt z webu – MS-BETON</title></head>
+<body style="font-family:Arial,sans-serif;background:#f5f5f5;margin:0;padding:20px">
+<div style="max-width:520px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1)">
+  <div style="background:#001D3D;padding:20px 28px">
+    <h1 style="color:#EDC531;font-size:20px;margin:0">&#9993; Dopyt z webu</h1>
+    <p style="color:#fff;margin:4px 0 0;font-size:13px;opacity:.6">MS-BETON · ${new Date().toLocaleString("sk-SK")}</p>
+  </div>
+  <div style="padding:24px 28px">
+    <table style="width:100%;border-collapse:collapse;font-size:14px">
+      ${row("Meno", name)}
+      ${phone ? row("Telefón", phone) : ""}
+      ${email ? row("Email", `<a href="mailto:${email}" style="color:#001D3D">${email}</a>`) : ""}
+      <tr><td colspan="2" style="padding:6px 0;border-top:1px solid #eee"></td></tr>
+      ${row("Správa", `<span style="white-space:pre-line">${message.replace(/</g, "&lt;")}</span>`)}
+    </table>
+  </div>
+  <div style="background:#f8f8f8;padding:12px 28px;border-top:1px solid #eee">
+    <p style="color:#999;font-size:11px;margin:0">MS-BETON, spol. s r.o. · Turie 468, 013 12 Turie · info@msbeton.sk</p>
+  </div>
+</div>
+</body></html>`;
+
+  try {
+    await conn.transport.sendMail({
+      from: conn.from,
+      to: "info@msbeton.sk",
+      replyTo: email || undefined,
+      subject: `Dopyt z webu – ${name}`,
+      html,
+    });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
+}

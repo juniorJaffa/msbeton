@@ -1553,7 +1553,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 </div>
                 {addressKm !== null && (
                   <p className="text-xs text-white/50 px-1">
-                    Vzdialenosť: {addressKm.toFixed(2)} km × 2 + 2 km rezerva = <strong className="text-primary">{distance} km</strong> (pre výpočet dopravy)
+                    Vzdialenosť: <strong className="text-primary">{distance} km</strong> (pre výpočet dopravy)
                   </p>
                 )}
               </div>

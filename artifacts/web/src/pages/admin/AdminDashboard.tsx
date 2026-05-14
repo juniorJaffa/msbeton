@@ -1065,22 +1065,27 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
           {sorted.map(o => {
             const isExp = expanded === o.id;
             return (
-              <div key={o.id} className="bg-white border border-gray-200 shadow-sm">
-                <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors"
-                  onClick={() => setExpanded(isExp ? null : o.id)}>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-secondary text-sm truncate">{o.clientName}</span>
-                      {o.company && <span className="text-xs text-gray-500 font-medium truncate">{o.company}</span>}
+              <div key={o.id} id={`order-card-${o.id}`} className="bg-white border border-gray-200 shadow-sm">
+                <div className="flex gap-3 px-4 py-3.5 cursor-pointer hover:bg-gray-50 transition-colors"
+                  onClick={() => {
+                    const next = isExp ? null : o.id;
+                    setExpanded(next);
+                    if (next) document.getElementById("admin-content")?.scrollTo({ top: 0, behavior: "smooth" });
+                  }}>
+                  {/* Left */}
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <TabBadge tab={o.tab} />
+                      <span className="font-bold text-secondary text-sm leading-tight">{o.clientName}</span>
+                      {o.company && <span className="text-xs text-gray-500 truncate max-w-[120px]">{o.company}</span>}
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                      <span className="text-xs text-gray-500 font-medium">{o.concreteType.replace(/ – [\d.,]+ €.*/, "")}</span>
-                      <span className="text-xs font-bold text-secondary">{o.totalQty} m³</span>
-                      {o.km && <span className="text-xs text-gray-400">{o.km} km</span>}
-                      {o.address && <span className="text-xs text-gray-400 truncate max-w-[140px]">{o.address}</span>}
+                    <div className="flex items-center gap-1.5 flex-wrap text-xs">
+                      <span className="font-medium text-gray-600">{o.concreteType.replace(/ – [\d.,]+ €.*/, "")}</span>
+                      <span className="font-bold text-secondary">{o.totalQty} m³</span>
+                      {o.km ? <span className="text-gray-400">{o.km} km</span> : null}
+                      {o.address ? <span className="text-gray-400 truncate max-w-[100px] sm:max-w-[180px]">{o.address}</span> : null}
                     </div>
-                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-[10px] text-gray-400">{fmtDate(o.createdAt)}</span>
                       {(o.discountBeton || o.discountDoprava || o.discountSluzby || o.discountCelkovo) ? (
                         o.discountCelkovo ? (
@@ -1093,18 +1098,20 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                       ) : null}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 sm:gap-3 shrink-0" onClick={e => e.stopPropagation()}>
+                  {/* Right */}
+                  <div className="flex flex-col items-end justify-between shrink-0 gap-1.5" onClick={e => e.stopPropagation()}>
                     <div className="text-right">
-                      <div className="font-black text-secondary text-sm tabular-nums">{fmtEur(o.totalSDph)}</div>
+                      <div className="font-black text-secondary text-sm tabular-nums leading-tight">{fmtEur(o.totalSDph)}</div>
                       <div className={cn("text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-sm mt-0.5 inline-block",
                         o.priceMode === "hotovost" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
                       )}>
-                        <span className="sm:hidden">{o.priceMode === "hotovost" ? "HOT." : "FA"}</span>
-                        <span className="hidden sm:inline">{o.priceMode === "hotovost" ? "HOTOVOSŤ" : "FAKTÚRA"}</span>
+                        {o.priceMode === "hotovost" ? "HOT." : "FA"}
                       </div>
                     </div>
-                    <OrderStatusBadge status={o.status} onChange={s => updateStatus(o.id, s)} />
-                    <button onClick={() => remove(o.id)} className="p-2 text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-5 h-5" /></button>
+                    <div className="flex items-center gap-1">
+                      <OrderStatusBadge status={o.status} onChange={s => updateStatus(o.id, s)} />
+                      <button onClick={() => remove(o.id)} className="p-1.5 text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                    </div>
                   </div>
                 </div>
                 {isExp && (
