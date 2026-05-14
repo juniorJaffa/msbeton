@@ -381,8 +381,8 @@ export function ClientPriceTable({
                       manualPrice={manualPrices?.[`auto_rate_${clientDZone.id}`]} dark={dark} onManualPriceChange={onManualPriceChange} />
                   </div>
                   {clientDZone.minimumFeeAuto != null && infoRow("Min. poplatok / auto", fmtE(clientDZone.minimumFeeAuto), 1)}
-                  {clientDZone.minKm != null && clientDZone.minKm > 0 && infoRow("Min. vzdialenosť", `${clientDZone.minKm} km`, 2)}
-                  {clientDZone.maxKm != null && clientDZone.maxKm > 0 && infoRow("Max. polomer", `${clientDZone.maxKm} km`, 3)}
+                  {clientDZone.minTrucks != null && clientDZone.minTrucks > 0 && infoRow("Min. počet áut", `${clientDZone.minTrucks}`, 2)}
+                  {clientDZone.maxTrucks != null && clientDZone.maxTrucks > 0 && infoRow("Max. počet áut", `${clientDZone.maxTrucks}`, 3)}
                 </>
               );
             })()}

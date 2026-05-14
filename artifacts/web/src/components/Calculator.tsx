@@ -2093,25 +2093,29 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                             )}
                             {!result.isOwn && idx === 0 && (pType === "km" || pType === "auto") && (() => {
                               const distKm = parseFloat(distance) || 0;
-                              const minDist = clientDeliveryZone?.minKm ?? 0;
-                              const maxDist = clientDeliveryZone?.maxKm ?? 0;
                               const notes: React.ReactNode[] = [];
                               if (pType === "km") {
+                                const minDist = clientDeliveryZone?.minKm ?? 0;
+                                const maxDist = clientDeliveryZone?.maxKm ?? 0;
                                 const kmMinFee = clientDeliveryZone?.minimumFeeKm;
                                 if (minDist > 0 && distKm < minDist)
                                   notes.push(<div key="minKm" className="text-[10px] text-amber-400/80 ml-1 mt-0.5">⚠ Vzdialenosť zaokrúhlená na min. {minDist} km</div>);
                                 if (kmMinFee && ci.transportIsMin)
-                                  notes.push(<div key="minFee" className="text-[10px] text-amber-400/80 ml-1 mt-0.5">⚠ Aplikovaný min. poplatok {fmtR(kmMinFee * dopravaFactor)} €/auto</div>);
+                                  notes.push(<div key="minFee" className="text-[10px] text-amber-400/80 ml-1 mt-0.5">⚠ Aplikovaný min. poplatok {fmtR(kmMinFee * result.fTransport)} €/auto</div>);
+                                if (maxDist > 0 && distKm > maxDist)
+                                  notes.push(<div key="maxKm" className="text-[10px] text-red-400/80 ml-1 mt-0.5">⚠ Vzdialenosť nad max. polomer obsluhy ({maxDist} km)</div>);
                               }
                               if (pType === "auto") {
+                                const minT = clientDeliveryZone?.minTrucks ?? 0;
+                                const maxT = clientDeliveryZone?.maxTrucks ?? 0;
                                 const autoMinFee = clientDeliveryZone?.minimumFeeAuto;
-                                if (minDist > 0 && distKm < minDist)
-                                  notes.push(<div key="minKmA" className="text-[10px] text-amber-400/80 ml-1 mt-0.5">⚠ Vzdialenosť pod min. {minDist} km</div>);
+                                if (minT > 0 && result.trucks < minT)
+                                  notes.push(<div key="minT" className="text-[10px] text-amber-400/80 ml-1 mt-0.5">⚠ Počet áut pod min. {minT}</div>);
                                 if (autoMinFee && ci.transportIsMin)
-                                  notes.push(<div key="minFeeA" className="text-[10px] text-amber-400/80 ml-1 mt-0.5">⚠ Aplikovaný min. poplatok {fmtR(autoMinFee * dopravaFactor)} €/auto</div>);
+                                  notes.push(<div key="minFeeA" className="text-[10px] text-amber-400/80 ml-1 mt-0.5">⚠ Aplikovaný min. poplatok {fmtR(autoMinFee * result.fTransport)} €/auto</div>);
+                                if (maxT > 0 && result.trucks > maxT)
+                                  notes.push(<div key="maxT" className="text-[10px] text-red-400/80 ml-1 mt-0.5">⚠ Počet áut nad max. kapacitu obsluhy ({maxT})</div>);
                               }
-                              if (maxDist > 0 && distKm > maxDist)
-                                notes.push(<div key="maxKm" className="text-[10px] text-red-400/80 ml-1 mt-0.5">⚠ Vzdialenosť nad max. polomer obsluhy ({maxDist} km)</div>);
                               return notes.length > 0 ? <>{notes}</> : null;
                             })()}
                             {ci.transportFillup > 0 && (

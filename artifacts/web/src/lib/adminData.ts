@@ -24,8 +24,10 @@ export interface DeliveryZone {
   waitingRatePer15minPumpa?: number; // čakačka pumpa (€/15 min), fallback na waitingRatePer15min
   pricingType?: "standard" | "km" | "auto"; // typ výpočtu dopravy
   ratePerTruck?: number;             // pre "auto" typ – paušál za vozidlo
-  minKm?: number;           // km/auto: min. km obsluhy (km: zaokrúhlená fakturácia; auto: info)
-  maxKm?: number;           // km/auto: max. polomer obsluhy (info)
+  minKm?: number;           // km typ: min. km (zaokrúhlená fakturácia)
+  maxKm?: number;           // km typ: max. polomer obsluhy (info)
+  minTrucks?: number;       // auto typ: min. počet áut
+  maxTrucks?: number;       // auto typ: max. počet áut
   minimumFeeKm?: number;    // km typ: min. finančná doprava (€/auto)
   minimumFeeAuto?: number;  // auto typ: min. finančná doprava (€/auto)
 }
