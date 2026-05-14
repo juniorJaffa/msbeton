@@ -90,11 +90,11 @@ function BetonTab() {
             <div className="flex items-center gap-2 shrink-0" onClick={e => e.stopPropagation()}>
               <span className="text-xs text-gray-400">{cat.types.length} typov</span>
               <button onClick={() => { setRenamingCat(renamingCat === cat.id ? null : cat.id); setRenameCatVal(cat.name); setExpanded(cat.id); }}
-                className="p-2.5 sm:p-1.5 bg-gray-100 text-gray-500 hover:bg-primary hover:text-secondary transition-colors rounded-sm" title="Premenovať">
-                <Pencil className="w-5 h-5 sm:w-3.5 sm:h-3.5" />
+                className="p-2.5 bg-gray-100 text-gray-500 hover:bg-primary hover:text-secondary transition-colors rounded-sm" title="Premenovať">
+                <Pencil className="w-5 h-5" />
               </button>
-              <button onClick={() => deleteCategory(cat.id)} className="p-2.5 sm:p-1.5 bg-secondary text-primary hover:bg-secondary/80 transition-colors rounded-sm">
-                <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
+              <button onClick={() => deleteCategory(cat.id)} className="p-2.5 bg-secondary text-primary hover:bg-secondary/80 transition-colors rounded-sm">
+                <Trash2 className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -130,8 +130,8 @@ function BetonTab() {
                         <EditableField value={t.price.toFixed(2)} type="number" onSave={v => updateType(cat.id, t.id, "price", v)} />
                       </td>
                       <td className="py-2 text-right">
-                        <button onClick={() => deleteType(cat.id, t.id)} className="p-2 sm:p-1 text-red-400 hover:text-red-600 transition-colors">
-                          <Trash2 className="w-5 h-5 sm:w-3.5 sm:h-3.5" />
+                        <button onClick={() => deleteType(cat.id, t.id)} className="p-2 text-red-400 hover:text-red-600 transition-colors">
+                          <Trash2 className="w-5 h-5" />
                         </button>
                       </td>
                     </tr>
@@ -406,8 +406,8 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                       <div className="font-semibold text-secondary text-sm flex-1">
                         <EditableField value={z.name} onSave={v => updateZone(z.id, { name: v })} />
                       </div>
-                      <button onClick={() => removeZone(z.id)} className="p-2 sm:p-1 text-gray-300 hover:text-red-500 transition-colors cursor-pointer flex-shrink-0">
-                        <Trash2 className="w-5 h-5 sm:w-3.5 sm:h-3.5" />
+                      <button onClick={() => removeZone(z.id)} className="p-2 text-gray-300 hover:text-red-500 transition-colors cursor-pointer flex-shrink-0">
+                        <Trash2 className="w-5 h-5" />
                       </button>
                     </div>
                     {/* Fields grid — nový clean layout */}
@@ -492,8 +492,8 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                             <div className="font-semibold text-secondary text-sm flex-1">
                               <EditableField value={z.name} onSave={v => updateZone(z.id, { name: v })} />
                             </div>
-                            <button onClick={() => removeZone(z.id)} className="p-2 sm:p-1 text-gray-300 hover:text-red-500 transition-colors cursor-pointer flex-shrink-0">
-                              <Trash2 className="w-5 h-5 sm:w-3.5 sm:h-3.5" />
+                            <button onClick={() => removeZone(z.id)} className="p-2 text-gray-300 hover:text-red-500 transition-colors cursor-pointer flex-shrink-0">
+                              <Trash2 className="w-5 h-5" />
                             </button>
                           </div>
                         ))}
@@ -513,7 +513,7 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                                 <td className="px-5 py-2 text-secondary font-medium"><EditableField value={z.fromKm} type="number" onSave={v => updatePZ(z.id, "fromKm", v)} /></td>
                                 <td className="px-4 py-2 text-secondary font-medium"><EditableField value={z.toKm} type="number" onSave={v => updatePZ(z.id, "toKm", v)} /></td>
                                 <td className="px-4 py-2 text-right font-bold text-secondary"><EditableField value={z.ratePerM3.toFixed(2)} type="number" onSave={v => updatePZ(z.id, "ratePerM3", v)} /></td>
-                                <td className="px-2 py-2 text-right"><button onClick={() => removePZ(z.id)} className="p-2 sm:p-1 text-gray-300 hover:text-red-500 transition-colors"><Trash2 className="w-5 h-5 sm:w-3.5 sm:h-3.5" /></button></td>
+                                <td className="px-2 py-2 text-right"><button onClick={() => removePZ(z.id)} className="p-2 text-gray-300 hover:text-red-500 transition-colors"><Trash2 className="w-5 h-5" /></button></td>
                               </tr>
                             ))}
                           </tbody>
@@ -685,7 +685,7 @@ function SluzbyTab({ onGoToDoprava }: { onGoToDoprava?: () => void }) {
                 <button onClick={() => toggle(s.id)} className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wide transition-colors ${s.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
                   {s.active ? "Aktívna" : "Neakt."}
                 </button>
-                <button onClick={() => remove(s.id)} className="p-2 sm:p-1 text-red-400 hover:text-red-600"><Trash2 className="w-5 h-5 sm:w-3.5 sm:h-3.5" /></button>
+                <button onClick={() => remove(s.id)} className="p-2 text-red-400 hover:text-red-600"><Trash2 className="w-5 h-5" /></button>
               </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap mt-2">
@@ -746,7 +746,7 @@ function SluzbyTab({ onGoToDoprava }: { onGoToDoprava?: () => void }) {
                     {s.active ? "Aktívna" : "Neaktívna"}
                   </button>
                 </td>
-                <td className="px-2 py-3 text-right"><button onClick={() => remove(s.id)} className="p-2 sm:p-1 text-red-400 hover:text-red-600"><Trash2 className="w-5 h-5 sm:w-3.5 sm:h-3.5" /></button></td>
+                <td className="px-2 py-3 text-right"><button onClick={() => remove(s.id)} className="p-2 text-red-400 hover:text-red-600"><Trash2 className="w-5 h-5" /></button></td>
               </tr>
             ))}
           </tbody>
@@ -1091,7 +1091,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                       </div>
                     </div>
                     <OrderStatusBadge status={o.status} onChange={s => updateStatus(o.id, s)} />
-                    <button onClick={() => remove(o.id)} className="p-2 sm:p-1 text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-5 h-5 sm:w-3.5 sm:h-3.5" /></button>
+                    <button onClick={() => remove(o.id)} className="p-2 text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-5 h-5" /></button>
                   </div>
                 </div>
                 {isExp && (
@@ -1843,25 +1843,25 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                   <button
                     onClick={(e) => { e.stopPropagation(); setExpanded(c.id); setClientDetailTab(prev => ({ ...prev, [c.id]: "calc" })); }}
                     title="Kalkulačka klienta"
-                    className="p-2 sm:p-1 text-gray-300 hover:text-primary transition-colors">
-                    <Calculator className="w-6 h-6 sm:w-4 sm:h-4" />
+                    className="p-2 text-gray-300 hover:text-primary transition-colors">
+                    <Calculator className="w-6 h-6" />
                   </button>
                   {c.sharedLink && (
                     <a href={c.sharedLink} target="_blank" rel="noopener noreferrer" title="Zdielaný odkaz"
                       onClick={e => e.stopPropagation()}
-                      className="p-2 sm:p-1 transition-colors hover:opacity-70">
-                      {(() => { const { Icon, cls } = sharedLinkIcon(c.sharedLink); return <Icon className={`w-6 h-6 sm:w-4 sm:h-4 ${cls}`} />; })()}
+                      className="p-2 transition-colors hover:opacity-70">
+                      {(() => { const { Icon, cls } = sharedLinkIcon(c.sharedLink); return <Icon className={`w-6 h-6 ${cls}`} />; })()}
                     </a>
                   )}
                   <button
                     onClick={(e) => { e.stopPropagation(); setTablePdfModal(c); setTablePdfMode("faktura"); }}
                     title="Zľavové tabuľky"
-                    className="p-2 sm:p-1 text-gray-300 hover:text-secondary transition-colors">
-                    <Table2 className="w-6 h-6 sm:w-4 sm:h-4" />
+                    className="p-2 text-gray-300 hover:text-secondary transition-colors">
+                    <Table2 className="w-6 h-6" />
                   </button>
                   {c.id !== SYSTEM_OWNER_ID && (
-                    <button onClick={(e) => { e.stopPropagation(); remove(c.id); }} className="p-2 sm:p-1 text-gray-300 hover:text-red-500 transition-colors">
-                      <Trash2 className="w-6 h-6 sm:w-4 sm:h-4" />
+                    <button onClick={(e) => { e.stopPropagation(); remove(c.id); }} className="p-2 text-gray-300 hover:text-red-500 transition-colors">
+                      <Trash2 className="w-6 h-6" />
                     </button>
                   )}
                 </div>
@@ -1948,13 +1948,13 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                                 <span className="text-gray-400 text-[10px]">— Google Sheet, PDF, Word</span>
                               )}
                               <button onClick={() => { setLinkDraft(c.sharedLink || ""); setEditingLinkFor(c.id); }}
-                                className="p-2 sm:p-0 text-gray-300 hover:text-secondary transition-colors">
-                                <Pencil className="w-5 h-5 sm:w-3 sm:h-3" />
+                                className="p-2 text-gray-300 hover:text-secondary transition-colors">
+                                <Pencil className="w-5 h-5" />
                               </button>
                               {c.sharedLink && (
                                 <button onClick={() => update(c.id, { sharedLink: undefined })}
-                                  className="p-2 sm:p-0 text-gray-300 hover:text-red-500 transition-colors">
-                                  <X className="w-5 h-5 sm:w-3 sm:h-3" />
+                                  className="p-2 text-gray-300 hover:text-red-500 transition-colors">
+                                  <X className="w-5 h-5" />
                                 </button>
                               )}
                             </div>
