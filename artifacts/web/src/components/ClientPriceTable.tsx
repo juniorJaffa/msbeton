@@ -96,11 +96,10 @@ function EditRow({ id, orig, factor, manualPrice, dark, onManualPriceChange }: E
   const hasManual = manualPrice !== undefined;
   const hasDisc = factor < 1 && Math.abs(orig - computedDisc) > 0.001;
 
-  // When manual: strike the discount-computed price to show "what discount would give"
-  // When only discount: strike the orig price
-  const strikeVal = hasManual ? computedDisc : orig;
+  // Manuálna cena = žiadna zľava; strikethrough = vždy katalógová (orig) cena
+  const strikeVal = orig;
   const showStrike = hasManual
-    ? Math.abs(computedDisc - manualPrice) > 0.001
+    ? Math.abs(orig - manualPrice) > 0.001
     : hasDisc;
 
   return (

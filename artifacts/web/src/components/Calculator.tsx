@@ -860,8 +860,21 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const dopravaLabel = `${pdfPrefix}${pdfZone ? ` ${pdfZone}` : ""} · ${pdfTrucks}`;
     const mainTransportOrig = mainCI?.transport ?? 0;
     const mainTransportDisc = mainTransportOrig * result.fTransport;
+    const mainPricingType = clientDeliveryZone?.pricingType ?? "standard";
+    const mainMinFeePerTruck = (() => {
+      if (mainPricingType === "km") return clientDeliveryZone?.minimumFeeKm ?? 0;
+      if (mainPricingType === "auto") return clientDeliveryZone?.minimumFeeAuto ?? 0;
+      const mpLocal = loggedClient?.manualPrices ?? {};
+      return mpLocal["min_fee"] !== undefined ? mpLocal["min_fee"] : (tsettings.minimumFee ?? 62.50);
+    })();
+    const mainMinFeeDisc = mainMinFeePerTruck * result.fTransport;
+    const transportUnitStr = result.transportIsMin && mainMinFeePerTruck > 0
+      ? (hasDiscount && Math.abs(mainMinFeePerTruck - mainMinFeeDisc) > 0.001
+        ? `<span style="text-decoration:line-through;color:#bbb;font-size:7.5pt">${fmtN(mainMinFeePerTruck)}&nbsp;€/auto</span><br>${fmtN(mainMinFeeDisc)}&nbsp;€/auto`
+        : `${fmtN(mainMinFeeDisc)}&nbsp;€/auto`)
+      : "—";
     const transportRow = mainTransportOrig > 0
-      ? trow(dopravaLabel, `${result.qty}&nbsp;m³`, "—", mainTransportOrig, mainTransportDisc)
+      ? trow(dopravaLabel, `${result.qty}&nbsp;m³`, transportUnitStr, mainTransportOrig, mainTransportDisc)
       : "";
     const mainFillupOrig = mainCI?.transportFillup ?? 0;
     const mainFillupDisc = mainFillupOrig * result.fFillup;
@@ -925,10 +938,16 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         ? `1×Pumpa${ci.transportTrucks > 1 ? `+${ci.transportTrucks - 1}×Mix` : ""}`
         : `${ci.transportTrucks}×Mix`;
       const dopravaExtraLabel = `${ci.transportIsMin ? "Min. doprava" : "Doprava"}${pdfZone ? ` ${pdfZone}` : ""} · ${pdfExtraTrucks}`;
+      const extraMinFeeDisc = mainMinFeePerTruck * result.fTransport;
+      const extraTransportUnitStr = ci.transportIsMin && mainMinFeePerTruck > 0
+        ? (hasDiscount && Math.abs(mainMinFeePerTruck - extraMinFeeDisc) > 0.001
+          ? `<span style="text-decoration:line-through;color:#bbb;font-size:7.5pt">${fmtN(mainMinFeePerTruck)}&nbsp;€/auto</span><br>${fmtN(extraMinFeeDisc)}&nbsp;€/auto`
+          : `${fmtN(extraMinFeeDisc)}&nbsp;€/auto`)
+        : "—";
       const extraBetonLabel = ci.label.replace(/ – [\d.,]+ m³$/, "");
       let rows = sectionRow(`Pridaná položka ${idx + 1}${extraBetonLabel ? ` – ${extraBetonLabel}` : ""}`);
       rows += trow(ci.label, `${ci.qty}&nbsp;m³`, unitStr, betonOrig, betonDisc);
-      rows += trow(dopravaExtraLabel, `${ci.qty}&nbsp;m³`, "—", transOrig, transDisc);
+      rows += trow(dopravaExtraLabel, `${ci.qty}&nbsp;m³`, extraTransportUnitStr, transOrig, transDisc);
       rows += trow(`Doťaženie do&nbsp;${ci.transportFillupTarget}&nbsp;m³`, `${ci.transportFillupM3}&nbsp;m³`, "—", fillupOrig, fillupDisc);
       const hasExtraSvc = ci.svcPumpCost > 0 || ci.svcHoseCost > 0 || ci.svcWashCost > 0 || ci.svcWaitCost > 0;
       if (hasExtraSvc) rows += subSectionRow(svcLabel);
