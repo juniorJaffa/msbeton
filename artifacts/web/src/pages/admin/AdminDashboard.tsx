@@ -335,74 +335,63 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                     const ref = zones[0];
                     const updateAll2 = (patch: Partial<DeliveryZone>) => save(zones.map(z => ({ ...z, ...patch })));
                     return (
-                      <div className="flex flex-wrap gap-3 mt-2 w-full">
+                      <div className="grid grid-cols-3 divide-x divide-y divide-blue-100 border-t border-blue-100 mt-2 w-full">
                         {/* Min. objednávka */}
-                        <div className="flex items-center gap-4 bg-gray-50 border border-gray-200 rounded px-3 py-2">
-                          <div>
-                            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Min. objednávka (m³)</div>
-                            <div className="font-bold text-secondary text-sm">
-                              <EditableField value={ts.minimumLoadM3 as number} type="number" onSave={v => saveTs({ ...ts, minimumLoadM3: parseFloat(v) || 0 })} /> m³
-                            </div>
+                        <div className="px-4 py-3 bg-white">
+                          <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Min. obj.</div>
+                          <div className="font-bold text-secondary text-sm flex flex-wrap items-baseline gap-1">
+                            <EditableField value={ts.minimumLoadM3 as number} type="number" onSave={v => saveTs({ ...ts, minimumLoadM3: parseFloat(v) || 0 })} /> <span>m³</span>
                           </div>
                         </div>
                         {/* Min. cena / auto */}
-                        <div className="flex items-center gap-4 bg-gray-50 border border-gray-200 rounded px-3 py-2">
-                          <div>
-                            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Min. cena / auto (€)</div>
-                            <div className="font-bold text-secondary text-sm">
-                              <EditableField value={ts.minimumFee as number} type="number" onSave={v => saveTs({ ...ts, minimumFee: parseFloat(v) || 0 })} />
-                            </div>
+                        <div className="px-4 py-3 bg-white">
+                          <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Min. cena/auto</div>
+                          <div className="font-bold text-secondary text-sm flex flex-wrap items-baseline gap-1">
+                            <EditableField value={ts.minimumFee as number} type="number" onSave={v => saveTs({ ...ts, minimumFee: parseFloat(v) || 0 })} /> <span>€</span>
                           </div>
                         </div>
-                        {/* Čerpanie pumpy — read-only, zo Služieb */}
-                        <div className="flex items-center justify-between gap-2 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
-                          <div>
-                            <div className="text-[10px] text-yellow-600 uppercase tracking-wide font-bold mb-0.5">Čerpanie pumpy</div>
-                            <div className="font-bold text-secondary text-sm">{pumpRate != null ? `${pumpRate.toFixed(2)} €/hod` : "—"}</div>
-                          </div>
+                        {/* Čerpanie pumpy — read-only */}
+                        <div className="px-4 py-3 bg-yellow-50/60 flex flex-col gap-1">
+                          <div className="text-[10px] text-yellow-600 font-bold uppercase tracking-wide">Čerpanie pumpy</div>
+                          <div className="font-bold text-secondary text-sm">{pumpRate != null ? `${pumpRate.toFixed(2)} €/hod` : "—"}</div>
                           {onGoToSluzby && (
-                            <button onClick={onGoToSluzby} className="flex items-center gap-1 text-[10px] text-yellow-600 hover:text-secondary transition-colors font-semibold shrink-0">
-                              <ExternalLink className="w-3 h-3" />
-                              Nastaviť v Službách
+                            <button onClick={onGoToSluzby} className="flex items-center gap-0.5 text-[9px] text-yellow-600 hover:text-secondary transition-colors font-semibold mt-0.5">
+                              <ExternalLink className="w-2.5 h-2.5" /> Nastaviť v Službách
                             </button>
                           )}
                         </div>
-                        {/* Pumpa — kapacita (kompaktné) */}
-                        <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
+                        {/* Pumpa — kapacita + čakačka */}
+                        <div className="px-4 py-3 bg-yellow-50/30 flex items-center gap-3">
                           <div className="flex flex-col items-center gap-0.5 shrink-0">
-                            <span className="text-[10px] font-black text-secondary uppercase tracking-wide">Pumpa</span>
+                            <span className="text-[9px] font-black text-secondary uppercase tracking-wide">Pumpa</span>
                             <PumpTruckIcon />
                           </div>
                           <div>
                             <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Kapacita</div>
-                            <div className="font-bold text-secondary text-sm flex items-center gap-1">
-                              <EditableField value={ref?.pumpTruckCapacity ?? 7} type="number" onSave={v => updateAll2({ pumpTruckCapacity: parseFloat(v) })} /> m³
+                            <div className="font-bold text-secondary text-sm flex flex-wrap items-baseline gap-1">
+                              <EditableField value={ref?.pumpTruckCapacity ?? 7} type="number" onSave={v => updateAll2({ pumpTruckCapacity: parseFloat(v) })} /> <span>m³</span>
                             </div>
                           </div>
                           <div>
                             <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Čakačka / 15 min</div>
-                            {waitingRatePumpa != null
-                              ? <div className="font-bold text-secondary text-sm">{waitingRatePumpa.toFixed(2)} €</div>
-                              : <div className="text-[11px] text-gray-400 italic">—</div>}
+                            <div className="font-bold text-secondary text-sm">{waitingRatePumpa != null ? `${waitingRatePumpa.toFixed(2)} €` : "—"}</div>
                           </div>
                         </div>
-                        {/* Mixér — kapacita (kompaktné) */}
-                        <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
+                        {/* Mixér — kapacita + čakačka */}
+                        <div className="col-span-2 px-4 py-3 bg-yellow-50/20 flex items-center gap-3">
                           <div className="flex flex-col items-center gap-0.5 shrink-0">
-                            <span className="text-[10px] font-black text-secondary uppercase tracking-wide">Mixér</span>
+                            <span className="text-[9px] font-black text-secondary uppercase tracking-wide">Mixér</span>
                             <MixTruckIcon />
                           </div>
                           <div>
                             <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Kapacita</div>
-                            <div className="font-bold text-secondary text-sm flex items-center gap-1">
-                              <EditableField value={ref?.truckCapacity ?? 9} type="number" onSave={v => updateAll2({ truckCapacity: parseFloat(v) })} /> m³
+                            <div className="font-bold text-secondary text-sm flex flex-wrap items-baseline gap-1">
+                              <EditableField value={ref?.truckCapacity ?? 9} type="number" onSave={v => updateAll2({ truckCapacity: parseFloat(v) })} /> <span>m³</span>
                             </div>
                           </div>
                           <div>
                             <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Čakačka / 15 min</div>
-                            {waitingRateMix != null
-                              ? <div className="font-bold text-secondary text-sm">{waitingRateMix.toFixed(2)} €</div>
-                              : <div className="text-[11px] text-gray-400 italic">—</div>}
+                            <div className="font-bold text-secondary text-sm">{waitingRateMix != null ? `${waitingRateMix.toFixed(2)} €` : "—"}</div>
                           </div>
                         </div>
                       </div>
@@ -426,29 +415,29 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                       {/* Hlavná sadzba */}
                       <div className={`px-4 py-3 ${zt.key === "km" ? "bg-slate-50/70" : "bg-blue-50/50"}`}>
                         <div className={`text-[10px] font-bold uppercase tracking-wide mb-1 ${zt.key === "km" ? "text-slate-500" : "text-blue-500"}`}>{zt.rateLabel}</div>
-                        <div className="font-bold text-secondary text-sm flex items-center gap-1">
+                        <div className="font-bold text-secondary text-sm flex flex-wrap items-baseline gap-1">
                           {zt.key === "auto"
-                            ? <><EditableField value={z.ratePerTruck ?? 0} type="number" onSave={v => updateZone(z.id, { ratePerTruck: parseFloat(v) })} /> {zt.rateUnit}</>
-                            : <><EditableField value={z.ratePerKm} type="number" onSave={v => updateZone(z.id, { ratePerKm: parseFloat(v) })} /> {zt.rateUnit}</>}
+                            ? <><EditableField value={z.ratePerTruck ?? 0} type="number" onSave={v => updateZone(z.id, { ratePerTruck: parseFloat(v) })} /> <span>€/voz.</span></>
+                            : <><EditableField value={z.ratePerKm} type="number" onSave={v => updateZone(z.id, { ratePerKm: parseFloat(v) })} /> <span>{zt.rateUnit}</span></>}
                         </div>
                       </div>
                       {/* Min */}
                       <div className="px-4 py-3 bg-white">
                         <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">{zt.key === "km" ? "Min. km" : "Min. áut"}</div>
-                        <div className="font-bold text-secondary text-sm flex items-center gap-1">
+                        <div className="font-bold text-secondary text-sm flex flex-wrap items-baseline gap-1">
                           {zt.key === "km"
-                            ? <><EditableField value={z.minKm ?? 5} type="number" onSave={v => updateZone(z.id, { minKm: parseFloat(v) || undefined })} /> km</>
-                            : <><EditableField value={z.minTrucks ?? 1} type="number" onSave={v => updateZone(z.id, { minTrucks: parseFloat(v) || undefined })} /> áut</>}
+                            ? <><EditableField value={z.minKm ?? 5} type="number" onSave={v => updateZone(z.id, { minKm: parseFloat(v) || undefined })} /> <span>km</span></>
+                            : <><EditableField value={z.minTrucks ?? 1} type="number" onSave={v => updateZone(z.id, { minTrucks: parseFloat(v) || undefined })} /> <span>áut</span></>}
                         </div>
-                        <div className="text-[9px] text-gray-400 mt-0.5 leading-tight">{zt.key === "km" ? "zaokrúhlená fakturácia" : "min. počet vozidiel"}</div>
+                        <div className="text-[9px] text-gray-400 mt-0.5 leading-tight">{zt.key === "km" ? "zaokrúhlená fakt." : "min. počet vozidiel"}</div>
                       </div>
                       {/* Max */}
                       <div className="px-4 py-3 bg-white">
                         <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">{zt.key === "km" ? "Max. km" : "Max. áut"}</div>
-                        <div className="font-bold text-secondary text-sm flex items-center gap-1">
+                        <div className="font-bold text-secondary text-sm flex flex-wrap items-baseline gap-1">
                           {zt.key === "km"
-                            ? <><EditableField value={z.maxKm ?? 100} type="number" onSave={v => updateZone(z.id, { maxKm: parseFloat(v) || undefined })} /> km</>
-                            : <><EditableField value={z.maxTrucks ?? 10} type="number" onSave={v => updateZone(z.id, { maxTrucks: parseFloat(v) || undefined })} /> áut</>}
+                            ? <><EditableField value={z.maxKm ?? 100} type="number" onSave={v => updateZone(z.id, { maxKm: parseFloat(v) || undefined })} /> <span>km</span></>
+                            : <><EditableField value={z.maxTrucks ?? 10} type="number" onSave={v => updateZone(z.id, { maxTrucks: parseFloat(v) || undefined })} /> <span>áut</span></>}
                         </div>
                         <div className="text-[9px] text-gray-400 mt-0.5 leading-tight">{zt.key === "km" ? "max. polomer obsluhy" : "max. počet vozidiel"}</div>
                       </div>
@@ -646,7 +635,7 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
 }
 
 // ── SLUŽBY tab ────────────────────────────────────────────────────────────────
-function SluzbyTab() {
+function SluzbyTab({ onGoToDoprava }: { onGoToDoprava?: () => void }) {
   const [services, setServices] = useState<Service[]>(adminData.getServices());
   const [adding, setAdding] = useState(false);
   const emptyForm = { name: "", unit: "", price: "", description: "", serviceMode: "" as "" | "pumpa" | "mix", maxMeters: "", activePeriodFrom: "", activePeriodTo: "" };
@@ -670,23 +659,31 @@ function SluzbyTab() {
     setForm(emptyForm); setAdding(false);
   };
 
-  // Zorad: čakačka pumpy hneď za čakačkou mixéra
+  // Zorad: čakačka pumpy PRED čakačkou mixéra
   const displayServices = (() => {
     const pumpaItems = services.filter(s => s.serviceMode === "pumpa");
     const result: Service[] = [];
     for (const s of services) {
       if (s.serviceMode === "pumpa") continue;
+      if (s.serviceMode === "mix") result.push(...pumpaItems); // pumpa pred mix
       result.push(s);
-      if (s.serviceMode === "mix") result.push(...pumpaItems);
     }
     if (!services.some(s => s.serviceMode === "mix")) result.push(...pumpaItems);
     return result;
   })();
 
   const ServiceModeBadge = ({ mode }: { mode?: "pumpa" | "mix" }) => mode ? (
-    <div className="flex items-center gap-1">
-      {mode === "pumpa" ? <PumpTruckIcon /> : <MixTruckIcon />}
-      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">{mode === "pumpa" ? "Iba Pumpa" : "Iba Mixér"}</span>
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-1">
+        {mode === "pumpa" ? <PumpTruckIcon /> : <MixTruckIcon />}
+        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">{mode === "pumpa" ? "Iba Pumpa" : "Iba Mixér"}</span>
+      </div>
+      {onGoToDoprava && (
+        <button onClick={onGoToDoprava} className="flex items-center gap-0.5 text-[9px] text-blue-400 hover:text-blue-600 transition-colors font-semibold">
+          <ExternalLink className="w-2.5 h-2.5" />
+          Iba Štandard doprava
+        </button>
+      )}
     </div>
   ) : null;
 
@@ -1387,22 +1384,26 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
 
   const save = (data: Client[]) => { setClients(data); adminData.saveClients(data); };
 
+  const scrollToClientCard = (id: string) => {
+    setTimeout(() => {
+      const container = document.getElementById("admin-content");
+      const el = document.getElementById(`client-card-${id}`);
+      const toolbar = document.getElementById("klienti-toolbar");
+      if (el && container) {
+        const cR = container.getBoundingClientRect();
+        const eR = el.getBoundingClientRect();
+        const toolH = toolbar?.getBoundingClientRect().height ?? 90;
+        container.scrollTo({ top: container.scrollTop + (eR.top - cR.top) - toolH - 8, behavior: "smooth" });
+      }
+    }, 250);
+  };
+
   useEffect(() => {
     if (!expandClientId) return;
     const c = clients.find(cl => cl.loginId === expandClientId);
     if (c) {
       setExpanded(c.id);
-      setTimeout(() => {
-        const container = document.getElementById("admin-content");
-        const el = document.getElementById(`client-card-${c.id}`);
-        const toolbar = document.getElementById("klienti-toolbar");
-        if (el && container) {
-          const containerTop = container.getBoundingClientRect().top;
-          const elTop = el.getBoundingClientRect().top;
-          const toolbarH = toolbar?.getBoundingClientRect().height ?? 90;
-          container.scrollTo({ top: container.scrollTop + (elTop - containerTop) - toolbarH - 8, behavior: "smooth" });
-        }
-      }, 150);
+      scrollToClientCard(c.id);
     }
     onExpanded?.();
   }, [expandClientId]);
@@ -1778,7 +1779,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
           return (
             <div key={c.id} id={`client-card-${c.id}`} className={cn("border shadow-sm overflow-hidden", c.isOwner ? "bg-amber-50 border-primary/40" : "bg-white border-gray-200")}>
               {/* Card header */}
-              <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => setExpanded(isExpanded ? null : c.id)}>
+              <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => { const next = isExpanded ? null : c.id; setExpanded(next); if (next) scrollToClientCard(next); }}>
                 {/* Avatar + active dot */}
                 <div className="relative shrink-0">
                   <div className={cn("w-9 h-9 rounded-full flex items-center justify-center", c.isOwner ? "bg-primary/20" : "bg-secondary/10")}>
@@ -1854,30 +1855,30 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                   </div>
                   {/* Always: chevron + calc (mobile) + table + delete */}
                   <span className="p-1 text-gray-400">
-                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    {isExpanded ? <ChevronUp className="w-5 h-5 sm:w-4 sm:h-4" /> : <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4" />}
                   </span>
                   <button
                     onClick={(e) => { e.stopPropagation(); setExpanded(c.id); setClientDetailTab(prev => ({ ...prev, [c.id]: "calc" })); }}
                     title="Kalkulačka klienta"
-                    className="p-1 text-gray-300 hover:text-primary transition-colors">
-                    <Calculator className="w-4 h-4" />
+                    className="p-2 sm:p-1 text-gray-300 hover:text-primary transition-colors">
+                    <Calculator className="w-6 h-6 sm:w-4 sm:h-4" />
                   </button>
                   {c.sharedLink && (
                     <a href={c.sharedLink} target="_blank" rel="noopener noreferrer" title="Zdielaný odkaz"
                       onClick={e => e.stopPropagation()}
-                      className="p-1 transition-colors hover:opacity-70">
-                      {(() => { const { Icon, cls } = sharedLinkIcon(c.sharedLink); return <Icon className={`w-4 h-4 ${cls}`} />; })()}
+                      className="p-2 sm:p-1 transition-colors hover:opacity-70">
+                      {(() => { const { Icon, cls } = sharedLinkIcon(c.sharedLink); return <Icon className={`w-6 h-6 sm:w-4 sm:h-4 ${cls}`} />; })()}
                     </a>
                   )}
                   <button
                     onClick={(e) => { e.stopPropagation(); setTablePdfModal(c); setTablePdfMode("faktura"); }}
                     title="Zľavové tabuľky"
-                    className="p-1 text-gray-300 hover:text-secondary transition-colors">
-                    <Table2 className="w-4 h-4" />
+                    className="p-2 sm:p-1 text-gray-300 hover:text-secondary transition-colors">
+                    <Table2 className="w-6 h-6 sm:w-4 sm:h-4" />
                   </button>
                   {c.id !== SYSTEM_OWNER_ID && (
-                    <button onClick={(e) => { e.stopPropagation(); remove(c.id); }} className="p-1 text-gray-300 hover:text-red-500 transition-colors">
-                      <Trash2 className="w-4 h-4" />
+                    <button onClick={(e) => { e.stopPropagation(); remove(c.id); }} className="p-2 sm:p-1 text-gray-300 hover:text-red-500 transition-colors">
+                      <Trash2 className="w-6 h-6 sm:w-4 sm:h-4" />
                     </button>
                   )}
                 </div>
@@ -2139,6 +2140,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                         hotovostDph: c.hotovostDph,
                         deliveryZoneId: c.deliveryZoneId,
                         manualPrices: c.manualPrices,
+                        sharedLink: c.sharedLink,
                       }} />
                     </div>
                   )}
@@ -2554,7 +2556,7 @@ export default function AdminDashboard() {
       <div id="admin-content" className="fixed top-[86px] sm:top-20 left-0 right-0 bottom-0 overflow-y-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 pb-8">
           {tab === "betony" && <BetonTab key={syncKey} />}
-          {tab === "sluzby" && <SluzbyTab key={syncKey} />}
+          {tab === "sluzby" && <SluzbyTab key={syncKey} onGoToDoprava={() => { setTab("doprava"); window.location.hash = "doprava"; }} />}
           {tab === "doprava" && <DopravaTab key={syncKey} onGoToSluzby={() => { setTab("sluzby"); window.location.hash = "sluzby"; }} />}
           {tab === "klienti" && <KlientiTab key={syncKey} expandClientId={goToClientId} onExpanded={() => setGoToClientId(null)} />}
           {tab === "objednavky" && <ObjednavkyTab key={syncKey} onGoToClient={(loginId) => { setTab("klienti"); setGoToClientId(loginId); }} />}

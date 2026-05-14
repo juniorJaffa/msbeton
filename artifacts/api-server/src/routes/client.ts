@@ -148,6 +148,7 @@ function buildClientResponse(account: UnifiedClient) {
     canZimneOpatrenia: account.canZimneOpatrenia ?? false,
     hotovostDph: account.hotovostDph,
     manualPrices: account.manualPrices,
+    sharedLink: account.sharedLink || undefined,
   };
 }
 

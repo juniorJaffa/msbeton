@@ -58,6 +58,7 @@ export interface LoggedClient {
   canZimneOpatrenia?: boolean;
   hotovostDph?: number;
   manualPrices?: Record<string, number>;
+  sharedLink?: string;
 }
 
 export const clientApi = {

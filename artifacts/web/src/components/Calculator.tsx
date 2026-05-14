@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Truck, LogIn, LogOut, FileText, MessageSquare, Minus, Plus, Trash2, Table2, ShoppingCart, X, Info, Check } from "lucide-react";
+import { ChevronDown, Truck, LogIn, LogOut, FileText, MessageSquare, Minus, Plus, Trash2, Table2, ShoppingCart, X, Info, Check, ExternalLink } from "lucide-react";
 import { cn, formatPhone } from "@/lib/utils";
 import { PhoneInput } from "@/components/PhoneInput";
 import { adminData } from "@/lib/adminData";
@@ -1412,6 +1412,14 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
+                    {loggedClient.sharedLink && (
+                      <a href={loggedClient.sharedLink} target="_blank" rel="noopener noreferrer"
+                        title="Zdielaný odkaz"
+                        className="flex items-center gap-1 text-xs text-white/40 hover:text-primary transition-colors">
+                        <ExternalLink className="w-5 h-5" />
+                        <span className="hidden sm:inline whitespace-nowrap">Odkaz</span>
+                      </a>
+                    )}
                     <button
                       onClick={() => setShowPriceTable(!showPriceTable)}
                       className={cn(
