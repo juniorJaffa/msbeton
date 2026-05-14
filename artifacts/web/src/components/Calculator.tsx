@@ -392,6 +392,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       canHotovost:       fresh.canHotovost       ?? loggedClientState.canHotovost,
       hotovostDph:       fresh.hotovostDph,
       deliveryZoneId:    fresh.deliveryZoneId,
+      sharedLink:        fresh.sharedLink        ?? loggedClientState.sharedLink,
     };
   }, [clientOverride, loggedClientState, allClients]);
 

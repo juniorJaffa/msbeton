@@ -366,31 +366,35 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                           )}
                         </div>
                         {/* Pumpa — kapacita + čakačka */}
-                        <div className="px-4 py-3 bg-yellow-50/30 flex items-center gap-3">
-                          <div>
-                            <div className="text-[9px] font-black text-secondary uppercase tracking-wide mb-1">Pumpa</div>
-                            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Kapacita</div>
-                            <div className="font-bold text-secondary text-sm flex flex-wrap items-baseline gap-1">
-                              <EditableField value={ref?.pumpTruckCapacity ?? 7} type="number" onSave={v => updateAll2({ pumpTruckCapacity: parseFloat(v) })} /> <span>m³</span>
+                        <div className="px-4 py-3 bg-yellow-50/30">
+                          <div className="text-[9px] font-black text-secondary uppercase tracking-wide mb-2">Pumpa</div>
+                          <div className="grid grid-cols-2 gap-x-2">
+                            <div>
+                              <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Kapacita</div>
+                              <div className="font-bold text-secondary text-sm flex items-baseline gap-0.5">
+                                <EditableField value={ref?.pumpTruckCapacity ?? 7} type="number" onSave={v => updateAll2({ pumpTruckCapacity: parseFloat(v) })} /> <span>m³</span>
+                              </div>
                             </div>
-                          </div>
-                          <div>
-                            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Čakačka / 15 min</div>
-                            <div className="font-bold text-secondary text-sm">{waitingRatePumpa != null ? `${waitingRatePumpa.toFixed(2)} €` : "—"}</div>
+                            <div>
+                              <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Čakač.</div>
+                              <div className="font-bold text-secondary text-sm">{waitingRatePumpa != null ? `${waitingRatePumpa.toFixed(2)} €` : "—"}</div>
+                            </div>
                           </div>
                         </div>
                         {/* Mixér — kapacita + čakačka */}
-                        <div className="col-span-2 px-4 py-3 bg-yellow-50/20 flex items-center gap-3">
-                          <div>
-                            <div className="text-[9px] font-black text-secondary uppercase tracking-wide mb-1">Mixér</div>
-                            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Kapacita</div>
-                            <div className="font-bold text-secondary text-sm flex flex-wrap items-baseline gap-1">
-                              <EditableField value={ref?.truckCapacity ?? 9} type="number" onSave={v => updateAll2({ truckCapacity: parseFloat(v) })} /> <span>m³</span>
+                        <div className="col-span-2 px-4 py-3 bg-yellow-50/20">
+                          <div className="text-[9px] font-black text-secondary uppercase tracking-wide mb-2">Mixér</div>
+                          <div className="grid grid-cols-2 gap-x-2">
+                            <div>
+                              <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Kapacita</div>
+                              <div className="font-bold text-secondary text-sm flex items-baseline gap-0.5">
+                                <EditableField value={ref?.truckCapacity ?? 9} type="number" onSave={v => updateAll2({ truckCapacity: parseFloat(v) })} /> <span>m³</span>
+                              </div>
                             </div>
-                          </div>
-                          <div>
-                            <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Čakačka / 15 min</div>
-                            <div className="font-bold text-secondary text-sm">{waitingRateMix != null ? `${waitingRateMix.toFixed(2)} €` : "—"}</div>
+                            <div>
+                              <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Čakačka / 15 min</div>
+                              <div className="font-bold text-secondary text-sm">{waitingRateMix != null ? `${waitingRateMix.toFixed(2)} €` : "—"}</div>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1122,7 +1126,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                               onClick={e => { e.stopPropagation(); onGoToClient(o.clientId!); }}
                               className="text-[10px] font-bold text-secondary hover:text-primary underline underline-offset-2 transition-colors flex items-center gap-1"
                             >
-                              <Users className="w-3 h-3" /> Zobraziť v klientoch →
+                              <Users className="w-4 h-4" /> Zobraziť v klientoch →
                             </button>
                           </div>
                         )}
@@ -1541,7 +1545,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                           save(clients.map(c => ({ ...c, canHotovost: false })));
                         }}
                         className="flex items-center gap-1.5 px-2 py-1 bg-red-50 border border-red-200 text-red-700 font-bold text-[10px] hover:bg-red-100 transition-colors uppercase tracking-wide">
-                        <ShieldOff className="w-3 h-3" /> Vypnúť ({enabledCount})
+                        <ShieldOff className="w-4 h-4" /> Vypnúť ({enabledCount})
                       </button>
                     )}
                     {disabledCount > 0 && (
@@ -1551,7 +1555,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                           save(clients.map(c => ({ ...c, canHotovost: true })));
                         }}
                         className="flex items-center gap-1.5 px-2 py-1 bg-green-50 border border-green-200 text-green-700 font-bold text-[10px] hover:bg-green-100 transition-colors uppercase tracking-wide">
-                        <ShieldCheck className="w-3 h-3" /> Zapnúť ({disabledCount})
+                        <ShieldCheck className="w-4 h-4" /> Zapnúť ({disabledCount})
                       </button>
                     )}
                   </div>
@@ -1581,7 +1585,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
           <div className="flex items-center justify-end sm:w-64 shrink-0">
             <button onClick={() => { setAdding(true); setExpanded(null); }} title="Pridať klienta"
               className="flex items-center gap-1.5 px-2.5 py-1.5 bg-primary text-secondary font-black text-[10px] hover:bg-primary/90 shrink-0 uppercase tracking-wide">
-              <UserPlus className="w-3.5 h-3.5" />
+              <UserPlus className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -1830,19 +1834,19 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                   <div className="hidden sm:flex items-center gap-1">
                     {clientZone && (
                       <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold rounded-sm bg-blue-50 text-blue-600 border border-blue-200">
-                        <Truck className="w-3 h-3" />
+                        <Truck className="w-4 h-4" />
                         {zonePricingType === "km" ? "€/km" : zonePricingType === "auto" ? "€/auto" : "Štd"}
                       </span>
                     )}
 
                     {hasLogin ? (
                       <span className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase rounded-sm ${c.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                        {c.active ? <ShieldCheck className="w-3 h-3" /> : <ShieldOff className="w-3 h-3" />}
+                        {c.active ? <ShieldCheck className="w-4 h-4" /> : <ShieldOff className="w-4 h-4" />}
                         {c.active ? "Aktívny" : "Neaktívny"}
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase rounded-sm bg-gray-100 text-gray-400">
-                        <LogIn className="w-3 h-3" /> Bez prístupu
+                        <LogIn className="w-4 h-4" /> Bez prístupu
                       </span>
                     )}
                   </div>
@@ -1887,14 +1891,14 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                       onClick={() => setClientDetailTab(prev => ({ ...prev, [c.id]: "detail" }))}
                       className={cn("flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-black uppercase tracking-wide transition-all", (clientDetailTab[c.id] ?? "detail") === "detail" ? "bg-secondary text-white" : "bg-white text-gray-400 hover:text-secondary hover:bg-secondary/5")}
                     >
-                      <ClipboardList className={cn("w-3.5 h-3.5 shrink-0", (clientDetailTab[c.id] ?? "detail") === "detail" ? "text-primary" : "")} />
+                      <ClipboardList className={cn("w-5 h-5 shrink-0", (clientDetailTab[c.id] ?? "detail") === "detail" ? "text-primary" : "")} />
                       Detail
                     </button>
                     <button
                       onClick={() => setClientDetailTab(prev => ({ ...prev, [c.id]: "calc" }))}
                       className={cn("flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-black uppercase tracking-wide transition-all", clientDetailTab[c.id] === "calc" ? "bg-secondary text-white" : "bg-white text-gray-400 hover:text-secondary hover:bg-secondary/5")}
                     >
-                      <Calculator className={cn("w-3.5 h-3.5 shrink-0", clientDetailTab[c.id] === "calc" ? "text-primary" : "")} />
+                      <Calculator className={cn("w-5 h-5 shrink-0", clientDetailTab[c.id] === "calc" ? "text-primary" : "")} />
                       Kalkulačka
                     </button>
                   </div>
@@ -1944,15 +1948,15 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                                 placeholder="https://…"
                                 onKeyDown={e => { if (e.key === "Enter") { update(c.id, { sharedLink: linkDraft.trim() || undefined }); setEditingLinkFor(null); } if (e.key === "Escape") setEditingLinkFor(null); }}
                                 className="flex-1 min-w-0 border border-primary px-2 py-0.5 text-xs focus:outline-none" />
-                              <button onClick={() => { update(c.id, { sharedLink: linkDraft.trim() || undefined }); setEditingLinkFor(null); }} className="text-green-600 hover:text-green-700 shrink-0"><Check className="w-3.5 h-3.5" /></button>
-                              <button onClick={() => setEditingLinkFor(null)} className="text-gray-400 hover:text-red-500 shrink-0"><X className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => { update(c.id, { sharedLink: linkDraft.trim() || undefined }); setEditingLinkFor(null); }} className="text-green-600 hover:text-green-700 shrink-0"><Check className="w-5 h-5" /></button>
+                              <button onClick={() => setEditingLinkFor(null)} className="text-gray-400 hover:text-red-500 shrink-0"><X className="w-5 h-5" /></button>
                             </div>
                           ) : (
                             <div className="flex items-center gap-2">
                               {c.sharedLink ? (
                                 <a href={c.sharedLink} target="_blank" rel="noopener noreferrer" title={c.sharedLink}
                                   className="transition-colors hover:opacity-70">
-                                  {(() => { const { Icon, cls } = sharedLinkIcon(c.sharedLink); return <Icon className={`w-4 h-4 ${cls}`} />; })()}
+                                  {(() => { const { Icon, cls } = sharedLinkIcon(c.sharedLink); return <Icon className={`w-5 h-5 ${cls}`} />; })()}
                                 </a>
                               ) : (
                                 <span className="text-gray-400 text-[10px]">— Google Sheet, PDF, Word</span>
@@ -1992,10 +1996,10 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                               {showPass.has(c.id) ? (c.password || "—") : (c.password ? "••••••" : "—")}
                             </span>
                             <button onClick={() => togglePassVis(c.id)} className="text-gray-400 hover:text-secondary shrink-0">
-                              {showPass.has(c.id) ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                              {showPass.has(c.id) ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                             </button>
                             <button onClick={() => update(c.id, { password: genPassword() })} title="Vygenerovať nové heslo" className="text-gray-400 hover:text-secondary shrink-0">
-                              <RefreshCw className="w-3.5 h-3.5" />
+                              <RefreshCw className="w-5 h-5" />
                             </button>
                           </div>
                         </div>
@@ -2082,7 +2086,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                           </div>
                           <button onClick={() => exportClientPricePDF(c, inlineTableMode, ts)}
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-secondary font-black text-xs hover:bg-primary/90 transition-colors cursor-pointer rounded-sm shrink-0">
-                            <FileText className="w-3.5 h-3.5" /> PDF
+                            <FileText className="w-5 h-5" /> PDF
                           </button>
                         </div>
                       )}
