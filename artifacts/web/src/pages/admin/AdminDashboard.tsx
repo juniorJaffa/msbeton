@@ -473,6 +473,20 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                   </div>
                 ))}
 
+                {/* Standard — názov zóny hore (rovnako ako KM/Auto) */}
+                {isStandard && typeZones.map(z => (
+                  <div key={z.id} className="border-t border-blue-200">
+                    <div className="flex items-center gap-2 px-5 py-2 pl-14 bg-blue-50/40">
+                      <div className="font-semibold text-secondary text-sm flex-1">
+                        <EditableField value={z.name} onSave={v => updateZone(z.id, { name: v })} />
+                      </div>
+                      <button onClick={() => removeZone(z.id)} className="p-2 text-gray-300 hover:text-red-500 transition-colors cursor-pointer flex-shrink-0">
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
                 {/* Zóny a Doťaženie — dve independent collapsible sekcie */}
                 {isStandard && (() => {
                   const pumpCap = zones[0]?.pumpTruckCapacity ?? 7;
@@ -486,17 +500,6 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                           <span className="font-black text-secondary text-xs uppercase tracking-widest">Zóny dopravy</span>
                           <span className="text-[10px] text-blue-500 font-semibold">cenník €/m³</span>
                         </div>
-                        {/* Standard zone names — bez Čerpania */}
-                        {typeZones.map(z => (
-                          <div key={z.id} className="border-t border-blue-100 flex items-center gap-2 px-5 py-2 pl-8 bg-blue-50/20">
-                            <div className="font-semibold text-secondary text-sm flex-1">
-                              <EditableField value={z.name} onSave={v => updateZone(z.id, { name: v })} />
-                            </div>
-                            <button onClick={() => removeZone(z.id)} className="p-2 text-gray-300 hover:text-red-500 transition-colors cursor-pointer flex-shrink-0">
-                              <Trash2 className="w-5 h-5" />
-                            </button>
-                          </div>
-                        ))}
                         {/* Pricing bands table */}
                         <table className="w-full text-sm">
                           <thead>
