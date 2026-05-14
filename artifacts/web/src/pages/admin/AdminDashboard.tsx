@@ -336,6 +336,19 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                   </div>
                 </button>
                 {expandedTypes[zt.key] && (<>
+                  {/* Standard — názov zóny hore (rovnako ako KM/Auto) */}
+                  {isStandard && typeZones.map(z => (
+                    <div key={z.id} className="border-t border-blue-200">
+                      <div className="flex items-center gap-2 px-5 py-2 pl-14 bg-blue-50/40">
+                        <div className="font-semibold text-secondary text-sm flex-1">
+                          <EditableField value={z.name} onSave={v => updateZone(z.id, { name: v })} />
+                        </div>
+                        <button onClick={() => removeZone(z.id)} className="p-2 text-gray-300 hover:text-red-500 transition-colors cursor-pointer flex-shrink-0">
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                   {isStandard && (() => {
                     const ref = zones[0];
                     const updateAll2 = (patch: Partial<DeliveryZone>) => save(zones.map(z => ({ ...z, ...patch })));
@@ -365,10 +378,10 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                             </button>
                           )}
                         </div>
-                        {/* Pumpa — kapacita + čakačka */}
+                        {/* Pumpa — kapacita + čakačka (stacked, 1/3 šírka) */}
                         <div className="px-4 py-3 bg-yellow-50/30">
                           <div className="text-[9px] font-black text-secondary uppercase tracking-wide mb-2">Pumpa</div>
-                          <div className="grid grid-cols-2 gap-x-2">
+                          <div className="space-y-2">
                             <div>
                               <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Kapacita</div>
                               <div className="font-bold text-secondary text-sm flex items-baseline gap-0.5">
@@ -381,10 +394,10 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                             </div>
                           </div>
                         </div>
-                        {/* Mixér — kapacita + čakačka */}
+                        {/* Mixér — kapacita + čakačka (2/3 šírka = priestor pre 2-col) */}
                         <div className="col-span-2 px-4 py-3 bg-yellow-50/20">
                           <div className="text-[9px] font-black text-secondary uppercase tracking-wide mb-2">Mixér</div>
-                          <div className="grid grid-cols-2 gap-x-2">
+                          <div className="grid grid-cols-2 gap-x-4">
                             <div>
                               <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Kapacita</div>
                               <div className="font-bold text-secondary text-sm flex items-baseline gap-0.5">
@@ -471,20 +484,6 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                           </button>
                         )}
                       </div>
-                    </div>
-                  </div>
-                ))}
-
-                {/* Standard — názov zóny hore (rovnako ako KM/Auto) */}
-                {isStandard && typeZones.map(z => (
-                  <div key={z.id} className="border-t border-blue-200">
-                    <div className="flex items-center gap-2 px-5 py-2 pl-14 bg-blue-50/40">
-                      <div className="font-semibold text-secondary text-sm flex-1">
-                        <EditableField value={z.name} onSave={v => updateZone(z.id, { name: v })} />
-                      </div>
-                      <button onClick={() => removeZone(z.id)} className="p-2 text-gray-300 hover:text-red-500 transition-colors cursor-pointer flex-shrink-0">
-                        <Trash2 className="w-5 h-5" />
-                      </button>
                     </div>
                   </div>
                 ))}
@@ -1582,7 +1581,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
               <div key={l} className="w-20 text-center text-primary">{l}</div>
             ))}
           </div>
-          <div className="flex items-center justify-end sm:w-64 shrink-0">
+          <div className="flex items-center justify-end shrink-0">
             <button onClick={() => { setAdding(true); setExpanded(null); }} title="Pridať klienta"
               className="flex items-center gap-1.5 px-2.5 py-1.5 bg-primary text-secondary font-black text-[10px] hover:bg-primary/90 shrink-0 uppercase tracking-wide">
               <UserPlus className="w-5 h-5" />
@@ -1829,7 +1828,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                 </div>
 
                 {/* Desktop: action badges + buttons | Mobile: only chevron + action buttons */}
-                <div className="flex items-center gap-1 shrink-0 sm:w-64 sm:justify-end">
+                <div className="flex items-center gap-1 shrink-0">
                   {/* Desktop-only badges */}
                   <div className="hidden sm:flex items-center gap-1">
                     {clientZone && (
