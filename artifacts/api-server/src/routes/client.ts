@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { db, adminConfig } from "@workspace/db";
+import { sendOrderNotification } from "../lib/mailer";
 import { eq } from "drizzle-orm";
 import { createHash } from "crypto";
 import bcrypt from "bcryptjs";
@@ -206,6 +207,8 @@ router.post("/order", async (req, res) => {
       .insert(adminConfig)
       .values({ key: "orders", data: updated })
       .onConflictDoUpdate({ target: adminConfig.key, set: { data: updated, updatedAt: new Date() } });
+    // Fire-and-forget — neblokuje odpoveď
+    sendOrderNotification(order as Record<string, unknown>).catch(() => {});
     return res.json({ ok: true });
   } catch (err) {
     req.log.error({ err }, "Failed to create order");

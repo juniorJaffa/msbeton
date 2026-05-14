@@ -1,5 +1,6 @@
 const AUTH_KEY = "msbeton_admin_auth";
 const ATTEMPTS_KEY = "msbeton_login_attempts";
+const WEBAUTHN_KEY = "msbeton_webauthn_cred";
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_DURATION = 5 * 60 * 1000;
 
@@ -60,4 +61,86 @@ export function recordFailedAttempt(): number {
 
 export function resetAttempts(): void {
   localStorage.removeItem(ATTEMPTS_KEY);
+}
+
+// ── WebAuthn / Biometric ──────────────────────────────────────────────────────
+
+export function isBiometricAvailable(): boolean {
+  return typeof window !== "undefined"
+    && !!window.PublicKeyCredential
+    && typeof navigator.credentials?.create === "function";
+}
+
+export function hasStoredCredential(): boolean {
+  return !!localStorage.getItem(WEBAUTHN_KEY);
+}
+
+export function clearBiometric(): void {
+  localStorage.removeItem(WEBAUTHN_KEY);
+}
+
+function randomBytes(n: number): Uint8Array {
+  const arr = new Uint8Array(n);
+  crypto.getRandomValues(arr);
+  return arr;
+}
+
+function b64url(buf: ArrayBuffer): string {
+  return btoa(String.fromCharCode(...new Uint8Array(buf)))
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+}
+
+function b64urlDecode(s: string): Uint8Array {
+  const b64 = s.replace(/-/g, "+").replace(/_/g, "/");
+  const bin = atob(b64);
+  return Uint8Array.from(bin, c => c.charCodeAt(0));
+}
+
+export async function registerBiometric(): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const cred = await navigator.credentials.create({
+      publicKey: {
+        challenge: randomBytes(32),
+        rp: { name: "MS-BETON Admin", id: location.hostname },
+        user: {
+          id: new TextEncoder().encode("msbeton-admin"),
+          name: "msbeton",
+          displayName: "MS-BETON Admin",
+        },
+        pubKeyCredParams: [
+          { type: "public-key", alg: -7 },
+          { type: "public-key", alg: -257 },
+        ],
+        authenticatorSelection: {
+          authenticatorAttachment: "platform",
+          userVerification: "required",
+          residentKey: "preferred",
+        },
+        timeout: 60000,
+      },
+    }) as PublicKeyCredential;
+    localStorage.setItem(WEBAUTHN_KEY, b64url(cred.rawId));
+    return { ok: true };
+  } catch (err: unknown) {
+    return { ok: false, error: String(err) };
+  }
+}
+
+export async function authenticateBiometric(): Promise<{ ok: boolean; error?: string }> {
+  const stored = localStorage.getItem(WEBAUTHN_KEY);
+  if (!stored) return { ok: false, error: "No credential stored" };
+  try {
+    await navigator.credentials.get({
+      publicKey: {
+        challenge: randomBytes(32),
+        rpId: location.hostname,
+        allowCredentials: [{ type: "public-key", id: b64urlDecode(stored) }],
+        userVerification: "required",
+        timeout: 60000,
+      },
+    });
+    return { ok: true };
+  } catch (err: unknown) {
+    return { ok: false, error: String(err) };
+  }
 }
