@@ -2202,14 +2202,14 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                       <div className="flex justify-between text-sm text-white/70">
                         <span>Cena spolu bez DPH</span>
                         <div className="text-right">
-                          {hasDiscount && <span className="line-through text-white/35 text-xs block">{fmt(result.totalBezDph)}</span>}
+                          {hasDiscount && Math.abs(result.totalBezDph - result.totalDiscBezDph) > 0.001 && <span className="line-through text-white/35 text-xs block">{fmt(result.totalBezDph)}</span>}
                           <span className="font-semibold text-white">{fmt(result.totalDiscBezDph)}</span>
                         </div>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="font-bold text-white">Cena spolu s DPH ({Math.round(VAT * 100)}%)</span>
                         <div className="text-right">
-                          {hasDiscount && <span className="line-through text-white/35 text-xs block">{fmt(result.totalSDph)}</span>}
+                          {hasDiscount && Math.abs(result.totalSDph - result.totalDiscSDph) > 0.001 && <span className="line-through text-white/35 text-xs block">{fmt(result.totalSDph)}</span>}
                           <span className="text-2xl font-bold text-primary">{fmt(result.totalDiscSDph)}</span>
                         </div>
                       </div>
@@ -2218,7 +2218,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     <div className="flex justify-between items-center">
                       <span className="font-bold text-white">Cena spolu</span>
                       <div className="text-right">
-                        {hasDiscount && <span className="line-through text-white/35 text-xs block">{fmt(result.hotovostOrigTotal)}</span>}
+                        {hasDiscount && Math.abs(result.hotovostOrigTotal - result.hotovostTotal) > 0.001 && <span className="line-through text-white/35 text-xs block">{fmt(result.hotovostOrigTotal)}</span>}
                         <span className="text-2xl font-bold text-primary">{fmt(result.hotovostTotal)}</span>
                       </div>
                     </div>
