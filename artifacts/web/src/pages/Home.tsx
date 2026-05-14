@@ -164,29 +164,6 @@ export default function Home() {
         </motion.a>
       </section>
 
-      {/* CTA BAR — hneď pod hero, plná šírka */}
-      <div id="cta-bar" className="bg-secondary border-b-2 border-primary/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-0 divide-y sm:divide-y-0 sm:divide-x divide-white/10">
-            <p className="hidden sm:block flex-1 text-white/50 text-xs tracking-widest uppercase py-5 pr-8 font-semibold">
-              Žilina betón, na ktorý sa môžete spoľahnúť
-            </p>
-            <a
-              href="#about"
-              className="flex-1 sm:flex-none inline-flex justify-center items-center gap-2 px-10 py-5 text-white/80 font-bold text-sm tracking-widest uppercase hover:text-white hover:bg-white/5 transition-all"
-            >
-              Zistiť viac
-              <ArrowRight className="w-4 h-4" />
-            </a>
-            <a
-              href="#calculator"
-              className="flex-1 sm:flex-none inline-flex justify-center items-center gap-2 px-10 py-5 bg-primary text-secondary font-bold text-sm tracking-widest uppercase hover:bg-primary/90 transition-all"
-            >
-              Výpočet ceny
-            </a>
-          </div>
-        </div>
-      </div>
 
       {/* ABOUT SECTION */}
       <section id="about" className="py-14 concrete-light">
