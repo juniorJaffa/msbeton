@@ -242,7 +242,7 @@ const ZONE_TYPES: { key: "standard" | "km" | "auto"; label: string; desc: string
 function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
   const [zones, setZones] = useState<DeliveryZone[]>(adminData.getDelivery());
   const [adding, setAdding] = useState(false);
-  const emptyAddForm = { name: "", pricingType: "standard" as "standard" | "km" | "auto", ratePerKm: "", ratePerTruck: "", truckCapacity: "", pumpTruckCapacity: "", pumpHourlyRate: "", waitingRatePer15min: "" };
+  const emptyAddForm = { name: "", pricingType: "standard" as "standard" | "km" | "auto", ratePerKm: "", ratePerTruck: "" };
   const [addForm, setAddForm] = useState(emptyAddForm);
 
   const [pZones, setPZones] = useState<TransportPricingZone[]>(adminData.getTransportZones());
@@ -282,12 +282,10 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
       pricingType: type,
       ratePerKm: parseFloat(addForm.ratePerKm) || (type === "km" ? 1.8 : 0),
       ratePerTruck: type === "auto" ? parseFloat(addForm.ratePerTruck) || 0 : undefined,
-      truckCapacity: parseFloat(addForm.truckCapacity) || 9,
-      pumpTruckCapacity: parseFloat(addForm.pumpTruckCapacity) || 7,
-      pumpHourlyRate: parseFloat(addForm.pumpHourlyRate) || 112.50,
-      waitingRatePer15min: parseFloat(addForm.waitingRatePer15min) || 8,
-      ...(type === "km" ? { minKm: 5, maxKm: 100, minimumFeeKm: ts.minimumFee ?? 62.50 } : {}),
-      ...(type === "auto" ? { minTrucks: 1, maxTrucks: 10, minimumFeeAuto: ts.minimumFee ?? 62.50 } : {}),
+      truckCapacity: 9,
+      pumpTruckCapacity: 7,
+      ...(type === "km" ? { minKm: 5, maxKm: 100 } : {}),
+      ...(type === "auto" ? { minTrucks: 1, maxTrucks: 10 } : {}),
     }]);
     setAddForm(emptyAddForm); setAdding(false);
   };
@@ -362,11 +360,8 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                         </div>
                         {/* Pumpa — kapacita + čakačka */}
                         <div className="px-4 py-3 bg-yellow-50/30 flex items-center gap-3">
-                          <div className="flex flex-col items-center gap-0.5 shrink-0">
-                            <span className="text-[9px] font-black text-secondary uppercase tracking-wide">Pumpa</span>
-                            <PumpTruckIcon />
-                          </div>
                           <div>
+                            <div className="text-[9px] font-black text-secondary uppercase tracking-wide mb-1">Pumpa</div>
                             <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Kapacita</div>
                             <div className="font-bold text-secondary text-sm flex flex-wrap items-baseline gap-1">
                               <EditableField value={ref?.pumpTruckCapacity ?? 7} type="number" onSave={v => updateAll2({ pumpTruckCapacity: parseFloat(v) })} /> <span>m³</span>
@@ -379,11 +374,8 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                         </div>
                         {/* Mixér — kapacita + čakačka */}
                         <div className="col-span-2 px-4 py-3 bg-yellow-50/20 flex items-center gap-3">
-                          <div className="flex flex-col items-center gap-0.5 shrink-0">
-                            <span className="text-[9px] font-black text-secondary uppercase tracking-wide">Mixér</span>
-                            <MixTruckIcon />
-                          </div>
                           <div>
+                            <div className="text-[9px] font-black text-secondary uppercase tracking-wide mb-1">Mixér</div>
                             <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Kapacita</div>
                             <div className="font-bold text-secondary text-sm flex flex-wrap items-baseline gap-1">
                               <EditableField value={ref?.truckCapacity ?? 9} type="number" onSave={v => updateAll2({ truckCapacity: parseFloat(v) })} /> <span>m³</span>
@@ -580,28 +572,32 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
 
         {/* Add form / button */}
         {adding ? (
-          <div className="border-t border-gray-100 bg-gray-50/40 px-5 py-4">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
-              <input placeholder="Názov dopravy *" value={addForm.name} onChange={e => setAddForm({ ...addForm, name: e.target.value })}
-                className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" autoFocus />
-              <select value={addForm.pricingType} onChange={e => setAddForm({ ...addForm, pricingType: e.target.value as "standard" | "km" | "auto" })}
-                className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white">
-                {ZONE_TYPES.map(zt => <option key={zt.key} value={zt.key}>{zt.label}</option>)}
-              </select>
-              {addForm.pricingType === "auto" ? (
-                <input placeholder="Paušál / vozidlo (€)" type="number" value={addForm.ratePerTruck} onChange={e => setAddForm({ ...addForm, ratePerTruck: e.target.value })}
-                  className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-              ) : addForm.pricingType === "km" ? (
-                <input placeholder="Sadzba €/km" type="number" step="0.1" value={addForm.ratePerKm} onChange={e => setAddForm({ ...addForm, ratePerKm: e.target.value })}
-                  className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-              ) : (
-                <div className="flex items-center px-3 py-2 border border-dashed border-blue-200 bg-blue-50 text-[11px] text-blue-500">
-                  Cena z Pásiem
-                </div>
-              )}
-              <input placeholder="Čerpanie pumpy (€/hod)" type="number" value={addForm.pumpHourlyRate} onChange={e => setAddForm({ ...addForm, pumpHourlyRate: e.target.value })}
-                className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+          <div className="border-t border-gray-100 bg-gray-50/40 px-5 py-4 space-y-3">
+            <input placeholder="Názov dopravy *" value={addForm.name} onChange={e => setAddForm({ ...addForm, name: e.target.value })}
+              className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" autoFocus />
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-gray-500 font-semibold uppercase tracking-wide">Typ:</span>
+              {ZONE_TYPES.map(zt => (
+                <button key={zt.key} type="button"
+                  onClick={() => setAddForm({ ...addForm, pricingType: zt.key })}
+                  className={`px-3 py-1.5 text-xs font-bold transition-colors ${addForm.pricingType === zt.key ? "bg-secondary text-primary" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
+                  {zt.label}
+                </button>
+              ))}
             </div>
+            {addForm.pricingType === "km" && (
+              <input placeholder="Sadzba €/km" type="number" step="0.1" value={addForm.ratePerKm} onChange={e => setAddForm({ ...addForm, ratePerKm: e.target.value })}
+                className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+            )}
+            {addForm.pricingType === "auto" && (
+              <input placeholder="Paušál / vozidlo (€)" type="number" value={addForm.ratePerTruck} onChange={e => setAddForm({ ...addForm, ratePerTruck: e.target.value })}
+                className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+            )}
+            {addForm.pricingType === "standard" && (
+              <div className="flex items-center px-3 py-2 border border-dashed border-blue-200 bg-blue-50 text-[11px] text-blue-500">
+                Cena sa nastaví v Pásmach dopravy
+              </div>
+            )}
             <div className="flex gap-2">
               <button onClick={addZone} className="px-4 py-2 bg-primary text-secondary font-bold text-sm hover:bg-primary/90">Pridať</button>
               <button onClick={() => { setAdding(false); setAddForm(emptyAddForm); }} className="px-4 py-2 bg-gray-100 text-gray-500 text-sm hover:bg-gray-200">Zrušiť</button>
