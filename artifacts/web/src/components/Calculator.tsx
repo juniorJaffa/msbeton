@@ -2004,31 +2004,31 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     if (pType === "km") {
                       const mp2 = loggedClient?.manualPrices ?? {};
                       const baseKmRate = clientDeliveryZone?.ratePerKm ?? 1.8;
-                      const rate = (mp2[`km_rate_${clientDeliveryZone?.id}`] ?? baseKmRate) * dopravaFactor;
+                      const rate = (mp2[`km_rate_${clientDeliveryZone?.id}`] ?? baseKmRate) * result.fTransport;
                       const distKm = parseFloat(distance) || 0;
                       const kmMinDist = clientDeliveryZone?.minKm ?? 0;
                       const effectiveKm = Math.max(distKm, kmMinDist);
                       const kmMinFee = clientDeliveryZone?.minimumFeeKm;
-                      if (ci.transportIsMin && kmMinFee) return `min. poplatok ${fmtR(kmMinFee * dopravaFactor)} €/auto × ${trucks} ${autaLabel}`;
+                      if (ci.transportIsMin && kmMinFee) return `min. poplatok ${fmtR(kmMinFee * result.fTransport)} €/auto × ${trucks} ${autaLabel}`;
                       const kmLabel = effectiveKm !== distKm ? `${distKm}→${effectiveKm} km` : `${distKm} km`;
                       return `${kmLabel} × ${fmtR(rate)} €/km × ${trucks} ${autaLabel}`;
                     }
                     if (ci.transportIsMin) {
                       const mpStd2 = loggedClient?.manualPrices ?? {};
                       const effMinFee = mpStd2["min_fee"] !== undefined ? mpStd2["min_fee"] : minFee;
-                      return `min. sadzba ${fmtR(effMinFee * dopravaFactor)} €/auto × ${trucks} ${autaLabel}`;
+                      return `min. sadzba ${fmtR(effMinFee * result.fTransport)} €/auto × ${trucks} ${autaLabel}`;
                     }
                     if (pType === "auto") {
                       const mpAuto = loggedClient?.manualPrices ?? {};
                       const baseAutoRate = clientDeliveryZone?.ratePerTruck ?? 0;
                       const autoRate = mpAuto[`auto_rate_${clientDeliveryZone?.id}`] ?? baseAutoRate;
                       const autoMinFee = clientDeliveryZone?.minimumFeeAuto;
-                      if (ci.transportIsMin && autoMinFee) return `min. poplatok ${fmtR(autoMinFee * dopravaFactor)} €/auto × ${trucks} ${autaLabel}`;
-                      return `${trucks} ${autaLabel} × ${fmtR(autoRate * dopravaFactor)} €/auto`;
+                      if (ci.transportIsMin && autoMinFee) return `min. poplatok ${fmtR(autoMinFee * result.fTransport)} €/auto × ${trucks} ${autaLabel}`;
+                      return `${trucks} ${autaLabel} × ${fmtR(autoRate * result.fTransport)} €/auto`;
                     }
                     const mpStd3 = loggedClient?.manualPrices ?? {};
                     const baseStdRate = result.transportZone?.ratePerM3 ?? 0;
-                    const rate = (mpStd3[result.transportZone?.id ?? ""] !== undefined ? mpStd3[result.transportZone!.id] : baseStdRate) * dopravaFactor;
+                    const rate = (mpStd3[result.transportZone?.id ?? ""] !== undefined ? mpStd3[result.transportZone!.id] : baseStdRate) * result.fTransport;
                     const qtyStr = extraQ > 0 ? `${ci.qty}+${fmtR(extraQ)}` : `${ci.qty}`;
                     return `${qtyStr} m³ × ${fmtR(rate)} €/m³`;
                   };
@@ -2086,7 +2086,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                                     )}
                                   </span>
                                 }
-                                original={ci.transport} discounted={ci.transport * dopravaFactor} hasDiscount={hasDiscount} />
+                                original={ci.transport} discounted={ci.transport * result.fTransport} hasDiscount={hasDiscount} />
                             )}
                             {isAddToMain && (
                               <div className="text-[10px] text-blue-400/70 ml-1 mt-0.5">↑ doprava zahrnutá v Položke 1 (+{ci.qty}&thinsp;m³)</div>
@@ -2121,7 +2121,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                             {ci.transportFillup > 0 && (
                               <PriceRow
                                 label={`Doťaženie do ${ci.transportFillupTarget}m³ – ${ci.transportFillupM3}m³`}
-                                original={ci.transportFillup} discounted={ci.transportFillup * dopravaFactor} hasDiscount={hasDiscount} isFillup />
+                                original={ci.transportFillup} discounted={ci.transportFillup * result.fFillup} hasDiscount={hasDiscount} isFillup />
                             )}
 
                             {/* Služby pre tento item – vždy pod dopravou */}
@@ -2131,33 +2131,33 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                                 {idx === 0 ? (
                                   <>
                                     {mainPumpBase > 0 && <PriceRow label={`Čerpanie betónu – ${result.pumpHrs} h${result.pumpMs > 0 ? ` ${result.pumpMs} min` : ""}`}
-                                      original={mainPumpBase} discounted={mainPumpBase * sluzbyFactor} hasDiscount={hasDiscount} />}
+                                      original={mainPumpBase} discounted={mainPumpBase * fPump} hasDiscount={hasDiscount} />}
                                     {mainChemBase > 0 && <PriceRow label="Rozbehová chémia"
-                                      original={mainChemBase} discounted={mainChemBase * sluzbyFactor} hasDiscount={hasDiscount} />}
+                                      original={mainChemBase} discounted={mainChemBase * fChem} hasDiscount={hasDiscount} />}
                                     {mainHoseBase > 0 && <PriceRow label={`Prídavné hadice – ${hoseMeters} m`}
-                                      original={mainHoseBase} discounted={mainHoseBase * sluzbyFactor} hasDiscount={hasDiscount} />}
+                                      original={mainHoseBase} discounted={mainHoseBase * fHose} hasDiscount={hasDiscount} />}
                                     {mainWashBase > 0 && <PriceRow label="Umývanie mimo stavby"
-                                      original={mainWashBase} discounted={mainWashBase * sluzbyFactor} hasDiscount={hasDiscount} />}
+                                      original={mainWashBase} discounted={mainWashBase * fWash} hasDiscount={hasDiscount} />}
                                     {mainWaitBase > 0 && <PriceRow
                                       label={tab === "pumpa"
                                         ? `Čakačky – ${result.waitLabel}`
                                         : <span>Čas na stavbe – {result.waitLabel} <span className="text-[9px] text-white/35 font-normal">(prvých 30 min zadarmo)</span></span>}
-                                      original={mainWaitBase} discounted={mainWaitBase * sluzbyFactor} hasDiscount={hasDiscount} />}
+                                      original={mainWaitBase} discounted={mainWaitBase * (tab === "pumpa" ? fWaitP : fWaitM)} hasDiscount={hasDiscount} />}
                                   </>
                                 ) : (
                                   <>
                                     {ci.svcPumpCost > 0 && <PriceRow
                                       label={`Čerpanie betónu – ${ci.svcPumpHrs} h${ci.svcPumpMs > 0 ? ` ${ci.svcPumpMs} min` : ""}`}
-                                      original={ci.svcPumpCost} discounted={ci.svcPumpCost * sluzbyFactor} hasDiscount={hasDiscount} />}
+                                      original={ci.svcPumpCost} discounted={ci.svcPumpCost * fPump} hasDiscount={hasDiscount} />}
                                     {ci.svcHoseCost > 0 && <PriceRow label={`Prídavné hadice – ${ci.svcHoseMeters} m`}
-                                      original={ci.svcHoseCost} discounted={ci.svcHoseCost * sluzbyFactor} hasDiscount={hasDiscount} />}
+                                      original={ci.svcHoseCost} discounted={ci.svcHoseCost * fHose} hasDiscount={hasDiscount} />}
                                     {ci.svcWashCost > 0 && <PriceRow label="Umývanie mimo stavby"
-                                      original={ci.svcWashCost} discounted={ci.svcWashCost * sluzbyFactor} hasDiscount={hasDiscount} />}
+                                      original={ci.svcWashCost} discounted={ci.svcWashCost * fWash} hasDiscount={hasDiscount} />}
                                     {ci.svcWaitCost > 0 && <PriceRow
                                       label={tab === "pumpa"
                                         ? `Čakačky – ${ci.svcWaitLabel}`
                                         : <span>Čas na stavbe – {ci.svcWaitLabel} <span className="text-[9px] text-white/35 font-normal">(prvých 30 min zadarmo)</span></span>}
-                                      original={ci.svcWaitCost} discounted={ci.svcWaitCost * sluzbyFactor} hasDiscount={hasDiscount} />}
+                                      original={ci.svcWaitCost} discounted={ci.svcWaitCost * (tab === "pumpa" ? fWaitP : fWaitM)} hasDiscount={hasDiscount} />}
                                   </>
                                 )}
                               </div>

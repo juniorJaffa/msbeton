@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2 } from "lucide-react";
+import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, SlidersHorizontal } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
@@ -902,6 +902,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [newBadge, setNewBadge] = useState(0);
+  const [filterOpen, setFilterOpen] = useState(true);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -952,11 +953,28 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
   };
   const fmtEur = (n: number) => n.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
   const tabLabel: Record<Order["tab"], string> = { pumpa: "Pumpa", mix: "Mix", vlastnadoprava: "Vl. doprava" };
+  const activeFilters = [filterStatus !== "vsetky", filterTab !== "vsetky", filterPriceMode !== "vsetky", !!search, !!dateFrom, !!dateTo].filter(Boolean).length;
+  const sortedCount = sorted.length;
+  const sortedCountLabel = sortedCount === 1 ? "objednávka" : sortedCount >= 2 && sortedCount <= 4 ? "objednávky" : "objednávok";
 
   return (
     <div className="space-y-3">
-      {/* Filter panel */}
-      <div className="bg-white border border-gray-200 shadow-sm">
+      {/* Filter panel — sticky, collapsible */}
+      <div className="sticky top-[100px] z-30 bg-white border border-gray-200 shadow-sm">
+        {/* Compact header — vždy viditeľný, toggle */}
+        <button onClick={() => setFilterOpen(o => !o)}
+          className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-gray-50 transition-colors cursor-pointer">
+          <SlidersHorizontal className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Filter</span>
+          {activeFilters > 0 && (
+            <span className="bg-secondary text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">{activeFilters}</span>
+          )}
+          <span className="ml-auto text-xs font-bold text-secondary shrink-0">{sortedCount} {sortedCountLabel}</span>
+          {newBadge > 0 && <span className="relative bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">{newBadge} nových</span>}
+          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${filterOpen ? "rotate-180" : ""}`} />
+        </button>
+        {filterOpen && <>
+        <div className="border-t border-gray-100 mx-4" />
         {/* Row 1 – stav */}
         <div className="flex items-center gap-2 flex-wrap px-4 py-3">
           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-7 shrink-0">Stav</span>
@@ -973,9 +991,6 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
               {s.label} <span className="ml-1 text-[10px] opacity-70">{orders.filter(o => o.status === s.key).length}</span>
             </button>
           ))}
-          <span className="ml-auto text-xs font-bold text-secondary shrink-0">
-            {sorted.length} {sorted.length === 1 ? "objednávka" : sorted.length >= 2 && sorted.length <= 4 ? "objednávky" : "objednávok"}
-          </span>
         </div>
         <div className="border-t border-gray-100 mx-4" />
         {/* Row 2 – typ vozidla */}
@@ -1043,6 +1058,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
             </button>
           )}
         </div>
+        </>}
       </div>
 
       {sorted.length === 0 ? (
@@ -1536,10 +1552,10 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
         </div>}
       </div>
 
-      {/* Search */}
-      <div className="py-3">
+      {/* Search — sticky */}
+      <div className="sticky top-[100px] z-30 py-2 bg-white border border-gray-100 shadow-sm -mx-4 sm:-mx-6 px-4 sm:px-6">
         <input placeholder="Hľadať klienta..." value={search} onChange={e => setSearch(e.target.value)}
-          className="w-full bg-white text-secondary placeholder:text-gray-400 px-4 py-3 text-base focus:outline-none rounded border border-gray-200 focus:border-primary" />
+          className="w-full bg-gray-50 text-secondary placeholder:text-gray-400 px-4 py-2.5 text-sm focus:outline-none rounded border border-gray-200 focus:border-primary" />
       </div>
 
       {/* Add form */}
@@ -2497,32 +2513,36 @@ export default function AdminDashboard() {
         </div>
       </nav>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 pb-24 sm:pb-8">
-        {/* Tab bar — desktop only */}
-        <div className="hidden sm:flex gap-1 mb-6 bg-white border border-gray-200 p-1 shadow-sm">
-          {tabs.map(t => (
-            <button
-              key={t.id}
-              onClick={() => { setTab(t.id); window.location.hash = t.id; }}
-              className={`flex items-center gap-1.5 px-5 py-2.5 text-sm font-black uppercase tracking-widest transition-all shrink-0 ${
-                tab === t.id
-                  ? "bg-secondary text-white"
-                  : "text-gray-500 hover:text-secondary hover:bg-gray-50"
-              }`}
-            >
-              <span className="relative">
-                {t.icon}
-                {t.id === "objednavky" && orderBadge > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center leading-none">
-                    {orderBadge > 9 ? "9+" : orderBadge}
-                  </span>
-                )}
-              </span>
-              {t.label}
-            </button>
-          ))}
+      {/* Tab bar — desktop, sticky pod headerom */}
+      <div className="hidden sm:block sticky top-14 z-40 bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="flex gap-1 py-1">
+            {tabs.map(t => (
+              <button
+                key={t.id}
+                onClick={() => { setTab(t.id); window.location.hash = t.id; }}
+                className={`flex items-center gap-1.5 px-5 py-2.5 text-sm font-black uppercase tracking-widest transition-all shrink-0 ${
+                  tab === t.id
+                    ? "bg-secondary text-white"
+                    : "text-gray-500 hover:text-secondary hover:bg-gray-50"
+                }`}
+              >
+                <span className="relative">
+                  {t.icon}
+                  {t.id === "objednavky" && orderBadge > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center leading-none">
+                      {orderBadge > 9 ? "9+" : orderBadge}
+                    </span>
+                  )}
+                </span>
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
+      </div>
 
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 pb-24 sm:pb-8">
         {/* Panel heading */}
         <div className="mb-5">
           <h1 className="text-2xl font-black text-secondary uppercase tracking-wide">

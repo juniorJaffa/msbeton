@@ -207,6 +207,16 @@ washServicePrice = mp[washSvc.id] ?? svc.price
 hoseServicePrice = mp[hoseSvc.id] ?? svc.price
 ```
 
+**Manuálne ceny — žiadne zľavy.** Ak `mp[svc.id]` je definované, faktor = 1 (nie `sluzbyFactor`). Rovnako pre transport — ak `mp[zone.id]`/`mp[km_rate_...]`/`mp[auto_rate_...]` je definované, faktor = 1 (nie `dopravaFactor`). Implementované cez:
+```tsx
+const fPump  = (pumpSvc  && mp[pumpSvc.id]  !== undefined) ? 1 : sluzbyFactor;
+// ... fChem, fWash, fHose, fWaitP, fWaitM rovnako
+// fTransport: určený vnútri result useMemo podľa pricingType + mp kľúčov
+```
+**KRITICKÉ:** `fPump` a spol. musia byť deklarované NESKÔR ako `sluzbyFactor` v tele komponenty — inak TDZ crash (biela stránka). Poradie: `mp` → service prices → discount factors → `sluzbyFactor` → `fPump/fChem/...`.
+
+Faktory sa používajú v: `discountedItems`, `hotovostDiscItems`, UI `PriceRow`, PDF `trow`/`svcRateStr`, SMS export.
+
 ### Admin Doprava – typy dopravy UI
 
 Každý typ dopravy (Standard / Kilometre / Počet aut) je vlastná karta s farebnými akcentmi:
