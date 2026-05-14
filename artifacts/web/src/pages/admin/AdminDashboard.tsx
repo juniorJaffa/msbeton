@@ -239,7 +239,7 @@ const ZONE_TYPES: { key: "standard" | "km" | "auto"; label: string; desc: string
   { key: "auto",     label: "Počet áut", desc: "paušál za každé vozidlo",                         rateLabel: "Paušál",    rateUnit: "€/vozidlo" },
 ];
 
-function DopravaTab() {
+function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
   const [zones, setZones] = useState<DeliveryZone[]>(adminData.getDelivery());
   const [adding, setAdding] = useState(false);
   const emptyAddForm = { name: "", pricingType: "standard" as "standard" | "km" | "auto", ratePerKm: "", ratePerTruck: "", truckCapacity: "", pumpTruckCapacity: "", pumpHourlyRate: "", waitingRatePer15min: "" };
@@ -250,6 +250,7 @@ function DopravaTab() {
   const svcs = adminData.getServices();
   const waitingRateMix   = svcs.find(s => s.serviceMode === "mix")?.price;
   const waitingRatePumpa = svcs.find(s => s.serviceMode === "pumpa")?.price;
+  const pumpRate = svcs.find(s => s.name.includes("Čerpanie"))?.price;
   const [addingPZ, setAddingPZ] = useState(false);
   const [pzForm, setPzForm] = useState({ fromKm: "", toKm: "", ratePerM3: "" });
   const [stdZonesOpen, setStdZonesOpen] = useState(false);
@@ -353,18 +354,19 @@ function DopravaTab() {
                             </div>
                           </div>
                         </div>
-                        {/* Čerpanie pumpy */}
-                        {typeZones[0] && (
-                          <div className="flex items-center gap-4 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
-                            <div>
-                              <div className="text-[10px] text-yellow-600 uppercase tracking-wide font-bold mb-0.5">Čerpanie pumpy</div>
-                              <div className="font-bold text-secondary text-sm flex items-center gap-1">
-                                <EditableField value={typeZones[0].pumpHourlyRate} type="number"
-                                  onSave={v => save(zones.map(z => typeZones.some(tz => tz.id === z.id) ? { ...z, pumpHourlyRate: parseFloat(v) || 0 } : z))} /> €/hod
-                              </div>
-                            </div>
+                        {/* Čerpanie pumpy — read-only, zo Služieb */}
+                        <div className="flex items-center justify-between gap-2 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
+                          <div>
+                            <div className="text-[10px] text-yellow-600 uppercase tracking-wide font-bold mb-0.5">Čerpanie pumpy</div>
+                            <div className="font-bold text-secondary text-sm">{pumpRate != null ? `${pumpRate.toFixed(2)} €/hod` : "—"}</div>
                           </div>
-                        )}
+                          {onGoToSluzby && (
+                            <button onClick={onGoToSluzby} className="flex items-center gap-1 text-[10px] text-yellow-600 hover:text-secondary transition-colors font-semibold shrink-0">
+                              <ExternalLink className="w-3 h-3" />
+                              Nastaviť v Službách
+                            </button>
+                          )}
+                        </div>
                         {/* Pumpa — kapacita (kompaktné) */}
                         <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
                           <div className="flex flex-col items-center gap-0.5 shrink-0">
@@ -419,64 +421,64 @@ function DopravaTab() {
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                    {/* Fields grid — chlieviky */}
-                    <div className="flex flex-wrap gap-2 px-5 py-2.5 pl-14">
-                      {!isStandard && (
-                        <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded px-3 py-2 min-w-[100px]">
-                          <div>
-                            <div className="text-[10px] text-blue-500 uppercase tracking-wide font-bold mb-0.5">{zt.rateLabel}</div>
-                            <div className="font-bold text-secondary text-sm flex items-center gap-1">
-                              {zt.key === "auto"
-                                ? <><EditableField value={z.ratePerTruck ?? 0} type="number" onSave={v => updateZone(z.id, { ratePerTruck: parseFloat(v) })} /> {zt.rateUnit}</>
-                                : <><EditableField value={z.ratePerKm} type="number" onSave={v => updateZone(z.id, { ratePerKm: parseFloat(v) })} /> {zt.rateUnit}</>}
-                            </div>
-                          </div>
+                    {/* Fields grid — nový clean layout */}
+                    <div className="grid grid-cols-3 divide-x divide-y divide-gray-100 border-t border-gray-100">
+                      {/* Hlavná sadzba */}
+                      <div className={`px-4 py-3 ${zt.key === "km" ? "bg-slate-50/70" : "bg-blue-50/50"}`}>
+                        <div className={`text-[10px] font-bold uppercase tracking-wide mb-1 ${zt.key === "km" ? "text-slate-500" : "text-blue-500"}`}>{zt.rateLabel}</div>
+                        <div className="font-bold text-secondary text-sm flex items-center gap-1">
+                          {zt.key === "auto"
+                            ? <><EditableField value={z.ratePerTruck ?? 0} type="number" onSave={v => updateZone(z.id, { ratePerTruck: parseFloat(v) })} /> {zt.rateUnit}</>
+                            : <><EditableField value={z.ratePerKm} type="number" onSave={v => updateZone(z.id, { ratePerKm: parseFloat(v) })} /> {zt.rateUnit}</>}
                         </div>
-                      )}
-                      {(zt.key === "km" || zt.key === "auto") && (
-                        <>
-                          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded px-3 py-2 min-w-[90px]">
-                            <div>
-                              <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{zt.key === "km" ? "Min. km" : "Min. áut"}</div>
-                              <div className="font-bold text-secondary text-sm flex items-center gap-1">
-                                {zt.key === "km"
-                                  ? <><EditableField value={z.minKm ?? 5} type="number" onSave={v => updateZone(z.id, { minKm: parseFloat(v) || undefined })} /> km</>
-                                  : <><EditableField value={z.minTrucks ?? 1} type="number" onSave={v => updateZone(z.id, { minTrucks: parseFloat(v) || undefined })} /> áut</>}
-                              </div>
-                              <div className="text-[9px] text-gray-400 mt-0.5 leading-tight">{zt.key === "km" ? "zaokrúhlená fakturácia" : "min. počet vozidiel"}</div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded px-3 py-2 min-w-[90px]">
-                            <div>
-                              <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{zt.key === "km" ? "Max. km" : "Max. áut"}</div>
-                              <div className="font-bold text-secondary text-sm flex items-center gap-1">
-                                {zt.key === "km"
-                                  ? <><EditableField value={z.maxKm ?? 100} type="number" onSave={v => updateZone(z.id, { maxKm: parseFloat(v) || undefined })} /> km</>
-                                  : <><EditableField value={z.maxTrucks ?? 10} type="number" onSave={v => updateZone(z.id, { maxTrucks: parseFloat(v) || undefined })} /> áut</>}
-                              </div>
-                              <div className="text-[9px] text-gray-400 mt-0.5 leading-tight">{zt.key === "km" ? "max. polomer obsluhy" : "max. počet vozidiel"}</div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded px-3 py-2 min-w-[110px]">
-                            <div>
-                              <div className="text-[10px] text-amber-600 uppercase tracking-wide font-bold mb-0.5">Min. poplatok</div>
-                              <div className="font-bold text-secondary text-sm flex items-center gap-1">
-                                {zt.key === "km"
-                                  ? <><EditableField value={z.minimumFeeKm ?? 0} type="number" onSave={v => updateZone(z.id, { minimumFeeKm: parseFloat(v) || undefined })} /> €/auto</>
-                                  : <><EditableField value={z.minimumFeeAuto ?? 0} type="number" onSave={v => updateZone(z.id, { minimumFeeAuto: parseFloat(v) || undefined })} /> €/auto</>}
-                              </div>
-                              <div className="text-[9px] text-amber-600/70 mt-0.5 leading-tight">min. finančná doprava</div>
-                            </div>
-                          </div>
-                        </>
-                      )}
-                      <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded px-3 py-2 min-w-[110px]">
-                        <div>
-                          <div className="text-[10px] text-yellow-600 uppercase tracking-wide font-bold mb-0.5">Čerpanie pumpy</div>
+                      </div>
+                      {/* Min */}
+                      <div className="px-4 py-3 bg-white">
+                        <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">{zt.key === "km" ? "Min. km" : "Min. áut"}</div>
+                        <div className="font-bold text-secondary text-sm flex items-center gap-1">
+                          {zt.key === "km"
+                            ? <><EditableField value={z.minKm ?? 5} type="number" onSave={v => updateZone(z.id, { minKm: parseFloat(v) || undefined })} /> km</>
+                            : <><EditableField value={z.minTrucks ?? 1} type="number" onSave={v => updateZone(z.id, { minTrucks: parseFloat(v) || undefined })} /> áut</>}
+                        </div>
+                        <div className="text-[9px] text-gray-400 mt-0.5 leading-tight">{zt.key === "km" ? "zaokrúhlená fakturácia" : "min. počet vozidiel"}</div>
+                      </div>
+                      {/* Max */}
+                      <div className="px-4 py-3 bg-white">
+                        <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">{zt.key === "km" ? "Max. km" : "Max. áut"}</div>
+                        <div className="font-bold text-secondary text-sm flex items-center gap-1">
+                          {zt.key === "km"
+                            ? <><EditableField value={z.maxKm ?? 100} type="number" onSave={v => updateZone(z.id, { maxKm: parseFloat(v) || undefined })} /> km</>
+                            : <><EditableField value={z.maxTrucks ?? 10} type="number" onSave={v => updateZone(z.id, { maxTrucks: parseFloat(v) || undefined })} /> áut</>}
+                        </div>
+                        <div className="text-[9px] text-gray-400 mt-0.5 leading-tight">{zt.key === "km" ? "max. polomer obsluhy" : "max. počet vozidiel"}</div>
+                      </div>
+                      {/* KM: Min. poplatok Pumpa + Mixer */}
+                      {zt.key === "km" && <>
+                        <div className="px-4 py-3 bg-amber-50/60">
+                          <div className="text-[10px] text-amber-600 font-bold uppercase tracking-wide mb-1">Min. pop. Pumpa</div>
                           <div className="font-bold text-secondary text-sm flex items-center gap-1">
-                            <EditableField value={z.pumpHourlyRate} type="number" onSave={v => updateZone(z.id, { pumpHourlyRate: parseFloat(v) })} /> €/hod
+                            <EditableField value={z.minimumFeeKmPumpa ?? z.minimumFeeKm ?? 0} type="number" onSave={v => updateZone(z.id, { minimumFeeKmPumpa: parseFloat(v) || undefined })} /> €/auto
                           </div>
                         </div>
+                        <div className="col-span-2 px-4 py-3 bg-amber-50/30">
+                          <div className="text-[10px] text-amber-600 font-bold uppercase tracking-wide mb-1">Min. pop. Mixer</div>
+                          <div className="font-bold text-secondary text-sm flex items-center gap-1">
+                            <EditableField value={z.minimumFeeKmMix ?? z.minimumFeeKm ?? 0} type="number" onSave={v => updateZone(z.id, { minimumFeeKmMix: parseFloat(v) || undefined })} /> €/auto
+                          </div>
+                        </div>
+                      </>}
+                      {/* Čerpanie pumpy — read-only, zo Služieb */}
+                      <div className="col-span-3 px-4 py-2.5 bg-yellow-50/50 flex items-center justify-between gap-2">
+                        <div>
+                          <div className="text-[10px] text-yellow-600 font-bold uppercase tracking-wide">Čerpanie pumpy</div>
+                          <div className="text-sm font-bold text-secondary">{pumpRate != null ? `${pumpRate.toFixed(2)} €/hod` : "—"}</div>
+                        </div>
+                        {onGoToSluzby && (
+                          <button onClick={onGoToSluzby} className="flex items-center gap-1 text-[10px] text-yellow-600 hover:text-secondary transition-colors font-semibold shrink-0">
+                            <ExternalLink className="w-3 h-3" />
+                            Nastaviť v Službách
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -902,7 +904,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [newBadge, setNewBadge] = useState(0);
-  const [filterOpen, setFilterOpen] = useState(true);
+  const [filterOpen, setFilterOpen] = useState(false);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -960,7 +962,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
   return (
     <div className="space-y-3">
       {/* Filter panel — sticky, collapsible */}
-      <div className="sticky top-20 z-30 bg-white border border-gray-200 shadow-sm">
+      <div className="sticky top-0 z-20 bg-white border border-gray-200 shadow-sm">
         {/* Compact header — vždy viditeľný, toggle */}
         <button onClick={() => setFilterOpen(o => !o)}
           className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-gray-50 transition-colors cursor-pointer">
@@ -1391,12 +1393,14 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
     if (c) {
       setExpanded(c.id);
       setTimeout(() => {
+        const container = document.getElementById("admin-content");
         const el = document.getElementById(`client-card-${c.id}`);
-        const searchEl = document.getElementById("klienti-search");
-        if (el) {
-          const offset = searchEl ? searchEl.getBoundingClientRect().bottom + 8 : 148;
-          const top = el.getBoundingClientRect().top + window.scrollY - offset;
-          window.scrollTo({ top, behavior: "smooth" });
+        const toolbar = document.getElementById("klienti-toolbar");
+        if (el && container) {
+          const containerTop = container.getBoundingClientRect().top;
+          const elTop = el.getBoundingClientRect().top;
+          const toolbarH = toolbar?.getBoundingClientRect().height ?? 90;
+          container.scrollTo({ top: container.scrollTop + (elTop - containerTop) - toolbarH - 8, behavior: "smooth" });
         }
       }, 150);
     }
@@ -1564,10 +1568,29 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
         </div>}
       </div>
 
-      {/* Search — sticky */}
-      <div id="klienti-search" className="sticky top-[86px] sm:top-20 z-30 py-2 px-1 bg-white border-b border-gray-100 shadow-sm">
-        <input placeholder="Hľadať klienta..." value={search} onChange={e => setSearch(e.target.value)}
-          className="w-full bg-gray-50 text-secondary placeholder:text-gray-400 px-4 py-2.5 text-sm focus:outline-none rounded border border-gray-200 focus:border-primary" />
+      {/* Sticky toolbar — search + table header */}
+      <div id="klienti-toolbar" className="sticky top-0 z-20 shadow-sm">
+        <div className="py-2 px-1 bg-white border-b border-gray-100">
+          <input placeholder="Hľadať klienta..." value={search} onChange={e => setSearch(e.target.value)}
+            className="w-full bg-gray-50 text-secondary placeholder:text-gray-400 px-4 py-2.5 text-sm focus:outline-none rounded border border-gray-200 focus:border-primary" />
+        </div>
+        <div className="flex items-center gap-3 px-4 py-2 bg-secondary text-white text-xs font-black uppercase tracking-widest">
+          <div className="w-9 shrink-0 flex items-center justify-center">
+            <span className="text-primary/70 font-bold text-[11px] normal-case tracking-normal">{filtered.length}</span>
+          </div>
+          <div className="flex-1 min-w-0">Klient</div>
+          <div className="hidden sm:flex w-80 shrink-0">
+            {["Betón", "Doprava", "Služby", "Celkovo"].map(l => (
+              <div key={l} className="w-20 text-center text-primary">{l}</div>
+            ))}
+          </div>
+          <div className="flex items-center justify-end sm:w-64 shrink-0">
+            <button onClick={() => { setAdding(true); setExpanded(null); }} title="Pridať klienta"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-primary text-secondary font-black text-[10px] hover:bg-primary/90 shrink-0 uppercase tracking-wide">
+              <UserPlus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Add form */}
@@ -1741,25 +1764,6 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
           </div>
         </div>
       )}
-
-      {/* Table header */}
-      <div className="flex items-center gap-3 px-4 py-2 bg-secondary text-white text-xs font-black uppercase tracking-widest">
-        <div className="w-9 shrink-0 flex items-center justify-center">
-          <span className="text-primary/70 font-bold text-[11px] normal-case tracking-normal">{filtered.length}</span>
-        </div>
-        <div className="flex-1 min-w-0">Klient</div>
-        <div className="hidden sm:flex w-80 shrink-0">
-          {["Betón", "Doprava", "Služby", "Celkovo"].map(l => (
-            <div key={l} className="w-20 text-center text-primary">{l}</div>
-          ))}
-        </div>
-        <div className="flex items-center justify-end sm:w-64 shrink-0">
-          <button onClick={() => { setAdding(true); setExpanded(null); }} title="Pridať klienta"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-primary text-secondary font-black text-[10px] hover:bg-primary/90 shrink-0 uppercase tracking-wide">
-            <UserPlus className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
 
       {/* Client cards */}
       <div className="space-y-px">
@@ -2546,12 +2550,12 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-[86px] sm:pt-20 pb-8">
-        {/* Tab content */}
-        <div>
+      {/* Scroll container — fills viewport below fixed header */}
+      <div id="admin-content" className="fixed top-[86px] sm:top-20 left-0 right-0 bottom-0 overflow-y-auto">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 pb-8">
           {tab === "betony" && <BetonTab key={syncKey} />}
           {tab === "sluzby" && <SluzbyTab key={syncKey} />}
-          {tab === "doprava" && <DopravaTab key={syncKey} />}
+          {tab === "doprava" && <DopravaTab key={syncKey} onGoToSluzby={() => { setTab("sluzby"); window.location.hash = "sluzby"; }} />}
           {tab === "klienti" && <KlientiTab key={syncKey} expandClientId={goToClientId} onExpanded={() => setGoToClientId(null)} />}
           {tab === "objednavky" && <ObjednavkyTab key={syncKey} onGoToClient={(loginId) => { setTab("klienti"); setGoToClientId(loginId); }} />}
         </div>

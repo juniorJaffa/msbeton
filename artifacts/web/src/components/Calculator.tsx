@@ -413,10 +413,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const washSvc   = allServices.find((s) => s.name.toLowerCase().includes("umýv"));
   const waitPumpaSvc = allServices.find((s) => s.serviceMode === "pumpa");
   const waitMixSvc   = allServices.find((s) => s.serviceMode === "mix");
-  // Čerpanie: manual override > zona > service price
+  // Čerpanie: manual override > service price (zona override zrušená, rate je v Službách)
   const pumpServicePrice = mp[pumpSvc?.id ?? ""] !== undefined
     ? mp[pumpSvc!.id]
-    : (clientDeliveryZone?.pumpHourlyRate ?? pumpSvc?.price ?? 112.50);
+    : (pumpSvc?.price ?? 112.50);
   const chemServicePrice = mp[chemSvc?.id ?? ""] !== undefined ? mp[chemSvc!.id] : (chemSvc?.price ?? 31.25);
   const washServicePrice = mp[washSvc?.id ?? ""] ?? washSvc?.price ?? 56.25;
   // Čakačka: manual override > zona fallback > service price

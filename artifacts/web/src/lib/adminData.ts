@@ -28,7 +28,9 @@ export interface DeliveryZone {
   maxKm?: number;           // km typ: max. polomer obsluhy (info)
   minTrucks?: number;       // auto typ: min. počet áut
   maxTrucks?: number;       // auto typ: max. počet áut
-  minimumFeeKm?: number;    // km typ: min. finančná doprava (€/auto)
+  minimumFeeKm?: number;       // km typ: min. finančná doprava (€/auto) — legacy
+  minimumFeeKmPumpa?: number;  // km typ: min. poplatok pumpa (€/auto)
+  minimumFeeKmMix?: number;    // km typ: min. poplatok mixer (€/auto)
   minimumFeeAuto?: number;  // auto typ: min. finančná doprava (€/auto)
 }
 
