@@ -1,18 +1,19 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { SEOHead, LocalBusinessSchema } from "@/components/SEOHead";
-import { 
-  ArrowRight, 
-  CheckCircle2, 
-  Calculator, 
-  Truck, 
-  Hammer, 
+import {
+  ArrowRight,
+  CheckCircle2,
+  Calculator,
+  Truck,
+  Hammer,
   ShieldCheck,
   Send,
   MapPin,
   Phone,
   Mail,
-  Clock
+  Clock,
+  ChevronDown
 } from "lucide-react";
 import { lazy, Suspense } from "react";
 import { Navbar } from "@/components/Navbar";
@@ -139,30 +140,53 @@ export default function Home() {
               MS-BETON
             </motion.h1>
             
-            <motion.p variants={fadeInUp} className="text-base md:text-lg text-white/70 mb-10 max-w-xl leading-relaxed">
+            <motion.p variants={fadeInUp} className="text-base md:text-lg text-white/70 max-w-xl leading-relaxed">
               Sme váš spoľahlivý dopravca betónu v Žiline a okolí. Základ každej kvalitnej stavby je v pevnosti a spoľahlivosti betónu, ktorý používate – a práve ten vám dodávame my.
             </motion.p>
-            
-            <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-4">
-              <a 
-                href="#about" 
-                className="inline-flex justify-center items-center gap-2 px-8 py-4 bg-secondary text-white font-bold text-sm tracking-widest uppercase hover:bg-secondary/80 transition-all hover:-translate-y-1"
-              >
-                Zistiť viac
-                <ArrowRight className="w-4 h-4" />
-              </a>
-              <a 
-                href="#calculator" 
-                className="inline-flex justify-center items-center gap-2 px-8 py-4 bg-primary text-secondary font-bold text-sm tracking-widest uppercase hover:bg-primary/90 transition-all hover:-translate-y-1 shadow-lg shadow-primary/30"
-              >
-                Výpočet ceny
-              </a>
-            </motion.div>
           </motion.div>
         </div>
-        
 
+        {/* Scroll arrow */}
+        <motion.a
+          href="#cta-bar"
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.2, duration: 0.6 }}
+          className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-white/40 hover:text-white/70 transition-colors"
+          aria-label="Zobraziť viac"
+        >
+          <motion.div
+            animate={{ y: [0, 6, 0] }}
+            transition={{ repeat: Infinity, duration: 1.6, ease: "easeInOut" }}
+          >
+            <ChevronDown className="w-7 h-7" />
+          </motion.div>
+        </motion.a>
       </section>
+
+      {/* CTA BAR — hneď pod hero, plná šírka */}
+      <div id="cta-bar" className="bg-secondary border-b-2 border-primary/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-0 divide-y sm:divide-y-0 sm:divide-x divide-white/10">
+            <p className="hidden sm:block flex-1 text-white/50 text-xs tracking-widest uppercase py-5 pr-8 font-semibold">
+              Žilina betón, na ktorý sa môžete spoľahnúť
+            </p>
+            <a
+              href="#about"
+              className="flex-1 sm:flex-none inline-flex justify-center items-center gap-2 px-10 py-5 text-white/80 font-bold text-sm tracking-widest uppercase hover:text-white hover:bg-white/5 transition-all"
+            >
+              Zistiť viac
+              <ArrowRight className="w-4 h-4" />
+            </a>
+            <a
+              href="#calculator"
+              className="flex-1 sm:flex-none inline-flex justify-center items-center gap-2 px-10 py-5 bg-primary text-secondary font-bold text-sm tracking-widest uppercase hover:bg-primary/90 transition-all"
+            >
+              Výpočet ceny
+            </a>
+          </div>
+        </div>
+      </div>
 
       {/* ABOUT SECTION */}
       <section id="about" className="py-14 concrete-light">
