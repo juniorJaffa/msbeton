@@ -1461,11 +1461,17 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
   };
 
   const normK = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const compactK = (s: string) => s.replace(/\s/g, "");
   const searchTerms = search.trim().split(/\s+/).filter(Boolean);
   const filtered = clients.filter(c => {
     if (!searchTerms.length) return true;
     const haystack = [c.firstName, c.lastName, c.company, c.email, c.phone, c.loginId].filter(Boolean).join(" ");
-    return searchTerms.every(t => normK(haystack).includes(normK(t)) || haystack.includes(t));
+    const haystackN = normK(haystack);
+    const haystackC = compactK(haystackN);
+    return searchTerms.every(t => {
+      const tn = normK(t);
+      return haystackN.includes(tn) || haystackC.includes(compactK(tn));
+    });
   });
 
   return (
@@ -1553,7 +1559,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
       </div>
 
       {/* Search — sticky */}
-      <div className="sticky top-12 sm:top-20 z-30 py-2 bg-white border-b border-gray-100 shadow-sm">
+      <div className="sticky top-12 sm:top-20 z-30 py-2 px-1 bg-white border-b border-gray-100 shadow-sm">
         <input placeholder="Hľadať klienta..." value={search} onChange={e => setSearch(e.target.value)}
           className="w-full bg-gray-50 text-secondary placeholder:text-gray-400 px-4 py-2.5 text-sm focus:outline-none rounded border border-gray-200 focus:border-primary" />
       </div>
@@ -2478,7 +2484,7 @@ export default function AdminDashboard() {
             <span className="font-black text-2xl tracking-tighter text-primary">MS</span>
             <span className="font-black text-2xl tracking-tighter text-primary/40">-</span>
             <span className="font-black text-2xl tracking-tighter text-white">BETON</span>
-            <span className="ml-3 text-primary text-xs font-bold uppercase tracking-widest hidden sm:block">Admin</span>
+            <span className="ml-3 text-primary text-xs font-bold uppercase tracking-widest">Admin</span>
             <VersionBadge className="ml-1 text-white/25 hidden sm:block" />
           </a>
           <button onClick={handleLogout}
