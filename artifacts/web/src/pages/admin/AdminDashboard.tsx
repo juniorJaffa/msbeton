@@ -960,7 +960,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
   return (
     <div className="space-y-3">
       {/* Filter panel — sticky, collapsible */}
-      <div className="sticky top-[100px] z-30 bg-white border border-gray-200 shadow-sm">
+      <div className="sticky top-20 z-30 bg-white border border-gray-200 shadow-sm">
         {/* Compact header — vždy viditeľný, toggle */}
         <button onClick={() => setFilterOpen(o => !o)}
           className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-gray-50 transition-colors cursor-pointer">
@@ -1553,7 +1553,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
       </div>
 
       {/* Search — sticky */}
-      <div className="sticky top-[100px] z-30 py-2 bg-white border border-gray-100 shadow-sm -mx-4 sm:-mx-6 px-4 sm:px-6">
+      <div className="sticky top-20 z-30 py-2 bg-white border-b border-gray-100 shadow-sm">
         <input placeholder="Hľadať klienta..." value={search} onChange={e => setSearch(e.target.value)}
           className="w-full bg-gray-50 text-secondary placeholder:text-gray-400 px-4 py-2.5 text-sm focus:outline-none rounded border border-gray-200 focus:border-primary" />
       </div>
@@ -2471,20 +2471,49 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen concrete-light overflow-x-hidden" style={{ fontFamily: "Montserrat, sans-serif" }}>
       {/* Top nav */}
+      {/* Combined sticky header — logo row + desktop tab row */}
       <header className="bg-secondary shadow-lg sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-12">
           <a href="/" className="flex items-center gap-0.5 select-none">
             <span className="font-black text-2xl tracking-tighter text-primary">MS</span>
             <span className="font-black text-2xl tracking-tighter text-primary/40">-</span>
             <span className="font-black text-2xl tracking-tighter text-white">BETON</span>
-            <span className="ml-3 text-white/30 text-xs font-semibold uppercase tracking-widest hidden sm:block">Admin</span>
-            <VersionBadge className="ml-1 text-white/30 hidden sm:block" />
+            <span className="ml-3 text-primary text-xs font-bold uppercase tracking-widest hidden sm:block">Admin</span>
+            <VersionBadge className="ml-1 text-white/25 hidden sm:block" />
           </a>
           <button onClick={handleLogout}
             className="flex items-center gap-2 text-white/60 hover:text-white text-sm font-semibold transition-colors">
             <LogOut className="w-4 h-4" />
             <span className="hidden sm:inline">Odhlásiť</span>
           </button>
+        </div>
+        {/* Desktop tab row — merged into header */}
+        <div className="hidden sm:block border-t border-white/10">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <div className="flex">
+              {tabs.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => { setTab(t.id); window.location.hash = t.id; }}
+                  className={`flex items-center gap-1.5 px-4 py-2 text-xs font-black uppercase tracking-widest transition-all border-b-2 shrink-0 ${
+                    tab === t.id
+                      ? "text-primary border-primary"
+                      : "text-white/50 border-transparent hover:text-white/80"
+                  }`}
+                >
+                  <span className="relative">
+                    {t.icon}
+                    {t.id === "objednavky" && orderBadge > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center leading-none">
+                        {orderBadge > 9 ? "9+" : orderBadge}
+                      </span>
+                    )}
+                  </span>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </header>
 
@@ -2512,35 +2541,6 @@ export default function AdminDashboard() {
           ))}
         </div>
       </nav>
-
-      {/* Tab bar — desktop, sticky pod headerom */}
-      <div className="hidden sm:block sticky top-14 z-40 bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="flex gap-1 py-1">
-            {tabs.map(t => (
-              <button
-                key={t.id}
-                onClick={() => { setTab(t.id); window.location.hash = t.id; }}
-                className={`flex items-center gap-1.5 px-5 py-2.5 text-sm font-black uppercase tracking-widest transition-all shrink-0 ${
-                  tab === t.id
-                    ? "bg-secondary text-white"
-                    : "text-gray-500 hover:text-secondary hover:bg-gray-50"
-                }`}
-              >
-                <span className="relative">
-                  {t.icon}
-                  {t.id === "objednavky" && orderBadge > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center leading-none">
-                      {orderBadge > 9 ? "9+" : orderBadge}
-                    </span>
-                  )}
-                </span>
-                {t.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 pb-24 sm:pb-8">
         {/* Panel heading */}

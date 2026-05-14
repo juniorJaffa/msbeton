@@ -1242,21 +1242,22 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         const pumpBase = (parseInt(pumpHour) || 1) + (parseInt(pumpMin) || 0) / 60;
         if (tab === "pumpa" && pumpBase > 0 && pumpServicePrice > 0) {
           const pOrig = fmt2(pumpBase * pumpServicePrice);
-          svcRows.push({ l: `Čerpanie betónu – ${result.pumpHrs} h${result.pumpMs > 0 ? ` ${result.pumpMs} min` : ""}`, v: fmt2(pOrig * sluzbyFactor), ...(sluzbyFactor < 1 ? { o: pOrig } : {}) });
+          svcRows.push({ l: `Čerpanie betónu – ${result.pumpHrs} h${result.pumpMs > 0 ? ` ${result.pumpMs} min` : ""}`, v: fmt2(pOrig * fPump), ...(fPump < 1 ? { o: pOrig } : {}) });
         }
-        if (hoseMeters > 0) { const ho = fmt2(hoseMeters * hoseServicePrice); svcRows.push({ l: `Prídavné hadice – ${hoseMeters} m`, v: fmt2(ho * sluzbyFactor), ...(sluzbyFactor < 1 ? { o: ho } : {}) }); }
-        if (tab === "pumpa" && chemServicePrice > 0) { const co = fmt2(chemServicePrice); svcRows.push({ l: "Rozbehová chémia", v: fmt2(co * sluzbyFactor), ...(sluzbyFactor < 1 ? { o: co } : {}) }); }
-        if (washing) { const wo = fmt2(washServicePrice); svcRows.push({ l: "Umývanie mimo stavby", v: fmt2(wo * sluzbyFactor), ...(sluzbyFactor < 1 ? { o: wo } : {}) }); }
+        if (hoseMeters > 0) { const ho = fmt2(hoseMeters * hoseServicePrice); svcRows.push({ l: `Prídavné hadice – ${hoseMeters} m`, v: fmt2(ho * fHose), ...(fHose < 1 ? { o: ho } : {}) }); }
+        if (tab === "pumpa" && chemServicePrice > 0) { const co = fmt2(chemServicePrice); svcRows.push({ l: "Rozbehová chémia", v: fmt2(co * fChem), ...(fChem < 1 ? { o: co } : {}) }); }
+        if (washing) { const wo = fmt2(washServicePrice); svcRows.push({ l: "Umývanie mimo stavby", v: fmt2(wo * fWash), ...(fWash < 1 ? { o: wo } : {}) }); }
         if (result.waitIntervals > 0) {
+          const wFactor = tab === "pumpa" ? fWaitP : fWaitM;
           const wRate = tab === "pumpa" ? waitServicePricePumpa : waitServicePriceMix;
           const wOrig = fmt2(result.waitIntervals * wRate);
-          svcRows.push({ l: `Čakačky – ${result.waitLabel}`, v: fmt2(wOrig * sluzbyFactor), ...(sluzbyFactor < 1 ? { o: wOrig } : {}) });
+          svcRows.push({ l: `Čakačky – ${result.waitLabel}`, v: fmt2(wOrig * wFactor), ...(wFactor < 1 ? { o: wOrig } : {}) });
         }
       } else {
-        if (ci.svcPumpCost > 0) { svcRows.push({ l: `Čerpanie betónu – ${ci.svcPumpHrs} h${ci.svcPumpMs > 0 ? ` ${ci.svcPumpMs} min` : ""}`, v: fmt2(ci.svcPumpCost * sluzbyFactor), ...(sluzbyFactor < 1 ? { o: fmt2(ci.svcPumpCost) } : {}) }); }
-        if (ci.svcHoseCost > 0) { svcRows.push({ l: `Prídavné hadice – ${ci.svcHoseMeters} m`, v: fmt2(ci.svcHoseCost * sluzbyFactor), ...(sluzbyFactor < 1 ? { o: fmt2(ci.svcHoseCost) } : {}) }); }
-        if (ci.svcWashCost > 0) { svcRows.push({ l: "Umývanie mimo stavby", v: fmt2(ci.svcWashCost * sluzbyFactor), ...(sluzbyFactor < 1 ? { o: fmt2(ci.svcWashCost) } : {}) }); }
-        if (ci.svcWaitCost > 0) { svcRows.push({ l: `Čakačky – ${ci.svcWaitLabel}`, v: fmt2(ci.svcWaitCost * sluzbyFactor), ...(sluzbyFactor < 1 ? { o: fmt2(ci.svcWaitCost) } : {}) }); }
+        if (ci.svcPumpCost > 0) { svcRows.push({ l: `Čerpanie betónu – ${ci.svcPumpHrs} h${ci.svcPumpMs > 0 ? ` ${ci.svcPumpMs} min` : ""}`, v: fmt2(ci.svcPumpCost * fPump), ...(fPump < 1 ? { o: fmt2(ci.svcPumpCost) } : {}) }); }
+        if (ci.svcHoseCost > 0) { svcRows.push({ l: `Prídavné hadice – ${ci.svcHoseMeters} m`, v: fmt2(ci.svcHoseCost * fHose), ...(fHose < 1 ? { o: fmt2(ci.svcHoseCost) } : {}) }); }
+        if (ci.svcWashCost > 0) { svcRows.push({ l: "Umývanie mimo stavby", v: fmt2(ci.svcWashCost * fWash), ...(fWash < 1 ? { o: fmt2(ci.svcWashCost) } : {}) }); }
+        if (ci.svcWaitCost > 0) { const wfExtra = tab === "pumpa" ? fWaitP : fWaitM; svcRows.push({ l: `Čakačky – ${ci.svcWaitLabel}`, v: fmt2(ci.svcWaitCost * wfExtra), ...(wfExtra < 1 ? { o: fmt2(ci.svcWaitCost) } : {}) }); }
       }
       bdSections.push({ h: header, rows });
       if (svcRows.length > 0) {
@@ -1811,8 +1812,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 <div className="border border-white/10 rounded-lg p-3 bg-white/5">
                   <div className="text-xs font-semibold text-white/70 mb-0.5">Čakačky</div>
                   <div className="text-[10px] text-white/35 mb-2 min-h-[2rem] flex items-start">
-                    {sluzbyFactor < 1 && <s className="text-white/20 mr-1">{waitServicePricePumpa.toFixed(2)}</s>}
-                    {(waitServicePricePumpa * sluzbyFactor).toFixed(2)} €/15 min
+                    {fWaitP < 1 && Math.abs(waitServicePricePumpa - waitServicePricePumpa * fWaitP) > 0.001 && <s className="text-white/20 mr-1">{waitServicePricePumpa.toFixed(2)}</s>}
+                    {(waitServicePricePumpa * fWaitP).toFixed(2)} €/15 min
                   </div>
                   <div className="flex items-center gap-2">
                     <button type="button"
@@ -1833,7 +1834,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     </button>
                   </div>
                   {waitPiecesPumpa > 0 && (
-                    <p className="text-[10px] text-primary mt-1.5 text-center font-semibold">{(waitPiecesPumpa * waitServicePricePumpa * sluzbyFactor).toFixed(2)} €</p>
+                    <p className="text-[10px] text-primary mt-1.5 text-center font-semibold">{(waitPiecesPumpa * waitServicePricePumpa * fWaitP).toFixed(2)} €</p>
                   )}
                 </div>
 
@@ -1880,8 +1881,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 <span className="text-sm font-semibold text-white/80">
                   Čakačky
                   <span className="ml-2 text-xs font-normal text-white/40">
-                    {sluzbyFactor < 1 && <s className="text-white/20 mr-1">{waitServicePriceMix.toFixed(2)}</s>}
-                    {(waitServicePriceMix * sluzbyFactor).toFixed(2)} € / 15 min
+                    {fWaitM < 1 && Math.abs(waitServicePriceMix - waitServicePriceMix * fWaitM) > 0.001 && <s className="text-white/20 mr-1">{waitServicePriceMix.toFixed(2)}</s>}
+                    {(waitServicePriceMix * fWaitM).toFixed(2)} € / 15 min
                   </span>
                 </span>
                 {(parseInt(waitHour) > 0 || parseInt(waitMin) > 0) && (
@@ -2329,18 +2330,20 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                   </div>
                   <div className="grid grid-cols-2 gap-px bg-primary/15">
                     {(() => {
-                      const sluzbyDisc = effectiveSluzby > 0 && sluzbyFactor < 1;
-                      const svcCell = (orig: number, suffix: string) => sluzbyDisc ? (
-                        <div>
-                          <span className="line-through text-primary/40 text-xs mr-1">{orig.toFixed(2)} €{suffix}</span>
-                          <span className="block">{(orig * sluzbyFactor).toFixed(2)} €{suffix}</span>
-                        </div>
-                      ) : `${(orig * sluzbyFactor).toFixed(2)} €${suffix}`;
+                      const svcCell = (orig: number, suffix: string, factor: number) => {
+                        const disc = orig * factor;
+                        return factor < 1 && Math.abs(orig - disc) > 0.001 ? (
+                          <div>
+                            <span className="line-through text-primary/40 text-xs mr-1">{orig.toFixed(2)} €{suffix}</span>
+                            <span className="block">{disc.toFixed(2)} €{suffix}</span>
+                          </div>
+                        ) : `${disc.toFixed(2)} €${suffix}`;
+                      };
                       return ([
                         { label: "Kapacita", value: `${pumpCap} m³` },
                         { label: "Výložník", value: "28 m" },
-                        { label: "Čerpanie", value: svcCell(pumpServicePrice, "/hod") },
-                        { label: "Rozbeh. chémia", value: svcCell(chemServicePrice, " (v cene)") },
+                        { label: "Čerpanie", value: svcCell(pumpServicePrice, "/hod", fPump) },
+                        { label: "Rozbeh. chémia", value: svcCell(chemServicePrice, " (v cene)", fChem) },
                       ] as { label: string; value: React.ReactNode }[]).map(({ label, value }) => (
                         <div key={label} className="bg-secondary/70 px-3 py-2">
                           <div className="text-[10px] text-white/35 uppercase tracking-wide mb-0.5">{label}</div>
@@ -2363,15 +2366,27 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     </p>
                   </div>
                   <div className="grid grid-cols-2 gap-px bg-primary/15">
-                    {[
-                      { label: "Kapacita", value: `${mixCap} m³` },
-                      { label: "Čakačka / 15 min", value: `${(waitServicePriceMix * sluzbyFactor).toFixed(2)} €` },
-                    ].map(({ label, value }) => (
-                      <div key={label} className="bg-secondary/70 px-3 py-2">
-                        <div className="text-[10px] text-white/35 uppercase tracking-wide mb-0.5">{label}</div>
-                        <div className="text-sm font-bold text-primary">{value}</div>
-                      </div>
-                    ))}
+                    {(() => {
+                      const mixDisc = waitServicePriceMix * fWaitM;
+                      const mixShowStrike = fWaitM < 1 && Math.abs(waitServicePriceMix - mixDisc) > 0.001;
+                      return ([
+                        { label: "Kapacita", value: `${mixCap} m³` },
+                        {
+                          label: "Čakačka / 15 min",
+                          value: mixShowStrike ? (
+                            <div>
+                              <span className="line-through text-primary/40 text-xs mr-1">{waitServicePriceMix.toFixed(2)} €</span>
+                              <span className="block">{mixDisc.toFixed(2)} €</span>
+                            </div>
+                          ) : `${mixDisc.toFixed(2)} €`,
+                        },
+                      ] as { label: string; value: React.ReactNode }[]).map(({ label, value }) => (
+                        <div key={label} className="bg-secondary/70 px-3 py-2">
+                          <div className="text-[10px] text-white/35 uppercase tracking-wide mb-0.5">{label}</div>
+                          <div className="text-sm font-bold text-primary">{value}</div>
+                        </div>
+                      ));
+                    })()}
                   </div>
                 </div>
               )}
