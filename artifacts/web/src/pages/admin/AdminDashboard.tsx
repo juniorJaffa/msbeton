@@ -2474,6 +2474,15 @@ export default function AdminDashboard() {
 
   const handleLogout = () => { logout(); navigate("/admin/login"); };
 
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  useEffect(() => {
+    const el = document.getElementById("admin-content");
+    if (!el) return;
+    const onScroll = () => setShowScrollTop(el.scrollTop > 300);
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
   const tabs: { id: Tab; label: string; short: string; icon: React.ReactNode }[] = [
     { id: "klienti",    label: "KLIENTI",    short: "KLIENTI",  icon: <Users className="w-5 h-5" /> },
     { id: "objednavky", label: "OBJEDNÁVKY", short: "OBJED.",   icon: <ClipboardList className="w-5 h-5" /> },
@@ -2558,6 +2567,17 @@ export default function AdminDashboard() {
           {tab === "objednavky" && <ObjednavkyTab key={syncKey} onGoToClient={(loginId) => { setTab("klienti"); setGoToClientId(loginId); }} />}
         </div>
       </div>
+
+      {/* Scroll-to-top button */}
+      {showScrollTop && (
+        <button
+          onClick={() => document.getElementById("admin-content")?.scrollTo({ top: 0, behavior: "smooth" })}
+          className="fixed bottom-24 sm:bottom-6 right-4 z-50 w-10 h-10 bg-secondary text-primary border border-primary/40 shadow-lg flex items-center justify-center hover:bg-primary hover:text-secondary transition-colors"
+          title="Späť nahor"
+        >
+          <ChevronUp className="w-5 h-5" />
+        </button>
+      )}
     </div>
   );
 }
