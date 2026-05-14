@@ -2542,15 +2542,7 @@ export default function AdminDashboard() {
         </div>
       </nav>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 pb-24 sm:pb-8">
-        {/* Panel heading */}
-        <div className="mb-5">
-          <h1 className="text-2xl font-black text-secondary uppercase tracking-wide">
-            {tabs.find(t => t.id === tab)?.label}
-          </h1>
-          <div className="h-1 w-16 bg-primary mt-1" />
-        </div>
-
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 pb-24 sm:pb-8">
         {/* Tab content */}
         <div>
           {tab === "betony" && <BetonTab key={syncKey} />}
