@@ -960,7 +960,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
   return (
     <div className="space-y-3">
       {/* Filter panel — sticky, collapsible */}
-      <div className="sticky top-12 sm:top-20 z-30 bg-white border border-gray-200 shadow-sm">
+      <div className="sticky top-20 z-30 bg-white border border-gray-200 shadow-sm">
         {/* Compact header — vždy viditeľný, toggle */}
         <button onClick={() => setFilterOpen(o => !o)}
           className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-gray-50 transition-colors cursor-pointer">
@@ -1559,7 +1559,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
       </div>
 
       {/* Search — sticky */}
-      <div className="sticky top-12 sm:top-20 z-30 py-2 px-1 bg-white border-b border-gray-100 shadow-sm">
+      <div className="sticky top-20 z-30 py-2 px-1 bg-white border-b border-gray-100 shadow-sm">
         <input placeholder="Hľadať klienta..." value={search} onChange={e => setSearch(e.target.value)}
           className="w-full bg-gray-50 text-secondary placeholder:text-gray-400 px-4 py-2.5 text-sm focus:outline-none rounded border border-gray-200 focus:border-primary" />
       </div>
@@ -2493,62 +2493,39 @@ export default function AdminDashboard() {
             <span className="hidden sm:inline">Odhlásiť</span>
           </button>
         </div>
-        {/* Desktop tab row — merged into header */}
-        <div className="hidden sm:block border-t border-white/10">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <div className="flex">
-              {tabs.map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => { setTab(t.id); window.location.hash = t.id; }}
-                  className={`flex items-center gap-1.5 px-4 py-2 text-xs font-black uppercase tracking-widest transition-all border-b-2 shrink-0 ${
-                    tab === t.id
-                      ? "text-primary border-primary"
-                      : "text-white/50 border-transparent hover:text-white/80"
-                  }`}
-                >
-                  <span className="relative">
-                    {t.icon}
-                    {t.id === "objednavky" && orderBadge > 0 && (
-                      <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center leading-none">
-                        {orderBadge > 9 ? "9+" : orderBadge}
-                      </span>
-                    )}
-                  </span>
-                  {t.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
       </header>
 
-      {/* Mobile bottom nav */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-[0_-2px_12px_rgba(0,0,0,0.08)]"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-        <div className="flex items-stretch h-16">
-          {tabs.map(t => (
-            <button key={t.id} onClick={() => { setTab(t.id); window.location.hash = t.id; }}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${
-                tab === t.id ? "text-primary" : "text-gray-400 hover:text-gray-600"
-              }`}>
-              <span className={`relative transition-transform duration-150 ${tab === t.id ? "scale-110" : ""}`}>
-                {t.icon}
-                {t.id === "objednavky" && orderBadge > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center leading-none">
-                    {orderBadge > 9 ? "9+" : orderBadge}
-                  </span>
-                )}
-              </span>
-              <span className={`text-[8px] font-black uppercase tracking-wide leading-none transition-all duration-150 ${tab === t.id ? "opacity-100" : "opacity-0 h-0 overflow-hidden"}`}>
-                {t.short}
-              </span>
-            </button>
-          ))}
+      {/* Unified tab bar — white, fixed under header, both mobile + desktop */}
+      <div className="fixed top-12 left-0 right-0 z-40 bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-6xl mx-auto px-2 sm:px-6">
+          <div className="flex">
+            {tabs.map(t => (
+              <button
+                key={t.id}
+                onClick={() => { setTab(t.id); window.location.hash = t.id; }}
+                className={`flex-1 sm:flex-initial flex items-center justify-center sm:justify-start gap-1 sm:gap-1.5 px-1 sm:px-4 py-2 border-b-2 transition-all ${
+                  tab === t.id
+                    ? "text-primary border-primary"
+                    : "text-gray-400 border-transparent hover:text-gray-600"
+                }`}
+              >
+                <span className="relative flex-shrink-0">
+                  {t.icon}
+                  {t.id === "objednavky" && orderBadge > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center leading-none">
+                      {orderBadge > 9 ? "9+" : orderBadge}
+                    </span>
+                  )}
+                </span>
+                <span className="hidden sm:block text-xs font-black uppercase tracking-widest">{t.label}</span>
+                <span className="sm:hidden text-[8px] font-black uppercase tracking-wide">{t.short}</span>
+              </button>
+            ))}
+          </div>
         </div>
-      </nav>
+      </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-24 sm:pb-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-20 pb-8">
         {/* Tab content */}
         <div>
           {tab === "betony" && <BetonTab key={syncKey} />}
