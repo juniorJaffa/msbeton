@@ -255,6 +255,7 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
   const [pzForm, setPzForm] = useState({ fromKm: "", toKm: "", ratePerM3: "" });
   const [stdZonesOpen, setStdZonesOpen] = useState(false);
   const [stdDotazenieOpen, setStdDotazenieOpen] = useState(false);
+  const [expandedTypes, setExpandedTypes] = useState<Record<string, boolean>>({});
 
   const savePZ = (data: TransportPricingZone[]) => { setPZones(data); adminData.saveTransportZones(data); };
   const saveTs = (data: TransportSettings) => { setTs(data); adminData.saveTransportSettings(data); };
@@ -314,8 +315,9 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                 {/* Farebný accent pruh */}
                 <div className={`h-1.5 ${accentBg}`} />
                 {/* Type header */}
-                <div className={`flex items-start gap-3 px-5 py-3 flex-wrap ${headerBg}`}>
-                  <span className={`w-5 h-5 rounded-full text-white text-[10px] font-black flex items-center justify-center flex-shrink-0 mt-0.5 ${badgeBg}`}>
+                <button type="button" onClick={() => setExpandedTypes(prev => ({ ...prev, [zt.key]: !prev[zt.key] }))}
+                  className={`w-full flex items-center gap-3 px-5 py-3 text-left cursor-pointer select-none ${headerBg}`}>
+                  <span className={`w-5 h-5 rounded-full text-white text-[10px] font-black flex items-center justify-center flex-shrink-0 ${badgeBg}`}>
                     {idx + 1}
                   </span>
                   <div className="flex-1 min-w-0">
@@ -329,6 +331,11 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                       </div>
                     )}
                   </div>
+                  <div className="shrink-0">
+                    {expandedTypes[zt.key] ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                  </div>
+                </button>
+                {expandedTypes[zt.key] && (<>
                   {isStandard && (() => {
                     const ref = zones[0];
                     const updateAll2 = (patch: Partial<DeliveryZone>) => save(zones.map(z => ({ ...z, ...patch })));
@@ -389,7 +396,6 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                       </div>
                     );
                   })()}
-                </div>
                 {/* Zóny tohto typu */}
                 {!isStandard && typeZones.map(z => (
                   <div key={z.id} className="border-t border-gray-100">
@@ -565,6 +571,7 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                     </div>
                   );
                 })()}
+                </>)}
               </div>
             );
           })}
