@@ -431,6 +431,15 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const hoseService = allServices.find((s) => s.name.toLowerCase().includes("hadice"));
   const hoseServicePrice = mp[hoseService?.id ?? ""] ?? hoseService?.price ?? 10.00;
   const hoseMaxMeters = hoseService?.maxMeters ?? 10;
+
+  // Per-service effective discount factors — manual price = žiadna zľava (factor 1)
+  const fPump  = (pumpSvc  && mp[pumpSvc.id]  !== undefined) ? 1 : sluzbyFactor;
+  const fChem  = (chemSvc  && mp[chemSvc.id]  !== undefined) ? 1 : sluzbyFactor;
+  const fWash  = (washSvc  && mp[washSvc.id]  !== undefined) ? 1 : sluzbyFactor;
+  const fHose  = (hoseService && mp[hoseService.id] !== undefined) ? 1 : sluzbyFactor;
+  const fWaitP = (waitPumpaSvc && mp[waitPumpaSvc.id] !== undefined) ? 1 : sluzbyFactor;
+  const fWaitM = (waitMixSvc  && mp[waitMixSvc.id]   !== undefined) ? 1 : sluzbyFactor;
+
   const zimneService = allServices.find((s) => s.name.toLowerCase().includes("zimn"));
   const zimneServicePrice = zimneService?.price ?? 10.00;
 
@@ -662,6 +671,19 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
     const transportCalc = { cost: totalTransportCost, isMin: concreteBreakdown[0] ? (isOwn ? false : calcTransport(km, qty, tab, clientDeliveryZone).isMin) : false, fillupM3: concreteBreakdown[0]?.transportFillupM3 ?? 0, fillupCost: totalFillupCost };
 
+    // Manual transport: bypass dopravaFactor ak je sadzba manuálne prepisaná
+    const pricingType = clientDeliveryZone?.pricingType ?? "standard";
+    let fTransport = dopravaFactor;
+    if (!isOwn) {
+      if (pricingType === "km" && mp[`km_rate_${clientDeliveryZone?.id}`] !== undefined) fTransport = 1;
+      else if (pricingType === "auto" && mp[`auto_rate_${clientDeliveryZone?.id}`] !== undefined) fTransport = 1;
+      else if (pricingType === "standard") {
+        const appliedZone = tzones.find((z) => km >= z.fromKm && km < z.toKm) ?? tzones[tzones.length - 1];
+        if ((appliedZone && mp[appliedZone.id] !== undefined) || (mp["min_fee"] !== undefined && transportCalc.isMin)) fTransport = 1;
+      }
+    }
+    const fFillup = fTransport;
+
     // Per-item service súčty (extra items s pridanými službami)
     const extraSvcPumpCost  = concreteBreakdown.slice(1).reduce((s, ci) => s + ci.svcPumpCost, 0);
     const extraSvcHoseCost  = concreteBreakdown.slice(1).reduce((s, ci) => s + ci.svcHoseCost, 0);
@@ -685,13 +707,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const totalBezDph = Object.values(items).reduce((a, b) => a + b, 0);
     const discountedItems: typeof items = {
       concrete: totalConcreteFinal,
-      transport: items.transport * dopravaFactor,
-      fillup: items.fillup * dopravaFactor,
-      pump: items.pump * sluzbyFactor,
-      hoses: items.hoses * sluzbyFactor,
-      washing: items.washing * sluzbyFactor,
-      chem: items.chem * sluzbyFactor,
-      waiting: items.waiting * sluzbyFactor,
+      transport: items.transport * fTransport,
+      fillup: items.fillup * fFillup,
+      pump: items.pump * fPump,
+      hoses: items.hoses * fHose,
+      washing: items.washing * fWash,
+      chem: items.chem * fChem,
+      waiting: items.waiting * (tab === "pumpa" ? fWaitP : fWaitM),
       zimne: items.zimne * betonFactor,
     };
     const totalDiscBezDph = Object.values(discountedItems).reduce((a, b) => a + b, 0);
@@ -711,13 +733,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     };
     const hotovostDiscItems: typeof items = {
       concrete: totalConcreteFinalHotovost,
-      transport: hotovostBaseItems.transport * dopravaFactor,
-      fillup: hotovostBaseItems.fillup * dopravaFactor,
-      pump: hotovostBaseItems.pump * sluzbyFactor,
-      hoses: hotovostBaseItems.hoses * sluzbyFactor,
-      washing: hotovostBaseItems.washing * sluzbyFactor,
-      chem: hotovostBaseItems.chem * sluzbyFactor,
-      waiting: hotovostBaseItems.waiting * sluzbyFactor,
+      transport: hotovostBaseItems.transport * fTransport,
+      fillup: hotovostBaseItems.fillup * fFillup,
+      pump: hotovostBaseItems.pump * fPump,
+      hoses: hotovostBaseItems.hoses * fHose,
+      washing: hotovostBaseItems.washing * fWash,
+      chem: hotovostBaseItems.chem * fChem,
+      waiting: hotovostBaseItems.waiting * (tab === "pumpa" ? fWaitP : fWaitM),
       zimne: hotovostBaseItems.zimne * betonFactor,
     };
     const hotovostTotal = Object.values(hotovostDiscItems).reduce((a, b) => a + b, 0);
@@ -745,8 +767,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       hotovostBaseItems, hotovostDiscItems, hotovostTotal, hotovostOrigTotal,
       qty, totalQty, km, waitIntervals, waitLabel, pumpHrs, pumpMs, isOwn, concreteBreakdown, transportZone,
       transportIsMin: transportCalc.isMin, fillupM3, fillupTarget,
+      fTransport, fFillup,
     };
-  }, [tab, quantity, distance, selectedType, pumpHour, pumpMin, waitTotalMins, waitPiecesPumpa, hoseMeters, washing, zimneOpatrenia, betonFactor, dopravaFactor, sluzbyFactor, pumpServicePrice, chemServicePrice, washServicePrice, waitServicePricePumpa, waitServicePriceMix, hoseServicePrice, zimneServicePrice, tzones, tsettings, extraItems, allCategories, clientDeliveryZone, pumpCap, mixCap, VAT, VAT_HOTOVOST, loggedClient]);
+  }, [tab, quantity, distance, selectedType, pumpHour, pumpMin, waitTotalMins, waitPiecesPumpa, hoseMeters, washing, zimneOpatrenia, betonFactor, dopravaFactor, sluzbyFactor, fPump, fChem, fWash, fHose, fWaitP, fWaitM, pumpServicePrice, chemServicePrice, washServicePrice, waitServicePricePumpa, waitServicePriceMix, hoseServicePrice, zimneServicePrice, tzones, tsettings, extraItems, allCategories, clientDeliveryZone, pumpCap, mixCap, VAT, VAT_HOTOVOST, loggedClient]);
 
   async function handleLogin() {
     if (!loginId || !loginPwd) return;
@@ -836,12 +859,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const pdfPrefix = result.transportIsMin ? "Min. doprava" : "Doprava";
     const dopravaLabel = `${pdfPrefix}${pdfZone ? ` ${pdfZone}` : ""} · ${pdfTrucks}`;
     const mainTransportOrig = mainCI?.transport ?? 0;
-    const mainTransportDisc = mainTransportOrig * dopravaFactor;
+    const mainTransportDisc = mainTransportOrig * result.fTransport;
     const transportRow = mainTransportOrig > 0
       ? trow(dopravaLabel, `${result.qty}&nbsp;m³`, "—", mainTransportOrig, mainTransportDisc)
       : "";
     const mainFillupOrig = mainCI?.transportFillup ?? 0;
-    const mainFillupDisc = mainFillupOrig * dopravaFactor;
+    const mainFillupDisc = mainFillupOrig * result.fFillup;
     const fillupRow = mainFillupOrig > 0
       ? trow(`Doťaženie do&nbsp;${result.fillupTarget}&nbsp;m³`, `${mainCI?.transportFillupM3}&nbsp;m³`, "—", mainFillupOrig, mainFillupDisc)
       : "";
@@ -859,8 +882,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       waiting: tab === "pumpa" ? result.waitIntervals * waitServicePricePumpa : tab === "mix" ? result.waitIntervals * waitServicePriceMix : 0,
     };
     // Helper: jednotková cena so zľavou a strikethrough pre Spolu stĺpec
-    const svcRateStr = (rate: number, suffix: string) => {
-      const discRate = rate * sluzbyFactor;
+    const svcRateStr = (rate: number, suffix: string, factor = sluzbyFactor) => {
+      const discRate = rate * factor;
       if (hasDiscount && Math.abs(rate - discRate) > 0.001)
         return `<span style="text-decoration:line-through;color:#bbb;font-size:7.5pt">${fmtN(rate)}&nbsp;${suffix}</span><br>${fmtN(discRate)}&nbsp;${suffix}`;
       return `${fmtN(discRate)}&nbsp;${suffix}`;
@@ -874,14 +897,14 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       ? subSectionRow(svcLabel) +
         (tab === "pumpa"
           ? trow(`Čerpanie betónu – ${result.pumpHrs}&nbsp;h${result.pumpMs > 0 ? `&nbsp;${result.pumpMs}&nbsp;min` : ""}`,
-              `${result.pumpHrs}&nbsp;h${result.pumpMs > 0 ? `&nbsp;${result.pumpMs}&nbsp;min` : ""}`, svcRateStr(pumpServicePrice, "€/h"), mainSluzbyOrig.pump, mainSluzbyOrig.pump * sluzbyFactor) +
-            (hoseMeters > 0 ? trow(`Prídavné hadice`, `${hoseMeters}&nbsp;m`, svcRateStr(hoseServicePrice, "€/m"), mainSluzbyOrig.hoses, mainSluzbyOrig.hoses * sluzbyFactor) : "") +
-            (washing ? trow("Umývanie mimo stavby", "1&nbsp;ks", svcRateStr(washServicePrice, "€"), mainSluzbyOrig.washing, mainSluzbyOrig.washing * sluzbyFactor) : "") +
-            (mainSluzbyOrig.chem > 0 ? trow("Rozbehová chémia", "1&nbsp;ks", svcRateStr(chemServicePrice, "€"), mainSluzbyOrig.chem, mainSluzbyOrig.chem * sluzbyFactor) : "") +
-            (result.waitIntervals > 0 ? trow(`Čakačky – ${result.waitLabel}`, `${result.waitIntervals}&nbsp;×&nbsp;15&nbsp;min`, svcRateStr(waitServicePricePumpa, "€/int."), mainSluzbyOrig.waiting, mainSluzbyOrig.waiting * sluzbyFactor) : "")
+              `${result.pumpHrs}&nbsp;h${result.pumpMs > 0 ? `&nbsp;${result.pumpMs}&nbsp;min` : ""}`, svcRateStr(pumpServicePrice, "€/h", fPump), mainSluzbyOrig.pump, mainSluzbyOrig.pump * fPump) +
+            (hoseMeters > 0 ? trow(`Prídavné hadice`, `${hoseMeters}&nbsp;m`, svcRateStr(hoseServicePrice, "€/m", fHose), mainSluzbyOrig.hoses, mainSluzbyOrig.hoses * fHose) : "") +
+            (washing ? trow("Umývanie mimo stavby", "1&nbsp;ks", svcRateStr(washServicePrice, "€", fWash), mainSluzbyOrig.washing, mainSluzbyOrig.washing * fWash) : "") +
+            (mainSluzbyOrig.chem > 0 ? trow("Rozbehová chémia", "1&nbsp;ks", svcRateStr(chemServicePrice, "€", fChem), mainSluzbyOrig.chem, mainSluzbyOrig.chem * fChem) : "") +
+            (result.waitIntervals > 0 ? trow(`Čakačky – ${result.waitLabel}`, `${result.waitIntervals}&nbsp;×&nbsp;15&nbsp;min`, svcRateStr(waitServicePricePumpa, "€/int.", fWaitP), mainSluzbyOrig.waiting, mainSluzbyOrig.waiting * fWaitP) : "")
           : "") +
         (tab === "mix" && result.waitIntervals > 0
-          ? trow(`Čas na stavbe – ${result.waitLabel}`, `${result.waitIntervals}&nbsp;×&nbsp;15&nbsp;min`, svcRateStr(waitServicePriceMix, "€/int."), mainSluzbyOrig.waiting, mainSluzbyOrig.waiting * sluzbyFactor)
+          ? trow(`Čas na stavbe – ${result.waitLabel}`, `${result.waitIntervals}&nbsp;×&nbsp;15&nbsp;min`, svcRateStr(waitServicePriceMix, "€/int.", fWaitM), mainSluzbyOrig.waiting, mainSluzbyOrig.waiting * fWaitM)
           : "")
       : "";
 
@@ -895,9 +918,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         ? `<span style="text-decoration:line-through;color:#bbb;font-size:7.5pt">${fmtN(unitPriceOrig)}&nbsp;€/m³</span><br>${fmtN(unitPrice)}&nbsp;€/m³`
         : `${fmtN(unitPrice)}&nbsp;€/m³`;
       const transOrig = ci.transport;
-      const transDisc = ci.transport * dopravaFactor;
+      const transDisc = ci.transport * result.fTransport;
       const fillupOrig = ci.transportFillup;
-      const fillupDisc = ci.transportFillup * dopravaFactor;
+      const fillupDisc = ci.transportFillup * result.fFillup;
       const pdfExtraTrucks = tab === "pumpa"
         ? `1×Pumpa${ci.transportTrucks > 1 ? `+${ci.transportTrucks - 1}×Mix` : ""}`
         : `${ci.transportTrucks}×Mix`;
@@ -911,17 +934,18 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       if (hasExtraSvc) rows += subSectionRow(svcLabel);
       if (ci.svcPumpCost > 0) {
         const pumpTimeStr = ci.svcPumpMs > 0 ? `${ci.svcPumpHrs}&nbsp;h&nbsp;${ci.svcPumpMs}&nbsp;min` : `${ci.svcPumpHrs}&nbsp;h`;
-        rows += trow(`Čerpanie betónu – ${pumpTimeStr}`, pumpTimeStr, svcRateStr(pumpServicePrice, "€/h"), ci.svcPumpCost, ci.svcPumpCost * sluzbyFactor);
+        rows += trow(`Čerpanie betónu – ${pumpTimeStr}`, pumpTimeStr, svcRateStr(pumpServicePrice, "€/h", fPump), ci.svcPumpCost, ci.svcPumpCost * fPump);
       }
       if (ci.svcHoseCost > 0) {
-        rows += trow(`Prídavné hadice`, `${ci.svcHoseMeters}&nbsp;m`, svcRateStr(hoseServicePrice, "€/m"), ci.svcHoseCost, ci.svcHoseCost * sluzbyFactor);
+        rows += trow(`Prídavné hadice`, `${ci.svcHoseMeters}&nbsp;m`, svcRateStr(hoseServicePrice, "€/m", fHose), ci.svcHoseCost, ci.svcHoseCost * fHose);
       }
       if (ci.svcWashCost > 0) {
-        rows += trow("Umývanie mimo stavby", "1&nbsp;ks", svcRateStr(washServicePrice, "€"), ci.svcWashCost, ci.svcWashCost * sluzbyFactor);
+        rows += trow("Umývanie mimo stavby", "1&nbsp;ks", svcRateStr(washServicePrice, "€", fWash), ci.svcWashCost, ci.svcWashCost * fWash);
       }
       if (ci.svcWaitCost > 0) {
         const waitRate = tab === "pumpa" ? waitServicePricePumpa : waitServicePriceMix;
-        rows += trow(`Čakačky – ${ci.svcWaitLabel}`, `${ci.svcWaitIntervals}&nbsp;×&nbsp;15&nbsp;min`, svcRateStr(waitRate, "€/int."), ci.svcWaitCost, ci.svcWaitCost * sluzbyFactor);
+        const fWaitExtra = tab === "pumpa" ? fWaitP : fWaitM;
+        rows += trow(`Čakačky – ${ci.svcWaitLabel}`, `${ci.svcWaitIntervals}&nbsp;×&nbsp;15&nbsp;min`, svcRateStr(waitRate, "€/int.", fWaitExtra), ci.svcWaitCost, ci.svcWaitCost * fWaitExtra);
       }
       return rows;
     }).join("");
@@ -1077,18 +1101,18 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       lines.push(rowUnit(`${ci.qty}m³`, unitPrice, concreteVal));
 
       if (!result.isOwn && ci.transport > 0) {
-        const transportDisc = ci.transport * dopravaFactor;
+        const transportDisc = ci.transport * result.fTransport;
         if (ci.transportIsMin) {
           const carCost = ci.transportTrucks > 0 ? transportDisc / ci.transportTrucks : 0;
           lines.push("Minimálna doprava");
           lines.push(rowUnit(`${ci.transportTrucks}x auto`, carCost, transportDisc));
         } else if (result.transportZone) {
           const zone = result.transportZone;
-          const effectiveRate = zone.ratePerM3 * dopravaFactor;
+          const effectiveRate = zone.ratePerM3 * result.fTransport;
           lines.push(`Doprava od ${zone.fromKm}km do ${zone.toKm}km`);
           lines.push(rowUnit(`${ci.qty}m³`, effectiveRate, transportDisc));
           if (ci.transportFillup > 0) {
-            const fillupDisc = ci.transportFillup * dopravaFactor;
+            const fillupDisc = ci.transportFillup * result.fFillup;
             lines.push(`Doťaženie do ${ci.transportFillupTarget}m³`);
             lines.push(rowUnit(`${ci.transportFillupM3}m³`, effectiveRate, fillupDisc));
           }
@@ -1106,32 +1130,32 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         svcDiv();
         const pumpTimeStr = result.pumpMs > 0 ? `${result.pumpHrs}h ${result.pumpMs}min` : `${result.pumpHrs}h`;
         lines.push("Čerpanie betónu");
-        lines.push(rowUnit(pumpTimeStr, pumpServicePrice * sluzbyFactor, smsItems.pump));
+        lines.push(rowUnit(pumpTimeStr, pumpServicePrice * fPump, smsItems.pump));
       }
       if (smsItems.hoses > 0) {
         svcDiv();
         lines.push("Prídavné hadice");
-        lines.push(rowUnit(`${hoseMeters}m`, hoseServicePrice * sluzbyFactor, smsItems.hoses));
+        lines.push(rowUnit(`${hoseMeters}m`, hoseServicePrice * fHose, smsItems.hoses));
       }
       if (smsItems.washing > 0) {
         svcDiv();
         lines.push("Umývanie mimo stavby");
-        lines.push(rowUnit("1 ks", washServicePrice * sluzbyFactor, smsItems.washing));
+        lines.push(rowUnit("1 ks", washServicePrice * fWash, smsItems.washing));
       }
       if (smsItems.chem > 0) {
         svcDiv();
         lines.push("Rozbehová chémia");
-        lines.push(rowUnit("1 ks", chemServicePrice * sluzbyFactor, smsItems.chem));
+        lines.push(rowUnit("1 ks", chemServicePrice * fChem, smsItems.chem));
       }
       if (smsItems.waiting > 0) {
         svcDiv();
         lines.push(`Čakačky – ${result.waitLabel}`);
-        lines.push(rowUnit(`${result.waitIntervals} × 15min`, waitServicePricePumpa * sluzbyFactor, smsItems.waiting));
+        lines.push(rowUnit(`${result.waitIntervals} × 15min`, waitServicePricePumpa * fWaitP, smsItems.waiting));
       }
     } else if (tab === "mix" && smsItems.waiting > 0) {
       svcDiv();
       lines.push(`Čas na stavbe – ${result.waitLabel}`);
-      lines.push(rowUnit(`${result.waitIntervals} × 15min`, waitServicePriceMix * sluzbyFactor, smsItems.waiting));
+      lines.push(rowUnit(`${result.waitIntervals} × 15min`, waitServicePriceMix * fWaitM, smsItems.waiting));
     }
 
     if (smsItems.zimne > 0) {
