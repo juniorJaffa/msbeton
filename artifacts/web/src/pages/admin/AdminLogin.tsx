@@ -123,9 +123,8 @@ export default function AdminLogin() {
   };
 
   const handleRegisterBio = async () => {
-    const result = await registerBiometric();
-    if (result.ok) navigate("/admin/dashboard");
-    else navigate("/admin/dashboard"); // Skip on error — still logged in
+    try { await registerBiometric(); } catch { /* ignore */ }
+    window.location.href = "/admin/dashboard";
   };
 
   return (

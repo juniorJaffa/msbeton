@@ -255,7 +255,7 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
   const [pzForm, setPzForm] = useState({ fromKm: "", toKm: "", ratePerM3: "" });
   const [stdZonesOpen, setStdZonesOpen] = useState(false);
   const [stdDotazenieOpen, setStdDotazenieOpen] = useState(false);
-  const [expandedTypes, setExpandedTypes] = useState<Record<string, boolean>>({});
+  const [expandedTypes, setExpandedTypes] = useState<Record<string, boolean>>({ standard: true, km: true, auto: true });
 
   const savePZ = (data: TransportPricingZone[]) => { setPZones(data); adminData.saveTransportZones(data); };
   const saveTs = (data: TransportSettings) => { setTs(data); adminData.saveTransportSettings(data); };
@@ -492,12 +492,15 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                   const minFeeV  = ts.minimumFee ?? 62.50;
                   return (
                     <div className="border-t-2 border-blue-100">
-                      {/* Zóny dopravy — inline, bez collapsible */}
+                      {/* Zóny dopravy — collapsible */}
                       <div className="bg-blue-50/40">
-                        <div className="flex items-center gap-2 px-5 py-2 border-b border-blue-100">
+                        <button type="button" onClick={() => setStdZonesOpen(o => !o)}
+                          className="w-full flex items-center gap-2 px-5 py-2 border-b border-blue-100 hover:bg-blue-50 transition-colors text-left cursor-pointer select-none">
                           <span className="font-black text-secondary text-xs uppercase tracking-widest">Zóny dopravy</span>
                           <span className="text-[10px] text-blue-500 font-semibold">cenník €/m³</span>
-                        </div>
+                          <div className="ml-auto">{stdZonesOpen ? <ChevronUp className="w-3.5 h-3.5 text-gray-400" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400" />}</div>
+                        </button>
+                        {stdZonesOpen && (<>
                         {/* Pricing bands table */}
                         <table className="w-full text-sm">
                           <thead>
@@ -538,6 +541,7 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                             </button>
                           </div>
                         )}
+                        </>)}
                       </div>
 
                       {/* Doťaženie — collapsible */}
