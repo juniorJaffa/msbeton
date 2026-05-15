@@ -897,6 +897,8 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [quickDate, setQuickDate] = useState("");
+  const [quickDays, setQuickDays] = useState("7");
   const [newBadge, setNewBadge] = useState(0);
   const [filterOpen, setFilterOpen] = useState(false);
 
@@ -925,6 +927,18 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
   const remove = (id: string) => { if (confirm("Vymazať objednávku?")) save(orders.filter(o => o.id !== id)); };
   const updateStatus = (id: string, status: Order["status"]) => save(orders.map(o => o.id === id ? { ...o, status } : o));
 
+  const applyQuickDate = (preset: string, nDays?: number) => {
+    const now = new Date();
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+    const today = fmt(now);
+    if (preset === "dnes") { setDateFrom(today); setDateTo(today); }
+    else if (preset === "vcera") { const y = new Date(now); y.setDate(y.getDate() - 1); const yd = fmt(y); setDateFrom(yd); setDateTo(yd); }
+    else if (preset === "tyzden") { const m = new Date(now); m.setDate(now.getDate() - ((now.getDay() + 6) % 7)); setDateFrom(fmt(m)); setDateTo(today); }
+    else if (preset === "mesiac") { setDateFrom(`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-01`); setDateTo(today); }
+    else if (preset === "ndni" && nDays && nDays > 0) { const d = new Date(now); d.setDate(d.getDate() - nDays); setDateFrom(fmt(d)); setDateTo(today); }
+    setQuickDate(preset);
+  };
+
   const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const searchTerms = search.trim().split(/\s+/).filter(Boolean);
   const filtered = orders
@@ -950,7 +964,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
   };
   const fmtEur = (n: number) => n.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
   const tabLabel: Record<Order["tab"], string> = { pumpa: "Pumpa", mix: "Mix", vlastnadoprava: "Vl. doprava" };
-  const activeFilters = [filterStatus !== "vsetky", filterTab !== "vsetky", filterPriceMode !== "vsetky", filterChannel !== "vsetky", !!search, !!dateFrom, !!dateTo].filter(Boolean).length;
+  const activeFilters = [filterStatus !== "vsetky", filterTab !== "vsetky", filterPriceMode !== "vsetky", filterChannel !== "vsetky", !!search, !!(dateFrom || dateTo)].filter(Boolean).length;
   const sortedCount = sorted.length;
   const sortedCountLabel = sortedCount === 1 ? "objednávka" : sortedCount >= 2 && sortedCount <= 4 ? "objednávky" : "objednávok";
 
@@ -974,7 +988,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
         <div className="border-t border-gray-100 mx-4" />
         {/* Row 1 – stav */}
         <div className="flex items-center gap-2 flex-wrap px-4 py-3">
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-7 shrink-0">Stav</span>
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-14 shrink-0">Stav</span>
           <button onClick={() => { setFilterStatus("vsetky"); setNewBadge(0); }}
             className={`relative px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${filterStatus === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-secondary/40"}`}>
             Všetky <span className="ml-1 text-[10px] opacity-60">{orders.length}</span>
@@ -992,7 +1006,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
         <div className="border-t border-gray-100 mx-4" />
         {/* Row 2 – typ vozidla */}
         <div className="flex items-center gap-2 flex-wrap px-4 py-3">
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-7 shrink-0">Typ</span>
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-14 shrink-0">Typ</span>
           <button onClick={() => setFilterTab("vsetky")}
             className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${filterTab === "vsetky" ? "bg-gray-700 text-white border-gray-700" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"}`}>
             Všetky
@@ -1016,9 +1030,9 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
           })}
         </div>
         <div className="border-t border-gray-100 mx-4" />
-        {/* Row 2b – faktura / hotovosť */}
+        {/* Row 3 – platba */}
         <div className="flex items-center gap-2 flex-wrap px-4 py-3">
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-7 shrink-0">Typ</span>
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-14 shrink-0">Platba</span>
           {([["vsetky", "Všetky"], ["faktura", "Faktúra"], ["hotovost", "Hotovosť"]] as const).map(([val, label]) => (
             <button key={val} onClick={() => setFilterPriceMode(val)}
               className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
@@ -1032,9 +1046,9 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
           ))}
         </div>
         <div className="border-t border-gray-100 mx-4" />
-        {/* Row 2c – kanál (košík / SMS) */}
+        {/* Row 4 – zdroj kanál */}
         <div className="flex items-center gap-2 flex-wrap px-4 py-3">
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-12 shrink-0">Zdroj</span>
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-14 shrink-0">Zdroj</span>
           {([["vsetky", "Všetky", null], ["kosarik", "Košík", "ShoppingCart"], ["sms", "SMS", "MessageSquare"]] as const).map(([val, label, iconName]) => (
             <button key={val} onClick={() => setFilterChannel(val)}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
@@ -1050,28 +1064,64 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
           ))}
         </div>
         <div className="border-t border-gray-100 mx-4" />
-        {/* Row 3 – vyhľadávanie + dátumový filter */}
-        <div className="flex items-center gap-3 flex-wrap px-4 py-3">
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest shrink-0">Hľadaj</span>
-          <input
-            type="text" value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Meno, firma, telefón, ID, adresa..."
-            className="flex-1 min-w-[160px] border border-gray-200 px-3 py-1.5 text-xs focus:outline-none focus:border-secondary rounded-sm"
-          />
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-gray-400 shrink-0">od</span>
-            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+        {/* Row 5 – dátumový filter (Kibana štýl) */}
+        <div className="flex items-start gap-2 flex-wrap px-4 py-3">
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-14 shrink-0 pt-1.5">Dátum</span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {(["dnes", "vcera", "tyzden", "mesiac"] as const).map((preset, i) => (
+              <button key={preset} onClick={() => applyQuickDate(preset)}
+                className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
+                  quickDate === preset ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
+                }`}>
+                {["Dnes", "Včera", "Týždeň", "Mesiac"][i]}
+              </button>
+            ))}
+            {/* –N dní pill */}
+            <div className={`inline-flex items-center gap-1 px-2.5 py-1.5 border rounded-sm cursor-pointer transition-all ${
+              quickDate === "ndni" ? "border-secondary bg-secondary/5" : "border-gray-200 bg-white hover:border-gray-400"
+            }`} onClick={() => applyQuickDate("ndni", Number(quickDays) || 7)}>
+              <span className={`text-xs font-bold ${quickDate === "ndni" ? "text-secondary" : "text-gray-400"}`}>–</span>
+              <input
+                type="number" min={1} max={365} value={quickDays}
+                onChange={e => { setQuickDays(e.target.value); applyQuickDate("ndni", Number(e.target.value) || 7); }}
+                onClick={e => e.stopPropagation()}
+                className={`w-8 text-xs font-bold text-center outline-none bg-transparent ${quickDate === "ndni" ? "text-secondary" : "text-gray-600"}`}
+              />
+              <span className={`text-xs font-bold ${quickDate === "ndni" ? "text-secondary" : "text-gray-500"}`}>dní</span>
+            </div>
+            <div className="w-px h-5 bg-gray-200 self-center mx-0.5" />
+            <span className="text-[10px] text-gray-400 font-semibold self-center">od</span>
+            <input type="date" value={dateFrom}
+              onChange={e => { setDateFrom(e.target.value); setQuickDate(""); }}
               className="border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-secondary rounded-sm w-32" />
-            <span className="text-[10px] text-gray-400 shrink-0">do</span>
-            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+            <span className="text-[10px] text-gray-400 font-semibold self-center">do</span>
+            <input type="date" value={dateTo}
+              onChange={e => { setDateTo(e.target.value); setQuickDate(""); }}
               className="border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-secondary rounded-sm w-32" />
+            {(dateFrom || dateTo) && (
+              <button onClick={() => { setDateFrom(""); setDateTo(""); setQuickDate(""); }}
+                className="text-gray-400 hover:text-red-500 transition-colors p-1 self-center">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
-          {(search || dateFrom || dateTo) && (
-            <button onClick={() => { setSearch(""); setDateFrom(""); setDateTo(""); }}
-              className="text-[10px] text-gray-400 hover:text-red-500 transition-colors px-2 py-1.5 border border-gray-200 rounded-sm cursor-pointer">
-              Vymazať
-            </button>
-          )}
+        </div>
+        <div className="border-t border-gray-100 mx-4" />
+        {/* Row 6 – hľadaj */}
+        <div className="flex items-center gap-2 flex-wrap px-4 py-3">
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-14 shrink-0">Hľadaj</span>
+          <div className="flex flex-1 items-center gap-1.5 min-w-[200px]">
+            <input
+              type="text" value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Meno, firma, telefón, ID, adresa..."
+              className="flex-1 border border-gray-200 px-3 py-1.5 text-xs focus:outline-none focus:border-secondary rounded-sm"
+            />
+            {search && (
+              <button onClick={() => setSearch("")} className="text-gray-400 hover:text-red-500 transition-colors p-1 shrink-0">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
         </>}
       </div>
