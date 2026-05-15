@@ -272,6 +272,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [loginErr, setLoginErr] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
   const [smsCopied, setSmsCopied] = useState(false);
+  const [smsOrderCreated, setSmsOrderCreated] = useState(false);
   const [showPriceTable, setShowPriceTable] = useState(false);
   const [zimneOpatrenia, setZimneOpatrenia] = useState(false); // default OFF, user zapína manuálne
   const [revision, setRevision] = useState(0);
@@ -1379,6 +1380,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         totalSDph: isFakt ? result.totalDiscSDph : result.hotovostTotal,
         breakdown: JSON.stringify({ v: 2, s: [] }),
         viaSms: true,
+      }).then(() => {
+        setSmsOrderCreated(true);
+        setTimeout(() => setSmsOrderCreated(false), 5000);
       }).catch(() => {});
     }
 
@@ -2496,6 +2500,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     {smsCopied ? "OK" : "EXPORT SMS"}
                   </button>
                 </div>
+                {smsOrderCreated && (
+                  <div className="flex items-center gap-2 bg-green-900/40 border border-green-500/30 rounded-sm px-3 py-2.5 text-xs text-green-300">
+                    <Check className="w-4 h-4 text-green-400 shrink-0" />
+                    <span>Záväzná objednávka cez SMS bola evidovaná v systéme.</span>
+                  </div>
+                )}
 
                 <button onClick={() => { setOrderForm(f => ({ ...f, name: loggedClient?.name ?? f.name, phone: loggedClient?.phone ? formatPhone(loggedClient.phone) : f.phone })); setShowOrderModal(true); }}
                   className="flex items-center justify-center gap-2 w-full py-3 bg-primary text-white font-bold text-sm tracking-wide hover:bg-primary/90 transition-all cursor-pointer">

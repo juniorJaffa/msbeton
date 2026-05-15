@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, SlidersHorizontal } from "lucide-react";
+import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, SlidersHorizontal, ShoppingCart, MessageSquare } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
@@ -1620,7 +1620,10 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
               <div key={l} className="w-20 text-center text-primary">{l}</div>
             ))}
           </div>
-          <div className="flex items-center justify-end shrink-0">
+          <div className="hidden sm:flex w-40 shrink-0 items-center justify-end">
+            {/* spacer pre badge stĺpec — zrkadlí šírku badge sekcie v riadkoch */}
+          </div>
+          <div className="flex items-center justify-end w-28 shrink-0">
             <button onClick={() => { setAdding(true); setExpanded(null); }} title="Pridať klienta"
               className="flex items-center gap-1.5 px-2.5 py-1.5 bg-primary text-secondary font-black text-[10px] hover:bg-primary/90 shrink-0 uppercase tracking-wide">
               <UserPlus className="w-5 h-5" />
@@ -1866,54 +1869,52 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                   ))}
                 </div>
 
-                {/* Desktop: action badges + buttons | Mobile: only chevron + action buttons */}
-                <div className="flex items-center gap-1 shrink-0">
-                  {/* Desktop-only badges */}
-                  <div className="hidden sm:flex items-center gap-1">
-                    {clientZone && (
-                      <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold rounded-sm bg-blue-50 text-blue-600 border border-blue-200">
-                        <Truck className="w-4 h-4" />
-                        {zonePricingType === "km" ? "€/km" : zonePricingType === "auto" ? "€/auto" : "Štd"}
-                      </span>
-                    )}
-
-                    {hasLogin ? (
-                      <span className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase rounded-sm ${c.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                        {c.active ? <ShieldCheck className="w-4 h-4" /> : <ShieldOff className="w-4 h-4" />}
-                        {c.active ? "Aktívny" : "Neaktívny"}
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase rounded-sm bg-gray-100 text-gray-400">
-                        <LogIn className="w-4 h-4" /> Bez prístupu
-                      </span>
-                    )}
-                  </div>
-                  {/* Always: chevron + calc (mobile) + table + delete */}
+                {/* Desktop: badge stĺpec — pevná šírka zodpovedá header spaceru */}
+                <div className="hidden sm:flex w-40 shrink-0 items-center justify-end gap-1">
+                  {clientZone && (
+                    <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold rounded-sm bg-blue-50 text-blue-600 border border-blue-200">
+                      <Truck className="w-4 h-4" />
+                      {zonePricingType === "km" ? "€/km" : zonePricingType === "auto" ? "€/auto" : "Štd"}
+                    </span>
+                  )}
+                  {hasLogin ? (
+                    <span className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase rounded-sm ${c.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                      {c.active ? <ShieldCheck className="w-4 h-4" /> : <ShieldOff className="w-4 h-4" />}
+                      {c.active ? "Aktívny" : "Neaktívny"}
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase rounded-sm bg-gray-100 text-gray-400">
+                      <LogIn className="w-4 h-4" /> Bez prístupu
+                    </span>
+                  )}
+                </div>
+                {/* Ikona tlačidlá — pevná šírka zodpovedá header akciám */}
+                <div className="flex items-center justify-end w-28 shrink-0">
                   <span className="p-1 text-gray-400">
                     {isExpanded ? <ChevronUp className="w-5 h-5 sm:w-4 sm:h-4" /> : <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4" />}
                   </span>
                   <button
                     onClick={(e) => { e.stopPropagation(); setExpanded(c.id); setClientDetailTab(prev => ({ ...prev, [c.id]: "calc" })); }}
                     title="Kalkulačka klienta"
-                    className="p-2 text-gray-300 hover:text-primary transition-colors">
-                    <Calculator className="w-6 h-6" />
+                    className="p-1.5 text-gray-300 hover:text-primary transition-colors">
+                    <Calculator className="w-5 h-5" />
                   </button>
                   {c.sharedLink && (
                     <a href={c.sharedLink} target="_blank" rel="noopener noreferrer" title="Zdielaný odkaz"
                       onClick={e => e.stopPropagation()}
-                      className="p-2 transition-colors hover:opacity-70">
-                      {(() => { const { Icon, cls } = sharedLinkIcon(c.sharedLink); return <Icon className={`w-6 h-6 ${cls}`} />; })()}
+                      className="p-1.5 transition-colors hover:opacity-70">
+                      {(() => { const { Icon, cls } = sharedLinkIcon(c.sharedLink); return <Icon className={`w-5 h-5 ${cls}`} />; })()}
                     </a>
                   )}
                   <button
                     onClick={(e) => { e.stopPropagation(); setTablePdfModal(c); setTablePdfMode("faktura"); }}
                     title="Zľavové tabuľky"
-                    className="p-2 text-gray-300 hover:text-secondary transition-colors">
-                    <Table2 className="w-6 h-6" />
+                    className="p-1.5 text-gray-300 hover:text-secondary transition-colors">
+                    <Table2 className="w-5 h-5" />
                   </button>
                   {c.id !== SYSTEM_OWNER_ID && (
-                    <button onClick={(e) => { e.stopPropagation(); remove(c.id); }} className="p-2 text-gray-300 hover:text-red-500 transition-colors">
-                      <Trash2 className="w-6 h-6" />
+                    <button onClick={(e) => { e.stopPropagation(); remove(c.id); }} className="p-1.5 text-gray-300 hover:text-red-500 transition-colors">
+                      <Trash2 className="w-5 h-5" />
                     </button>
                   )}
                 </div>
