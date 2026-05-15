@@ -166,6 +166,10 @@ export default function AdminLogin() {
               {/* ── Bio failed — retry + fallback form ──────────────── */}
               {screen === "bio-failed" && (
                 <div className="space-y-4">
+                  <div className="inline-flex items-center gap-1.5 bg-primary/15 border border-primary/30 px-2.5 py-1 rounded-sm mb-2">
+                    <Lock className="w-3 h-3 text-primary" />
+                    <span className="text-primary font-black text-[10px] uppercase tracking-widest">Administrácia</span>
+                  </div>
                   <div className="flex items-center gap-3 bg-yellow-500/15 border border-yellow-500/30 px-4 py-3 text-yellow-300 text-sm">
                     <Fingerprint className="w-5 h-5 shrink-0" />
                     <div>
@@ -213,6 +217,10 @@ export default function AdminLogin() {
               {/* ── Normal form ─────────────────────────────────────── */}
               {screen === "form" && (
                 <>
+                  <div className="inline-flex items-center gap-1.5 bg-primary/15 border border-primary/30 px-2.5 py-1 rounded-sm mb-4">
+                    <Lock className="w-3 h-3 text-primary" />
+                    <span className="text-primary font-black text-[10px] uppercase tracking-widest">Administrácia</span>
+                  </div>
                   <h2 className="text-2xl font-black text-white uppercase tracking-wide mb-1" style={{ fontFamily: "Montserrat, sans-serif" }}>
                     VITAJTE SPÄŤ!
                   </h2>

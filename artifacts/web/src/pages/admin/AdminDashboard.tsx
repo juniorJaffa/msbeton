@@ -1288,6 +1288,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                       {o.viaSms
                         ? <span className="inline-flex items-center gap-0.5 bg-green-100 text-green-700 text-[9px] font-black px-1.5 py-0.5 rounded-sm"><MessageSquare className="w-2.5 h-2.5" /> SMS</span>
                         : <span className="inline-flex items-center bg-secondary/10 text-secondary px-1.5 py-0.5 rounded-sm"><ShoppingCart className="w-3 h-3" /></span>}
+                      {o.podmienky ? <span className="inline-flex items-center gap-0.5 bg-amber-100 text-amber-800 text-[9px] font-black px-1.5 py-0.5 rounded-sm">★ {o.podmienky.trucks}×</span> : null}
                       {(o.discountBeton || o.discountDoprava || o.discountSluzby || o.discountCelkovo) ? (
                         o.discountCelkovo ? (
                           <span className="bg-primary text-secondary text-[9px] font-black px-1.5 py-0.5 rounded-sm">−{o.discountCelkovo}%</span>
@@ -1393,6 +1394,12 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                         <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Množstvo</span><span className="font-bold text-gray-800">{o.totalQty} m³</span></div>
                         {(o.fillupM3 ?? 0) > 0 && (
                           <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Doťaženie</span><span className="font-medium text-amber-700">+{o.fillupM3} m³ → {o.fillupTarget} m³</span></div>
+                        )}
+                        {o.podmienky && (
+                          <div className="flex gap-2 items-center">
+                            <span className="text-gray-400 w-24 shrink-0">Podmienky</span>
+                            <span className="inline-flex items-center gap-1 font-black text-amber-700 text-xs bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-sm">★ {o.podmienky.trucks} vozidiel — terén / počasie</span>
+                          </div>
                         )}
                         {o.km && <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Vzdialenosť</span><span className="font-medium text-gray-700">{o.km} km</span></div>}
                         {o.address && <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Adresa</span><span className="text-gray-600 break-words">{o.address}</span></div>}

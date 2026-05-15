@@ -1047,7 +1047,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const pdfTrucks = tab === "pumpa" ? `1×Pumpa${mainTrucks > 1 ? `+${mainTrucks - 1}×Mix` : ""}` : `${mainTrucks}×Mix`;
     const pdfZone = result.transportZone ? `${result.transportZone.fromKm}–${result.transportZone.toKm}&nbsp;km` : "";
     const pdfPrefix = result.transportIsMin ? "Min. doprava" : "Doprava";
-    const dopravaLabel = `${pdfPrefix}${pdfZone ? ` ${pdfZone}` : ""} · ${pdfTrucks}`;
+    const dopravaLabel = `${pdfPrefix}${pdfZone ? ` ${pdfZone}` : ""} · ${pdfTrucks}${podmienkyEnabled ? " ★" : ""}`;
+    const podmienkyNoteRow = podmienkyEnabled
+      ? `<tr><td colspan="5" style="background:#fffbeb;color:#92400e;font-size:7pt;padding:3px 8px 3px 12px;border-top:1px solid #fde68a">★ Pretaženie: ${podmienkyTrucks} vozidiel podľa podmienok terénu / počasia</td></tr>`
+      : "";
     const mainTransportOrig = mainCI?.transport ?? 0;
     const mainTransportDisc = mainTransportOrig * result.fTransport;
     const mainPricingType = clientDeliveryZone?.pricingType ?? "standard";
@@ -1241,6 +1244,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     ${betonRows}
     ${transportRow}
     ${fillupRow}
+    ${podmienkyNoteRow}
     ${zimneRow}
     ${sluzbyRows}
     ${extraRows}
@@ -1412,6 +1416,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         totalSDph: isFakt ? result.totalDiscSDph : result.hotovostTotal,
         breakdown: buildBreakdown(),
         viaSms: true,
+        ...(podmienkyEnabled ? { podmienky: { trucks: podmienkyTrucks } } : {}),
       }).then(() => {
         setSmsOrderCreated(true);
         setTimeout(() => setSmsOrderCreated(false), 5000);
@@ -1542,6 +1547,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       discountDoprava: discountDoprava > 0 ? discountDoprava : undefined,
       discountSluzby:  discountSluzby  > 0 ? discountSluzby  : undefined,
       discountCelkovo: discountCelkovo > 0 ? discountCelkovo : undefined,
+      ...(podmienkyEnabled ? { podmienky: { trucks: podmienkyTrucks } } : {}),
     });
     setOrderSubmitting(false);
     setOrderDone(true);

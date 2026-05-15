@@ -100,6 +100,7 @@ export interface Order {
   discountSluzby?: number;
   discountCelkovo?: number;
   viaSms?: boolean; // objednávka odoslaná cez SMS export
+  podmienky?: { trucks: number }; // pretaženie vozidiel — terén/počasie
 }
 
 export interface ClientAccount {

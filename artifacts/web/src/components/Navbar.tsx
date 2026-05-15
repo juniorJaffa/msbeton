@@ -93,13 +93,22 @@ export function Navbar() {
                   </button>
                 </div>
               ) : (
-                <a
-                  href="/admin/login"
-                  className="flex items-center text-white/40 hover:text-white/80 transition-colors shrink-0 p-1.5 -m-1.5"
-                  title="Administrácia"
-                >
-                  <LogIn className="w-4 h-4 shrink-0" />
-                </a>
+                <div className="flex items-center gap-2 shrink-0">
+                  <a
+                    href="/prihlasenie"
+                    className="flex items-center gap-1.5 text-white/60 hover:text-primary transition-colors text-xs font-bold shrink-0"
+                  >
+                    <LogIn className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden sm:inline">Prihlásenie</span>
+                  </a>
+                  <a
+                    href="/admin/login"
+                    className="flex items-center text-white/20 hover:text-white/40 transition-colors shrink-0 p-1 -m-1"
+                    title="Administrácia"
+                  >
+                    <UserCog className="w-3.5 h-3.5 shrink-0" />
+                  </a>
+                </div>
               )}
             </div>
           </div>
