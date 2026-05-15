@@ -68,21 +68,18 @@ export function Navbar() {
               </a>
               {loggedClient ? (
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-white/60 text-xs hidden sm:block">{loggedClient.name}</span>
+                  {loggedClient.id !== "admin" ? (
+                    <a href="/klient-profil" className="hidden sm:flex items-center gap-1 text-white/60 hover:text-white/85 transition-colors text-xs group" title="Môj profil">
+                      <UserCog className="w-3 h-3 shrink-0 opacity-40 group-hover:opacity-80 transition-opacity" />
+                      {loggedClient.name}
+                    </a>
+                  ) : (
+                    <span className="text-white/60 text-xs hidden sm:block">{loggedClient.name}</span>
+                  )}
                   {(loggedClient.discountBeton > 0 || loggedClient.discountDoprava > 0 || loggedClient.discountSluzby > 0 || loggedClient.discountCelkovo > 0) && (
                     <span className="px-1.5 py-0.5 bg-primary text-secondary text-[10px] font-black rounded-sm">
                       Zľava aktívna
                     </span>
-                  )}
-                  {loggedClient.id !== "admin" && (
-                    <a
-                      href="/klient-profil"
-                      className="flex items-center gap-1 text-white/40 hover:text-white/70 transition-colors text-xs ml-1"
-                      title="Môj profil"
-                    >
-                      <UserCog className="w-3.5 h-3.5 shrink-0" />
-                      <span className="hidden sm:block">Profil</span>
-                    </a>
                   )}
                   <button
                     onClick={() => { clientAuth.logout(); setLoggedClient(null); }}

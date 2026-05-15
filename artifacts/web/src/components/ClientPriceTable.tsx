@@ -43,6 +43,7 @@ interface EditRowProps {
 function EditRow({ id, orig, factor, manualPrice, dark, onManualPriceChange }: EditRowProps) {
   const [editing, setEditing] = useState(false);
   const [inputVal, setInputVal] = useState("");
+  const [saved, setSaved] = useState(false);
 
   const computedDisc = orig * factor;
   const effectivePrice = manualPrice !== undefined ? manualPrice : computedDisc;
@@ -52,7 +53,19 @@ function EditRow({ id, orig, factor, manualPrice, dark, onManualPriceChange }: E
     setEditing(true);
   };
 
-  const confirm = () => {
+  // Enter/Check = save + keep editing open (pre multi-zmeny), blur = save + zatvoriť
+  const confirmKeepOpen = (e?: React.KeyboardEvent | React.MouseEvent) => {
+    if (e) { (e as React.SyntheticEvent).preventDefault(); (e as React.SyntheticEvent).stopPropagation(); }
+    const v = parseFloat(inputVal.replace(",", "."));
+    if (!isNaN(v) && v >= 0) {
+      onManualPriceChange?.(id, v);
+      setInputVal(v.toFixed(2));
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1000);
+    }
+  };
+
+  const confirmAndClose = () => {
     const v = parseFloat(inputVal.replace(",", "."));
     if (!isNaN(v) && v >= 0) onManualPriceChange?.(id, v);
     setEditing(false);
@@ -71,22 +84,26 @@ function EditRow({ id, orig, factor, manualPrice, dark, onManualPriceChange }: E
         <input
           type="text"
           value={inputVal}
-          onChange={e => setInputVal(e.target.value)}
+          onChange={e => { setInputVal(e.target.value); setSaved(false); }}
           onKeyDown={e => {
-            if (e.key === "Enter") confirm();
+            if (e.key === "Enter") confirmKeepOpen(e);
             if (e.key === "Escape") setEditing(false);
           }}
-          onBlur={confirm}
+          onBlur={confirmAndClose}
           autoFocus
           className={cn(
-            "w-20 text-right text-sm font-bold px-1.5 py-0.5 rounded border outline-none",
-            dark ? "bg-white/10 border-primary/40 text-white" : "bg-gray-50 border-gray-300 text-secondary"
+            "w-20 text-right text-sm font-bold px-1.5 py-0.5 rounded border outline-none transition-colors",
+            saved ? "border-green-500 bg-green-50/20" : (dark ? "bg-white/10 border-primary/40 text-white" : "bg-gray-50 border-gray-300 text-secondary")
           )}
         />
+        <button type="button" onMouseDown={e => e.preventDefault()} onClick={confirmKeepOpen}
+          title="Uložiť (Enter)" className={cn("cursor-pointer transition-colors shrink-0", saved ? "text-green-500" : (dark ? "text-white/40 hover:text-green-400" : "text-gray-400 hover:text-green-600"))}>
+          <Check className="w-4 h-4" />
+        </button>
         {manualPrice !== undefined && (
           <button type="button" onMouseDown={clear} title="Odstrániť manuálnu cenu"
             className={cn("cursor-pointer transition-colors shrink-0", dark ? "text-white/30 hover:text-red-400" : "text-gray-300 hover:text-red-400")}>
-            <X className="w-3 h-3" />
+            <X className="w-4 h-4" />
           </button>
         )}
       </div>

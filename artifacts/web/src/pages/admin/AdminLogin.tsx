@@ -140,6 +140,7 @@ export default function AdminLogin() {
           <span className="font-black text-4xl tracking-tighter text-primary" style={{ fontFamily: "Montserrat, sans-serif" }}>MS</span>
           <span className="font-black text-4xl tracking-tighter text-primary/40" style={{ fontFamily: "Montserrat, sans-serif" }}>-</span>
           <span className="font-black text-4xl tracking-tighter text-white" style={{ fontFamily: "Montserrat, sans-serif" }}>BETON</span>
+          <span className="ml-2 self-end mb-1 text-[10px] font-black text-primary/60 border border-primary/30 px-1.5 py-0.5 rounded-sm tracking-widest">ADMIN</span>
         </a>
 
         <div className="bg-[#424356] rounded-none shadow-2xl overflow-hidden">
@@ -217,9 +218,9 @@ export default function AdminLogin() {
               {/* ── Normal form ─────────────────────────────────────── */}
               {screen === "form" && (
                 <>
-                  <div className="inline-flex items-center gap-1.5 bg-primary/15 border border-primary/30 px-2.5 py-1 rounded-sm mb-4">
-                    <Lock className="w-3 h-3 text-primary" />
-                    <span className="text-primary font-black text-[10px] uppercase tracking-widest">Administrácia</span>
+                  <div className="inline-flex items-center gap-1.5 bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-sm mb-2">
+                    <Lock className="w-2.5 h-2.5 text-primary/70" />
+                    <span className="text-primary/70 font-black text-[9px] uppercase tracking-widest">Administrácia</span>
                   </div>
                   <h2 className="text-2xl font-black text-white uppercase tracking-wide mb-1" style={{ fontFamily: "Montserrat, sans-serif" }}>
                     VITAJTE SPÄŤ!

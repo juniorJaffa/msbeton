@@ -29,19 +29,22 @@ function EditableField({ value, onSave, type = "text" }: { value: string | numbe
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(String(value));
   const save = () => { onSave(val); setEditing(false); };
+  const cancel = () => setEditing(false);
   const startEdit = () => { setVal(String(value)); setEditing(true); };
   if (!editing) return (
     <span className="cursor-pointer hover:text-primary transition-colors group flex items-center gap-1" onClick={e => { e.stopPropagation(); startEdit(); }}>
       {value}
-      <Pencil className="w-3 h-3 opacity-0 group-hover:opacity-50 transition-opacity" />
+      <Pencil className="w-3.5 h-3.5 opacity-0 group-hover:opacity-50 transition-opacity" />
     </span>
   );
   return (
     <span className="flex items-center gap-1">
-      <input type={type} value={val} onChange={e => setVal(e.target.value)} onKeyDown={e => { if (e.key === "Enter") save(); if (e.key === "Escape") setEditing(false); }}
+      <input type={type} value={val} onChange={e => setVal(e.target.value)}
+        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); save(); } if (e.key === "Escape") cancel(); }}
+        onBlur={cancel}
         className={`bg-white border border-primary px-2 py-0.5 text-secondary text-sm ${type === "number" ? "w-20" : "w-32"} focus:outline-none`} autoFocus onFocus={e => e.target.select()} />
-      <button onClick={save} className="text-green-600 hover:text-green-700"><Check className="w-4 h-4" /></button>
-      <button onClick={() => setEditing(false)} className="text-red-500 hover:text-red-600"><X className="w-4 h-4" /></button>
+      <button onMouseDown={e => e.preventDefault()} onClick={save} className="text-green-600 hover:text-green-700"><Check className="w-5 h-5" /></button>
+      <button onMouseDown={e => e.preventDefault()} onClick={cancel} className="text-red-500 hover:text-red-600"><X className="w-5 h-5" /></button>
     </span>
   );
 }
@@ -997,6 +1000,30 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
     });
   const sorted = [...filtered].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
+  const [floatingOrder, setFloatingOrder] = useState<Order | null>(null);
+  const sortedRef = useRef(sorted);
+  sortedRef.current = sorted;
+  useEffect(() => {
+    const container = document.getElementById("admin-content");
+    if (!container) return;
+    const onScroll = () => {
+      const filterEl = container.querySelector(".sticky.top-0.z-20");
+      const tbBottom = filterEl ? filterEl.getBoundingClientRect().bottom + 2 : 60;
+      const cards = container.querySelectorAll("[id^='order-card-']");
+      let last: Order | null = null;
+      for (const el of Array.from(cards)) {
+        if (el.getBoundingClientRect().top < tbBottom) {
+          const id = el.id.replace("order-card-", "");
+          const found = sortedRef.current.find(o => o.id === id);
+          if (found) last = found;
+        } else break;
+      }
+      setFloatingOrder(last);
+    };
+    container.addEventListener("scroll", onScroll, { passive: true });
+    return () => container.removeEventListener("scroll", onScroll);
+  }, []);
+
   const todayStr = new Date().toISOString().slice(0, 10);
   const yesterdayStr = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().slice(0, 10); })();
   const fmtDate = (iso: string) => {
@@ -1049,7 +1076,8 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
       </div>
 
       {/* Filter panel — sticky, collapsible */}
-      <div className="sticky top-0 z-20 bg-white border border-gray-200 shadow-sm">
+      <div className="sticky top-0 z-20">
+      <div className="bg-white border border-gray-200 shadow-sm">
         {/* Compact header — vždy viditeľný, toggle */}
         <button onClick={() => setFilterOpen(o => !o)}
           className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-gray-50 transition-colors cursor-pointer">
@@ -1241,6 +1269,16 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
         </div>
         )}
       </div>
+      {floatingOrder && (
+        <div className="bg-secondary/97 border-b border-white/10 px-4 py-1 flex items-center gap-2 text-xs shadow-sm">
+          <span className="text-white/30 text-[9px]">▸</span>
+          <span className="font-bold text-white truncate">{floatingOrder.clientName}</span>
+          {floatingOrder.company && <span className="text-white/40 truncate hidden sm:block">{floatingOrder.company}</span>}
+          <span className="text-white/40 shrink-0">{floatingOrder.tab === "pumpa" ? "Pumpa" : floatingOrder.tab === "mix" ? "Mix" : "Vl."} · {floatingOrder.totalQty} m³</span>
+          <span className={`ml-auto shrink-0 text-[9px] font-black px-1.5 py-0.5 rounded-sm ${floatingOrder.status === "nova" ? "bg-blue-500 text-white" : floatingOrder.status === "potvrdena" ? "bg-yellow-400 text-secondary" : "bg-green-600 text-white"}`}>{floatingOrder.status.toUpperCase()}</span>
+        </div>
+      )}
+      </div>
 
       {sorted.length === 0 ? (
         <div className="bg-white border border-gray-200 px-8 py-12 text-center text-gray-400 text-sm">
@@ -1288,7 +1326,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                       {o.viaSms
                         ? <span className="inline-flex items-center gap-0.5 bg-green-100 text-green-700 text-[9px] font-black px-1.5 py-0.5 rounded-sm"><MessageSquare className="w-2.5 h-2.5" /> SMS</span>
                         : <span className="inline-flex items-center bg-secondary/10 text-secondary px-1.5 py-0.5 rounded-sm"><ShoppingCart className="w-3 h-3" /></span>}
-                      {o.podmienky ? <span className="inline-flex items-center gap-0.5 bg-amber-100 text-amber-800 text-[9px] font-black px-1.5 py-0.5 rounded-sm">★ {o.podmienky.trucks}×</span> : null}
+                      {o.podmienky ? <span className="inline-flex items-center gap-0.5 bg-amber-100 text-amber-800 text-[9px] font-black px-1.5 py-0.5 rounded-sm">★ {o.podmienky.pumpa > 0 ? `1×P+${o.podmienky.mix}×M` : `${o.podmienky.trucks}×Mix`}</span> : null}
                       {(o.discountBeton || o.discountDoprava || o.discountSluzby || o.discountCelkovo) ? (
                         o.discountCelkovo ? (
                           <span className="bg-primary text-secondary text-[9px] font-black px-1.5 py-0.5 rounded-sm">−{o.discountCelkovo}%</span>
@@ -1396,9 +1434,14 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                           <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Doťaženie</span><span className="font-medium text-amber-700">+{o.fillupM3} m³ → {o.fillupTarget} m³</span></div>
                         )}
                         {o.podmienky && (
-                          <div className="flex gap-2 items-center">
-                            <span className="text-gray-400 w-24 shrink-0">Podmienky</span>
-                            <span className="inline-flex items-center gap-1 font-black text-amber-700 text-xs bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-sm">★ {o.podmienky.trucks} vozidiel — terén / počasie</span>
+                          <div className="flex gap-2 items-start">
+                            <span className="text-gray-400 w-24 shrink-0 mt-0.5">Podmienky</span>
+                            <div className="space-y-0.5">
+                              <span className="inline-flex items-center gap-1 font-black text-amber-700 text-xs bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-sm">
+                                ★ {o.podmienky.pumpa > 0 ? `1× Pumpa + ${o.podmienky.mix}× Mix` : `${o.podmienky.trucks}× Mix`}
+                              </span>
+                              <p className="text-[10px] text-gray-500">∅ {o.podmienky.m3PerTruck?.toFixed(1) ?? "—"} m³/vozidlo — terén / počasie</p>
+                            </div>
                           </div>
                         )}
                         {o.km && <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Vzdialenosť</span><span className="font-medium text-gray-700">{o.km} km</span></div>}
@@ -1701,6 +1744,30 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
     });
   });
 
+  const [floatingClient, setFloatingClient] = useState<Client | null>(null);
+  const filteredRef = useRef(filtered);
+  filteredRef.current = filtered;
+  useEffect(() => {
+    const container = document.getElementById("admin-content");
+    if (!container) return;
+    const onScroll = () => {
+      const toolbar = document.getElementById("klienti-toolbar");
+      const tbBottom = toolbar ? toolbar.getBoundingClientRect().bottom + 2 : 82;
+      const cards = container.querySelectorAll("[id^='client-card-']");
+      let last: Client | null = null;
+      for (const el of Array.from(cards)) {
+        if (el.getBoundingClientRect().top < tbBottom) {
+          const id = el.id.replace("client-card-", "");
+          const found = filteredRef.current.find(c => c.id === id);
+          if (found) last = found;
+        } else break;
+      }
+      setFloatingClient(last);
+    };
+    container.addEventListener("scroll", onScroll, { passive: true });
+    return () => container.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
     <div className="space-y-4">
       {/* Systémová DPH — collapsible */}
@@ -1785,8 +1852,9 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
         </div>}
       </div>
 
-      {/* Sticky toolbar — search + table header */}
-      <div id="klienti-toolbar" className="sticky top-0 z-20 shadow-sm">
+      {/* Sticky toolbar — search + table header + floating client indicator */}
+      <div className="sticky top-0 z-20">
+      <div id="klienti-toolbar" className="shadow-sm">
         <div className="py-2 px-1 bg-white border-b border-gray-100">
           <input placeholder="Hľadať klienta..." value={search} onChange={e => setSearch(e.target.value)}
             className="w-full bg-gray-50 text-secondary placeholder:text-gray-400 px-4 py-2.5 text-sm focus:outline-none rounded border border-gray-200 focus:border-primary" />
@@ -1811,6 +1879,16 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
             </button>
           </div>
         </div>
+      </div>
+      {floatingClient && (
+        <div className="bg-secondary/97 border-b border-white/10 px-4 py-1 flex items-center gap-2 text-xs shadow-sm">
+          <span className="text-white/30 text-[9px]">▸</span>
+          {floatingClient.isOwner && <Crown className="w-3 h-3 text-primary shrink-0" />}
+          <span className="font-bold text-white truncate">{[floatingClient.firstName, floatingClient.lastName].filter(Boolean).join(" ") || floatingClient.company || "—"}</span>
+          {floatingClient.company && <span className="text-white/40 truncate hidden sm:block">{floatingClient.company}</span>}
+          {(floatingClient.discountCelkovo ?? 0) > 0 && <span className="text-primary text-[9px] font-black ml-auto shrink-0">−{floatingClient.discountCelkovo}% celk.</span>}
+        </div>
+      )}
       </div>
 
       {/* Add form */}

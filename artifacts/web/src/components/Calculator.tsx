@@ -1,8 +1,13 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Truck, LogIn, LogOut, FileText, FileSpreadsheet, FileType2, MessageSquare, Minus, Plus, Trash2, Table2, ShoppingCart, X, Info, Check, ExternalLink, MapPin, Copy, Navigation, Settings2 } from "lucide-react";
+import { ChevronDown, Truck, LogIn, LogOut, FileText, FileSpreadsheet, FileType2, MessageSquare, Minus, Plus, Trash2, Table2, ShoppingCart, X, Info, Check, ExternalLink, MapPin, Copy, Navigation, Settings2, AlertTriangle } from "lucide-react";
 import { OpenLocationCode } from "open-location-code";
 import { cn, formatPhone } from "@/lib/utils";
+
+declare global { function gtag(...args: unknown[]): void; }
+function gtagEvent(name: string, params?: Record<string, unknown>) {
+  if (typeof gtag !== "undefined") gtag("event", name, params ?? {});
+}
 
 const _olc = new OpenLocationCode();
 function encodeOLC(lat: number, lng: number): string {
@@ -496,6 +501,15 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         });
       };
 
+      // Pre-fill z adresného režimu — PRED searchInput, nezávisle od jeho existencie v DOM
+      const pendingAddr = pendingGeocodeAddressRef.current;
+      if (pendingAddr) {
+        pendingGeocodeAddressRef.current = null;
+        mapGeocodeAddrFnRef.current(pendingAddr);
+      } else if (address && !mapPin) {
+        mapGeocodeAddrFnRef.current(address);
+      }
+
       if (searchInput) {
         const ac = new google.maps.places.Autocomplete(searchInput, { types: ["geocode"], componentRestrictions: { country: "sk" } });
         ac.addListener("place_changed", () => {
@@ -506,14 +520,6 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
           map.setZoom(15);
           setPinAt(loc.lat(), loc.lng());
         });
-        // Pre-fill z adresného režimu (prvý init)
-        const pendingAddr = pendingGeocodeAddressRef.current;
-        if (pendingAddr) {
-          pendingGeocodeAddressRef.current = null;
-          mapGeocodeAddrFnRef.current(pendingAddr);
-        } else if (address && !mapPin) {
-          mapGeocodeAddrFnRef.current(address);
-        }
       }
 
       // Auto-locate ak nie je adresa
@@ -987,6 +993,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
   function exportPDF() {
     if (!result) return;
+    gtagEvent("pdf_export", { tab, quantity, type: selectedType?.label });
     const today = new Date().toLocaleDateString("sk-SK");
     const isFaktura = priceMode === "faktura";
     const baseItems = isFaktura ? result.discountedItems : result.hotovostDiscItems;
@@ -1048,8 +1055,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const pdfZone = result.transportZone ? `${result.transportZone.fromKm}–${result.transportZone.toKm}&nbsp;km` : "";
     const pdfPrefix = result.transportIsMin ? "Min. doprava" : "Doprava";
     const dopravaLabel = `${pdfPrefix}${pdfZone ? ` ${pdfZone}` : ""} · ${pdfTrucks}${podmienkyEnabled ? " ★" : ""}`;
+    const podmienkyMixCount = tab === "pumpa" ? Math.max(0, podmienkyTrucks - 1) : podmienkyTrucks;
+    const podmienkyM3PerTruck = podmienkyEnabled && podmienkyTrucks > 0 ? Math.round((result.qty / podmienkyTrucks) * 10) / 10 : 0;
+    const podmienkyVehicleStr = tab === "pumpa"
+      ? `1× Pumpa${podmienkyMixCount > 0 ? ` + ${podmienkyMixCount}× Mix` : ""}`
+      : `${podmienkyTrucks}× Mix`;
     const podmienkyNoteRow = podmienkyEnabled
-      ? `<tr><td colspan="5" style="background:#fffbeb;color:#92400e;font-size:7pt;padding:3px 8px 3px 12px;border-top:1px solid #fde68a">★ Pretaženie: ${podmienkyTrucks} vozidiel podľa podmienok terénu / počasia</td></tr>`
+      ? `<tr><td colspan="5" style="background:#fffbeb;color:#92400e;font-size:7pt;padding:4px 8px 4px 12px;border-top:1px solid #fde68a">★ Pretaženie: ${podmienkyVehicleStr} · ∅ ${podmienkyM3PerTruck} m³/vozidlo — terén / počasie</td></tr>`
       : "";
     const mainTransportOrig = mainCI?.transport ?? 0;
     const mainTransportDisc = mainTransportOrig * result.fTransport;
@@ -1286,6 +1298,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
   function exportSMS() {
     if (!result) return;
+    gtagEvent("sms_export", { tab, quantity, type: selectedType?.label });
     const isFaktura = priceMode === "faktura";
     const smsItems = isFaktura ? result.discountedItems : result.hotovostDiscItems;
     const now = new Date();
@@ -1416,7 +1429,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         totalSDph: isFakt ? result.totalDiscSDph : result.hotovostTotal,
         breakdown: buildBreakdown(),
         viaSms: true,
-        ...(podmienkyEnabled ? { podmienky: { trucks: podmienkyTrucks } } : {}),
+        ...(podmienkyEnabled ? { podmienky: { trucks: podmienkyTrucks, pumpa: tab === "pumpa" ? 1 : 0, mix: tab === "pumpa" ? Math.max(0, podmienkyTrucks - 1) : podmienkyTrucks, m3PerTruck: podmienkyTrucks > 0 ? Math.round((result!.qty / podmienkyTrucks) * 10) / 10 : 0 } } : {}),
       }).then(() => {
         setSmsOrderCreated(true);
         setTimeout(() => setSmsOrderCreated(false), 5000);
@@ -1551,6 +1564,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     });
     setOrderSubmitting(false);
     setOrderDone(true);
+    gtagEvent("order_submitted", { tab, quantity, type: selectedType?.label, priceMode });
     setTimeout(() => { setShowOrderModal(false); setOrderDone(false); }, 3000);
   }
 
@@ -1840,15 +1854,16 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 {mapKmConfirmed ? (
                   <div className="bg-white/10 px-3 py-2.5 flex items-center gap-3 rounded-sm">
                     <MapPin className="w-4 h-4 text-primary shrink-0" />
-                    <div className="flex-1 min-w-0 space-y-0.5">
-                      <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-mono text-primary text-xs font-bold tracking-wide">{mapPlusCode}</span>
                         <button onClick={() => { navigator.clipboard?.writeText(mapPlusCode); setMapCopied(true); setTimeout(() => setMapCopied(false), 1500); }}
                           className="text-white/40 hover:text-primary transition-colors" title="Kopírovať Plus Code">
                           {mapCopied ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
                         </button>
+                        <span className="text-white/20 text-xs">·</span>
+                        <span className="text-xs text-white/50">od MS-BETON: <strong className="text-primary">{distance} km</strong></span>
                       </div>
-                      <p className="text-xs text-white/50"><strong className="text-primary">{distance} km</strong> (pre výpočet dopravy)</p>
                     </div>
                     <button onClick={() => { setMapKmConfirmed(false); setMapPin(null); setMapPlusCode(""); setDistance(""); setAddressKm(null); }}
                       className="text-xs text-white/40 hover:text-white/70 transition-colors shrink-0">Zmeniť</button>
@@ -1866,8 +1881,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                           {mapCopied ? <Check className="w-3.5 h-3.5 text-primary" /> : <Copy className="w-3.5 h-3.5" />}
                         </button>
                       )}
+                      {distance && <><span className="text-white/20 text-xs">·</span><span className="text-xs text-white/60">od MS-BETON: <strong className="text-primary">{distance} km</strong></span></>}
                     </div>
-                    <p className="text-xs text-white/60">Vzdialenosť od MS-BETON: <strong className="text-primary">{distance} km</strong></p>
                     <button onClick={() => setMapKmConfirmed(true)}
                       className="w-full bg-primary text-secondary font-black text-xs uppercase tracking-widest py-2.5 hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
                       <MapPin className="w-3.5 h-3.5" /> Potvrdiť polohu
@@ -1929,6 +1944,70 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
               placeholder="Zadajte množstvo"
               className="w-full bg-white/10 border-b-2 border-b-primary text-white px-4 py-3 focus:outline-none placeholder:text-white/30 text-sm font-medium rounded-sm" />
           </div>
+
+          {/* Podmienky — admin only, Pumpa + Mix, hneď za Množstvo */}
+          {isAdminMode && tab !== "vlastnadoprava" && (() => {
+            const qty = parseFloat(quantity) || 0;
+            const autoTrucks = tab === "pumpa" ? calcPumpTrucks(qty) : Math.ceil(qty / mixCap);
+            const minTrucks = Math.max(1, autoTrucks);
+            const maxTrucks = qty > 0 ? Math.max(minTrucks, Math.floor(qty)) : minTrucks + 8;
+            const mixCount = tab === "pumpa" ? Math.max(0, podmienkyTrucks - 1) : podmienkyTrucks;
+            const m3PerTruck = podmienkyTrucks > 0 && qty > 0 ? qty / podmienkyTrucks : 0;
+            return (
+              <div className="mt-2 border border-amber-500/25 rounded-sm overflow-hidden">
+                <button type="button"
+                  onClick={() => {
+                    if (!podmienkyEnabled) setPodmienkyTrucks(minTrucks);
+                    setPodmienkyEnabled(v => !v);
+                  }}
+                  className="w-full flex items-center justify-between px-3 py-2 bg-amber-500/8 hover:bg-amber-500/12 transition-colors cursor-pointer"
+                >
+                  <span className="flex items-center gap-1.5 text-[10px] font-black text-amber-400/90 uppercase tracking-widest">
+                    <AlertTriangle className="w-3 h-3" /> Podmienky terénu / počasia
+                  </span>
+                  <div className={`w-7 h-3.5 rounded-full transition-colors flex items-center px-0.5 ${podmienkyEnabled ? "bg-amber-400" : "bg-white/15"}`}>
+                    <div className={`w-2.5 h-2.5 rounded-full bg-white shadow transition-transform ${podmienkyEnabled ? "translate-x-3.5" : "translate-x-0"}`} />
+                  </div>
+                </button>
+                {podmienkyEnabled && (
+                  <div className="px-3 pb-3 pt-2 space-y-2.5 border-t border-amber-500/20 bg-amber-500/5">
+                    <p className="text-[10px] text-amber-300/70 leading-relaxed">
+                      Naročný terén alebo zlé počasie si môže vyžadovať rozdelenie množstva na viac vozidiel.
+                      Každé vozidlo musí viezť min. 1 m³.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-amber-300/90 flex-1 uppercase tracking-wide">
+                        {tab === "pumpa" ? "Celkový počet vozidiel" : "Počet Mix vozidiel"}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button type="button"
+                          onClick={() => setPodmienkyTrucks(t => Math.max(minTrucks, t - 1))}
+                          disabled={podmienkyTrucks <= minTrucks}
+                          className="w-7 h-7 rounded-sm border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/10 font-bold text-base flex items-center justify-center cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed transition-colors">−</button>
+                        <span className="w-7 text-center font-black text-amber-200 text-base">{podmienkyTrucks}</span>
+                        <button type="button"
+                          onClick={() => setPodmienkyTrucks(t => Math.min(maxTrucks, t + 1))}
+                          disabled={podmienkyTrucks >= maxTrucks}
+                          className="w-7 h-7 rounded-sm border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/10 font-bold text-base flex items-center justify-center cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed transition-colors">+</button>
+                      </div>
+                    </div>
+                    <div className="text-[10px] text-amber-200/90 bg-amber-900/25 rounded px-2.5 py-1.5 font-mono leading-relaxed">
+                      {tab === "pumpa"
+                        ? <span>1× Pumpa{mixCount > 0 ? ` + ${mixCount}× Mix` : ""} · ∅ {m3PerTruck > 0 ? m3PerTruck.toFixed(1) : "—"} m³/vozidlo</span>
+                        : <span>{podmienkyTrucks}× Mix · ∅ {m3PerTruck > 0 ? m3PerTruck.toFixed(1) : "—"} m³/vozidlo</span>
+                      }
+                      {qty > 0 && podmienkyTrucks >= maxTrucks && (
+                        <span className="block text-amber-400/70 mt-0.5">Max. {maxTrucks} voz. (min. 1 m³/vozidlo)</span>
+                      )}
+                      {qty > 0 && podmienkyTrucks <= minTrucks && (
+                        <span className="block text-amber-400/70 mt-0.5">Min. {minTrucks} voz. (normálny výpočet)</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Extra Items (Pridať položku) */}
           {extraItems.map((item, idx) => {
@@ -2244,54 +2323,6 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             </div>
           )}
 
-          {/* Podmienky — admin only (Pumpa + Mix) */}
-          {isAdminMode && tab !== "vlastnadoprava" && (
-            <div className="mt-3 border border-secondary/20 rounded-sm overflow-hidden">
-              <button
-                type="button"
-                onClick={() => {
-                  if (!podmienkyEnabled) {
-                    const def = result?.trucks ?? Math.max(1, tab === "pumpa" ? calcPumpTrucks(parseFloat(quantity) || 0) : Math.ceil((parseFloat(quantity) || 0) / mixCap));
-                    setPodmienkyTrucks(Math.max(1, def));
-                  }
-                  setPodmienkyEnabled(v => !v);
-                }}
-                className="w-full flex items-center justify-between px-3 py-2 bg-secondary/5 hover:bg-secondary/8 transition-colors cursor-pointer"
-              >
-                <span className="flex items-center gap-1.5 text-[10px] font-black text-secondary/60 uppercase tracking-widest">
-                  <Settings2 className="w-3 h-3" /> Podmienky
-                </span>
-                <div className={`w-7 h-3.5 rounded-full transition-colors flex items-center px-0.5 ${podmienkyEnabled ? "bg-amber-400" : "bg-white/20"}`}>
-                  <div className={`w-2.5 h-2.5 rounded-full bg-white shadow transition-transform ${podmienkyEnabled ? "translate-x-3.5" : "translate-x-0"}`} />
-                </div>
-              </button>
-              {podmienkyEnabled && (() => {
-                const qty = parseFloat(quantity) || 0;
-                const m3PerTruck = podmienkyTrucks > 0 && qty > 0 ? (qty / podmienkyTrucks).toFixed(1) : "—";
-                const mixCount = tab === "pumpa" ? Math.max(0, podmienkyTrucks - 1) : podmienkyTrucks;
-                return (
-                  <div className="px-3 py-2.5 bg-amber-50/30 border-t border-secondary/10 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-secondary/70 flex-1 uppercase tracking-wide">Počet vozidiel</span>
-                      <div className="flex items-center gap-1.5">
-                        <button type="button" onClick={() => setPodmienkyTrucks(t => Math.max(1, t - 1))}
-                          className="w-5 h-5 rounded-full border border-secondary/30 text-secondary/70 hover:border-secondary hover:text-secondary font-bold text-xs flex items-center justify-center cursor-pointer">−</button>
-                        <span className="w-5 text-center font-black text-secondary text-sm">{podmienkyTrucks}</span>
-                        <button type="button" onClick={() => setPodmienkyTrucks(t => t + 1)}
-                          className="w-5 h-5 rounded-full border border-secondary/30 text-secondary/70 hover:border-secondary hover:text-secondary font-bold text-xs flex items-center justify-center cursor-pointer">+</button>
-                      </div>
-                    </div>
-                    <div className="text-[10px] text-amber-700 bg-amber-100/60 rounded px-2 py-1 font-mono">
-                      {tab === "pumpa"
-                        ? `1× Pumpa${mixCount > 0 ? ` + ${mixCount}× Mix` : ""} · ∅ ${m3PerTruck} m³/auto`
-                        : `${podmienkyTrucks}× Mix · ∅ ${m3PerTruck} m³/auto`}
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          )}
-
           {/* Calculate button */}
           {(() => {
             const hasQty = parseFloat(quantity) > 0 && selectedType != null;
@@ -2299,7 +2330,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             const canCalc = hasQty && hasKm;
             return (
               <div className="space-y-1 mt-2">
-                <button onClick={() => { if (canCalc) setShowResult(true); }} disabled={!canCalc}
+                <button onClick={() => { if (canCalc) { setShowResult(true); gtagEvent("calculator_complete", { tab, quantity, type: selectedType?.label }); } }} disabled={!canCalc}
                   className={cn("w-full py-4 border-2 font-bold text-base tracking-widest transition-all duration-200",
                     canCalc
                       ? "bg-transparent border-primary text-primary hover:bg-primary hover:text-white cursor-pointer"
