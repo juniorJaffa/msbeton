@@ -212,7 +212,7 @@ const DEFAULT_DELIVERY: DeliveryZone[] = [
 ];
 
 const DEFAULT_SERVICES: Service[] = [
-  { id: "s1", name: "Čerpanie betónu", unit: "1 hod.", price: 112.50, description: "Čerpanie betónu pumpou, od príjazdu do odjazdu zo stavby", active: true },
+  { id: "s1", name: "Čerpanie betónu pumpou", unit: "1 hod.", price: 112.50, description: "Čerpanie betónu pumpou, od príjazdu do odjazdu zo stavby", active: true },
   { id: "s2", name: "Rozbehová chémia", unit: "1 ks", price: 31.25, description: "Chemická prísada pre spustenie betónpumpy", active: true },
   { id: "s3", name: "Umývanie mimo stavby", unit: "1 x", price: 56.25, description: "Umytie betónpumpy mimo miesta prevádzky", active: true },
   { id: "s4", name: "Čakačka mixéra", unit: "15 min.", price: 8.00, description: "Čakanie nad 30 min sa účtuje každých začatých 15 min", active: true, serviceMode: "mix" as const },

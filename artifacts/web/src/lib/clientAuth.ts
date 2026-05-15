@@ -48,6 +48,11 @@ export const clientAuth = {
     window.dispatchEvent(new Event("client-session-changed"));
   },
 
+  updateSession(client: LoggedClient): void {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(client));
+    window.dispatchEvent(new Event("client-session-changed"));
+  },
+
   async refreshSession(): Promise<void> {
     const current = this.getLoggedClient();
     if (!current || current.id === "admin") return;

@@ -10,6 +10,8 @@ import Home from "@/pages/Home";
 const Cennik = lazy(() => import("@/pages/Cennik"));
 const VozovyPark = lazy(() => import("@/pages/VozovyPark"));
 const ClientLogin = lazy(() => import("@/pages/ClientLogin"));
+const ClientProfile = lazy(() => import("@/pages/ClientProfile"));
+const ClientPasswordReset = lazy(() => import("@/pages/ClientPasswordReset"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const AdminLogin = lazy(() => import("@/pages/admin/AdminLogin"));
 const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard"));
@@ -26,6 +28,8 @@ function Router() {
         <Route path="/cennik" component={Cennik} />
         <Route path="/vozovy-park" component={VozovyPark} />
         <Route path="/prihlasenie" component={ClientLogin} />
+        <Route path="/klient-profil" component={ClientProfile} />
+        <Route path="/klient-reset" component={ClientPasswordReset} />
         <Route path="/admin">
           {() => <Redirect to="/admin/login" />}
         </Route>

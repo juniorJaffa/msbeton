@@ -47,6 +47,7 @@ export interface LoggedClient {
   clientId: string;
   name: string;
   company: string;
+  email?: string;
   phone?: string;
   discountBeton: number;
   discountDoprava: number;
@@ -73,5 +74,20 @@ export const clientApi = {
     apiFetch<{ ok: boolean; error?: string }>(CLIENT_API, "/order", {
       method: "POST",
       body: JSON.stringify(order),
+    }),
+  updateProfile: (id: string, currentPassword: string, newLoginId?: string, newEmail?: string) =>
+    apiFetch<{ ok: boolean; client?: LoggedClient; error?: string }>(CLIENT_API, "/profile", {
+      method: "PUT",
+      body: JSON.stringify({ id, currentPassword, newLoginId, newEmail }),
+    }),
+  requestPasswordReset: (id: string) =>
+    apiFetch<{ ok: boolean; error?: string }>(CLIENT_API, "/password-reset-request", {
+      method: "POST",
+      body: JSON.stringify({ id }),
+    }),
+  confirmPasswordReset: (token: string, newPassword: string) =>
+    apiFetch<{ ok: boolean; error?: string }>(CLIENT_API, "/password-reset-confirm", {
+      method: "POST",
+      body: JSON.stringify({ token, newPassword }),
     }),
 };

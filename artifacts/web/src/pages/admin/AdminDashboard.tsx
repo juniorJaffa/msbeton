@@ -632,8 +632,23 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
 }
 
 // ── SLUŽBY tab ────────────────────────────────────────────────────────────────
-function SluzbyTab({ onGoToDoprava }: { onGoToDoprava?: () => void }) {
+function SluzbyTab({ onGoToDoprava, scrollToPumpa, onScrollDone }: { onGoToDoprava?: () => void; scrollToPumpa?: boolean; onScrollDone?: () => void }) {
   const [services, setServices] = useState<Service[]>(adminData.getServices());
+  const doScrollRef = useRef(scrollToPumpa ?? false);
+  useEffect(() => {
+    if (!doScrollRef.current) return;
+    const timer = setTimeout(() => {
+      const el = document.querySelector("[data-svcmode='pumpa']") as HTMLElement | null;
+      const container = document.getElementById("admin-content");
+      if (el && container) {
+        const cR = container.getBoundingClientRect();
+        const eR = el.getBoundingClientRect();
+        container.scrollTo({ top: container.scrollTop + (eR.top - cR.top) - 80, behavior: "smooth" });
+      }
+      onScrollDone?.();
+    }, 80);
+    return () => clearTimeout(timer);
+  }, []);
   const [adding, setAdding] = useState(false);
   const emptyForm = { name: "", unit: "", price: "", description: "", serviceMode: "" as "" | "pumpa" | "mix", maxMeters: "", activePeriodFrom: "", activePeriodTo: "" };
   const [form, setForm] = useState(emptyForm);
@@ -688,7 +703,7 @@ function SluzbyTab({ onGoToDoprava }: { onGoToDoprava?: () => void }) {
       {/* Mobile cards */}
       <div className="sm:hidden space-y-2">
         {displayServices.map((s) => (
-          <div key={s.id} className={`bg-white border shadow-sm p-4 ${s.active ? "border-gray-200" : "border-gray-100 opacity-60"}`}>
+          <div key={s.id} data-svcmode={s.serviceMode ?? ""} className={`bg-white border shadow-sm p-4 ${s.active ? "border-gray-200" : "border-gray-100 opacity-60"}`}>
             <div className="flex items-start justify-between gap-2 mb-1">
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-secondary text-sm"><EditableField value={s.name} onSave={v => update(s.id, "name", v)} /></div>
@@ -730,7 +745,7 @@ function SluzbyTab({ onGoToDoprava }: { onGoToDoprava?: () => void }) {
           </thead>
           <tbody>
             {displayServices.map((s, i) => (
-              <tr key={s.id} className={`border-b border-gray-50 ${s.active ? "" : "opacity-50"} ${i % 2 === 0 ? "" : "bg-gray-50/40"}`}>
+              <tr key={s.id} data-svcmode={s.serviceMode ?? ""} className={`border-b border-gray-50 ${s.active ? "" : "opacity-50"} ${i % 2 === 0 ? "" : "bg-gray-50/40"}`}>
                 <td className="px-5 py-3">
                   <div className="font-semibold text-secondary"><EditableField value={s.name} onSave={v => update(s.id, "name", v)} /></div>
                   <div className="text-xs text-gray-400 mt-0.5"><EditableField value={s.description || "—"} onSave={v => update(s.id, "description", v)} /></div>
@@ -2741,6 +2756,7 @@ export default function AdminDashboard() {
   });
   const [syncKey, setSyncKey] = useState(0);
   const [goToClientId, setGoToClientId] = useState<string | null>(null);
+  const [sluzbyScrollPumpa, setSluzbyScrollPumpa] = useState(false);
 
   useEffect(() => {
     if (!isLoggedIn()) navigate("/admin/login");
@@ -2869,8 +2885,8 @@ export default function AdminDashboard() {
       <div id="admin-content" className="fixed top-[86px] sm:top-20 left-0 right-0 bottom-0 overflow-y-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 pb-8">
           {tab === "betony" && <BetonTab key={syncKey} />}
-          {tab === "sluzby" && <SluzbyTab key={syncKey} onGoToDoprava={() => { setTab("doprava"); window.location.hash = "doprava"; }} />}
-          {tab === "doprava" && <DopravaTab key={syncKey} onGoToSluzby={() => { setTab("sluzby"); window.location.hash = "sluzby"; }} />}
+          {tab === "sluzby" && <SluzbyTab key={syncKey} onGoToDoprava={() => { setTab("doprava"); window.location.hash = "doprava"; }} scrollToPumpa={sluzbyScrollPumpa} onScrollDone={() => setSluzbyScrollPumpa(false)} />}
+          {tab === "doprava" && <DopravaTab key={syncKey} onGoToSluzby={() => { setTab("sluzby"); setSluzbyScrollPumpa(true); window.location.hash = "sluzby"; }} />}
           {tab === "klienti" && <KlientiTab key={syncKey} expandClientId={goToClientId} onExpanded={() => setGoToClientId(null)} />}
           {tab === "objednavky" && <ObjednavkyTab key={syncKey} onGoToClient={(loginId) => { setTab("klienti"); setGoToClientId(loginId); }} />}
         </div>

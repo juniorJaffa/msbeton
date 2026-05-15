@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { db, adminConfig } from "@workspace/db";
-import { sendOrderNotification } from "../lib/mailer";
+import { sendOrderNotification, sendPasswordResetEmail } from "../lib/mailer";
 import { eq } from "drizzle-orm";
-import { createHash } from "crypto";
+import { createHash, randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 
 const ITOA64 = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -46,6 +46,21 @@ async function verifyPassword(plain: string, stored: string): Promise<boolean> {
   }
   return plain === stored;
 }
+
+// In-memory rate limiter (resets on server restart — good enough)
+const rateMap = new Map<string, { count: number; firstAt: number }>();
+const RATE_WINDOW = 60 * 60 * 1000; // 1h
+const RATE_MAX = 3;
+function checkRate(key: string): boolean {
+  const now = Date.now();
+  const e = rateMap.get(key);
+  if (!e || now - e.firstAt > RATE_WINDOW) { rateMap.set(key, { count: 1, firstAt: now }); return true; }
+  if (e.count >= RATE_MAX) return false;
+  e.count++; return true;
+}
+
+interface ResetToken { clientId: string; expires: number; }
+type ResetTokens = Record<string, ResetToken>;
 
 const router = Router();
 
@@ -139,6 +154,7 @@ function buildClientResponse(account: UnifiedClient) {
     clientId: account.loginId,
     name: [account.firstName, account.lastName].filter(Boolean).join(" ") || account.name || "Klient",
     company: account.company ?? "",
+    email: account.email,
     discountBeton: account.discountBeton ?? account.discountPct ?? 0,
     discountDoprava: account.discountDoprava ?? 0,
     discountSluzby: account.discountSluzby ?? 0,
@@ -213,6 +229,110 @@ router.post("/order", async (req, res) => {
     return res.json({ ok: true });
   } catch (err) {
     req.log.error({ err }, "Failed to create order");
+    return res.status(500).json({ ok: false, error: "Internal server error" });
+  }
+});
+
+// Update client loginId / email (requires current password verification)
+router.put("/profile", async (req, res) => {
+  try {
+    const { id, currentPassword, newLoginId, newEmail } = req.body ?? {};
+    if (!id || !currentPassword) return res.status(400).json({ ok: false, error: "Chýba ID alebo aktuálne heslo" });
+    if (!checkRate(`profile:${id}`)) return res.status(429).json({ ok: false, error: "Príliš veľa pokusov. Skúste znova o hodinu." });
+
+    const accounts = await getClientAccounts();
+    const account = accounts.find((a) => a.id === String(id) && a.active !== false);
+    if (!account) return res.status(404).json({ ok: false, error: "Klient nenájdený" });
+    if (!await verifyPassword(String(currentPassword), account.password ?? "")) {
+      return res.status(401).json({ ok: false, error: "Nesprávne aktuálne heslo" });
+    }
+    if (newLoginId) {
+      if (String(newLoginId).toLowerCase() === "msbeton") return res.status(400).json({ ok: false, error: "Toto ID nie je povolené" });
+      if (accounts.find((a) => a.id !== account.id && a.loginId === String(newLoginId))) {
+        return res.status(409).json({ ok: false, error: "Prihlasovacie ID je už obsadené" });
+      }
+    }
+
+    const clientRows = await db.select().from(adminConfig).where(eq(adminConfig.key, "clients"));
+    if (!clientRows.length || !Array.isArray(clientRows[0].data)) return res.status(500).json({ ok: false, error: "Chyba databázy" });
+    const clients = clientRows[0].data as UnifiedClient[];
+    const updated = clients.map((c) => c.id === account.id ? {
+      ...c,
+      ...(newLoginId ? { loginId: String(newLoginId) } : {}),
+      ...(newEmail !== undefined ? { email: String(newEmail) } : {}),
+    } : c);
+    await db.insert(adminConfig).values({ key: "clients", data: updated })
+      .onConflictDoUpdate({ target: adminConfig.key, set: { data: updated, updatedAt: new Date() } });
+    invalidateClientCache();
+    return res.json({ ok: true, client: buildClientResponse(updated.find((c) => c.id === account.id)!) });
+  } catch (err) {
+    req.log.error({ err }, "Client profile update failed");
+    return res.status(500).json({ ok: false, error: "Internal server error" });
+  }
+});
+
+// Send password reset link to registered email
+router.post("/password-reset-request", async (req, res) => {
+  try {
+    const { id } = req.body ?? {};
+    if (!id) return res.status(400).json({ ok: false, error: "Chýba ID" });
+    if (!checkRate(`reset-req:${id}`)) return res.status(429).json({ ok: false, error: "Príliš veľa pokusov. Skúste znova o hodinu." });
+
+    const accounts = await getClientAccounts();
+    const account = accounts.find((a) => a.id === String(id) && a.active !== false);
+    if (account?.email) {
+      const token = randomBytes(32).toString("hex");
+      const expires = Date.now() + 60 * 60 * 1000;
+      const tokenRows = await db.select().from(adminConfig).where(eq(adminConfig.key, "password_reset_tokens"));
+      const tokens: ResetTokens = (tokenRows.length > 0 && tokenRows[0].data && typeof tokenRows[0].data === "object" && !Array.isArray(tokenRows[0].data))
+        ? tokenRows[0].data as ResetTokens : {};
+      // Purge expired
+      for (const [k, v] of Object.entries(tokens)) { if (v.expires < Date.now()) delete tokens[k]; }
+      tokens[token] = { clientId: account.id, expires };
+      await db.insert(adminConfig).values({ key: "password_reset_tokens", data: tokens })
+        .onConflictDoUpdate({ target: adminConfig.key, set: { data: tokens, updatedAt: new Date() } });
+      const name = [account.firstName, account.lastName].filter(Boolean).join(" ") || account.name || "Klient";
+      const resetUrl = `${process.env["APP_URL"] ?? "https://demo.msbeton.sk"}/klient-reset?token=${token}`;
+      sendPasswordResetEmail({ toEmail: account.email, clientName: name, resetUrl }).catch(() => {});
+    }
+    // Always return ok — prevents email enumeration
+    return res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "Password reset request failed");
+    return res.status(500).json({ ok: false, error: "Internal server error" });
+  }
+});
+
+// Confirm password reset via token
+router.post("/password-reset-confirm", async (req, res) => {
+  try {
+    const { token, newPassword } = req.body ?? {};
+    if (!token || !newPassword) return res.status(400).json({ ok: false, error: "Chýba token alebo heslo" });
+    if (String(newPassword).length < 6) return res.status(400).json({ ok: false, error: "Heslo musí mať aspoň 6 znakov" });
+    if (!checkRate(`reset-confirm:${String(token).slice(0, 16)}`)) return res.status(429).json({ ok: false, error: "Príliš veľa pokusov." });
+
+    const tokenRows = await db.select().from(adminConfig).where(eq(adminConfig.key, "password_reset_tokens"));
+    const tokens: ResetTokens = (tokenRows.length > 0 && tokenRows[0].data && typeof tokenRows[0].data === "object" && !Array.isArray(tokenRows[0].data))
+      ? tokenRows[0].data as ResetTokens : {};
+    const entry = tokens[String(token)];
+    if (!entry || entry.expires < Date.now()) return res.status(400).json({ ok: false, error: "Neplatný alebo expirovaný odkaz na reset" });
+
+    // Single-use: delete immediately
+    delete tokens[String(token)];
+    await db.insert(adminConfig).values({ key: "password_reset_tokens", data: tokens })
+      .onConflictDoUpdate({ target: adminConfig.key, set: { data: tokens, updatedAt: new Date() } });
+
+    const clientRows = await db.select().from(adminConfig).where(eq(adminConfig.key, "clients"));
+    if (!clientRows.length || !Array.isArray(clientRows[0].data)) return res.status(500).json({ ok: false, error: "Chyba databázy" });
+    const clients = clientRows[0].data as UnifiedClient[];
+    const hashedPassword = await bcrypt.hash(String(newPassword), 10);
+    const updated = clients.map((c) => c.id === entry.clientId ? { ...c, password: hashedPassword } : c);
+    await db.insert(adminConfig).values({ key: "clients", data: updated })
+      .onConflictDoUpdate({ target: adminConfig.key, set: { data: updated, updatedAt: new Date() } });
+    invalidateClientCache();
+    return res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "Password reset confirm failed");
     return res.status(500).json({ ok: false, error: "Internal server error" });
   }
 });
