@@ -434,16 +434,16 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         );
       };
 
-      const checkSkAndPin = (lat: number, lng: number) => {
+      const validateSk = (lat: number, lng: number) => {
         new google.maps.Geocoder().geocode({ location: { lat, lng } }, (results, gStatus) => {
           const country = gStatus === "OK" && results && results[0]
             ? results[0].address_components?.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("country"))
             : null;
           if (country && country.short_name !== "SK") {
             setMapError("Dodávky betónu sú dostupné iba na území Slovenska.");
-            return;
+            if (marker) { marker.setMap(null); marker = null; }
+            setMapPin(null); setMapPlusCode(""); setDistance("");
           }
-          setPinAt(lat, lng);
         });
       };
 
@@ -459,7 +459,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       };
 
       map.addListener("click", (e: google.maps.MapMouseEvent) => {
-        if (e.latLng) checkSkAndPin(e.latLng.lat(), e.latLng.lng());
+        if (!e.latLng) return;
+        const lat = e.latLng.lat(), lng = e.latLng.lng();
+        setMapError("");
+        setPinAt(lat, lng);       // okamžitý pin bez čakania na geocoder
+        validateSk(lat, lng);    // SK validácia na pozadí (odstraní pin ak mimo SK)
       });
 
       const searchInput = document.getElementById("map-search-input") as HTMLInputElement | null;
