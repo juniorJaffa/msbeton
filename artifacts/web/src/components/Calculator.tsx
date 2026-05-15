@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Truck, LogIn, LogOut, FileText, FileSpreadsheet, FileType2, MessageSquare, Minus, Plus, Trash2, Table2, ShoppingCart, X, Info, Check, ExternalLink, MapPin, Copy, Navigation, Settings2, AlertTriangle } from "lucide-react";
+import { ChevronDown, Truck, LogIn, LogOut, FileText, FileSpreadsheet, FileType2, MessageSquare, Minus, Plus, Trash2, Table2, ShoppingCart, X, Info, Check, ExternalLink, MapPin, Copy, Navigation, Settings2, AlertTriangle, Timer } from "lucide-react";
 import { OpenLocationCode } from "open-location-code";
 import { cn, formatPhone } from "@/lib/utils";
 
@@ -29,6 +29,16 @@ function sharedLinkIcon(url: string): { Icon: React.ElementType; cls: string } {
     return { Icon: FileType2, cls: "text-blue-400" };
   return { Icon: ExternalLink, cls: "text-primary" };
 }
+function nowHHMM(): string {
+  const d = new Date();
+  return `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
+}
+function adjustHHMM(t: string, deltaMins: number): string {
+  const [h, m] = t.split(":").map(Number);
+  const total = ((h * 60 + m + deltaMins) % 1440 + 1440) % 1440;
+  return `${Math.floor(total / 60).toString().padStart(2, "0")}:${(total % 60).toString().padStart(2, "0")}`;
+}
+
 import { PhoneInput } from "@/components/PhoneInput";
 import { adminData } from "@/lib/adminData";
 import { clientAuth, type LoggedClient } from "@/lib/clientAuth";
@@ -264,8 +274,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [categoryName, setCategoryName] = useState<string | null>(null);
   const [concreteTypeLabel, setConcreteTypeLabel] = useState<string | null>(null);
   const [quantity, setQuantity] = useState("");
-  const [pumpHour, setPumpHour] = useState("1 h");
-  const [pumpMin, setPumpMin] = useState("0 min");
+  const [pumpStartTime, setPumpStartTime] = useState<string | null>(null);
+  const [pumpStopTime, setPumpStopTime] = useState<string | null>(null);
+  const [pumpTimerActive, setPumpTimerActive] = useState(false);
+  const [pumpLiveMs, setPumpLiveMs] = useState(0);
+  const pumpTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [waitHour, setWaitHour] = useState("0 h");
   const [waitMin, setWaitMin] = useState("0 min");
   const [waitPiecesPumpa, setWaitPiecesPumpa] = useState(0); // čakačka pumpa: kusy (1 kus = 15 min)
@@ -312,8 +325,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     setMapPin(null); setMapPlusCode(""); setMapKmConfirmed(false); setMapError("");
     setCategoryName(null);
     setConcreteTypeLabel(null);
-    setPumpHour("1 h");
-    setPumpMin("0 min");
+    setPumpStartTime(null);
+    setPumpStopTime(null);
+    setPumpTimerActive(false);
+    setPumpLiveMs(0);
+    if (pumpTimerRef.current) { clearInterval(pumpTimerRef.current); pumpTimerRef.current = null; }
     setWaitHour("0 h");
     setWaitMin("0 min");
     setWaitPiecesPumpa(0);
@@ -350,8 +366,14 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     }
   }, [loggedClientBase, priceMode]);
 
-  // Reset podmienky pri zmene tabu (vozidiel)
-  useEffect(() => { setPodmienkyEnabled(false); }, [tab]);
+  // Reset podmienky + timer pri zmene tabu
+  useEffect(() => {
+    setPodmienkyEnabled(false);
+    setPumpStartTime(null); setPumpStopTime(null); setPumpTimerActive(false); setPumpLiveMs(0);
+    if (pumpTimerRef.current) { clearInterval(pumpTimerRef.current); pumpTimerRef.current = null; }
+  }, [tab]);
+
+  useEffect(() => { return () => { if (pumpTimerRef.current) clearInterval(pumpTimerRef.current); }; }, []);
 
   // Google Maps Autocomplete + DistanceMatrix pre adresný režim
   useEffect(() => {
@@ -855,10 +877,21 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     // Počet áut = súčet per-item transportTrucks (každá položka má vlastné auto)
     const trucks = concreteBreakdown.reduce((s, ci) => s + ci.transportTrucks, 0);
     const truckCapacity = tab === "pumpa" ? pumpCap : mixCap;
-    const pumpHrs = parseInt(pumpHour) || 1;
-    const pumpMs = parseInt(pumpMin) || 0;
-    // Správny vzorec: hodiny + minúty/60 (napr. 1h 15min = 1.25h, nie 1.5h)
-    const pumpCost = tab === "pumpa" ? (pumpHrs + pumpMs / 60) * pumpServicePrice : 0;
+    // Timer-based pump billing: ceil to 15-min blocks
+    let _pumpDurMins = 0;
+    if (tab === "pumpa" && pumpStartTime && pumpStopTime) {
+      const [sh, sm] = pumpStartTime.split(":").map(Number);
+      const [eh, em] = pumpStopTime.split(":").map(Number);
+      _pumpDurMins = (eh * 60 + em) - (sh * 60 + sm);
+      if (_pumpDurMins < 0) _pumpDurMins += 24 * 60;
+    }
+    const _pumpBlocks = _pumpDurMins > 0 ? Math.ceil(_pumpDurMins / 15) : 0;
+    const _pumpBillingMins = _pumpBlocks * 15;
+    const pumpHrs = Math.floor(_pumpBillingMins / 60);
+    const pumpMs = _pumpBillingMins % 60;
+    const pumpDurMins = _pumpDurMins;
+    const pumpBlocks = _pumpBlocks;
+    const pumpCost = tab === "pumpa" ? (_pumpBillingMins / 60) * pumpServicePrice : 0;
 
     // Čakačky: pumpa = kusy (1 kus = 15 min), mix = hodiny + minúty
     const waitIntervalsPumpa = waitPiecesPumpa;
@@ -961,11 +994,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       trucks, truckCapacity, mixTrucksCount, items, totalBezDph, totalSDph: totalBezDph * (1 + VAT),
       discountedItems, totalDiscBezDph, totalDiscSDph,
       hotovostBaseItems, hotovostDiscItems, hotovostTotal, hotovostOrigTotal,
-      qty, totalQty, km, waitIntervals, waitLabel, pumpHrs, pumpMs, isOwn, concreteBreakdown, transportZone,
+      qty, totalQty, km, waitIntervals, waitLabel, pumpHrs, pumpMs, pumpDurMins, pumpBlocks, isOwn, concreteBreakdown, transportZone,
       transportIsMin: transportCalc.isMin, fillupM3, fillupTarget,
       fTransport, fFillup,
     };
-  }, [tab, quantity, distance, selectedType, pumpHour, pumpMin, waitTotalMins, waitPiecesPumpa, hoseMeters, washing, zimneOpatrenia, betonFactor, dopravaFactor, sluzbyFactor, fPump, fChem, fWash, fHose, fWaitP, fWaitM, pumpServicePrice, chemServicePrice, washServicePrice, waitServicePricePumpa, waitServicePriceMix, hoseServicePrice, zimneServicePrice, tzones, tsettings, extraItems, allCategories, clientDeliveryZone, pumpCap, mixCap, VAT, VAT_HOTOVOST, loggedClient, podmienkyEnabled, podmienkyTrucks]);
+  }, [tab, quantity, distance, selectedType, pumpStartTime, pumpStopTime, waitTotalMins, waitPiecesPumpa, hoseMeters, washing, zimneOpatrenia, betonFactor, dopravaFactor, sluzbyFactor, fPump, fChem, fWash, fHose, fWaitP, fWaitM, pumpServicePrice, chemServicePrice, washServicePrice, waitServicePricePumpa, waitServicePriceMix, hoseServicePrice, zimneServicePrice, tzones, tsettings, extraItems, allCategories, clientDeliveryZone, pumpCap, mixCap, VAT, VAT_HOTOVOST, loggedClient, podmienkyEnabled, podmienkyTrucks]);
 
   async function handleLogin() {
     if (!loginId || !loginPwd) return;
@@ -1091,7 +1124,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       : "";
 
     // Main item services (pumpa only, first item — per-item values, not aggregated)
-    const mainPumpTime = (parseInt(pumpHour) || 1) + (parseInt(pumpMin) || 0) / 60;
+    const mainPumpTime = result.pumpHrs + result.pumpMs / 60;
     const mainSluzbyOrig = {
       pump: tab === "pumpa" ? mainPumpTime * pumpServicePrice : 0,
       hoses: hoseMeters > 0 ? hoseMeters * hoseServicePrice : 0,
@@ -1114,7 +1147,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const sluzbyRows = hasMainSluzby
       ? subSectionRow(svcLabel) +
         (tab === "pumpa"
-          ? trow(`Čerpanie betónu – ${result.pumpHrs}&nbsp;h${result.pumpMs > 0 ? `&nbsp;${result.pumpMs}&nbsp;min` : ""}`,
+          ? trow(`Čerpanie betónu – ${result.pumpBlocks > 0 ? `${result.pumpBlocks}×15min` : `${result.pumpHrs}h${result.pumpMs > 0 ? `&nbsp;${result.pumpMs}min` : ""}`}`,
               `${result.pumpHrs}&nbsp;h${result.pumpMs > 0 ? `&nbsp;${result.pumpMs}&nbsp;min` : ""}`, svcRateStr(pumpServicePrice, "€/h", fPump), mainSluzbyOrig.pump, mainSluzbyOrig.pump * fPump) +
             (hoseMeters > 0 ? trow(`Prídavné hadice`, `${hoseMeters}&nbsp;m`, svcRateStr(hoseServicePrice, "€/m", fHose), mainSluzbyOrig.hoses, mainSluzbyOrig.hoses * fHose) : "") +
             (washing ? trow("Umývanie mimo stavby", "1&nbsp;ks", svcRateStr(washServicePrice, "€", fWash), mainSluzbyOrig.washing, mainSluzbyOrig.washing * fWash) : "") +
@@ -1429,6 +1462,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         totalSDph: isFakt ? result.totalDiscSDph : result.hotovostTotal,
         breakdown: buildBreakdown(),
         viaSms: true,
+        ...(tab === "pumpa" && pumpStartTime && pumpStopTime ? { pumpTimer: { start: pumpStartTime, stop: pumpStopTime } } : {}),
         ...(podmienkyEnabled ? { podmienky: { trucks: podmienkyTrucks, pumpa: tab === "pumpa" ? 1 : 0, mix: tab === "pumpa" ? Math.max(0, podmienkyTrucks - 1) : podmienkyTrucks, m3PerTruck: podmienkyTrucks > 0 ? Math.round((result!.qty / podmienkyTrucks) * 10) / 10 : 0 } } : {}),
       }).then(() => {
         setSmsOrderCreated(true);
@@ -1499,7 +1533,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       }
       const svcRows: { l: string; v: number; o?: number }[] = [];
       if (idx === 0) {
-        const pumpBase = (parseInt(pumpHour) || 1) + (parseInt(pumpMin) || 0) / 60;
+        const pumpBase = result.pumpHrs + result.pumpMs / 60;
         if (tab === "pumpa" && pumpBase > 0 && pumpServicePrice > 0) {
           const pOrig = fmt2(pumpBase * pumpServicePrice);
           svcRows.push({ l: `Čerpanie betónu – ${result.pumpHrs} h${result.pumpMs > 0 ? ` ${result.pumpMs} min` : ""}`, v: fmt2(pOrig * fPump), ...(fPump < 1 ? { o: pOrig } : {}) });
@@ -1560,7 +1594,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       discountDoprava: discountDoprava > 0 ? discountDoprava : undefined,
       discountSluzby:  discountSluzby  > 0 ? discountSluzby  : undefined,
       discountCelkovo: discountCelkovo > 0 ? discountCelkovo : undefined,
-      ...(podmienkyEnabled ? { podmienky: { trucks: podmienkyTrucks } } : {}),
+      ...(tab === "pumpa" && pumpStartTime && pumpStopTime ? { pumpTimer: { start: pumpStartTime, stop: pumpStopTime } } : {}),
+      ...(podmienkyEnabled ? { podmienky: { trucks: podmienkyTrucks, pumpa: tab === "pumpa" ? 1 : 0, mix: tab === "pumpa" ? Math.max(0, podmienkyTrucks - 1) : podmienkyTrucks, m3PerTruck: podmienkyTrucks > 0 ? Math.round((result!.qty / podmienkyTrucks) * 10) / 10 : 0 } } : {}),
     });
     setOrderSubmitting(false);
     setOrderDone(true);
@@ -2220,10 +2255,144 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
           {/* PUMPA extras */}
           {tab === "pumpa" && (
             <>
-              <div className="grid grid-cols-2 gap-4">
-                <SelectField label="Čerpanie v /h" value={pumpHour} onChange={(v) => { setPumpHour(v); setShowResult(false); }} options={PUMP_HOURS} />
-                <SelectField label="Čerpanie v /min" value={pumpMin} onChange={(v) => { setPumpMin(v); setShowResult(false); }} options={PUMP_MINS} />
-              </div>
+              {/* ── Čerpanie timer ── */}
+              {(() => {
+                const started = pumpStartTime !== null;
+                const stopped = pumpStopTime !== null;
+                let durMins = 0;
+                if (started && stopped) {
+                  const [sh, sm] = pumpStartTime!.split(":").map(Number);
+                  const [eh, em] = pumpStopTime!.split(":").map(Number);
+                  durMins = (eh * 60 + em) - (sh * 60 + sm);
+                  if (durMins < 0) durMins += 24 * 60;
+                }
+                const blocks = durMins > 0 ? Math.ceil(durMins / 15) : 0;
+                const billingMins = blocks * 15;
+
+                const handleStart = () => {
+                  const t = nowHHMM();
+                  setPumpStartTime(t); setPumpStopTime(null);
+                  setPumpTimerActive(true); setPumpLiveMs(0);
+                  if (pumpTimerRef.current) clearInterval(pumpTimerRef.current);
+                  const startedAt = Date.now();
+                  pumpTimerRef.current = setInterval(() => setPumpLiveMs(Date.now() - startedAt), 1000);
+                  setShowResult(false);
+                };
+                const handleStop = () => {
+                  setPumpStopTime(nowHHMM());
+                  setPumpTimerActive(false);
+                  if (pumpTimerRef.current) { clearInterval(pumpTimerRef.current); pumpTimerRef.current = null; }
+                  setShowResult(false);
+                };
+                const adjStart = (d: number) => {
+                  setPumpStartTime(adjustHHMM(pumpStartTime || nowHHMM(), d));
+                  if (pumpTimerActive) { setPumpTimerActive(false); if (pumpTimerRef.current) { clearInterval(pumpTimerRef.current); pumpTimerRef.current = null; } }
+                  setShowResult(false);
+                };
+                const adjStop = (d: number) => { setPumpStopTime(adjustHHMM(pumpStopTime || nowHHMM(), d)); setShowResult(false); };
+                const resetTimer = () => {
+                  setPumpStartTime(null); setPumpStopTime(null); setPumpTimerActive(false); setPumpLiveMs(0);
+                  if (pumpTimerRef.current) { clearInterval(pumpTimerRef.current); pumpTimerRef.current = null; }
+                  setShowResult(false);
+                };
+
+                const liveSecs = Math.floor(pumpLiveMs / 1000);
+                const liveStr = `${Math.floor(liveSecs / 3600).toString().padStart(2, "0")}:${Math.floor((liveSecs % 3600) / 60).toString().padStart(2, "0")}:${(liveSecs % 60).toString().padStart(2, "0")}`;
+
+                const adjBtnCls = "flex-1 text-[11px] py-2 border border-white/10 text-white/40 hover:border-amber-500/40 hover:text-amber-400 transition-colors rounded-sm font-bold disabled:opacity-20 disabled:cursor-not-allowed";
+
+                return (
+                  <div className="border border-amber-500/25 bg-amber-500/5 rounded-sm overflow-hidden">
+                    <div className="flex items-center justify-between px-3 py-2 border-b border-amber-500/15">
+                      <div className="flex items-center gap-1.5">
+                        <Timer className="w-3.5 h-3.5 text-amber-400/70" />
+                        <span className="text-xs font-bold text-white/70 uppercase tracking-wider">Čerpanie betónu</span>
+                      </div>
+                      <span className="text-[10px] text-amber-400/50">každých začatých 15 min = 1 blok</span>
+                    </div>
+                    <div className="p-3 space-y-3">
+                      {/* START / STOP columns */}
+                      <div className="grid grid-cols-2 gap-3">
+                        {/* START */}
+                        <div className="space-y-1.5">
+                          <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Začiatok</div>
+                          <div className={cn(
+                            "text-center py-2.5 px-1 border font-mono text-xl font-black transition-colors rounded-sm",
+                            started ? "text-primary border-amber-500/40 bg-amber-500/10" : "text-white/20 border-white/10 bg-white/5"
+                          )}>
+                            {pumpStartTime ?? "——:——"}
+                          </div>
+                          <div className="flex gap-1">
+                            <button type="button" onClick={() => adjStart(-15)} className={adjBtnCls}>−15</button>
+                            <button type="button" onClick={() => adjStart(-1)} className={adjBtnCls}>−1</button>
+                            <button type="button" onClick={() => adjStart(+1)} className={adjBtnCls}>+1</button>
+                          </div>
+                          {!pumpTimerActive ? (
+                            <button type="button" onClick={handleStart}
+                              className="w-full py-3 bg-green-700/80 hover:bg-green-700 text-white text-sm font-black uppercase tracking-wider rounded-sm transition-colors flex items-center justify-center gap-1.5">
+                              ▶ ŠTART
+                            </button>
+                          ) : (
+                            <div className="text-center text-[11px] text-green-400 font-bold py-2 animate-pulse">● beží…</div>
+                          )}
+                        </div>
+                        {/* STOP */}
+                        <div className="space-y-1.5">
+                          <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Koniec</div>
+                          <div className={cn(
+                            "text-center py-2.5 px-1 border font-mono text-xl font-black transition-colors rounded-sm",
+                            stopped ? "text-primary border-amber-500/40 bg-amber-500/10" : "text-white/20 border-white/10 bg-white/5"
+                          )}>
+                            {pumpStopTime ?? "——:——"}
+                          </div>
+                          <div className="flex gap-1">
+                            <button type="button" onClick={() => adjStop(-15)} disabled={!stopped} className={adjBtnCls}>−15</button>
+                            <button type="button" onClick={() => adjStop(-1)} disabled={!stopped} className={adjBtnCls}>−1</button>
+                            <button type="button" onClick={() => adjStop(+1)} disabled={!stopped} className={adjBtnCls}>+1</button>
+                          </div>
+                          <button type="button" onClick={handleStop} disabled={!started}
+                            className="w-full py-3 bg-red-700/80 hover:bg-red-700 text-white text-sm font-black uppercase tracking-wider rounded-sm transition-colors flex items-center justify-center gap-1.5 disabled:opacity-25 disabled:cursor-not-allowed">
+                            ■ STOP
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Live timer */}
+                      {pumpTimerActive && (
+                        <div className="text-center py-2 bg-green-500/10 border border-green-500/20 rounded-sm">
+                          <span className="font-mono text-2xl font-black text-green-400 tracking-widest">{liveStr}</span>
+                        </div>
+                      )}
+
+                      {/* Result summary */}
+                      {started && stopped && blocks > 0 && (
+                        <div className="bg-white/5 border border-white/10 rounded-sm p-2.5 space-y-1.5">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-white/45">Skutočný čas</span>
+                            <span className="text-white/65 font-semibold">{Math.floor(durMins / 60)}h{durMins % 60 > 0 ? ` ${durMins % 60} min` : ""}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-white/45">Fakturuje sa</span>
+                            <span className="text-amber-400 font-black">{blocks} × 15 min = {Math.floor(billingMins / 60)}h{billingMins % 60 > 0 ? ` ${billingMins % 60} min` : ""}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {!started && (
+                        <p className="text-[10px] text-white/25 text-center">Stlač ŠTART pri začatí čerpania na stavbe</p>
+                      )}
+
+                      {(started || stopped) && (
+                        <button type="button" onClick={resetTimer}
+                          className="text-[10px] text-white/20 hover:text-white/45 transition-colors w-full text-center py-0.5">
+                          × Zmazať a začať znova
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
 
               {/* Čakačky + Hadice — kompaktný 2-stĺpcový grid */}
               <div className="grid grid-cols-2 gap-3">
@@ -2569,7 +2738,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                                 <SvcBlock label={tab === "pumpa" ? "Služby – Pumpa" : "Čakačky"} />
                                 {idx === 0 ? (
                                   <>
-                                    {mainPumpBase > 0 && <PriceRow label={`Čerpanie betónu – ${result.pumpHrs} h${result.pumpMs > 0 ? ` ${result.pumpMs} min` : ""}`}
+                                    {mainPumpBase > 0 && <PriceRow label={`Čerpanie betónu – ${result.pumpBlocks > 0 ? `${result.pumpBlocks}× 15 min` : `${result.pumpHrs} h${result.pumpMs > 0 ? ` ${result.pumpMs} min` : ""}`}`}
                                       original={mainPumpBase} discounted={mainPumpBase * fPump} hasDiscount={hasDiscount} />}
                                     {mainChemBase > 0 && <PriceRow label="Rozbehová chémia"
                                       original={mainChemBase} discounted={mainChemBase * fChem} hasDiscount={hasDiscount} />}

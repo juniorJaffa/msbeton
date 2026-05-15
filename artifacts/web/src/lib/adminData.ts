@@ -99,8 +99,9 @@ export interface Order {
   discountDoprava?: number;
   discountSluzby?: number;
   discountCelkovo?: number;
-  viaSms?: boolean; // objednávka odoslaná cez SMS export
-  podmienky?: { trucks: number; pumpa: number; mix: number; m3PerTruck: number }; // pretaženie — terén/počasie
+  viaSms?: boolean;
+  pumpTimer?: { start: string; stop: string };
+  podmienky?: { trucks: number; pumpa: number; mix: number; m3PerTruck: number };
 }
 
 export interface ClientAccount {
