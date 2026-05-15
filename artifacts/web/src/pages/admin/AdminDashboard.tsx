@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, SlidersHorizontal, ShoppingCart, MessageSquare } from "lucide-react";
+import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, SlidersHorizontal, ShoppingCart, MessageSquare, BarChart2, TrendingUp, Monitor, Globe, MousePointerClick } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { isLoggedIn, logout } from "@/lib/adminAuth";
 import { adminData, adminApi, syncFromServer, SYSTEM_OWNER_ID, ConcreteCategory, ConcreteType, DeliveryZone, Service, Client, TransportPricingZone, TransportSettings, Order } from "@/lib/adminData";
 
-type Tab = "betony" | "sluzby" | "doprava" | "klienti" | "objednavky";
+type Tab = "betony" | "sluzby" | "doprava" | "klienti" | "objednavky" | "analytics";
 
 function sharedLinkIcon(url: string): { Icon: React.ElementType; cls: string } {
   const u = url.toLowerCase();
@@ -2831,12 +2831,229 @@ ${breakdownHtml ? `
   if (!win) { const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.click(); }
 }
 
+// ── Analytics Tab ────────────────────────────────────────────────────────────
+interface Ga4Data {
+  overview: { activeUsers30: number; sessions30: number; pageViews30: number; newUsers30: number; events30: number; activeUsers90: number; sessions90: number; pageViews90: number; newUsers90: number };
+  daily: Array<{ date: string; sessions: number; users: number }>;
+  events: Array<{ name: string; count: number }>;
+  devices: Array<{ device: string; sessions: number; users: number }>;
+  sources: Array<{ channel: string; sessions: number }>;
+  pages: Array<{ path: string; views: number }>;
+  countries: Array<{ country: string; sessions: number }>;
+}
+
+const CALC_EVENTS = ["calculator_complete", "pdf_export", "sms_export", "order_submitted", "calc_tab", "calc_type_select"];
+
+function MiniBar({ value, max, color = "#EDC531" }: { value: number; max: number; color?: string }) {
+  const pct = max > 0 ? Math.max(2, (value / max) * 100) : 0;
+  return <div className="h-2 bg-gray-100 rounded-full overflow-hidden w-full"><div style={{ width: `${pct}%`, background: color }} className="h-full rounded-full transition-all" /></div>;
+}
+
+function SparkLine({ data, color = "#EDC531" }: { data: number[]; color?: string }) {
+  if (data.length < 2) return null;
+  const max = Math.max(...data, 1);
+  const W = 240, H = 48, pad = 4;
+  const pts = data.map((v, i) => `${pad + (i / (data.length - 1)) * (W - pad * 2)},${H - pad - ((v / max) * (H - pad * 2))}`).join(" ");
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 48 }}>
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function AnalyticsTab() {
+  const [data, setData] = useState<Ga4Data | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    setLoading(true); setErr(null);
+    fetch("/api/admin/analytics")
+      .then(r => r.ok ? r.json() as Promise<Ga4Data> : r.json().then((e: { error?: string }) => Promise.reject(e.error ?? "Chyba")))
+      .then(d => { setData(d); setLoading(false); })
+      .catch(e => { setErr(String(e)); setLoading(false); });
+  }, [refreshKey]);
+
+  if (loading) return (
+    <div className="flex items-center justify-center h-64 gap-3 text-gray-400">
+      <RefreshCw className="w-5 h-5 animate-spin" /> Načítavam GA4 dáta…
+    </div>
+  );
+  if (err) return (
+    <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+      <p className="text-red-600 font-semibold mb-2">GA4 nedostupné</p>
+      <p className="text-red-400 text-sm mb-4">{err}</p>
+      <button onClick={() => setRefreshKey(k => k + 1)} className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded text-sm font-semibold transition-colors">Skúsiť znova</button>
+    </div>
+  );
+  if (!data) return null;
+
+  const { overview, daily, events, devices, sources, pages } = data;
+  const maxSess = Math.max(...daily.map(d => d.sessions), 1);
+  const calcEvents = events.filter(e => CALC_EVENTS.includes(e.name));
+  const otherEvents = events.filter(e => !CALC_EVENTS.includes(e.name));
+  const maxEvt = Math.max(...events.map(e => e.count), 1);
+  const maxSrc = Math.max(...sources.map(s => s.sessions), 1);
+  const maxPg = Math.max(...pages.map(p => p.views), 1);
+  const totalDevSess = devices.reduce((s, d) => s + d.sessions, 0);
+
+  const kpi = (label: string, val30: number, val90: number, icon: React.ReactNode) => (
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-gray-400">{icon}</span>
+        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{label}</span>
+      </div>
+      <div className="text-3xl font-black text-secondary">{val30.toLocaleString("sk")}</div>
+      <div className="text-[11px] text-gray-400 mt-0.5">90 dní: {val90.toLocaleString("sk")}</div>
+    </div>
+  );
+
+  const eventLabel: Record<string, string> = {
+    calculator_complete: "Kalkulačka dokončená",
+    pdf_export: "PDF export",
+    sms_export: "SMS export",
+    order_submitted: "Objednávka odoslaná",
+    calc_tab: "Tab zmena (Pumpa/Mix/…)",
+    calc_type_select: "Výber typu betónu",
+  };
+
+  return (
+    <div className="space-y-6 pb-8">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-black text-secondary uppercase tracking-widest">Google Analytics 4</h2>
+        <button onClick={() => setRefreshKey(k => k + 1)} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded text-xs font-semibold transition-colors">
+          <RefreshCw className="w-3.5 h-3.5" /> Obnoviť
+        </button>
+      </div>
+
+      {/* KPI row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {kpi("Aktívni užívatelia", overview.activeUsers30, overview.activeUsers90, <Users className="w-4 h-4" />)}
+        {kpi("Sessiony", overview.sessions30, overview.sessions90, <TrendingUp className="w-4 h-4" />)}
+        {kpi("Zobrazenia stránok", overview.pageViews30, overview.pageViews90, <Globe className="w-4 h-4" />)}
+        {kpi("Noví užívatelia", overview.newUsers30, overview.newUsers90, <UserPlus className="w-4 h-4" />)}
+      </div>
+
+      {/* Daily trend */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <TrendingUp className="w-4 h-4 text-gray-400" />
+          <span className="text-xs font-black uppercase tracking-widest text-gray-500">Denný trend — Sessions (30 dní)</span>
+        </div>
+        <SparkLine data={daily.map(d => d.sessions)} color="#EDC531" />
+        <div className="mt-3 space-y-1 max-h-48 overflow-y-auto">
+          {[...daily].reverse().slice(0, 14).map(d => (
+            <div key={d.date} className="flex items-center gap-2 text-[11px]">
+              <span className="w-20 text-gray-400 font-mono shrink-0">{d.date.slice(4, 6)}.{d.date.slice(6, 8)}.{d.date.slice(0, 4)}</span>
+              <MiniBar value={d.sessions} max={maxSess} />
+              <span className="w-8 text-right font-bold text-secondary shrink-0">{d.sessions}</span>
+              <span className="w-12 text-right text-gray-400 shrink-0">{d.users} usr</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-4">
+        {/* Calculator events */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <MousePointerClick className="w-4 h-4 text-gray-400" />
+            <span className="text-xs font-black uppercase tracking-widest text-gray-500">Kalkulačka — interakcie (90 dní)</span>
+          </div>
+          {calcEvents.length === 0 ? (
+            <p className="text-xs text-gray-400 italic">Žiadne kalkulačka eventy ešte — objavia sa po prvom použití.</p>
+          ) : (
+            <div className="space-y-2">
+              {calcEvents.map(e => (
+                <div key={e.name} className="flex items-center gap-2 text-[11px]">
+                  <span className="flex-1 text-gray-600 font-medium truncate">{eventLabel[e.name] ?? e.name}</span>
+                  <MiniBar value={e.count} max={maxEvt} color="#001D3D" />
+                  <span className="w-10 text-right font-black text-secondary shrink-0">{e.count}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Devices */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Monitor className="w-4 h-4 text-gray-400" />
+            <span className="text-xs font-black uppercase tracking-widest text-gray-500">Zariadenia (30 dní)</span>
+          </div>
+          <div className="space-y-2">
+            {devices.map(d => (
+              <div key={d.device} className="flex items-center gap-2 text-[11px]">
+                <span className="w-20 capitalize text-gray-600 font-medium shrink-0">{d.device}</span>
+                <MiniBar value={d.sessions} max={totalDevSess} color={d.device === "mobile" ? "#3b82f6" : "#EDC531"} />
+                <span className="w-8 text-right font-bold text-secondary shrink-0">{d.sessions}</span>
+                <span className="w-10 text-right text-gray-400 shrink-0">{totalDevSess > 0 ? Math.round((d.sessions / totalDevSess) * 100) : 0}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Traffic sources */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Globe className="w-4 h-4 text-gray-400" />
+            <span className="text-xs font-black uppercase tracking-widest text-gray-500">Zdroje návštevnosti (30 dní)</span>
+          </div>
+          <div className="space-y-2">
+            {sources.map(s => (
+              <div key={s.channel} className="flex items-center gap-2 text-[11px]">
+                <span className="w-32 text-gray-600 font-medium truncate shrink-0">{s.channel || "Direct"}</span>
+                <MiniBar value={s.sessions} max={maxSrc} color="#10b981" />
+                <span className="w-8 text-right font-bold text-secondary shrink-0">{s.sessions}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Top pages */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <FileText className="w-4 h-4 text-gray-400" />
+            <span className="text-xs font-black uppercase tracking-widest text-gray-500">Top stránky (30 dní)</span>
+          </div>
+          <div className="space-y-2">
+            {pages.map(p => (
+              <div key={p.path} className="flex items-center gap-2 text-[11px]">
+                <span className="flex-1 text-gray-600 font-mono truncate">{p.path}</span>
+                <MiniBar value={p.views} max={maxPg} color="#8b5cf6" />
+                <span className="w-8 text-right font-bold text-secondary shrink-0">{p.views}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* All events */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <BarChart2 className="w-4 h-4 text-gray-400" />
+          <span className="text-xs font-black uppercase tracking-widest text-gray-500">Všetky GA4 eventy (90 dní)</span>
+        </div>
+        <div className="grid sm:grid-cols-2 gap-1.5">
+          {otherEvents.map(e => (
+            <div key={e.name} className="flex items-center gap-2 text-[11px]">
+              <span className="flex-1 text-gray-500 font-mono truncate">{e.name}</span>
+              <span className="font-bold text-secondary shrink-0">{e.count}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
   const [, navigate] = useLocation();
   const [tab, setTab] = useState<Tab>(() => {
     const hash = window.location.hash.slice(1) as Tab;
-    const valid: Tab[] = ["betony", "sluzby", "doprava", "klienti", "objednavky"];
+    const valid: Tab[] = ["betony", "sluzby", "doprava", "klienti", "objednavky", "analytics"];
     return valid.includes(hash) ? hash : "klienti";
   });
   const [syncKey, setSyncKey] = useState(0);
@@ -2898,6 +3115,7 @@ export default function AdminDashboard() {
     { id: "doprava",    label: "DOPRAVA",    short: "DOPRAVA",  icon: <Truck className="w-5 h-5" /> },
     { id: "sluzby",     label: "SLUŽBY",     short: "SLUŽBY",   icon: <Wrench className="w-5 h-5" /> },
     { id: "betony",     label: "BETÓNY",     short: "BETÓNY",   icon: <Layers className="w-5 h-5" /> },
+    { id: "analytics",  label: "ANALÝZY",    short: "ANAL.",    icon: <BarChart2 className="w-5 h-5" /> },
   ];
 
   return (
@@ -2974,6 +3192,7 @@ export default function AdminDashboard() {
           {tab === "doprava" && <DopravaTab key={syncKey} onGoToSluzby={() => { setTab("sluzby"); setSluzbyScrollPumpa(true); window.location.hash = "sluzby"; }} />}
           {tab === "klienti" && <KlientiTab key={syncKey} expandClientId={goToClientId} onExpanded={() => setGoToClientId(null)} />}
           {tab === "objednavky" && <ObjednavkyTab key={syncKey} onGoToClient={(loginId) => { setTab("klienti"); setGoToClientId(loginId); }} />}
+          {tab === "analytics" && <AnalyticsTab />}
         </div>
       </div>
 
