@@ -1493,6 +1493,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     setOrderSubmitting(true);
     const breakdown = buildBreakdown();
 
+    const isFakt = priceMode === "faktura";
     await clientApi.submitOrder({
       id: Math.random().toString(36).slice(2, 10),
       status: "nova",
