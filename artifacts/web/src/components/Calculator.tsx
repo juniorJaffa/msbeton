@@ -250,6 +250,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [mapError, setMapError] = useState("");
   const mapLocateFnRef = useRef<(() => void) | null>(null);
   const mapGeocodeAddrFnRef = useRef<((addr: string) => void) | null>(null);
+  const keepResultOnPinRef = useRef(false);
   const calcWrapRef = useRef<HTMLDivElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const [categoryName, setCategoryName] = useState<string | null>(null);
@@ -414,7 +415,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         map.panTo(pos);
         setMapPin({ lat, lng });
         setMapPlusCode(encodeOLC(lat, lng));
-        setShowResult(false);
+        if (!keepResultOnPinRef.current) setShowResult(false);
+        keepResultOnPinRef.current = false;
         setMapError("");
         // Distance Matrix — rovnaká metóda ako adresný režim
         new google.maps.DistanceMatrixService().getDistanceMatrix(
@@ -1418,13 +1420,14 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     // Reset km + výpočtu len keď prechádza cez "distance" alebo z "distance"
     const preserveKm = isAddrToMap || isMapToAddr;
     if (!preserveKm) {
-      setDistance(""); setAddressKm(null);
+      setDistance(""); setAddressKm(null); setShowResult(false);
     }
 
     setDeliveryMode(newMode);
 
-    // Adresa→Mapa: geocoduj adresu a umiestni pin
+    // Adresa→Mapa: geocoduj adresu a umiestni pin — zachovaj result ak bol zobrazený
     if (isAddrToMap && address) {
+      keepResultOnPinRef.current = showResult;
       setTimeout(() => { mapGeocodeAddrFnRef.current?.(address); }, 80);
     }
   }

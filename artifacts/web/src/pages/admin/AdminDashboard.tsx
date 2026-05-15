@@ -1011,167 +1011,184 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
           {newBadge > 0 && <span className="relative bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">{newBadge} nových</span>}
           <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${filterOpen ? "rotate-180" : ""}`} />
         </button>
-        {filterOpen && <>
-        <div className="border-t border-gray-100 mx-4" />
-        {/* Row 1 – stav */}
-        <div className="flex items-center gap-2 flex-wrap px-4 py-3">
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-14 shrink-0">Stav</span>
-          <button onClick={() => { setFilterStatus("vsetky"); setNewBadge(0); }}
-            className={`relative px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${filterStatus === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-secondary/40"}`}>
-            Všetky <span className="ml-1 text-[10px] opacity-60">{orders.length}</span>
-            {newBadge > 0 && <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">{newBadge}</span>}
-          </button>
-          {ORDER_STATUSES.map(s => (
-            <button key={s.key} onClick={() => setFilterStatus(s.key)}
-              className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
-                filterStatus === s.key ? STATUS_ACTIVE_COLORS[s.key] : `bg-white border-gray-200 ${s.color} opacity-80 hover:opacity-100`
-              }`}>
-              {s.label} <span className="ml-1 text-[10px] opacity-70">{orders.filter(o => o.status === s.key).length}</span>
-            </button>
-          ))}
-        </div>
-        <div className="border-t border-gray-100 mx-4" />
-        {/* Row 2 – typ vozidla */}
-        <div className="flex items-center gap-2 flex-wrap px-4 py-3">
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-14 shrink-0">Typ</span>
-          <button onClick={() => setFilterTab("vsetky")}
-            className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${filterTab === "vsetky" ? "bg-gray-700 text-white border-gray-700" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"}`}>
-            Všetky
-          </button>
-          {(["pumpa", "mix", "vlastnadoprava"] as Order["tab"][]).map(t => {
-            const s = TAB_STYLES[t];
-            const icon = t === "pumpa"
-              ? <svg width="14" height="9" viewBox="0 0 38 22" fill="currentColor"><rect x="1" y="12" width="24" height="6" rx="1"/><rect x="22" y="9" width="9" height="9" rx="1"/><rect x="8" y="8" width="3" height="4" rx="0.5"/><line x1="9.5" y1="8" x2="3" y2="2" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/><line x1="3" y1="2" x2="22" y2="2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><circle cx="6" cy="19" r="3"/><circle cx="14" cy="19" r="3"/><circle cx="27" cy="19" r="3"/></svg>
-              : t === "mix"
-              ? <svg width="14" height="9" viewBox="0 0 38 22" fill="currentColor"><rect x="1" y="12" width="24" height="6" rx="1"/><rect x="22" y="9" width="9" height="9" rx="1"/><ellipse cx="12" cy="9" rx="9" ry="6"/><circle cx="6" cy="19" r="3"/><circle cx="20" cy="19" r="3"/><circle cx="27" cy="19" r="3"/></svg>
-              : <svg width="14" height="9" viewBox="0 0 38 22" fill="currentColor"><rect x="1" y="10" width="30" height="8" rx="1"/><path d="M4 10 L9 4 L24 4 L28 10"/><circle cx="8" cy="19" r="3"/><circle cx="24" cy="19" r="3"/></svg>;
-            return (
-              <button key={t} onClick={() => setFilterTab(t)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
-                  filterTab === t ? s.activeBg : `bg-white border-gray-200 text-gray-500 hover:border-gray-400`
-                }`}>
-                {icon}
-                {s.label} <span className="text-[10px] opacity-60">{orders.filter(o => o.tab === t).length}</span>
-              </button>
-            );
-          })}
-        </div>
-        <div className="border-t border-gray-100 mx-4" />
-        {/* Row 3 – platba */}
-        <div className="flex items-center gap-2 flex-wrap px-4 py-3">
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-14 shrink-0">Platba</span>
-          {([["vsetky", "Všetky"], ["faktura", "Faktúra"], ["hotovost", "Hotovosť"]] as const).map(([val, label]) => (
-            <button key={val} onClick={() => setFilterPriceMode(val)}
-              className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
-                filterPriceMode === val
-                  ? val === "hotovost" ? "bg-amber-500 text-white border-amber-500" : val === "faktura" ? "bg-blue-600 text-white border-blue-600" : "bg-gray-700 text-white border-gray-700"
-                  : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
-              }`}>
-              {label}
-              {val !== "vsetky" && <span className="ml-1 text-[10px] opacity-60">{orders.filter(o => o.priceMode === val).length}</span>}
-            </button>
-          ))}
-        </div>
-        <div className="border-t border-gray-100 mx-4" />
-        {/* Row 4 – zdroj kanál */}
-        <div className="flex items-center gap-2 flex-wrap px-4 py-3">
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-14 shrink-0">Zdroj</span>
-          {([["vsetky", "Všetky", null], ["kosarik", "Košík", "ShoppingCart"], ["sms", "SMS", "MessageSquare"]] as const).map(([val, label, iconName]) => (
-            <button key={val} onClick={() => setFilterChannel(val)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
-                filterChannel === val
-                  ? val === "sms" ? "bg-green-600 text-white border-green-600" : val === "kosarik" ? "bg-secondary text-white border-secondary" : "bg-gray-700 text-white border-gray-700"
-                  : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
-              }`}>
-              {iconName === "ShoppingCart" && <ShoppingCart className="w-3 h-3" />}
-              {iconName === "MessageSquare" && <MessageSquare className="w-3 h-3" />}
-              {label}
-              {val !== "vsetky" && <span className="ml-0.5 text-[10px] opacity-60">{orders.filter(o => val === "sms" ? !!o.viaSms : !o.viaSms).length}</span>}
-            </button>
-          ))}
-        </div>
-        <div className="border-t border-gray-100 mx-4" />
-        {/* Row 5 – dátumový filter (Kibana štýl) */}
-        <div className="flex items-start gap-2 flex-wrap px-4 py-3">
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-14 shrink-0 pt-1.5">Dátum</span>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {(["dnes", "vcera", "tyzden"] as const).map((preset, i) => (
-              <button key={preset} onClick={() => applyQuickDate(preset)}
-                className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
-                  quickDate === preset ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
-                }`}>
-                {["Dnes", "Včera", "Týždeň"][i]}
-                {preset === "dnes" && quickDate === "dnes" && (
-                  <span className="ml-1 font-normal opacity-80">{new Date().toLocaleDateString("sk-SK", { day: "numeric", month: "numeric", year: "numeric" })}</span>
-                )}
-              </button>
-            ))}
-            {/* Mesiac + inline M/R navigátor */}
-            <button onClick={() => applyQuickDate("mesiac")}
-              className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
-                quickDate === "mesiac" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
-              }`}>
-              Mesiac
-            </button>
-            {quickDate === "mesiac" && (
-              <div className="inline-flex items-center gap-0.5 border border-secondary/30 rounded-sm bg-secondary/5 px-1 py-0.5">
-                <button onClick={() => stepMonth(-1)} className="px-1.5 py-0.5 text-secondary hover:bg-secondary/10 rounded-sm font-bold text-xs transition-colors">◄</button>
-                <span className="text-xs font-bold text-secondary w-20 text-center select-none">{SK_MONTHS[quickMY.m - 1]}</span>
-                <button onClick={() => stepMonth(1)} className="px-1.5 py-0.5 text-secondary hover:bg-secondary/10 rounded-sm font-bold text-xs transition-colors">►</button>
-                <div className="w-px h-4 bg-secondary/20 mx-0.5" />
-                <button onClick={() => applyMonthFilter(quickMY.m, quickMY.y - 1)} className="px-1.5 py-0.5 text-secondary hover:bg-secondary/10 rounded-sm font-bold text-xs transition-colors">◄</button>
-                <span className="text-xs font-bold text-secondary w-10 text-center select-none">{quickMY.y}</span>
-                <button onClick={() => applyMonthFilter(quickMY.m, quickMY.y + 1)} className="px-1.5 py-0.5 text-secondary hover:bg-secondary/10 rounded-sm font-bold text-xs transition-colors">►</button>
-              </div>
-            )}
-            {/* –N dní pill */}
-            <div className={`inline-flex items-center gap-1 px-2.5 py-1.5 border rounded-sm cursor-pointer transition-all ${
-              quickDate === "ndni" ? "border-secondary bg-secondary/5" : "border-gray-200 bg-white hover:border-gray-400"
-            }`} onClick={() => applyQuickDate("ndni", Number(quickDays) || 7)}>
-              <span className={`text-xs font-bold ${quickDate === "ndni" ? "text-secondary" : "text-gray-400"}`}>–</span>
-              <input
-                type="number" min={1} max={365} value={quickDays}
-                onChange={e => { setQuickDays(e.target.value); applyQuickDate("ndni", Number(e.target.value) || 7); }}
-                onClick={e => e.stopPropagation()}
-                className={`w-8 text-xs font-bold text-center outline-none bg-transparent ${quickDate === "ndni" ? "text-secondary" : "text-gray-600"}`}
-              />
-              <span className={`text-xs font-bold ${quickDate === "ndni" ? "text-secondary" : "text-gray-500"}`}>dní</span>
+        {filterOpen && (
+        <div className="border-t border-gray-200">
+          {/* STAV */}
+          <div className="border-b border-gray-200">
+            <div className="bg-gray-50 border-b border-gray-100 px-4 py-1 flex items-center justify-between">
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">Stav</span>
+              {newBadge > 0 && <span className="bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">{newBadge} nových</span>}
             </div>
-            <div className="w-px h-5 bg-gray-200 self-center mx-0.5" />
-            <span className="text-[10px] text-gray-400 font-semibold self-center">od</span>
-            <input type="date" value={dateFrom}
-              onChange={e => { setDateFrom(e.target.value); setQuickDate(""); }}
-              className="border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-secondary rounded-sm w-32" />
-            <span className="text-[10px] text-gray-400 font-semibold self-center">do</span>
-            <input type="date" value={dateTo}
-              onChange={e => { setDateTo(e.target.value); setQuickDate(""); }}
-              className="border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:border-secondary rounded-sm w-32" />
-            {(dateFrom || dateTo) && (
-              <button onClick={() => { setDateFrom(""); setDateTo(""); setQuickDate(""); }}
-                className="text-gray-400 hover:text-red-500 transition-colors p-1 self-center">
-                <X className="w-3.5 h-3.5" />
+            <div className="px-4 py-2.5 flex flex-wrap gap-1.5">
+              <button onClick={() => { setFilterStatus("vsetky"); setNewBadge(0); }}
+                className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${filterStatus === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-secondary/40"}`}>
+                Všetky <span className="ml-1 text-[10px] opacity-60">{orders.length}</span>
               </button>
-            )}
+              {ORDER_STATUSES.map(s => (
+                <button key={s.key} onClick={() => setFilterStatus(s.key)}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
+                    filterStatus === s.key ? STATUS_ACTIVE_COLORS[s.key] : `bg-white border-gray-200 ${s.color} opacity-80 hover:opacity-100`
+                  }`}>
+                  {s.label} <span className="ml-1 text-[10px] opacity-70">{orders.filter(o => o.status === s.key).length}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* TYP + PLATBA + ZDROJ — 3 sekcie v jednom vizuálnom bloku */}
+          <div className="border-b border-gray-200 divide-y divide-gray-100">
+            {/* Typ */}
+            <div className="flex items-center gap-0 px-4 py-2">
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em] w-14 shrink-0">Typ</span>
+              <div className="flex flex-wrap gap-1.5">
+                <button onClick={() => setFilterTab("vsetky")}
+                  className={`px-2.5 py-1 text-xs font-bold rounded-sm border transition-all ${filterTab === "vsetky" ? "bg-gray-700 text-white border-gray-700" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"}`}>
+                  Všetky
+                </button>
+                {(["pumpa", "mix", "vlastnadoprava"] as Order["tab"][]).map(t => {
+                  const s = TAB_STYLES[t];
+                  const icon = t === "pumpa"
+                    ? <svg width="14" height="9" viewBox="0 0 38 22" fill="currentColor"><rect x="1" y="12" width="24" height="6" rx="1"/><rect x="22" y="9" width="9" height="9" rx="1"/><rect x="8" y="8" width="3" height="4" rx="0.5"/><line x1="9.5" y1="8" x2="3" y2="2" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/><line x1="3" y1="2" x2="22" y2="2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><circle cx="6" cy="19" r="3"/><circle cx="14" cy="19" r="3"/><circle cx="27" cy="19" r="3"/></svg>
+                    : t === "mix"
+                    ? <svg width="14" height="9" viewBox="0 0 38 22" fill="currentColor"><rect x="1" y="12" width="24" height="6" rx="1"/><rect x="22" y="9" width="9" height="9" rx="1"/><ellipse cx="12" cy="9" rx="9" ry="6"/><circle cx="6" cy="19" r="3"/><circle cx="20" cy="19" r="3"/><circle cx="27" cy="19" r="3"/></svg>
+                    : <svg width="14" height="9" viewBox="0 0 38 22" fill="currentColor"><rect x="1" y="10" width="30" height="8" rx="1"/><path d="M4 10 L9 4 L24 4 L28 10"/><circle cx="8" cy="19" r="3"/><circle cx="24" cy="19" r="3"/></svg>;
+                  return (
+                    <button key={t} onClick={() => setFilterTab(t)}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-sm border transition-all ${
+                        filterTab === t ? s.activeBg : `bg-white border-gray-200 text-gray-500 hover:border-gray-400`
+                      }`}>
+                      {icon}
+                      {s.label} <span className="text-[10px] opacity-60">{orders.filter(o => o.tab === t).length}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            {/* Platba */}
+            <div className="flex items-center gap-0 px-4 py-2">
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em] w-14 shrink-0">Platba</span>
+              <div className="flex flex-wrap gap-1.5">
+                {([["vsetky", "Všetky"], ["faktura", "Faktúra"], ["hotovost", "Hotovosť"]] as const).map(([val, label]) => (
+                  <button key={val} onClick={() => setFilterPriceMode(val)}
+                    className={`px-2.5 py-1 text-xs font-bold rounded-sm border transition-all ${
+                      filterPriceMode === val
+                        ? val === "hotovost" ? "bg-amber-500 text-white border-amber-500" : val === "faktura" ? "bg-blue-600 text-white border-blue-600" : "bg-gray-700 text-white border-gray-700"
+                        : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
+                    }`}>
+                    {label}
+                    {val !== "vsetky" && <span className="ml-1 text-[10px] opacity-60">{orders.filter(o => o.priceMode === val).length}</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Zdroj */}
+            <div className="flex items-center gap-0 px-4 py-2">
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em] w-14 shrink-0">Zdroj</span>
+              <div className="flex flex-wrap gap-1.5">
+                {([["vsetky", "Všetky", null], ["kosarik", "Košík", "ShoppingCart"], ["sms", "SMS", "MessageSquare"]] as const).map(([val, label, iconName]) => (
+                  <button key={val} onClick={() => setFilterChannel(val)}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-sm border transition-all ${
+                      filterChannel === val
+                        ? val === "sms" ? "bg-green-600 text-white border-green-600" : val === "kosarik" ? "bg-secondary text-white border-secondary" : "bg-gray-700 text-white border-gray-700"
+                        : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
+                    }`}>
+                    {iconName === "ShoppingCart" && <ShoppingCart className="w-3 h-3" />}
+                    {iconName === "MessageSquare" && <MessageSquare className="w-3 h-3" />}
+                    {label}
+                    {val !== "vsetky" && <span className="ml-0.5 text-[10px] opacity-60">{orders.filter(o => val === "sms" ? !!o.viaSms : !o.viaSms).length}</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* DÁTUM */}
+          <div className="border-b border-gray-200">
+            <div className="bg-gray-50 border-b border-gray-100 px-4 py-1">
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">Dátum</span>
+            </div>
+            {/* Rýchle filtry */}
+            <div className="px-4 pt-2.5 pb-1.5 flex flex-wrap gap-1.5">
+              {(["dnes", "vcera", "tyzden"] as const).map((preset, i) => (
+                <button key={preset} onClick={() => applyQuickDate(preset)}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
+                    quickDate === preset ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
+                  }`}>
+                  {["Dnes", "Včera", "Týždeň"][i]}
+                  {preset === "dnes" && quickDate === "dnes" && (
+                    <span className="ml-1 font-normal opacity-80">{new Date().toLocaleDateString("sk-SK", { day: "numeric", month: "numeric", year: "numeric" })}</span>
+                  )}
+                </button>
+              ))}
+              <button onClick={() => applyQuickDate("mesiac")}
+                className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
+                  quickDate === "mesiac" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
+                }`}>
+                Mesiac
+              </button>
+              {quickDate === "mesiac" && (
+                <div className="inline-flex items-center gap-0.5 border border-secondary/30 rounded-sm bg-secondary/5 px-1 py-0.5">
+                  <button onClick={() => stepMonth(-1)} className="px-1.5 py-0.5 text-secondary hover:bg-secondary/10 rounded-sm font-bold text-xs transition-colors">◄</button>
+                  <span className="text-xs font-bold text-secondary w-20 text-center select-none">{SK_MONTHS[quickMY.m - 1]}</span>
+                  <button onClick={() => stepMonth(1)} className="px-1.5 py-0.5 text-secondary hover:bg-secondary/10 rounded-sm font-bold text-xs transition-colors">►</button>
+                  <div className="w-px h-4 bg-secondary/20 mx-0.5" />
+                  <button onClick={() => applyMonthFilter(quickMY.m, quickMY.y - 1)} className="px-1.5 py-0.5 text-secondary hover:bg-secondary/10 rounded-sm font-bold text-xs transition-colors">◄</button>
+                  <span className="text-xs font-bold text-secondary w-10 text-center select-none">{quickMY.y}</span>
+                  <button onClick={() => applyMonthFilter(quickMY.m, quickMY.y + 1)} className="px-1.5 py-0.5 text-secondary hover:bg-secondary/10 rounded-sm font-bold text-xs transition-colors">►</button>
+                </div>
+              )}
+              <div className={`inline-flex items-center gap-1 px-2.5 py-1.5 border rounded-sm cursor-pointer transition-all ${
+                quickDate === "ndni" ? "border-secondary bg-secondary/5" : "border-gray-200 bg-white hover:border-gray-400"
+              }`} onClick={() => applyQuickDate("ndni", Number(quickDays) || 7)}>
+                <span className={`text-xs font-bold ${quickDate === "ndni" ? "text-secondary" : "text-gray-400"}`}>–</span>
+                <input
+                  type="number" min={1} max={365} value={quickDays}
+                  onChange={e => { setQuickDays(e.target.value); applyQuickDate("ndni", Number(e.target.value) || 7); }}
+                  onClick={e => e.stopPropagation()}
+                  className={`w-8 text-xs font-bold text-center outline-none bg-transparent ${quickDate === "ndni" ? "text-secondary" : "text-gray-600"}`}
+                />
+                <span className={`text-xs font-bold ${quickDate === "ndni" ? "text-secondary" : "text-gray-500"}`}>dní</span>
+              </div>
+            </div>
+            {/* Od–do row */}
+            <div className="px-4 pb-2.5 flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] text-gray-400 font-semibold">od</span>
+              <input type="date" value={dateFrom}
+                onChange={e => { setDateFrom(e.target.value); setQuickDate(""); }}
+                className="border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:border-secondary rounded-sm w-32" />
+              <span className="text-[10px] text-gray-400 font-semibold">do</span>
+              <input type="date" value={dateTo}
+                onChange={e => { setDateTo(e.target.value); setQuickDate(""); }}
+                className="border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:border-secondary rounded-sm w-32" />
+              {(dateFrom || dateTo) && (
+                <button onClick={() => { setDateFrom(""); setDateTo(""); setQuickDate(""); }}
+                  className="text-gray-400 hover:text-red-500 transition-colors p-1">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* HĽADAJ */}
+          <div>
+            <div className="bg-gray-50 border-b border-gray-100 px-4 py-1">
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">Hľadaj</span>
+            </div>
+            <div className="px-4 py-2.5 flex items-center gap-1.5">
+              <input
+                type="text" value={search} onChange={e => setSearch(e.target.value)}
+                placeholder="Meno, firma, telefón, ID, adresa..."
+                className="flex-1 border border-gray-200 px-3 py-1.5 text-xs focus:outline-none focus:border-secondary rounded-sm"
+              />
+              {search && (
+                <button onClick={() => setSearch("")} className="text-gray-400 hover:text-red-500 transition-colors p-1 shrink-0">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
-        <div className="border-t border-gray-100 mx-4" />
-        {/* Row 6 – hľadaj */}
-        <div className="flex items-center gap-2 flex-wrap px-4 py-3">
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-14 shrink-0">Hľadaj</span>
-          <div className="flex flex-1 items-center gap-1.5 min-w-[200px]">
-            <input
-              type="text" value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Meno, firma, telefón, ID, adresa..."
-              className="flex-1 border border-gray-200 px-3 py-1.5 text-xs focus:outline-none focus:border-secondary rounded-sm"
-            />
-            {search && (
-              <button onClick={() => setSearch("")} className="text-gray-400 hover:text-red-500 transition-colors p-1 shrink-0">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
-        </>}
+        )}
       </div>
 
       {sorted.length === 0 ? (
