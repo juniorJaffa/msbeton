@@ -1236,7 +1236,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                       <span className={`text-[10px] font-bold ${o.createdAt.slice(0,10) === todayStr ? "text-primary" : o.createdAt.slice(0,10) === yesterdayStr ? "text-blue-400" : "text-gray-400 font-normal"}`}>{fmtDate(o.createdAt)}</span>
                       {o.viaSms
                         ? <span className="inline-flex items-center gap-0.5 bg-green-100 text-green-700 text-[9px] font-black px-1.5 py-0.5 rounded-sm"><MessageSquare className="w-2.5 h-2.5" /> SMS</span>
-                        : <span className="inline-flex items-center gap-0.5 bg-secondary/10 text-secondary text-[9px] font-black px-1.5 py-0.5 rounded-sm"><ShoppingCart className="w-2.5 h-2.5" /> Košík</span>}
+                        : <span className="inline-flex items-center bg-secondary/10 text-secondary px-1.5 py-0.5 rounded-sm"><ShoppingCart className="w-3 h-3" /></span>}
                       {(o.discountBeton || o.discountDoprava || o.discountSluzby || o.discountCelkovo) ? (
                         o.discountCelkovo ? (
                           <span className="bg-primary text-secondary text-[9px] font-black px-1.5 py-0.5 rounded-sm">−{o.discountCelkovo}%</span>
