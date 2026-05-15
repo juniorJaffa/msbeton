@@ -1363,9 +1363,14 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                           <div className="flex items-center gap-2 px-4 py-2 bg-secondary/5 border-b border-secondary/10">
                             <Calculator className="w-3.5 h-3.5 text-primary shrink-0" />
                             <span className="text-[10px] font-black uppercase tracking-widest text-secondary">Kalkulácia</span>
-                            <span className={cn("ml-auto text-[9px] font-black uppercase px-2 py-0.5 rounded-sm", o.priceMode === "hotovost" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700")}>
+                            <span className={cn("text-[9px] font-black uppercase px-2 py-0.5 rounded-sm", o.priceMode === "hotovost" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700")}>
                               {o.priceMode === "hotovost" ? "Hotovosť" : "Faktúra"}
                             </span>
+                            <button onClick={e => { e.stopPropagation(); exportOrderPDF(o); }}
+                              className="ml-auto flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-black text-secondary border border-secondary/30 rounded-sm hover:bg-secondary hover:text-white transition-all">
+                              <FileText className="w-3 h-3" />
+                              <span className="hidden sm:inline">PDF</span>
+                            </button>
                           </div>
                           <div className="px-4 py-3">
                             {parsed ? (
@@ -2569,6 +2574,115 @@ ${buildTable(dopravaHdr, dopravaRows)}
 <div style="margin-top:10mm;padding-top:4mm;border-top:1px solid #eee;font-size:7.5pt;color:#999">
   Vypracovala spoločnosť: MS-BETON, spol. s r.o. &nbsp;|&nbsp; IČO: 55747591 &nbsp;|&nbsp; IČ DPH: SK2122074603<br>
   Turie 468, 013 12 Turie &nbsp;|&nbsp; +421 909 205 205 &nbsp;|&nbsp; info@msbeton.sk &nbsp;|&nbsp; msbeton.sk
+</div>
+
+<script>window.onload=function(){window.print();}</script>
+</body></html>`;
+
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, "_blank");
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+  if (!win) { const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.click(); }
+}
+
+function exportOrderPDF(o: Order) {
+  const tabLabels: Record<string, string> = { pumpa: "Pumpa", mix: "Domiešavač", vlastnadoprava: "Vlastná doprava" };
+  const statusLabels: Record<string, string> = { nova: "Nová", potvrdena: "Potvrdená", odoslana: "Odoslaná", vyuctovana: "Vyúčtovaná", vyplatena: "Vyplatená", zrusena: "Zrušená" };
+  const today = new Date(o.createdAt).toLocaleDateString("sk-SK");
+  const fmtEurPdf = (n: number | undefined) => n !== undefined ? n.toFixed(2) + " €" : "";
+
+  let parsed: { v: number; s: { h: string; rows: { l: string; v: number; o?: number }[] }[] } | null = null;
+  try { if (o.breakdown?.startsWith("{")) parsed = JSON.parse(o.breakdown); } catch { /* */ }
+
+  const breakdownHtml = parsed ? parsed.s.map(sec => {
+    const isMain = sec.h.startsWith("Pridaná") || sec.h.startsWith("Produkty");
+    const rows = sec.rows.map(row => {
+      const orig = row.o !== undefined ? `<span style="text-decoration:line-through;color:#aaa;font-size:7.5pt">${fmtEurPdf(row.o)}</span> ` : "";
+      return `<tr>
+        <td style="padding:3px 8px;font-size:8.5pt;border-bottom:1px solid #f0f0f0;color:#444">${row.l}</td>
+        <td style="padding:3px 8px;font-size:8.5pt;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:bold;color:${row.o !== undefined ? "#b45309" : "#222"}">${orig}${fmtEurPdf(row.v)}</td>
+      </tr>`;
+    }).join("");
+    return `<tr><td colspan="2" style="padding:4px 8px 2px;font-size:8pt;font-weight:bold;background:${isMain ? "#001D3D" : "#f5f5f5"};color:${isMain ? "#EDC531" : "#666"}">${sec.h}</td></tr>${rows}`;
+  }).join("") : "";
+
+  const discountInfo = [
+    o.discountBeton   ? `Betón −${o.discountBeton}%`   : "",
+    o.discountDoprava ? `Doprava −${o.discountDoprava}%` : "",
+    o.discountSluzby  ? `Služby −${o.discountSluzby}%`  : "",
+    o.discountCelkovo ? `Celkovo −${o.discountCelkovo}%` : "",
+  ].filter(Boolean).join(" | ");
+
+  const html = `<!DOCTYPE html><html lang="sk"><head>
+<meta charset="utf-8">
+<title>Objednávka – ${o.clientName || "klient"}</title>
+<style>
+  @page { size: A4; margin: 12mm 14mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 9pt; color: #222; }
+  table { border-collapse: collapse; width: 100%; }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head><body>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:4mm;border-bottom:2px solid #EDC531;margin-bottom:5mm">
+  <div>
+    <div style="font-size:14pt;font-weight:bold;color:#001D3D">MS-BETON, spol. s r.o.</div>
+    <div style="font-size:7.5pt;color:#555;margin-top:2px">Turie 468, 013 12 Turie &nbsp;|&nbsp; IČO: 55747591 &nbsp;|&nbsp; IČ DPH: SK2122074603</div>
+    <div style="font-size:7.5pt;color:#777;margin-top:1px">+421 944 069 305 &nbsp;|&nbsp; peter@msbeton.sk &nbsp;|&nbsp; msbeton.sk</div>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:13pt;font-weight:bold;color:#EDC531;letter-spacing:0.5px">OBJEDNÁVKA</div>
+    <div style="font-size:8pt;color:#777;margin-top:2px">${today}</div>
+    <div style="font-size:7.5pt;color:#aaa;margin-top:1px">Stav: ${statusLabels[o.status] ?? o.status}</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6mm;margin-bottom:5mm">
+  <div style="border:1px solid #eee;padding:4mm;border-radius:2px">
+    <div style="font-size:8pt;font-weight:bold;color:#001D3D;border-bottom:1px solid #eee;padding-bottom:2mm;margin-bottom:3mm">KLIENT</div>
+    <div style="font-size:8.5pt;font-weight:bold;color:#111;margin-bottom:2px">${o.clientName || "—"}</div>
+    ${o.company ? `<div style="font-size:8pt;color:#555">${o.company}</div>` : ""}
+    ${o.phone ? `<div style="font-size:8pt;color:#555;margin-top:2px">${o.phone}</div>` : ""}
+    ${o.email ? `<div style="font-size:8pt;color:#777">${o.email}</div>` : ""}
+    ${discountInfo ? `<div style="font-size:7.5pt;color:#b45309;margin-top:4px;font-weight:bold">Zľavy: ${discountInfo}</div>` : ""}
+  </div>
+  <div style="border:1px solid #eee;padding:4mm;border-radius:2px">
+    <div style="font-size:8pt;font-weight:bold;color:#001D3D;border-bottom:1px solid #eee;padding-bottom:2mm;margin-bottom:3mm">DORUČENIE</div>
+    <table style="font-size:8.5pt"><tbody>
+      <tr><td style="color:#888;padding:1px 6px 1px 0;width:90px">Typ</td><td style="font-weight:bold">${tabLabels[o.tab] ?? o.tab}</td></tr>
+      <tr><td style="color:#888;padding:1px 6px 1px 0">Množstvo</td><td style="font-weight:bold">${o.totalQty} m³</td></tr>
+      ${o.km ? `<tr><td style="color:#888;padding:1px 6px 1px 0">Vzdialenosť</td><td>${o.km} km</td></tr>` : ""}
+      ${o.address ? `<tr><td style="color:#888;padding:1px 6px 1px 0;vertical-align:top">Adresa</td><td>${o.address}</td></tr>` : ""}
+      ${o.deliveryZoneName ? `<tr><td style="color:#888;padding:1px 6px 1px 0">Zóna</td><td>${o.deliveryZoneName}</td></tr>` : ""}
+      <tr><td style="color:#888;padding:1px 6px 1px 0">Platba</td><td style="font-weight:bold">${o.priceMode === "hotovost" ? "Hotovosť" : "Faktúra"}</td></tr>
+      ${o.viaSms ? `<tr><td style="color:#888;padding:1px 6px 1px 0">Zdroj</td><td>SMS</td></tr>` : ""}
+    </tbody></table>
+    ${o.note ? `<div style="font-size:8pt;color:#555;margin-top:4px;font-style:italic">Poznámka: ${o.note}</div>` : ""}
+  </div>
+</div>
+
+${breakdownHtml ? `
+<div style="margin-bottom:5mm">
+  <div style="font-size:9.5pt;font-weight:bold;color:#001D3D;border-bottom:2px solid #EDC531;padding-bottom:2px;margin-bottom:4px">KALKULÁCIA</div>
+  <table><tbody>${breakdownHtml}</tbody></table>
+</div>` : ""}
+
+<div style="background:#001D3D;color:#fff;padding:4mm;border-radius:2px;display:flex;justify-content:space-between;align-items:center">
+  <div>
+    <div style="font-size:8pt;color:rgba(255,255,255,0.6)">Bez DPH</div>
+    <div style="font-size:9.5pt;font-weight:bold;color:rgba(255,255,255,0.8)">${fmtEurPdf(o.totalBezDph)}</div>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:8pt;color:rgba(255,255,255,0.6)">Celkom s DPH</div>
+    <div style="font-size:16pt;font-weight:bold;color:#EDC531">${fmtEurPdf(o.totalSDph)}</div>
+  </div>
+</div>
+
+<div style="margin-top:10mm;display:grid;grid-template-columns:1fr 1fr;gap:10mm">
+  <div style="border-top:1px solid #ccc;padding-top:3mm;font-size:8pt;color:#888">Dátum a podpis zákazníka</div>
+  <div style="border-top:1px solid #ccc;padding-top:3mm;font-size:8pt;color:#888">Pečiatka a podpis MS-BETON</div>
 </div>
 
 <script>window.onload=function(){window.print();}</script>

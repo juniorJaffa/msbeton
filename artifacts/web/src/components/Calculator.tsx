@@ -1425,10 +1425,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
     setDeliveryMode(newMode);
 
-    // Adresa→Mapa: geocoduj adresu a umiestni pin — zachovaj result ak bol zobrazený
-    if (isAddrToMap && address) {
+    // Adresa→Mapa: initMapMode() zavolá mapGeocodeAddrFnRef automaticky (line s "if (address && !mapPin)")
+    // keepResultOnPinRef zachová result — nesmie volať setTimeout (double geocode + race condition)
+    if (isAddrToMap) {
       keepResultOnPinRef.current = showResult;
-      setTimeout(() => { mapGeocodeAddrFnRef.current?.(address); }, 80);
     }
   }
 
@@ -1789,9 +1789,18 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
               <div className="space-y-2">
                 {!mapKmConfirmed && (
                   <div className="flex gap-2">
-                    <input id="map-search-input" type="text"
-                      placeholder="Hľadajte adresu na mape..."
-                      className="flex-1 bg-white/10 border-b-2 border-b-primary text-white px-4 py-3 focus:outline-none placeholder:text-white/30 text-sm font-medium rounded-sm" />
+                    <div className="relative flex-1">
+                      <input id="map-search-input" type="text"
+                        placeholder="Hľadajte adresu na mape..."
+                        className="w-full bg-white/10 border-b-2 border-b-primary text-white px-4 py-3 pr-9 focus:outline-none placeholder:text-white/30 text-sm font-medium rounded-sm" />
+                      <button
+                        onClick={() => {
+                          const el = document.getElementById("map-search-input") as HTMLInputElement | null;
+                          if (el) el.value = "";
+                          setMapPin(null); setMapPlusCode(""); setDistance(""); setAddressKm(null); setMapError("");
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors text-lg leading-none">×</button>
+                    </div>
                     <button onClick={() => mapLocateFnRef.current?.()}
                       className="bg-white/10 border-b-2 border-b-primary px-3 text-white/50 hover:text-primary transition-colors" title="Moja poloha">
                       <Navigation className="w-4 h-4" />
