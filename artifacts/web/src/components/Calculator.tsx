@@ -1378,7 +1378,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         priceMode,
         totalBezDph: result.totalDiscBezDph,
         totalSDph: isFakt ? result.totalDiscSDph : result.hotovostTotal,
-        breakdown: JSON.stringify({ v: 2, s: [] }),
+        breakdown: buildBreakdown(),
         viaSms: true,
       }).then(() => {
         setSmsOrderCreated(true);
@@ -1396,15 +1396,14 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     }
   }
 
-  async function handleSubmitOrder() {
-    if (!result || !orderForm.name.trim()) return;
-    setOrderSubmitting(true);
-    const isFakt = priceMode === "faktura";
+  function buildBreakdown(): string {
+    if (!result) return JSON.stringify({ v: 2, s: [] });
     const fmt2 = (n: number) => parseFloat(n.toFixed(2));
-    const bdSections: { h: string; rows: { l: string; v: number; o?: number }[] }[] = [];
+    const isFakt = priceMode === "faktura";
     const pdfTrucksLabel = (ci: typeof result.concreteBreakdown[0]) =>
       tab === "pumpa" ? `1×Pumpa${ci.transportTrucks > 1 ? `+${ci.transportTrucks - 1}×Mix` : ""}` : `${ci.transportTrucks}×Mix`;
     const zoneStr = result.transportZone ? `${result.transportZone.fromKm}–${result.transportZone.toKm} km` : "";
+    const bdSections: { h: string; rows: { l: string; v: number; o?: number }[] }[] = [];
 
     result.concreteBreakdown.forEach((ci, idx) => {
       const bOrig = fmt2(isFakt ? ci.bezDph : ci.bezDph * (1 + VAT_HOTOVOST));
@@ -1450,7 +1449,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         bdSections.push({ h: tab === "pumpa" ? "Služby – Pumpa" : "Čakačky", rows: svcRows });
       }
     });
-    const breakdown = JSON.stringify({ v: 2, s: bdSections });
+    return JSON.stringify({ v: 2, s: bdSections });
+  }
+
+  async function handleSubmitOrder() {
+    if (!result || !orderForm.name.trim()) return;
+    setOrderSubmitting(true);
+    const breakdown = buildBreakdown();
 
     await clientApi.submitOrder({
       id: Math.random().toString(36).slice(2, 10),
