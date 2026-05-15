@@ -247,6 +247,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [mapPlusCode, setMapPlusCode] = useState("");
   const [mapKmConfirmed, setMapKmConfirmed] = useState(false);
   const [mapCopied, setMapCopied] = useState(false);
+  const [mapError, setMapError] = useState("");
   const mapLocateFnRef = useRef<(() => void) | null>(null);
   const calcWrapRef = useRef<HTMLDivElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
@@ -301,7 +302,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     setAddress("");
     setAddressKm(null);
     setDeliveryMode("distance");
-    setMapPin(null); setMapPlusCode(""); setMapKmConfirmed(false);
+    setMapPin(null); setMapPlusCode(""); setMapKmConfirmed(false); setMapError("");
     setCategoryName(null);
     setConcreteTypeLabel(null);
     setPumpHour("1 h");
@@ -398,6 +399,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         center: ORIGIN, zoom: 11,
         disableDefaultUI: true, zoomControl: true,
         gestureHandling: "cooperative",
+        restriction: { latLngBounds: { north: 49.6, south: 47.7, east: 22.6, west: 16.8 }, strictBounds: false },
       });
 
       let marker: google.maps.Marker | null = null;
@@ -408,33 +410,60 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         else marker = new google.maps.Marker({ position: pos, map, animation: google.maps.Animation.DROP });
         map.panTo(pos);
         setMapPin({ lat, lng });
-        const oneWayKm = haversineKm(ORIGIN.lat, ORIGIN.lng, lat, lng);
-        setDistance(String(Math.round((oneWayKm * 2 + 2) * 10) / 10));
-        setAddressKm(oneWayKm);
-        setShowResult(false);
         setMapPlusCode(encodeOLC(lat, lng));
+        setShowResult(false);
+        setMapError("");
+        // Distance Matrix — rovnaká metóda ako adresný režim
+        new google.maps.DistanceMatrixService().getDistanceMatrix(
+          { origins: [ORIGIN], destinations: [pos], travelMode: google.maps.TravelMode.DRIVING, unitSystem: google.maps.UnitSystem.METRIC },
+          (response, status) => {
+            if (status === "OK" && response) {
+              const el = response.rows[0]?.elements[0];
+              if (el?.status === "OK") {
+                const oneWayKm = el.distance.value / 1000;
+                setAddressKm(oneWayKm);
+                setDistance(String(Math.round((oneWayKm * 2 + 2) * 10) / 10));
+                return;
+              }
+            }
+            const fallback = haversineKm(ORIGIN.lat, ORIGIN.lng, lat, lng);
+            setAddressKm(fallback);
+            setDistance(String(Math.round((fallback * 2 + 2) * 10) / 10));
+          }
+        );
+      };
+
+      const checkSkAndPin = (lat: number, lng: number) => {
+        new google.maps.Geocoder().geocode({ location: { lat, lng } }, (results, gStatus) => {
+          const country = gStatus === "OK" && results && results[0]
+            ? results[0].address_components?.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("country"))
+            : null;
+          if (country && country.short_name !== "SK") {
+            setMapError("Dodávky betónu sú dostupné iba na území Slovenska.");
+            return;
+          }
+          setPinAt(lat, lng);
+        });
       };
 
       mapLocateFnRef.current = () => {
         navigator.geolocation?.getCurrentPosition(
-          pos => { map.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude }); map.setZoom(13); },
+          pos => {
+            const lat = pos.coords.latitude, lng = pos.coords.longitude;
+            map.setCenter({ lat, lng }); map.setZoom(14);
+            setPinAt(lat, lng);
+          },
           () => {}
         );
       };
 
-      // Auto-locate on open
-      navigator.geolocation?.getCurrentPosition(
-        pos => { map.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude }); map.setZoom(13); },
-        () => {}
-      );
-
       map.addListener("click", (e: google.maps.MapMouseEvent) => {
-        if (e.latLng) setPinAt(e.latLng.lat(), e.latLng.lng());
+        if (e.latLng) checkSkAndPin(e.latLng.lat(), e.latLng.lng());
       });
 
       const searchInput = document.getElementById("map-search-input") as HTMLInputElement | null;
       if (searchInput) {
-        const ac = new google.maps.places.Autocomplete(searchInput, { types: ["geocode"] });
+        const ac = new google.maps.places.Autocomplete(searchInput, { types: ["geocode"], componentRestrictions: { country: "sk" } });
         ac.addListener("place_changed", () => {
           const place = ac.getPlace();
           const loc = place?.geometry?.location;
@@ -443,6 +472,26 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
           map.setZoom(15);
           setPinAt(loc.lat(), loc.lng());
         });
+        // Pre-fill from address mode
+        if (address && !mapPin) {
+          searchInput.value = address;
+          new google.maps.Geocoder().geocode({ address, region: "SK" }, (results, gStatus) => {
+            if (gStatus === "OK" && results && results[0]) {
+              const loc = results[0].geometry.location;
+              map.setCenter({ lat: loc.lat(), lng: loc.lng() });
+              map.setZoom(15);
+              setPinAt(loc.lat(), loc.lng());
+            }
+          });
+        }
+      }
+
+      // Auto-locate ak nie je adresa
+      if (!address) {
+        navigator.geolocation?.getCurrentPosition(
+          pos => { map.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude }); map.setZoom(13); },
+          () => {}
+        );
       }
     };
 
@@ -1308,6 +1357,31 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     }
     lines.push("Tel: +421 909 205 205");
     const text = lines.join("\n");
+
+    // Vytvorenie objednávky na pozadí s flagom viaSms=true (iba ak je prihlásený klient)
+    if (loggedClient && selectedType) {
+      const isFakt = priceMode === "faktura";
+      clientApi.submitOrder({
+        id: Math.random().toString(36).slice(2, 10),
+        status: "nova",
+        clientName: loggedClient.name,
+        clientId: loggedClient.clientId,
+        company: loggedClient.company || undefined,
+        phone: loggedClient.phone || undefined,
+        tab,
+        concreteType: selectedType.label,
+        quantity: result.qty,
+        totalQty: result.totalQty,
+        address: address || undefined,
+        km: result.km || undefined,
+        priceMode,
+        totalBezDph: result.totalDiscBezDph,
+        totalSDph: isFakt ? result.totalDiscSDph : result.hotovostTotal,
+        breakdown: JSON.stringify({ v: 2, s: [] }),
+        viaSms: true,
+      }).catch(() => {});
+    }
+
     if (navigator.share) {
       navigator.share({ text }).catch(() => {});
     } else {
@@ -1685,6 +1759,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     <button onClick={() => { setMapKmConfirmed(false); setMapPin(null); setMapPlusCode(""); setDistance(""); setAddressKm(null); }}
                       className="text-xs text-white/40 hover:text-white/70 transition-colors shrink-0">Zmeniť</button>
                   </div>
+                ) : mapError ? (
+                  <p className="text-xs text-red-400 px-1">{mapError}</p>
                 ) : mapPin ? (
                   <div className="bg-white/10 px-3 py-2.5 rounded-sm space-y-2">
                     <div className="flex items-center gap-2">

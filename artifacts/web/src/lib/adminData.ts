@@ -69,7 +69,6 @@ export interface Client {
   manualPrices?: Record<string, number>; // manuálne ceny per položka (ID → €), override zľavovej ceny
   isOwner?: boolean; // vlastník / hlavný účet — nedá sa vymazať
   sharedLink?: string; // zdieľaný odkaz (Google Sheet, PDF, prezentácia...)
-  registeredViaSms?: boolean; // klient zaregistrovaný cez SMS
 }
 
 export interface Order {
@@ -100,6 +99,7 @@ export interface Order {
   discountDoprava?: number;
   discountSluzby?: number;
   discountCelkovo?: number;
+  viaSms?: boolean; // objednávka odoslaná cez SMS export
 }
 
 export interface ClientAccount {
