@@ -958,9 +958,15 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
     });
   const sorted = [...filtered].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const yesterdayStr = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().slice(0, 10); })();
   const fmtDate = (iso: string) => {
     const d = new Date(iso);
-    return `${d.toLocaleDateString("sk-SK")} ${d.toLocaleTimeString("sk-SK", { hour: "2-digit", minute: "2-digit" })}`;
+    const time = d.toLocaleTimeString("sk-SK", { hour: "2-digit", minute: "2-digit" });
+    const ds = iso.slice(0, 10);
+    if (ds === todayStr) return `Dnes ${time}`;
+    if (ds === yesterdayStr) return `Včera ${time}`;
+    return `${d.toLocaleDateString("sk-SK")} ${time}`;
   };
   const fmtEur = (n: number) => n.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
   const tabLabel: Record<Order["tab"], string> = { pumpa: "Pumpa", mix: "Mix", vlastnadoprava: "Vl. doprava" };
@@ -1165,7 +1171,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                       {o.address ? <span className="text-gray-400 truncate max-w-[100px] sm:max-w-[180px]">{o.address}</span> : null}
                     </div>
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[10px] text-gray-400">{fmtDate(o.createdAt)}</span>
+                      <span className={`text-[10px] font-bold ${o.createdAt.slice(0,10) === todayStr ? "text-primary" : o.createdAt.slice(0,10) === yesterdayStr ? "text-blue-400" : "text-gray-400 font-normal"}`}>{fmtDate(o.createdAt)}</span>
                       {o.viaSms
                         ? <span className="inline-flex items-center gap-0.5 bg-green-100 text-green-700 text-[9px] font-black px-1.5 py-0.5 rounded-sm"><MessageSquare className="w-2.5 h-2.5" /> SMS</span>
                         : <span className="inline-flex items-center gap-0.5 bg-secondary/10 text-secondary text-[9px] font-black px-1.5 py-0.5 rounded-sm"><ShoppingCart className="w-2.5 h-2.5" /> Košík</span>}
