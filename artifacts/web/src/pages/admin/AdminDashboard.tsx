@@ -1141,8 +1141,9 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
           {sorted.map(o => {
             const isExp = expanded === o.id;
             return (
-              <div key={o.id} id={`order-card-${o.id}`} className="bg-white border border-gray-200 shadow-sm">
-                <div className="flex gap-3 px-4 py-3.5 cursor-pointer hover:bg-gray-50 transition-colors"
+              <div key={o.id} id={`order-card-${o.id}`} className={`border shadow-sm overflow-hidden ${o.createdAt.slice(0,10) === todayStr ? "bg-primary/5 border-primary/20" : "bg-white border-gray-200"}`}>
+                <div className={`flex gap-3 py-3.5 cursor-pointer transition-colors ${o.createdAt.slice(0,10) === todayStr ? "hover:bg-primary/10" : "hover:bg-gray-50"} ${o.status === "nova" ? "pl-3 pr-4" : "px-4"}`}
+                  style={o.status === "nova" ? { borderLeft: "4px solid #EDC531" } : undefined}
                   onClick={() => {
                     const next = isExp ? null : o.id;
                     setExpanded(next);
