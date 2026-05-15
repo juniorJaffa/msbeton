@@ -244,16 +244,19 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
-              { icon: Truck, count: "10 000+", label: "Doručených zásielok" },
-              { icon: Calculator, count: "30 000+", label: "Kubíkov betónu" },
-              { icon: ShieldCheck, count: "100%", label: "Certifikovaná kvalita" },
-              { icon: Hammer, count: "2 000+", label: "Spokojných klientov" }
+              { icon: Truck, count: "10 000+", mobileCount: "10K+", label: "Doručených zásielok" },
+              { icon: Calculator, count: "30 000+", mobileCount: "30K+", label: "Kubíkov betónu" },
+              { icon: ShieldCheck, count: "100%", mobileCount: "100%", label: "Certifikovaná kvalita" },
+              { icon: Hammer, count: "2 000+", mobileCount: "2K+", label: "Spokojných klientov" }
             ].map((stat, i) => (
               <div key={i} className="flex flex-col items-center p-4">
                 <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-4 text-primary">
                   <stat.icon className="w-8 h-8" />
                 </div>
-                <div className="text-4xl font-display font-bold mb-2">{stat.count}</div>
+                <div className="text-4xl font-display font-bold mb-2">
+                  <span className="sm:hidden">{stat.mobileCount}</span>
+                  <span className="hidden sm:inline">{stat.count}</span>
+                </div>
                 <div className="text-white/60 font-semibold uppercase tracking-wider text-sm">{stat.label}</div>
               </div>
             ))}
