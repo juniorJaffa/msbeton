@@ -1034,7 +1034,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
         <div className="border-t border-gray-100 mx-4" />
         {/* Row 2c – kanál (košík / SMS) */}
         <div className="flex items-center gap-2 flex-wrap px-4 py-3">
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-7 shrink-0">Zdroj</span>
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-12 shrink-0">Zdroj</span>
           {([["vsetky", "Všetky", null], ["kosarik", "Košík", "ShoppingCart"], ["sms", "SMS", "MessageSquare"]] as const).map(([val, label, iconName]) => (
             <button key={val} onClick={() => setFilterChannel(val)}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
@@ -1045,7 +1045,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
               {iconName === "ShoppingCart" && <ShoppingCart className="w-3 h-3" />}
               {iconName === "MessageSquare" && <MessageSquare className="w-3 h-3" />}
               {label}
-              {val !== "vsetky" && <span className="text-[10px] opacity-60">{orders.filter(o => val === "sms" ? !!o.viaSms : !o.viaSms).length}</span>}
+              {val !== "vsetky" && <span className="ml-0.5 text-[10px] opacity-60">{orders.filter(o => val === "sms" ? !!o.viaSms : !o.viaSms).length}</span>}
             </button>
           ))}
         </div>
