@@ -98,6 +98,42 @@ Keď je klient prihlásený (alebo je aktívny `clientOverride`) a má nejakú z
 
 Používa **pill toggle tlačidlá** (nie native `<select>`). Dôvod: iOS native `<select>` vždy zobrazí floating picker overlay bez ohľadu na CSS. Platí pre nový formulár aj expanded detail klienta.
 
+### Admin Objednávky – farby a vizuál kariet
+
+**Status farby** (konzistentné medzi filtrom a kartou):
+
+| Status | Filter active | Ľavý pruh (border-left 4px) |
+|--------|--------------|------------------------------|
+| `nova` | `bg-blue-500` | `#3b82f6` (blue-500) |
+| `potvrdena` | `bg-yellow-400` | — |
+| `odoslana` | `bg-green-600` | — |
+
+Pravidlo: **ľavý pruh farba = filter active farba** pre daný status. Nikdy nepoužívaj `#EDC531` (primary/gold) pre status pruh — ten je rezervovaný pre brand akcenty.
+
+**Dnešné objednávky**: `bg-amber-50 border-amber-200` (solid, nie `bg-primary/5` — transparency prepúšťa betonovú textúru cez kartu).
+
+**Dátum na karte**: ak `createdAt.slice(0,10) === todayStr` → `text-primary font-bold` + zobrazí "Dnes HH:MM"; ak včera → `text-blue-400 font-bold` + "Včera HH:MM".
+
+**Filter Objednávky** — štruktúra riadkov (všetky labely `w-14 shrink-0`):
+1. STAV — status buttony
+2. TYP — typ vozidla (Pumpa/Mix/Vl. doprava)
+3. PLATBA — Faktúra/Hotovosť (nie "TYP"!)
+4. ZDROJ — Košík/SMS kanál
+5. DÁTUM — quick buttons: Dnes/Včera/Týždeň/Mesiac/–N dní + od–do pickers
+6. HĽADAJ — text search
+
+**SMS vs Košík objednávky**:
+- `viaSms: boolean` na `Order` type — rozlišuje kanál
+- `buildBreakdown()` helper v `Calculator.tsx` — zdieľaný medzi SMS exportom aj Košík submitom
+- Oba kanály posielajú email notifikáciu na `objednavky@msbeton.sk`
+
+### Kalkulačka – mapa (deliveryMode "map")
+
+- Klik myšou: okamžite umiestni pin (`setPinAt`), SK validácia beží na pozadí cez Geocoder
+- **Nikdy** nečakaj na Geocoder pred `setPinAt` — geocoder môže zlyhať/byť pomalý → pin sa neobjaví
+- Vzorec km: Distance Matrix API (rovnaký ako adresný režim) → `Math.round((oneWayKm * 2 + 2) * 10) / 10`
+- `mapKmConfirmed` kontroluje viditeľnosť cez `display:none` (nie unmount) — Google Maps div musí ostať v DOM
+
 ### Testovacie prihlasovacie údaje
 
 | Rola | Login ID | Heslo | Poznámka |
