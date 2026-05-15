@@ -1014,7 +1014,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
               <div className="flex-1 min-w-[220px]">
                 <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">SMS Objednávky (prihlásení klienti)</div>
                 <div className="text-[11px] text-gray-500">
-                  Či môžu prihlásení klienti vytvárať záväzné objednávky cez tlačidlo <em>Export SMS → Záväzne objednať</em> v kalkulačke.
+                  Klienti môžu zadať objednávku cez <em>Export SMS</em> v kalkulačke.
                 </div>
               </div>
               <div className="flex items-center gap-3 shrink-0 pt-0.5">

@@ -285,18 +285,14 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [orderDone, setOrderDone] = useState(false);
   const [priceTableMode, setPriceTableMode] = useState<"faktura" | "hotovost">("faktura");
 
-  // Na mobile scrollni na výsledok, na desktop scrollni calc wrapper do view s navbar offsetom
+  // Po vypočítaní vždy scrollni na vrchol kalkulačky — viditeľný výsledok bez ohľadu na scroll pozíciu
   useEffect(() => {
     if (!showResult) return;
     const NAVBAR_H = 96;
-    const isMobile = window.innerWidth < 768;
-    if (isMobile && resultRef.current) {
-      const top = resultRef.current.getBoundingClientRect().top + window.scrollY - NAVBAR_H - 8;
-      window.scrollTo({ top, behavior: "smooth" });
-    } else if (!isMobile && calcWrapRef.current) {
-      const top = calcWrapRef.current.getBoundingClientRect().top + window.scrollY - NAVBAR_H - 8;
-      if (top < window.scrollY) window.scrollTo({ top, behavior: "smooth" });
-    }
+    const target = calcWrapRef.current ?? resultRef.current;
+    if (!target) return;
+    const top = target.getBoundingClientRect().top + window.scrollY - NAVBAR_H - 8;
+    window.scrollTo({ top, behavior: "smooth" });
   }, [showResult]);
 
   const resetForm = () => {
