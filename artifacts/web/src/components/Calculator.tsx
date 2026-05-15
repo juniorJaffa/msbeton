@@ -251,6 +251,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const mapLocateFnRef = useRef<(() => void) | null>(null);
   const mapGeocodeAddrFnRef = useRef<((addr: string) => void) | null>(null);
   const keepResultOnPinRef = useRef(false);
+  const pendingGeocodeAddressRef = useRef<string | null>(null);
   const calcWrapRef = useRef<HTMLDivElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const [categoryName, setCategoryName] = useState<string | null>(null);
@@ -392,7 +393,16 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
     const initMapMode = () => {
       const mapEl = document.getElementById("calculator-map");
-      if (!mapEl || mapEl.childElementCount > 0) return;
+      if (!mapEl) return;
+      if (mapEl.childElementCount > 0) {
+        // Mapa už inicializovaná — spusti pending geocode (address→map re-vstup)
+        if (pendingGeocodeAddressRef.current && mapGeocodeAddrFnRef.current) {
+          const addr = pendingGeocodeAddressRef.current;
+          pendingGeocodeAddressRef.current = null;
+          mapGeocodeAddrFnRef.current(addr);
+        }
+        return;
+      }
 
       const map = new google.maps.Map(mapEl, {
         center: ORIGIN, zoom: 11,
@@ -492,7 +502,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
           setPinAt(loc.lat(), loc.lng());
         });
         // Pre-fill z adresného režimu (prvý init)
-        if (address && !mapPin) mapGeocodeAddrFnRef.current(address);
+        const pendingAddr = pendingGeocodeAddressRef.current;
+        if (pendingAddr) {
+          pendingGeocodeAddressRef.current = null;
+          mapGeocodeAddrFnRef.current(pendingAddr);
+        } else if (address && !mapPin) {
+          mapGeocodeAddrFnRef.current(address);
+        }
       }
 
       // Auto-locate ak nie je adresa
@@ -1421,10 +1437,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
     setDeliveryMode(newMode);
 
-    // Adresa→Mapa: initMapMode() zavolá mapGeocodeAddrFnRef automaticky (line s "if (address && !mapPin)")
-    // keepResultOnPinRef zachová result — nesmie volať setTimeout (double geocode + race condition)
+    // Adresa→Mapa: pendingGeocodeAddressRef nesie adresu cez async hranicu useEffect
+    // keepResultOnPinRef zachová result
     if (isAddrToMap) {
       keepResultOnPinRef.current = showResult;
+      if (address) pendingGeocodeAddressRef.current = address;
     }
   }
 
