@@ -1409,13 +1409,15 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   function switchDeliveryMode(newMode: "distance" | "address" | "map") {
     if (newMode === deliveryMode) return;
     const isAddrToMap = deliveryMode === "address" && newMode === "map";
+    const isMapToAddr = deliveryMode === "map" && newMode === "address";
 
-    // Opustenie mapy → reset map stavu
+    // Opustenie mapy → reset map stavu (nie km ak Map→Adresa)
     if (deliveryMode === "map") {
       setMapPin(null); setMapPlusCode(""); setMapKmConfirmed(false); setMapError("");
     }
-    // Reset km + výpočtu pri každom prechode okrem Adresa→Mapa
-    if (!isAddrToMap) {
+    // Reset km + výpočtu len keď prechádza cez "distance" alebo z "distance"
+    const preserveKm = isAddrToMap || isMapToAddr;
+    if (!preserveKm) {
       setDistance(""); setAddressKm(null);
     }
 
@@ -1735,20 +1737,26 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
           {tab !== "vlastnadoprava" && <div className="space-y-2">
             <label className="block text-sm font-semibold text-white/80">Adresa doručenia</label>
             {deliveryMode === "distance" ? (
-              <input type="number" min="0" step="0.1" value={distance}
-                onChange={(e) => { setDistance(e.target.value); setShowResult(false); }}
-                onWheel={(e) => e.currentTarget.blur()}
-                enterKeyHint="go"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    const hasQty = parseFloat(quantity) > 0 && selectedType != null;
-                    const hasKm = tab === "vlastnadoprava" || parseFloat(e.currentTarget.value) > 0 || addressKm !== null;
-                    if (hasQty && hasKm) setShowResult(true);
-                  }
-                }}
-                placeholder="Zadajte vzdialenosť v km"
-                className="w-full bg-white/10 border-b-2 border-b-primary text-white px-4 py-3 focus:outline-none placeholder:text-white/30 text-sm font-medium rounded-sm" />
+              <div className="relative">
+                <input type="number" min="0" step="0.1" value={distance}
+                  onChange={(e) => { setDistance(e.target.value); setShowResult(false); }}
+                  onWheel={(e) => e.currentTarget.blur()}
+                  enterKeyHint="go"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const hasQty = parseFloat(quantity) > 0 && selectedType != null;
+                      const hasKm = tab === "vlastnadoprava" || parseFloat(e.currentTarget.value) > 0 || addressKm !== null;
+                      if (hasQty && hasKm) setShowResult(true);
+                    }
+                  }}
+                  placeholder="Zadajte vzdialenosť v km"
+                  className="w-full bg-white/10 border-b-2 border-b-primary text-white px-4 py-3 pr-10 focus:outline-none placeholder:text-white/30 text-sm font-medium rounded-sm" />
+                {distance && (
+                  <button onClick={() => { setDistance(""); setAddressKm(null); setShowResult(false); }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors text-lg leading-none">×</button>
+                )}
+              </div>
             ) : deliveryMode === "address" ? (
               <div className="space-y-2">
                 <div className="relative">
@@ -1758,8 +1766,14 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     defaultValue={address}
                     onChange={(e) => { setAddress(e.target.value); setAddressKm(null); setShowResult(false); }}
                     placeholder="Zadajte adresu stavby"
-                    className="w-full bg-white/10 border-b-2 border-b-primary text-white px-4 py-3 focus:outline-none placeholder:text-white/30 text-sm font-medium rounded-sm" />
-                  {addressLoading && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 text-xs">Vypočítavam...</span>}
+                    className="w-full bg-white/10 border-b-2 border-b-primary text-white px-4 py-3 pr-10 focus:outline-none placeholder:text-white/30 text-sm font-medium rounded-sm" />
+                  {addressLoading
+                    ? <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 text-xs">Vypočítavam...</span>
+                    : address && (
+                      <button onClick={() => { setAddress(""); setAddressKm(null); setDistance(""); setShowResult(false); if (addressInputRef.current) addressInputRef.current.value = ""; }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors text-lg leading-none">×</button>
+                    )
+                  }
                 </div>
                 {addressKm !== null && (
                   <p className="text-xs text-white/50 px-1">

@@ -1101,6 +1101,9 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                   quickDate === preset ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
                 }`}>
                 {["Dnes", "Včera", "Týždeň"][i]}
+                {preset === "dnes" && quickDate === "dnes" && (
+                  <span className="ml-1 font-normal opacity-80">{new Date().toLocaleDateString("sk-SK", { day: "numeric", month: "numeric", year: "numeric" })}</span>
+                )}
               </button>
             ))}
             {/* Mesiac + inline M/R navigátor */}
@@ -1191,9 +1194,11 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                         const container = document.getElementById("admin-content");
                         const el = document.getElementById(`order-card-${next}`);
                         if (!container || !el) return;
+                        const filterEl = container.querySelector(".sticky.top-0");
+                        const filterH = filterEl ? filterEl.getBoundingClientRect().height : 52;
                         const cR = container.getBoundingClientRect();
                         const eR = el.getBoundingClientRect();
-                        container.scrollTo({ top: container.scrollTop + (eR.top - cR.top) - 8, behavior: "smooth" });
+                        container.scrollTo({ top: container.scrollTop + (eR.top - cR.top) - filterH - 8, behavior: "smooth" });
                       });
                     }
                   }}>
@@ -2381,9 +2386,10 @@ function exportClientPricePDF(client: Client, priceMode: "faktura" | "hotovost",
   const fmtP = (n: number) => n.toFixed(2) + " €";
   const thS = `padding:5px 8px;font-size:8pt;text-align:left`;
   const thRS = `padding:5px 8px;font-size:8pt;text-align:right`;
-  const tdS = `padding:4px 8px;font-size:8.5pt;border-bottom:1px solid #eee`;
-  const tdRS = `padding:4px 8px;font-size:8.5pt;border-bottom:1px solid #eee;text-align:right`;
-  const discS = `padding:4px 8px;font-size:8.5pt;border-bottom:1px solid #eee;text-align:right;color:#1a7c2e;font-weight:bold;background:#f0fff0`;
+  const tdS = `padding:4px 8px;font-size:8.5pt;border-bottom:1px solid #eee;`;
+  const tdRS = `padding:4px 8px;font-size:8.5pt;border-bottom:1px solid #eee;text-align:right;`;
+  const discS = `padding:4px 8px;font-size:8.5pt;border-bottom:1px solid #eee;text-align:right;color:#1a7c2e;font-weight:bold;background:#f0fff0;`;
+  const mBadge = `<span style="color:#b45309;font-size:7pt;font-weight:bold;margin-left:3px">M</span>`;
 
   const buildTable = (headers: string[], rows: Array<[string, string, string, string?]>, bg?: string) => {
     const head = headers.map((h, i) => `<th style="background:${bg ?? "#001D3D"};color:#fff;${i === 0 ? thS : thRS}">${h}</th>`).join("");
@@ -2411,9 +2417,10 @@ function exportClientPricePDF(client: Client, priceMode: "faktura" | "hotovost",
         const manual = mp[t.id] !== undefined ? mp[t.id] * hotovostMult : undefined;
         const disc = manual !== undefined ? manual : orig * betonFactor;
         const hasItemDisc = Math.abs(orig - disc) > 0.001;
+        const lbl = t.label + (mp[t.id] !== undefined ? mBadge : "");
         return hasDiscount
-          ? [t.label, "1 m³", fmtP(orig), hasItemDisc ? fmtP(disc) : undefined] as [string, string, string, string?]
-          : [t.label, "1 m³", fmtP(orig)] as [string, string, string];
+          ? [lbl, "1 m³", fmtP(orig), hasItemDisc ? fmtP(disc) : undefined] as [string, string, string, string?]
+          : [lbl, "1 m³", fmtP(orig)] as [string, string, string];
       });
     return `<h3 style="font-size:9.5pt;color:#001D3D;margin:14px 0 3px;border-bottom:2px solid #EDC531;padding-bottom:3px">${cat.name}</h3>
       ${buildTable(discHdr, rows)}`;
@@ -2424,9 +2431,10 @@ function exportClientPricePDF(client: Client, priceMode: "faktura" | "hotovost",
     const manualS = mp[s.id];
     const disc = manualS !== undefined ? manualS : s.price * sluzbyFactor;
     const hasItemDisc = Math.abs(s.price - disc) > 0.001;
+    const lbl = s.name + (manualS !== undefined ? mBadge : "");
     return hasDiscount
-      ? [s.name, s.unit || "—", fmtP(s.price), hasItemDisc ? fmtP(disc) : undefined] as [string, string, string, string?]
-      : [s.name, s.unit || "—", fmtP(s.price)] as [string, string, string];
+      ? [lbl, s.unit || "—", fmtP(s.price), hasItemDisc ? fmtP(disc) : undefined] as [string, string, string, string?]
+      : [lbl, s.unit || "—", fmtP(s.price)] as [string, string, string];
   });
 
   // Doprava — per type
@@ -2441,9 +2449,10 @@ function exportClientPricePDF(client: Client, priceMode: "faktura" | "hotovost",
     const kmRateOrig = baseRate;
     const kmRateDisc = kmRateManual !== undefined ? kmRateManual : baseRate * dopravaFactor;
     const hasKmDisc = Math.abs(kmRateOrig - kmRateDisc) > 0.001;
+    const kmLbl = `${clientDZone.name} – sadzba` + (kmRateManual !== undefined ? mBadge : "");
     dopravaRows.push(hasDiscount
-      ? [`${clientDZone.name} – sadzba`, "€/km", fmtP(kmRateOrig), hasKmDisc ? fmtP(kmRateDisc) : undefined]
-      : [`${clientDZone.name} – sadzba`, "€/km", fmtP(kmRateOrig)]);
+      ? [kmLbl, "€/km", fmtP(kmRateOrig), hasKmDisc ? fmtP(kmRateDisc) : undefined]
+      : [kmLbl, "€/km", fmtP(kmRateOrig)]);
     if (clientDZone.minimumFeeKm != null) {
       const mfDisc = clientDZone.minimumFeeKm * dopravaFactor;
       const hasMfDisc = Math.abs(clientDZone.minimumFeeKm - mfDisc) > 0.001;
@@ -2462,9 +2471,10 @@ function exportClientPricePDF(client: Client, priceMode: "faktura" | "hotovost",
     const autoRateOrig = baseRpt;
     const autoRateDisc = autoRateManual !== undefined ? autoRateManual : baseRpt * dopravaFactor;
     const hasAutoDisc = Math.abs(autoRateOrig - autoRateDisc) > 0.001;
+    const autoLbl = `${clientDZone.name} – paušál` + (autoRateManual !== undefined ? mBadge : "");
     dopravaRows.push(hasDiscount
-      ? [`${clientDZone.name} – paušál`, "€/auto", fmtP(autoRateOrig), hasAutoDisc ? fmtP(autoRateDisc) : undefined]
-      : [`${clientDZone.name} – paušál`, "€/auto", fmtP(autoRateOrig)]);
+      ? [autoLbl, "€/auto", fmtP(autoRateOrig), hasAutoDisc ? fmtP(autoRateDisc) : undefined]
+      : [autoLbl, "€/auto", fmtP(autoRateOrig)]);
     if (clientDZone.minimumFeeAuto != null) {
       const mfDisc = clientDZone.minimumFeeAuto * dopravaFactor;
       const hasMfDisc = Math.abs(clientDZone.minimumFeeAuto - mfDisc) > 0.001;
@@ -2481,15 +2491,18 @@ function exportClientPricePDF(client: Client, priceMode: "faktura" | "hotovost",
     dopravaHdr = hasDiscount ? ["Vzdialenosť", "Množstvo", "Pôvodná cena", "Zľavnená cena"] : ["Vzdialenosť", "Množstvo", "Cena"];
     const minFeeManual = mp["min_fee"];
     const minFeeDisc = minFeeManual !== undefined ? minFeeManual : minFee * dopravaFactor;
+    const minFeeLbl = "Min. doprava / auto" + (minFeeManual !== undefined ? mBadge : "");
     dopravaRows.push(hasDiscount
-      ? ["Min. doprava / auto", "1×", fmtP(minFee), Math.abs(minFee - minFeeDisc) > 0.001 ? fmtP(minFeeDisc) : undefined]
-      : ["Min. doprava / auto", "1×", fmtP(minFee)]);
+      ? [minFeeLbl, "1×", fmtP(minFee), Math.abs(minFee - minFeeDisc) > 0.001 ? fmtP(minFeeDisc) : undefined]
+      : [minFeeLbl, "1×", fmtP(minFee)]);
     zones.forEach(z => {
-      const disc = z.ratePerM3 * dopravaFactor;
+      const zManual = mp[z.id];
+      const disc = zManual !== undefined ? zManual : z.ratePerM3 * dopravaFactor;
       const hasItemDisc = Math.abs(z.ratePerM3 - disc) > 0.001;
+      const zLbl = `Od ${z.fromKm} – ${z.toKm} km` + (zManual !== undefined ? mBadge : "");
       dopravaRows.push(hasDiscount
-        ? [`Od ${z.fromKm} – ${z.toKm} km`, "1 m³×", fmtP(z.ratePerM3), hasItemDisc ? fmtP(disc) : undefined]
-        : [`Od ${z.fromKm} – ${z.toKm} km`, "1 m³×", fmtP(z.ratePerM3)]);
+        ? [zLbl, "1 m³×", fmtP(z.ratePerM3), hasItemDisc ? fmtP(disc) : undefined]
+        : [zLbl, "1 m³×", fmtP(z.ratePerM3)]);
     });
   }
 
