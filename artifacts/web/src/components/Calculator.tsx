@@ -1371,8 +1371,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     lines.push("Tel: +421 909 205 205");
     const text = lines.join("\n");
 
-    // Vytvorenie objednávky na pozadí s flagom viaSms=true (iba ak je prihlásený klient)
-    if (loggedClient && selectedType) {
+    // Vytvorenie objednávky na pozadí s flagom viaSms=true (iba ak je prihlásený klient a SMS objednávky sú povolené)
+    if (loggedClient && selectedType && tsettings.smsOrderEnabled) {
       const isFakt = priceMode === "faktura";
       clientApi.submitOrder({
         id: Math.random().toString(36).slice(2, 10),

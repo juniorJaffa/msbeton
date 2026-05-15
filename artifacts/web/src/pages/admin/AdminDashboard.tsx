@@ -902,6 +902,9 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
   const [quickMY, setQuickMY] = useState({ m: new Date().getMonth() + 1, y: new Date().getFullYear() });
   const [newBadge, setNewBadge] = useState(0);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [ts, setTs] = useState<TransportSettings>(adminData.getTransportSettings());
+  const saveTs = (data: TransportSettings) => { setTs(data); adminData.saveTransportSettings(data); };
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -997,6 +1000,39 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
 
   return (
     <div className="space-y-3">
+      {/* Nastavenia — collapsible, scrolluje preč (nie sticky) */}
+      <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
+        <button type="button" onClick={() => setSettingsOpen(o => !o)}
+          className="w-full flex items-center justify-between px-4 py-2 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer border-b border-gray-100">
+          <h3 className="font-black text-secondary text-sm uppercase tracking-widest">Nastavenia</h3>
+          {settingsOpen ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+        </button>
+        {settingsOpen && (
+          <div className="px-4 py-3 space-y-3">
+            {/* SMS Objednávky */}
+            <div className="flex items-start gap-4 flex-wrap">
+              <div className="flex-1 min-w-[220px]">
+                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">SMS Objednávky (prihlásení klienti)</div>
+                <div className="text-[11px] text-gray-500">
+                  Či môžu prihlásení klienti vytvárať záväzné objednávky cez tlačidlo <em>Export SMS → Záväzne objednať</em> v kalkulačke.
+                </div>
+              </div>
+              <div className="flex items-center gap-3 shrink-0 pt-0.5">
+                <span className={`text-xs font-bold ${ts.smsOrderEnabled ? "text-green-600" : "text-gray-400"}`}>
+                  {ts.smsOrderEnabled ? "Zapnuté" : "Vypnuté"}
+                </span>
+                <button
+                  onClick={() => saveTs({ ...ts, smsOrderEnabled: !ts.smsOrderEnabled })}
+                  className={`relative w-11 h-6 rounded-full transition-colors focus:outline-none ${ts.smsOrderEnabled ? "bg-green-500" : "bg-gray-300"}`}
+                  title={ts.smsOrderEnabled ? "Vypnúť SMS objednávky" : "Zapnúť SMS objednávky"}>
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${ts.smsOrderEnabled ? "translate-x-5" : "translate-x-0"}`} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Filter panel — sticky, collapsible */}
       <div className="sticky top-0 z-20 bg-white border border-gray-200 shadow-sm">
         {/* Compact header — vždy viditeľný, toggle */}

@@ -126,6 +126,7 @@ export interface TransportSettings {
   minimumLoadM3: number;
   dph?: number;
   defaultHotovostDph?: number;  // default DPH hotovosť pre klientov, default 0.20
+  smsOrderEnabled?: boolean;    // či môžu prihlásení klienti vytvárať objednávky cez SMS export
 }
 
 const DEFAULT_CATEGORIES: ConcreteCategory[] = [
