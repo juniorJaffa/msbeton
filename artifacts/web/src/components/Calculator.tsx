@@ -409,6 +409,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         const pos = { lat, lng };
         if (marker) marker.setPosition(pos);
         else marker = new google.maps.Marker({ position: pos, map, animation: google.maps.Animation.DROP });
+        if ((map.getZoom() ?? 0) < 14) map.setZoom(15);
         map.panTo(pos);
         setMapPin({ lat, lng });
         setMapPlusCode(encodeOLC(lat, lng));
