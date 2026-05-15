@@ -899,6 +899,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
   const [dateTo, setDateTo] = useState("");
   const [quickDate, setQuickDate] = useState("");
   const [quickDays, setQuickDays] = useState("7");
+  const [quickMY, setQuickMY] = useState({ m: new Date().getMonth() + 1, y: new Date().getFullYear() });
   const [newBadge, setNewBadge] = useState(0);
   const [filterOpen, setFilterOpen] = useState(false);
 
@@ -927,6 +928,26 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
   const remove = (id: string) => { if (confirm("Vymazať objednávku?")) save(orders.filter(o => o.id !== id)); };
   const updateStatus = (id: string, status: Order["status"]) => save(orders.map(o => o.id === id ? { ...o, status } : o));
 
+  const SK_MONTHS = ["Január","Február","Marec","Apríl","Máj","Jún","Júl","August","September","Október","November","December"];
+
+  const applyMonthFilter = (m: number, y: number) => {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const now = new Date();
+    const isCurrentMonth = m === now.getMonth() + 1 && y === now.getFullYear();
+    setDateFrom(`${y}-${pad(m)}-01`);
+    setDateTo(isCurrentMonth ? now.toISOString().slice(0, 10) : `${y}-${pad(m)}-${new Date(y, m, 0).getDate()}`);
+    setQuickDate("mesiac");
+    setQuickMY({ m, y });
+  };
+
+  const stepMonth = (delta: number) => {
+    let { m, y } = quickMY;
+    m += delta;
+    if (m > 12) { m = 1; y++; }
+    if (m < 1)  { m = 12; y--; }
+    applyMonthFilter(m, y);
+  };
+
   const applyQuickDate = (preset: string, nDays?: number) => {
     const now = new Date();
     const fmt = (d: Date) => d.toISOString().slice(0, 10);
@@ -934,7 +955,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
     if (preset === "dnes") { setDateFrom(today); setDateTo(today); }
     else if (preset === "vcera") { const y = new Date(now); y.setDate(y.getDate() - 1); const yd = fmt(y); setDateFrom(yd); setDateTo(yd); }
     else if (preset === "tyzden") { const m = new Date(now); m.setDate(now.getDate() - ((now.getDay() + 6) % 7)); setDateFrom(fmt(m)); setDateTo(today); }
-    else if (preset === "mesiac") { setDateFrom(`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-01`); setDateTo(today); }
+    else if (preset === "mesiac") { applyMonthFilter(quickMY.m, quickMY.y); return; }
     else if (preset === "ndni" && nDays && nDays > 0) { const d = new Date(now); d.setDate(d.getDate() - nDays); setDateFrom(fmt(d)); setDateTo(today); }
     setQuickDate(preset);
   };
@@ -1074,14 +1095,32 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
         <div className="flex items-start gap-2 flex-wrap px-4 py-3">
           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest w-14 shrink-0 pt-1.5">Dátum</span>
           <div className="flex flex-wrap items-center gap-1.5">
-            {(["dnes", "vcera", "tyzden", "mesiac"] as const).map((preset, i) => (
+            {(["dnes", "vcera", "tyzden"] as const).map((preset, i) => (
               <button key={preset} onClick={() => applyQuickDate(preset)}
                 className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
                   quickDate === preset ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
                 }`}>
-                {["Dnes", "Včera", "Týždeň", "Mesiac"][i]}
+                {["Dnes", "Včera", "Týždeň"][i]}
               </button>
             ))}
+            {/* Mesiac + inline M/R navigátor */}
+            <button onClick={() => applyQuickDate("mesiac")}
+              className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
+                quickDate === "mesiac" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
+              }`}>
+              Mesiac
+            </button>
+            {quickDate === "mesiac" && (
+              <div className="inline-flex items-center gap-0.5 border border-secondary/30 rounded-sm bg-secondary/5 px-1 py-0.5">
+                <button onClick={() => stepMonth(-1)} className="px-1.5 py-0.5 text-secondary hover:bg-secondary/10 rounded-sm font-bold text-xs transition-colors">◄</button>
+                <span className="text-xs font-bold text-secondary w-20 text-center select-none">{SK_MONTHS[quickMY.m - 1]}</span>
+                <button onClick={() => stepMonth(1)} className="px-1.5 py-0.5 text-secondary hover:bg-secondary/10 rounded-sm font-bold text-xs transition-colors">►</button>
+                <div className="w-px h-4 bg-secondary/20 mx-0.5" />
+                <button onClick={() => applyMonthFilter(quickMY.m, quickMY.y - 1)} className="px-1.5 py-0.5 text-secondary hover:bg-secondary/10 rounded-sm font-bold text-xs transition-colors">◄</button>
+                <span className="text-xs font-bold text-secondary w-10 text-center select-none">{quickMY.y}</span>
+                <button onClick={() => applyMonthFilter(quickMY.m, quickMY.y + 1)} className="px-1.5 py-0.5 text-secondary hover:bg-secondary/10 rounded-sm font-bold text-xs transition-colors">►</button>
+              </div>
+            )}
             {/* –N dní pill */}
             <div className={`inline-flex items-center gap-1 px-2.5 py-1.5 border rounded-sm cursor-pointer transition-all ${
               quickDate === "ndni" ? "border-secondary bg-secondary/5" : "border-gray-200 bg-white hover:border-gray-400"
@@ -1141,8 +1180,8 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
           {sorted.map(o => {
             const isExp = expanded === o.id;
             return (
-              <div key={o.id} id={`order-card-${o.id}`} className={`border shadow-sm overflow-hidden ${o.createdAt.slice(0,10) === todayStr ? "bg-amber-50 border-amber-200" : "bg-white border-gray-200"}`}>
-                <div className={`flex gap-3 py-3.5 cursor-pointer transition-colors ${o.createdAt.slice(0,10) === todayStr ? "hover:bg-amber-100" : "hover:bg-gray-50"} ${o.status === "nova" ? "pl-3 pr-4" : "px-4"}`}
+              <div key={o.id} id={`order-card-${o.id}`} className={`border shadow-sm overflow-hidden ${o.createdAt.slice(0,10) === todayStr ? "bg-gray-50 border-gray-300" : "bg-white border-gray-200"}`}>
+                <div className={`flex gap-3 py-3.5 cursor-pointer transition-colors ${o.createdAt.slice(0,10) === todayStr ? "hover:bg-gray-100" : "hover:bg-gray-50"} ${o.status === "nova" ? "pl-3 pr-4" : "px-4"}`}
                   style={o.status === "nova" ? { borderLeft: "4px solid #3b82f6" } : undefined}
                   onClick={() => {
                     const next = isExp ? null : o.id;
