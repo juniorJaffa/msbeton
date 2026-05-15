@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Truck, LogIn, LogOut, FileText, FileSpreadsheet, FileType2, MessageSquare, Minus, Plus, Trash2, Table2, ShoppingCart, X, Info, Check, ExternalLink, MapPin, Copy, Navigation } from "lucide-react";
+import { ChevronDown, Truck, LogIn, LogOut, FileText, FileSpreadsheet, FileType2, MessageSquare, Minus, Plus, Trash2, Table2, ShoppingCart, X, Info, Check, ExternalLink, MapPin, Copy, Navigation, Settings2 } from "lucide-react";
 import { OpenLocationCode } from "open-location-code";
 import { cn, formatPhone } from "@/lib/utils";
 
@@ -252,6 +252,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const mapGeocodeAddrFnRef = useRef<((addr: string) => void) | null>(null);
   const keepResultOnPinRef = useRef(false);
   const pendingGeocodeAddressRef = useRef<string | null>(null);
+  const [podmienkyEnabled, setPodmienkyEnabled] = useState(false);
+  const [podmienkyTrucks, setPodmienkyTrucks] = useState(1);
   const calcWrapRef = useRef<HTMLDivElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const [categoryName, setCategoryName] = useState<string | null>(null);
@@ -342,6 +344,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       if (inPeriod) setZimneOpatrenia(true);
     }
   }, [loggedClientBase, priceMode]);
+
+  // Reset podmienky pri zmene tabu (vozidiel)
+  useEffect(() => { setPodmienkyEnabled(false); }, [tab]);
 
   // Google Maps Autocomplete + DistanceMatrix pre adresný režim
   useEffect(() => {
@@ -566,6 +571,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     };
   }, [clientOverride, loggedClientState, allClients]);
 
+  const isAdminMode = clientOverride !== undefined || loggedClient?.id === "admin";
+
   // Klientova zóna dopravy (podľa deliveryZoneId, fallback = prvá zóna)
   const clientDeliveryZone = useMemo(() => {
     if (loggedClient?.deliveryZoneId)
@@ -673,11 +680,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     return trucks;
   }
 
-  function calcTransport(km: number, qty: number, tabType: Tab, dZone: typeof clientDeliveryZone): { cost: number; isMin: boolean; fillupM3: number; fillupCost: number } {
+  function calcTransport(km: number, qty: number, tabType: Tab, dZone: typeof clientDeliveryZone, overrideTrucks?: number): { cost: number; isMin: boolean; fillupM3: number; fillupCost: number } {
     if (km === 0) return { cost: 0, isMin: false, fillupM3: 0, fillupCost: 0 };
 
     const pType = dZone?.pricingType ?? "standard";
-    const trucks = tabType === "pumpa" ? calcPumpTrucks(qty) : Math.ceil(qty / mixCap);
+    const trucks = overrideTrucks ?? (tabType === "pumpa" ? calcPumpTrucks(qty) : Math.ceil(qty / mixCap));
     const minimumFee = tsettings.minimumFee ?? 62.50;
 
     if (pType === "km") {
@@ -757,8 +764,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const t = getItemType(i.categoryName, i.typeLabel);
       return (t && q > 0 && i.transportMode === "addToMain") ? s + q : s;
     }, 0);
-    const mainTC = isOwn ? zeroTC : calcTransport(km, qty + addToMainQty, tab, clientDeliveryZone);
-    const mainTrucks = tab === "pumpa" ? calcPumpTrucks(qty) : Math.ceil(qty / mixCap);
+    const effTrucksOverride = podmienkyEnabled && podmienkyTrucks > 0 ? podmienkyTrucks : undefined;
+    const mainTC = isOwn ? zeroTC : calcTransport(km, qty + addToMainQty, tab, clientDeliveryZone, effTrucksOverride);
+    const mainTrucks = effTrucksOverride ?? (tab === "pumpa" ? calcPumpTrucks(qty) : Math.ceil(qty / mixCap));
     concreteBreakdown.push({
       label: `Betón ${cleanType(selectedType.label)} – ${qty} m³`,
       qty,
@@ -951,7 +959,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       transportIsMin: transportCalc.isMin, fillupM3, fillupTarget,
       fTransport, fFillup,
     };
-  }, [tab, quantity, distance, selectedType, pumpHour, pumpMin, waitTotalMins, waitPiecesPumpa, hoseMeters, washing, zimneOpatrenia, betonFactor, dopravaFactor, sluzbyFactor, fPump, fChem, fWash, fHose, fWaitP, fWaitM, pumpServicePrice, chemServicePrice, washServicePrice, waitServicePricePumpa, waitServicePriceMix, hoseServicePrice, zimneServicePrice, tzones, tsettings, extraItems, allCategories, clientDeliveryZone, pumpCap, mixCap, VAT, VAT_HOTOVOST, loggedClient]);
+  }, [tab, quantity, distance, selectedType, pumpHour, pumpMin, waitTotalMins, waitPiecesPumpa, hoseMeters, washing, zimneOpatrenia, betonFactor, dopravaFactor, sluzbyFactor, fPump, fChem, fWash, fHose, fWaitP, fWaitM, pumpServicePrice, chemServicePrice, washServicePrice, waitServicePricePumpa, waitServicePriceMix, hoseServicePrice, zimneServicePrice, tzones, tsettings, extraItems, allCategories, clientDeliveryZone, pumpCap, mixCap, VAT, VAT_HOTOVOST, loggedClient, podmienkyEnabled, podmienkyTrucks]);
 
   async function handleLogin() {
     if (!loginId || !loginPwd) return;
@@ -2230,6 +2238,54 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             </div>
           )}
 
+          {/* Podmienky — admin only (Pumpa + Mix) */}
+          {isAdminMode && tab !== "vlastnadoprava" && (
+            <div className="mt-3 border border-secondary/20 rounded-sm overflow-hidden">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!podmienkyEnabled) {
+                    const def = result?.trucks ?? Math.max(1, tab === "pumpa" ? calcPumpTrucks(parseFloat(quantity) || 0) : Math.ceil((parseFloat(quantity) || 0) / mixCap));
+                    setPodmienkyTrucks(Math.max(1, def));
+                  }
+                  setPodmienkyEnabled(v => !v);
+                }}
+                className="w-full flex items-center justify-between px-3 py-2 bg-secondary/5 hover:bg-secondary/8 transition-colors cursor-pointer"
+              >
+                <span className="flex items-center gap-1.5 text-[10px] font-black text-secondary/60 uppercase tracking-widest">
+                  <Settings2 className="w-3 h-3" /> Podmienky
+                </span>
+                <div className={`w-7 h-3.5 rounded-full transition-colors flex items-center px-0.5 ${podmienkyEnabled ? "bg-amber-400" : "bg-white/20"}`}>
+                  <div className={`w-2.5 h-2.5 rounded-full bg-white shadow transition-transform ${podmienkyEnabled ? "translate-x-3.5" : "translate-x-0"}`} />
+                </div>
+              </button>
+              {podmienkyEnabled && (() => {
+                const qty = parseFloat(quantity) || 0;
+                const m3PerTruck = podmienkyTrucks > 0 && qty > 0 ? (qty / podmienkyTrucks).toFixed(1) : "—";
+                const mixCount = tab === "pumpa" ? Math.max(0, podmienkyTrucks - 1) : podmienkyTrucks;
+                return (
+                  <div className="px-3 py-2.5 bg-amber-50/30 border-t border-secondary/10 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-secondary/70 flex-1 uppercase tracking-wide">Počet vozidiel</span>
+                      <div className="flex items-center gap-1.5">
+                        <button type="button" onClick={() => setPodmienkyTrucks(t => Math.max(1, t - 1))}
+                          className="w-5 h-5 rounded-full border border-secondary/30 text-secondary/70 hover:border-secondary hover:text-secondary font-bold text-xs flex items-center justify-center cursor-pointer">−</button>
+                        <span className="w-5 text-center font-black text-secondary text-sm">{podmienkyTrucks}</span>
+                        <button type="button" onClick={() => setPodmienkyTrucks(t => t + 1)}
+                          className="w-5 h-5 rounded-full border border-secondary/30 text-secondary/70 hover:border-secondary hover:text-secondary font-bold text-xs flex items-center justify-center cursor-pointer">+</button>
+                      </div>
+                    </div>
+                    <div className="text-[10px] text-amber-700 bg-amber-100/60 rounded px-2 py-1 font-mono">
+                      {tab === "pumpa"
+                        ? `1× Pumpa${mixCount > 0 ? ` + ${mixCount}× Mix` : ""} · ∅ ${m3PerTruck} m³/auto`
+                        : `${podmienkyTrucks}× Mix · ∅ ${m3PerTruck} m³/auto`}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
           {/* Calculate button */}
           {(() => {
             const hasQty = parseFloat(quantity) > 0 && selectedType != null;
@@ -2551,14 +2607,20 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                   )}
 
                   {!result.isOwn && (
-                    <div className="flex items-center gap-2 text-white/50 text-xs pt-1">
-                      <Truck className="w-3.5 h-3.5" />
+                    <div className="flex items-center gap-2 text-white/50 text-xs pt-1 flex-wrap">
+                      <Truck className="w-3.5 h-3.5 shrink-0" />
                       {tab === "pumpa" ? (
                         <span><strong>1× Pumpa</strong> ({pumpCap}m³){result.mixTrucksCount > 0 ? <> + <strong>{result.mixTrucksCount}× Mix</strong> ({mixCap}m³)</> : ""} = <strong>{result.trucks} vozidl{result.trucks === 1 ? "o" : "á"}</strong></span>
                       ) : (
                         <span><strong>{result.trucks}× Mix</strong> ({mixCap}m³/vozidlo)</span>
                       )}
+                      {podmienkyEnabled && (
+                        <span className="px-1.5 py-0.5 bg-amber-400/20 text-amber-300 text-[10px] font-black rounded-sm uppercase tracking-wide">Podmienky</span>
+                      )}
                     </div>
+                  )}
+                  {!isAdminMode && tab !== "vlastnadoprava" && (
+                    <p className="text-[10px] text-white/30 pt-1">* Orientačná cena. Môže byť upravená podľa podmienok terénu a počasia.</p>
                   )}
                 </div>
 
