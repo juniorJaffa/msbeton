@@ -249,6 +249,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [mapCopied, setMapCopied] = useState(false);
   const [mapError, setMapError] = useState("");
   const mapLocateFnRef = useRef<(() => void) | null>(null);
+  const mapGeocodeAddrFnRef = useRef<((addr: string) => void) | null>(null);
   const calcWrapRef = useRef<HTMLDivElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const [categoryName, setCategoryName] = useState<string | null>(null);
@@ -468,6 +469,20 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       });
 
       const searchInput = document.getElementById("map-search-input") as HTMLInputElement | null;
+
+      // Geocode adresu a umiestni pin — volateľné aj zvonka cez ref
+      mapGeocodeAddrFnRef.current = (addr: string) => {
+        if (searchInput) searchInput.value = addr;
+        new google.maps.Geocoder().geocode({ address: addr, region: "SK" }, (results, gStatus) => {
+          if (gStatus === "OK" && results && results[0]) {
+            const loc = results[0].geometry.location;
+            map.setCenter({ lat: loc.lat(), lng: loc.lng() });
+            map.setZoom(15);
+            setPinAt(loc.lat(), loc.lng());
+          }
+        });
+      };
+
       if (searchInput) {
         const ac = new google.maps.places.Autocomplete(searchInput, { types: ["geocode"], componentRestrictions: { country: "sk" } });
         ac.addListener("place_changed", () => {
@@ -478,18 +493,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
           map.setZoom(15);
           setPinAt(loc.lat(), loc.lng());
         });
-        // Pre-fill from address mode
-        if (address && !mapPin) {
-          searchInput.value = address;
-          new google.maps.Geocoder().geocode({ address, region: "SK" }, (results, gStatus) => {
-            if (gStatus === "OK" && results && results[0]) {
-              const loc = results[0].geometry.location;
-              map.setCenter({ lat: loc.lat(), lng: loc.lng() });
-              map.setZoom(15);
-              setPinAt(loc.lat(), loc.lng());
-            }
-          });
-        }
+        // Pre-fill z adresného režimu (prvý init)
+        if (address && !mapPin) mapGeocodeAddrFnRef.current(address);
       }
 
       // Auto-locate ak nie je adresa
@@ -1401,6 +1406,27 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     }
   }
 
+  function switchDeliveryMode(newMode: "distance" | "address" | "map") {
+    if (newMode === deliveryMode) return;
+    const isAddrToMap = deliveryMode === "address" && newMode === "map";
+
+    // Opustenie mapy → reset map stavu
+    if (deliveryMode === "map") {
+      setMapPin(null); setMapPlusCode(""); setMapKmConfirmed(false); setMapError("");
+    }
+    // Reset km + výpočtu pri každom prechode okrem Adresa→Mapa
+    if (!isAddrToMap) {
+      setDistance(""); setAddressKm(null);
+    }
+
+    setDeliveryMode(newMode);
+
+    // Adresa→Mapa: geocoduj adresu a umiestni pin
+    if (isAddrToMap && address) {
+      setTimeout(() => { mapGeocodeAddrFnRef.current?.(address); }, 80);
+    }
+  }
+
   function buildBreakdown(): string {
     if (!result) return JSON.stringify({ v: 2, s: [] });
     const fmt2 = (n: number) => parseFloat(n.toFixed(2));
@@ -1801,7 +1827,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             <div className="flex items-center gap-6 pt-1">
               {(["distance", "address", "map"] as const).map((m) => (
                 <label key={m} className="flex items-center gap-2 cursor-pointer">
-                  <div onClick={() => { setDeliveryMode(m); if (m !== "map") { setMapPin(null); setMapPlusCode(""); setMapKmConfirmed(false); } }}
+                  <div onClick={() => switchDeliveryMode(m)}
                     className={cn("w-4 h-4 border-2 flex items-center justify-center transition-all flex-shrink-0",
                       deliveryMode === m ? "bg-primary border-primary" : "bg-white/10 border-white/30")}>
                     {deliveryMode === m && <span className="text-white text-[9px] font-bold">✓</span>}
