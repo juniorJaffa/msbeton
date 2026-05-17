@@ -452,7 +452,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         pendingGeocodePlaceRef.current = null;
         pendingGeocodeAddressRef.current = null;
         if (pendingPlace && mapSetPinAtRef.current) {
-          mapSetPinAtRef.current(pendingPlace.lat, pendingPlace.lng);
+          mapSetPinAtRef.current(pendingPlace.lat, pendingPlace.lng, true);  // preserve address
         } else if (pendingAddr && mapGeocodeAddrFnRef.current) {
           mapGeocodeAddrFnRef.current(pendingAddr);
         }
@@ -468,7 +468,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
       let marker: google.maps.Marker | null = null;
 
-      const setPinAt = (lat: number, lng: number) => {
+      const setPinAt = (lat: number, lng: number, preserveAddress = false) => {
         const pos = { lat, lng };
         if (marker) marker.setPosition(pos);
         else marker = new google.maps.Marker({ position: pos, map, animation: google.maps.Animation.DROP });
@@ -480,10 +480,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         if (!keepResultOnPinRef.current) setShowResult(false);
         keepResultOnPinRef.current = false;
         setMapError("");
-        // Okamžite vymaz starú adresu — reverseGeocode ju doplní async
-        setAddress("");
-        if (addressInputRef.current) addressInputRef.current.value = "";
-        lastResolvedAddressRef.current = null;
+        // Vymaz adresu len keď používateľ ručne presúva pin — nie pri pre-fill z existujúcej adresy
+        if (!preserveAddress) {
+          setAddress("");
+          if (addressInputRef.current) addressInputRef.current.value = "";
+          lastResolvedAddressRef.current = null;
+        }
         // Distance Matrix — rovnaká metóda ako adresný režim
         new google.maps.DistanceMatrixService().getDistanceMatrix(
           { origins: [ORIGIN], destinations: [pos], travelMode: google.maps.TravelMode.DRIVING, unitSystem: google.maps.UnitSystem.METRIC },
@@ -554,14 +556,19 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         reverseGeocode(lat, lng);  // async: SK validácia + doplní adresu
       });
 
-      // Geocode adresu a umiestni pin — volateľné aj zvonka cez ref
+      // Geocode adresu a umiestni pin — volateľné aj zvonka cez ref (Enter v inpute, paste, adresa→mapa)
       mapGeocodeAddrFnRef.current = (addr: string) => {
         new google.maps.Geocoder().geocode({ address: addr, region: "SK" }, (results, gStatus) => {
           if (gStatus === "OK" && results && results[0]) {
             const loc = results[0].geometry.location;
+            const resolvedAddr = results[0].formatted_address;
             map.setCenter({ lat: loc.lat(), lng: loc.lng() });
             map.setZoom(15);
-            setPinAt(loc.lat(), loc.lng());
+            setPinAt(loc.lat(), loc.lng(), true);  // preserveAddress — nemaž input
+            // Nastav rozpoznanú adresu (môže byť presnejšia ako zadaná)
+            setAddress(resolvedAddr);
+            lastResolvedAddressRef.current = { address: resolvedAddr, lat: loc.lat(), lng: loc.lng() };
+            if (addressInputRef.current) addressInputRef.current.value = resolvedAddr;
           }
         });
       };
@@ -573,7 +580,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       pendingGeocodeAddressRef.current = null;
       if (pendingPlace) {
         map.setCenter(pendingPlace); map.setZoom(15);
-        setPinAt(pendingPlace.lat, pendingPlace.lng);
+        setPinAt(pendingPlace.lat, pendingPlace.lng, true);  // preserve address z autocomplete
       } else if (pendingAddr) {
         mapGeocodeAddrFnRef.current(pendingAddr);
       } else if (address && !mapPin) {
@@ -1928,6 +1935,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     type="text"
                     defaultValue={address}
                     onChange={(e) => { setAddress(e.target.value); setAddressKm(null); setShowResult(false); }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && deliveryMode === "map" && mapGeocodeAddrFnRef.current && addressInputRef.current?.value) {
+                        e.preventDefault();
+                        mapGeocodeAddrFnRef.current(addressInputRef.current.value);
+                      }
+                    }}
                     placeholder="Zadajte adresu stavby"
                     className="flex-1 bg-transparent px-4 py-3 text-white text-sm font-medium focus:outline-none placeholder:text-white/30 min-w-0" />
                   {/* Map icon — always visible, colored */}
