@@ -100,6 +100,8 @@ export interface Order {
   discountSluzby?: number;
   discountCelkovo?: number;
   viaSms?: boolean;
+  mapPlusCode?: string;
+  mapLocality?: string;
   pumpTimer?: { start: string; stop: string };
   podmienky?: { trucks: number; pumpa: number; mix: number; m3PerTruck: number };
 }

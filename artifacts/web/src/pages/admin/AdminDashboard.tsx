@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
-import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, SlidersHorizontal, ShoppingCart, MessageSquare, BarChart2, TrendingUp, Monitor, Globe, MousePointerClick, MoreHorizontal, Activity, Smartphone, Laptop, Tablet, Mail } from "lucide-react";
+import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, SlidersHorizontal, ShoppingCart, MessageSquare, BarChart2, TrendingUp, Monitor, Globe, MousePointerClick, MoreHorizontal, Activity, Smartphone, Laptop, Tablet, Mail, MapPin, Navigation } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
@@ -962,6 +962,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [ts, setTs] = useState<TransportSettings>(adminData.getTransportSettings());
   const saveTs = (data: TransportSettings) => { setTs(data); adminData.saveTransportSettings(data); };
+  const [mapModalOrder, setMapModalOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -1484,7 +1485,22 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                           </div>
                         )}
                         {o.km && <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Vzdialenosť</span><span className="font-medium text-gray-700">{o.km} km</span></div>}
-                        {o.address && <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Adresa</span><span className="text-gray-600 break-words">{o.address}</span></div>}
+                        {(o.address || o.mapPlusCode) && (
+                          <div className="flex gap-2 items-start">
+                            <span className="text-gray-400 w-24 shrink-0">Adresa</span>
+                            <span className="text-gray-600 break-words flex-1">
+                              {o.mapPlusCode ? (
+                                <><span className="font-mono text-xs">{o.mapPlusCode}</span>{o.mapLocality ? <span className="text-gray-400"> · {o.mapLocality}</span> : null}</>
+                              ) : o.address}
+                            </span>
+                            {(o.mapPlusCode || o.address) && (
+                              <button onClick={e => { e.stopPropagation(); setMapModalOrder(o); }}
+                                className="shrink-0 text-blue-400 hover:text-blue-600 transition-colors" title="Zobraziť na mape">
+                                <MapPin className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        )}
                         <div className="flex gap-2 items-center"><span className="text-gray-400 w-24 shrink-0">Fakturácia</span>
                           <span className={cn("font-black text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-sm", o.priceMode === "hotovost" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700")}>
                             {o.priceMode === "hotovost" ? "Hotovosť" : "Faktúra"}
@@ -1570,6 +1586,45 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
           })}
         </div>
       )}
+
+      {/* ── Map modal ── */}
+      {mapModalOrder && (() => {
+        const query = mapModalOrder.mapPlusCode
+          ? `${mapModalOrder.mapPlusCode}${mapModalOrder.mapLocality ? " " + mapModalOrder.mapLocality : ""}`
+          : mapModalOrder.address ?? "";
+        const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=15&output=embed`;
+        const mapsUrl  = `https://maps.google.com/?q=${encodeURIComponent(query)}`;
+        return (
+          <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
+            onClick={() => setMapModalOrder(null)}>
+            <div className="bg-white rounded-xl shadow-2xl overflow-hidden w-full max-w-lg"
+              onClick={e => e.stopPropagation()}>
+              <div className="bg-secondary text-white px-4 py-3 flex items-center gap-3">
+                <MapPin className="w-4 h-4 text-primary shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="font-black text-sm uppercase tracking-widest">Poloha doručenia</div>
+                  <div className="text-white/50 text-xs truncate">{query}</div>
+                </div>
+                <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-secondary text-xs font-black rounded-lg hover:bg-primary/80 transition-colors shrink-0">
+                  <Navigation className="w-3.5 h-3.5" /> Otvoriť
+                </a>
+                <button onClick={() => setMapModalOrder(null)} className="text-white/40 hover:text-white transition-colors ml-1">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <iframe
+                title="Mapa doručenia"
+                src={embedUrl}
+                className="w-full border-0"
+                style={{ height: 340 }}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
