@@ -541,9 +541,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             lastResolvedAddressRef.current = { address: addr, lat, lng };
             if (addressInputRef.current) addressInputRef.current.value = addr;
             const comps = results[0].address_components ?? [];
-            const loc = comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("locality"))?.long_name ?? "";
+            const loc = comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("locality"))?.long_name
+              ?? comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("postal_town"))?.long_name
+              ?? comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("administrative_area_level_3"))?.long_name
+              ?? "";
             const district = comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("administrative_area_level_2"))?.long_name ?? "";
-            setMapLocality([loc, district].filter(Boolean).join(" · "));
+            setMapLocality([loc, district].filter(Boolean).join(", "));
           }
         });
       };
@@ -582,9 +585,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             lastResolvedAddressRef.current = { address: resolvedAddr, lat: loc.lat(), lng: loc.lng() };
             if (addressInputRef.current) addressInputRef.current.value = resolvedAddr;
             const comps = results[0].address_components ?? [];
-            const village = comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("locality"))?.long_name ?? "";
+            const village = comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("locality"))?.long_name
+              ?? comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("postal_town"))?.long_name
+              ?? comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("administrative_area_level_3"))?.long_name
+              ?? "";
             const district = comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("administrative_area_level_2"))?.long_name ?? "";
-            setMapLocality([village, district].filter(Boolean).join(" · "));
+            setMapLocality([village, district].filter(Boolean).join(", "));
           }
         });
       };
@@ -2066,15 +2072,21 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                   <div className="bg-white/10 px-3 py-2.5 flex items-center gap-3 rounded-sm">
                     <MapPin className="w-4 h-4 text-primary shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-primary text-xs font-bold tracking-wide">{mapPlusCode}</span>
-                        <button onClick={() => { navigator.clipboard?.writeText(mapPlusCode); setMapCopied(true); setTimeout(() => setMapCopied(false), 1500); }}
-                          className="text-white/40 hover:text-primary transition-colors" title="Kopírovať Plus Code">
-                          {mapCopied ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
-                        </button>
-                        {mapLocality && <><span className="text-white/20 text-xs">·</span><span className="text-xs text-white/50">{mapLocality}</span></>}
-                        <span className="text-white/20 text-xs">·</span>
-                        <span className="text-xs text-white/50">od MS-BETON: <strong className="text-primary">{distance} km</strong></span>
+                      {(address || mapLocality) && (
+                        <div className="text-sm text-white/90 font-medium truncate leading-snug">
+                          {address ? address.replace(/, Slovensko$/, "").replace(/, Slovakia$/, "") : mapLocality}
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                        {mapPlusCode && <>
+                          <span className="font-mono text-primary text-[10px] font-bold tracking-wide">{mapPlusCode}</span>
+                          <button onClick={() => { navigator.clipboard?.writeText(`${mapPlusCode}${mapLocality ? " " + mapLocality : ""}`); setMapCopied(true); setTimeout(() => setMapCopied(false), 1500); }}
+                            className="text-white/40 hover:text-primary transition-colors" title="Kopírovať Plus Code">
+                            {mapCopied ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
+                          </button>
+                          <span className="text-white/20 text-[10px]">·</span>
+                        </>}
+                        <span className="text-[10px] text-white/50">od MS-BETON: <strong className="text-primary">{distance} km</strong></span>
                       </div>
                     </div>
                     <button onClick={() => { setMapKmConfirmed(false); setMapPin(null); setMapPlusCode(""); setMapLocality(""); setDistance(""); setAddressKm(null); if (mapMarkerRef.current) { mapMarkerRef.current.setMap(null); mapMarkerRef.current = null; } }}
@@ -2087,17 +2099,29 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                         <p className="text-xs text-red-400 px-1">{mapError}</p>
                       ) : mapPin ? (
                         <div className="bg-white/10 px-3 py-2.5 rounded-sm space-y-2">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
-                            <span className="font-mono text-primary text-sm font-bold tracking-wide">{mapPlusCode || "…"}</span>
-                            {mapPlusCode && (
-                              <button onClick={() => { navigator.clipboard?.writeText(mapPlusCode); setMapCopied(true); setTimeout(() => setMapCopied(false), 1500); }}
-                                className="text-white/40 hover:text-primary transition-colors" title="Kopírovať">
-                                {mapCopied ? <Check className="w-3.5 h-3.5 text-primary" /> : <Copy className="w-3.5 h-3.5" />}
-                              </button>
-                            )}
-                            {mapLocality && <><span className="text-white/20 text-xs">·</span><span className="text-xs text-white/60">{mapLocality}</span></>}
-                            {distance && <><span className="text-white/20 text-xs">·</span><span className="text-xs text-white/60">od MS-BETON: <strong className="text-primary">{distance} km</strong></span></>}
+                          <div className="space-y-0.5">
+                            <div className="flex items-start gap-2">
+                              <MapPin className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+                              <div className="flex-1 min-w-0">
+                                {(address || mapLocality) && (
+                                  <div className="text-sm text-white/90 font-medium leading-snug truncate">
+                                    {address ? address.replace(/, Slovensko$/, "").replace(/, Slovakia$/, "") : mapLocality}
+                                  </div>
+                                )}
+                                <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                  {mapPlusCode && <>
+                                    <span className="font-mono text-primary text-[10px] font-bold tracking-wide">{mapPlusCode || "…"}</span>
+                                    <button onClick={() => { navigator.clipboard?.writeText(`${mapPlusCode}${mapLocality ? " " + mapLocality : ""}`); setMapCopied(true); setTimeout(() => setMapCopied(false), 1500); }}
+                                      className="text-white/40 hover:text-primary transition-colors" title="Kopírovať">
+                                      {mapCopied ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
+                                    </button>
+                                    <span className="text-white/20 text-[10px]">·</span>
+                                  </>}
+                                  {distance && <span className="text-[10px] text-white/60">od MS-BETON: <strong className="text-primary">{distance} km</strong></span>}
+                                  {!distance && !address && !mapLocality && <span className="text-[10px] text-white/40">Určuje sa adresa…</span>}
+                                </div>
+                              </div>
+                            </div>
                           </div>
                           <button onClick={() => setMapKmConfirmed(true)}
                             className="w-full bg-primary text-secondary font-black text-xs uppercase tracking-widest py-2.5 hover:bg-primary/90 transition-all flex items-center justify-center gap-2">

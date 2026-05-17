@@ -299,37 +299,62 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
       {/* ── Typy dopravy ── */}
       {/* Podmienky — min/max počet vozidiel pre kalkulačku */}
       <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-2.5 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
-          <h3 className="font-black text-secondary text-sm uppercase tracking-widest flex-1">Podmienky – počet vozidiel</h3>
-          <span className="text-[10px] text-gray-400">min/max pre Pumpa tab kalkulačky</span>
+        <div className="px-5 py-2.5 border-b border-gray-100 bg-gray-50">
+          <h3 className="font-black text-secondary text-sm uppercase tracking-widest">Podmienky – počet vozidiel v Pumpa tabe</h3>
+          <p className="text-[10px] text-gray-400 mt-0.5 leading-snug">
+            Zákazník si pri kalkulácii (tab Pumpa) nastavuje počet vozidiel. Tu nastavíš povolený rozsah.
+            Pumpa = betonárska pumpa; Mixer = domiešavač dodávajúci betón za pumpou.
+          </p>
         </div>
-        <div className="grid grid-cols-4 divide-x divide-gray-100">
-          <div className="px-4 py-3">
-            <div className="text-[10px] text-blue-600 font-bold uppercase tracking-wide mb-1">Pumpa min.</div>
-            <div className="flex items-baseline gap-1 font-bold text-secondary text-sm">
-              <EditableField value={ts.condPumpaMin ?? 1} type="number" onSave={v => saveTs({ ...ts, condPumpaMin: Math.max(1, parseInt(v) || 1) })} />
-              <span className="text-gray-400 text-xs">voz.</span>
+        <div className="grid grid-cols-2 divide-y divide-gray-100">
+          {/* PUMPA row */}
+          <div className="col-span-2 grid grid-cols-2 divide-x divide-gray-100 border-b border-gray-100">
+            <div className="px-4 py-3 bg-blue-50/40">
+              <div className="flex items-center gap-1.5 mb-2">
+                <PumpTruckIcon />
+                <span className="text-[10px] text-blue-700 font-black uppercase tracking-wide">Pumpa</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div>
+                  <div className="text-[9px] text-blue-500 font-bold uppercase tracking-wide mb-0.5">Min</div>
+                  <div className="flex items-baseline gap-1 font-bold text-secondary text-sm">
+                    <EditableField value={ts.condPumpaMin ?? 1} type="number" onSave={v => saveTs({ ...ts, condPumpaMin: Math.max(1, parseInt(v) || 1) })} />
+                    <span className="text-gray-400 text-xs">voz.</span>
+                  </div>
+                </div>
+                <span className="text-gray-300 font-black">—</span>
+                <div>
+                  <div className="text-[9px] text-blue-500 font-bold uppercase tracking-wide mb-0.5">Max</div>
+                  <div className="flex items-baseline gap-1 font-bold text-secondary text-sm">
+                    <EditableField value={ts.condPumpaMax ?? 2} type="number" onSave={v => saveTs({ ...ts, condPumpaMax: Math.max(1, parseInt(v) || 2) })} />
+                    <span className="text-gray-400 text-xs">voz.</span>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="px-4 py-3">
-            <div className="text-[10px] text-blue-600 font-bold uppercase tracking-wide mb-1">Pumpa max.</div>
-            <div className="flex items-baseline gap-1 font-bold text-secondary text-sm">
-              <EditableField value={ts.condPumpaMax ?? 2} type="number" onSave={v => saveTs({ ...ts, condPumpaMax: Math.max(1, parseInt(v) || 2) })} />
-              <span className="text-gray-400 text-xs">voz.</span>
-            </div>
-          </div>
-          <div className="px-4 py-3">
-            <div className="text-[10px] text-amber-600 font-bold uppercase tracking-wide mb-1">Mix min.</div>
-            <div className="flex items-baseline gap-1 font-bold text-secondary text-sm">
-              <EditableField value={ts.condMixMin ?? 0} type="number" onSave={v => saveTs({ ...ts, condMixMin: Math.max(0, parseInt(v) || 0) })} />
-              <span className="text-gray-400 text-xs">voz.</span>
-            </div>
-          </div>
-          <div className="px-4 py-3">
-            <div className="text-[10px] text-amber-600 font-bold uppercase tracking-wide mb-1">Mix max.</div>
-            <div className="flex items-baseline gap-1 font-bold text-secondary text-sm">
-              <EditableField value={ts.condMixMax ?? 2} type="number" onSave={v => saveTs({ ...ts, condMixMax: Math.max(0, parseInt(v) || 2) })} />
-              <span className="text-gray-400 text-xs">voz.</span>
+            {/* MIXER row */}
+            <div className="px-4 py-3 bg-amber-50/40">
+              <div className="flex items-center gap-1.5 mb-2">
+                <MixTruckIcon />
+                <span className="text-[10px] text-amber-700 font-black uppercase tracking-wide">Mixer</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div>
+                  <div className="text-[9px] text-amber-500 font-bold uppercase tracking-wide mb-0.5">Min</div>
+                  <div className="flex items-baseline gap-1 font-bold text-secondary text-sm">
+                    <EditableField value={ts.condMixMin ?? 0} type="number" onSave={v => saveTs({ ...ts, condMixMin: Math.max(0, parseInt(v) || 0) })} />
+                    <span className="text-gray-400 text-xs">voz.</span>
+                  </div>
+                </div>
+                <span className="text-gray-300 font-black">—</span>
+                <div>
+                  <div className="text-[9px] text-amber-500 font-bold uppercase tracking-wide mb-0.5">Max</div>
+                  <div className="flex items-baseline gap-1 font-bold text-secondary text-sm">
+                    <EditableField value={ts.condMixMax ?? 2} type="number" onSave={v => saveTs({ ...ts, condMixMax: Math.max(0, parseInt(v) || 2) })} />
+                    <span className="text-gray-400 text-xs">voz.</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -456,11 +481,10 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                   })()}
                 {/* Zóny tohto typu */}
                 {!isStandard && typeZones.map((z, zIdx) => (
-                  <div key={z.id} className={zIdx > 0 ? "border-t-2 border-slate-300" : "border-t border-gray-200"}>
+                  <div key={z.id} className={`border-t-2 ${zIdx > 0 ? "border-slate-200 mt-1" : "border-gray-100"}`}>
                     {/* Zone name row */}
-                    <div className={`flex items-center gap-2 px-4 py-2 ${zIdx > 0 ? "bg-slate-100/70" : "bg-gray-50/60"}`}>
-                      <span className="w-5 h-5 rounded-full bg-slate-300 text-slate-700 text-[9px] font-black flex items-center justify-center shrink-0">{zIdx + 1}</span>
-                      <div className="font-semibold text-secondary text-sm flex-1">
+                    <div className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-slate-50 to-white border-l-4 border-l-secondary/30">
+                      <div className="font-black text-secondary text-sm flex-1 tracking-wide">
                         <EditableField value={z.name} onSave={v => updateZone(z.id, { name: v })} />
                       </div>
                       <button onClick={() => removeZone(z.id)} className="p-2 text-gray-300 hover:text-red-500 transition-colors cursor-pointer flex-shrink-0">
@@ -727,16 +751,11 @@ function SluzbyTab({ onGoToDoprava, scrollToPumpa, onScrollDone }: { onGoToDopra
   })();
 
   const ServiceModeBadge = ({ mode }: { mode?: "pumpa" | "mix" }) => mode ? (
-    <div className="flex flex-wrap items-center gap-2">
-      <div className="flex items-center gap-1">
-        {mode === "pumpa" ? <PumpTruckIcon /> : <MixTruckIcon />}
-      </div>
-      {onGoToDoprava && (
-        <button onClick={onGoToDoprava} className="flex items-center gap-0.5 text-[9px] text-blue-400 hover:text-blue-600 transition-colors font-semibold">
-          <ExternalLink className="w-2.5 h-2.5" />
-          Iba Štandard doprava
-        </button>
-      )}
+    <div className="flex items-center gap-1.5">
+      {mode === "pumpa" ? <PumpTruckIcon /> : <MixTruckIcon />}
+      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
+        {mode === "pumpa" ? "Pumpa" : "Mixer"}
+      </span>
     </div>
   ) : null;
 
