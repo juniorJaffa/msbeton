@@ -167,10 +167,10 @@ function ga4Rows(data: unknown): Array<{ dims: string[]; vals: string[] }> {
 }
 
 router.get("/analytics", async (req, res) => {
-  const token = await getGa4Token();
-  if (!token) { res.status(503).json({ error: "GA4_KEY_JSON not configured" }); return; }
-
   try {
+    const token = await getGa4Token();
+    if (!token) { res.status(503).json({ error: "GA4_KEY_JSON not configured" }); return; }
+
     const range30 = { startDate: "30daysAgo", endDate: "today" };
     const range90 = { startDate: "90daysAgo", endDate: "today" };
 
