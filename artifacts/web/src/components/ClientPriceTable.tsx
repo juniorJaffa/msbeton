@@ -87,7 +87,7 @@ function EditRow({ id, orig, factor, manualPrice, dark, onManualPriceChange }: E
           onChange={e => { setInputVal(e.target.value); setSaved(false); }}
           onKeyDown={e => {
             if (e.key === "Enter") confirmKeepOpen(e);
-            if (e.key === "Escape") setEditing(false);
+            if (e.key === "Escape") { e.stopPropagation(); setEditing(false); }
           }}
           onBlur={confirmAndClose}
           autoFocus

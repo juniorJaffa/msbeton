@@ -1654,14 +1654,15 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
   const scrollToClientCard = (id: string) => {
     setTimeout(() => {
       const container = document.getElementById("admin-content");
-      const el = document.getElementById(`client-card-${id}`);
       const toolbar = document.getElementById("klienti-toolbar");
-      if (el && container) {
-        const cR = container.getBoundingClientRect();
-        const eR = el.getBoundingClientRect();
-        const toolH = toolbar?.getBoundingClientRect().height ?? 90;
-        container.scrollTo({ top: container.scrollTop + (eR.top - cR.top) - toolH - 8, behavior: "smooth" });
-      }
+      if (!container) return;
+      const cR = container.getBoundingClientRect();
+      const toolH = toolbar?.getBoundingClientRect().height ?? 90;
+      // Scroll to tabs so card header goes above toolbar → current client shows in floating indicator
+      const targetEl = document.getElementById(`client-tabs-${id}`) ?? document.getElementById(`client-card-${id}`);
+      if (!targetEl) return;
+      const eR = targetEl.getBoundingClientRect();
+      container.scrollTo({ top: container.scrollTop + (eR.top - cR.top) - toolH - 8, behavior: "smooth" });
     }, 250);
   };
 
@@ -1760,17 +1761,18 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
     if (!container) return;
     const onScroll = () => {
       const toolbar = document.getElementById("klienti-toolbar");
-      const tbBottom = toolbar ? toolbar.getBoundingClientRect().bottom + 2 : 82;
+      const tbBottom = toolbar ? toolbar.getBoundingClientRect().bottom : 82;
       const cards = container.querySelectorAll("[id^='client-card-']");
       let last: Client | null = null;
       for (const el of Array.from(cards)) {
-        if (el.getBoundingClientRect().top < tbBottom) {
+        // 4px hysteresis buffer eliminates Safari flicker on slow scroll near boundary
+        if (el.getBoundingClientRect().top < tbBottom - 4) {
           const id = el.id.replace("client-card-", "");
           const found = filteredRef.current.find(c => c.id === id);
           if (found) last = found;
         } else break;
       }
-      setFloatingClient(last);
+      setFloatingClient(prev => prev?.id === last?.id ? prev : last);
     };
     container.addEventListener("scroll", onScroll, { passive: true });
     return () => container.removeEventListener("scroll", onScroll);
@@ -2192,7 +2194,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                 <div className="border-t border-gray-100 bg-gray-50">
 
                   {/* Tab bar: Detail | Kalkulačka */}
-                  <div className="flex border-b border-gray-200">
+                  <div id={`client-tabs-${c.id}`} className="flex border-b border-gray-200">
                     <button
                       onClick={() => setClientDetailTab(prev => ({ ...prev, [c.id]: "detail" }))}
                       className={cn("flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-black uppercase tracking-wide transition-all", (clientDetailTab[c.id] ?? "detail") === "detail" ? "bg-secondary text-white" : "bg-white text-gray-400 hover:text-secondary hover:bg-secondary/5")}
@@ -2496,9 +2498,8 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
       {/* ── Popup: Zľavové tabuľky klienta ── */}
       {tablePdfModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 overflow-auto"
-          onClick={() => setTablePdfModal(null)}>
-          <div className="bg-gray-50 w-full max-w-3xl my-4 shadow-2xl rounded-sm"
-            onClick={e => e.stopPropagation()}>
+          onKeyDown={e => { if (e.key === "Escape") setTablePdfModal(null); }}>
+          <div className="bg-gray-50 w-full max-w-3xl my-4 shadow-2xl rounded-sm">
 
             {/* Header */}
             <div className="bg-secondary text-white px-6 py-4 flex items-center justify-between">
@@ -2513,9 +2514,6 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                   {tablePdfModal.email && ` · ${tablePdfModal.email}`}
                 </div>
               </div>
-              <button onClick={() => setTablePdfModal(null)} className="text-white/60 hover:text-white p-1">
-                <X className="w-5 h-5" />
-              </button>
             </div>
 
             {/* FAKTÚRA / HOTOVOSŤ tabs */}
@@ -2552,11 +2550,11 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
 
             {/* Footer */}
             <div className="flex justify-between items-center px-6 py-4 border-t border-gray-200 bg-white">
-              <button onClick={() => setTablePdfModal(null)}
+              <button type="button" onClick={() => setTablePdfModal(null)}
                 className="px-4 py-2 border border-secondary text-secondary font-bold text-sm hover:bg-secondary hover:text-white transition-colors cursor-pointer">
-                ZRUŠIŤ
+                ZAVRIEŤ
               </button>
-              <button onClick={() => exportClientPricePDF(tablePdfModal, tablePdfMode, ts)}
+              <button type="button" onClick={() => exportClientPricePDF(tablePdfModal, tablePdfMode, ts)}
                 className="flex items-center gap-2 px-4 py-2 bg-primary text-secondary font-bold text-sm hover:bg-primary/90 transition-colors cursor-pointer">
                 <FileText className="w-4 h-4" /> EXPORTOVAŤ PDF
               </button>
