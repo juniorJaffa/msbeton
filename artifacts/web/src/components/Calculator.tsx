@@ -1140,7 +1140,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const dopravaLabel = `${pdfPrefix}${pdfZone ? ` ${pdfZone}` : ""} · ${pdfTrucks}${podmienkyEnabled ? " ★" : ""}`;
     const podmienkyMixCount = tab === "pumpa" ? podmienkyMixC : podmienkyTrucks;
     const podmienkyTotalTrucks = tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks;
-    const podmienkyM3PerTruck = podmienkyEnabled && podmienkyTotalTrucks > 0 ? Math.round((result.qty / podmienkyTotalTrucks) * 10) / 10 : 0;
+    const podmienkyFillupM3pdf = result.concreteBreakdown[0]?.transportFillupM3 ?? 0;
+    const podmienkyM3PerTruck = podmienkyEnabled && podmienkyTotalTrucks > 0 ? Math.round(((result.qty + podmienkyFillupM3pdf) / podmienkyTotalTrucks) * 10) / 10 : 0;
     const podmienkyVehicleStr = tab === "pumpa"
       ? `${podmienkyPumpa}× Pumpa${podmienkyMixC > 0 ? ` + ${podmienkyMixC}× Mix` : ""}`
       : `${podmienkyTrucks}× Mix`;
@@ -1514,7 +1515,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         breakdown: buildBreakdown(),
         viaSms: true,
         ...(tab === "pumpa" && pumpStartTime && pumpStopTime ? { pumpTimer: { start: pumpStartTime, stop: pumpStopTime } } : {}),
-        ...(podmienkyEnabled ? { podmienky: { trucks: tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks, pumpa: tab === "pumpa" ? podmienkyPumpa : 0, mix: tab === "pumpa" ? podmienkyMixC : podmienkyTrucks, m3PerTruck: (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks) > 0 ? Math.round((result!.qty / (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks)) * 10) / 10 : 0 } } : {}),
+        ...(podmienkyEnabled ? { podmienky: { trucks: tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks, pumpa: tab === "pumpa" ? podmienkyPumpa : 0, mix: tab === "pumpa" ? podmienkyMixC : podmienkyTrucks, m3PerTruck: (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks) > 0 ? Math.round(((result!.qty + (result!.concreteBreakdown[0]?.transportFillupM3 ?? 0)) / (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks)) * 10) / 10 : 0 } } : {}),
       }).then(() => {
         setSmsOrderCreated(true);
         setTimeout(() => setSmsOrderCreated(false), 5000);
@@ -1662,7 +1663,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       discountSluzby:  discountSluzby  > 0 ? discountSluzby  : undefined,
       discountCelkovo: discountCelkovo > 0 ? discountCelkovo : undefined,
       ...(tab === "pumpa" && pumpStartTime && pumpStopTime ? { pumpTimer: { start: pumpStartTime, stop: pumpStopTime } } : {}),
-      ...(podmienkyEnabled ? { podmienky: { trucks: tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks, pumpa: tab === "pumpa" ? podmienkyPumpa : 0, mix: tab === "pumpa" ? podmienkyMixC : podmienkyTrucks, m3PerTruck: (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks) > 0 ? Math.round((result!.qty / (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks)) * 10) / 10 : 0 } } : {}),
+      ...(podmienkyEnabled ? { podmienky: { trucks: tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks, pumpa: tab === "pumpa" ? podmienkyPumpa : 0, mix: tab === "pumpa" ? podmienkyMixC : podmienkyTrucks, m3PerTruck: (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks) > 0 ? Math.round(((result!.qty + (result!.concreteBreakdown[0]?.transportFillupM3 ?? 0)) / (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks)) * 10) / 10 : 0 } } : {}),
     });
     setOrderSubmitting(false);
     setOrderDone(true);
@@ -2058,8 +2059,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             const minMixM = Math.max(1, autoTrucksM);
             const maxMixM = qty > 0 ? Math.max(minMixM, Math.floor(qty)) : minMixM + 8;
             const totalP = podmienkyPumpa + podmienkyMixC;
+            const podmienkyFillupM3ui = result?.concreteBreakdown?.[0]?.transportFillupM3 ?? 0;
             const m3PerT = podmienkyEnabled && qty > 0
-              ? tab === "pumpa" ? qty / Math.max(1, totalP) : qty / Math.max(1, podmienkyTrucks)
+              ? tab === "pumpa"
+                ? (qty + podmienkyFillupM3ui) / Math.max(1, totalP)
+                : (qty + podmienkyFillupM3ui) / Math.max(1, podmienkyTrucks)
               : 0;
             return (
               <div>
@@ -2151,8 +2155,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     )}
                     <div className="text-[10px] text-amber-200/80 font-mono px-0.5">
                       {tab === "pumpa"
-                        ? `${podmienkyPumpa}× Pumpa${podmienkyMixC > 0 ? ` + ${podmienkyMixC}× Mix` : ""} · ∅ ${m3PerT > 0 ? m3PerT.toFixed(1) : "—"} m³/voz.`
-                        : `${podmienkyTrucks}× Mix · ∅ ${m3PerT > 0 ? m3PerT.toFixed(1) : "—"} m³/voz.`
+                        ? `${podmienkyPumpa}× Pumpa${podmienkyMixC > 0 ? ` + ${podmienkyMixC}× Mix` : ""} · ∅ ${m3PerT > 0 ? m3PerT.toFixed(1) : "—"} m³/voz.${podmienkyFillupM3ui > 0 ? ` (+${podmienkyFillupM3ui} doť.)` : ""}`
+                        : `${podmienkyTrucks}× Mix · ∅ ${m3PerT > 0 ? m3PerT.toFixed(1) : "—"} m³/voz.${podmienkyFillupM3ui > 0 ? ` (+${podmienkyFillupM3ui} doť.)` : ""}`
                       }
                     </div>
                   </div>
