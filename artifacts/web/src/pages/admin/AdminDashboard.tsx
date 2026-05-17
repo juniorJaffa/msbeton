@@ -3365,7 +3365,7 @@ export default function AdminDashboard() {
               <span className="text-[8px] font-bold uppercase leading-none">VIAC</span>
             </button>
             {moreOpen && (
-              <div className="absolute bottom-full right-0 mb-1 w-40 bg-white border border-gray-200 rounded-sm shadow-lg overflow-hidden z-50">
+              <div className="absolute top-full right-0 mt-px w-44 bg-white border border-gray-200 rounded-sm shadow-xl overflow-hidden z-50">
                 <button onClick={() => { setTab("statistiky"); window.location.hash = "statistiky"; setMoreOpen(false); }}
                   className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-bold transition-colors ${tab === "statistiky" ? "text-primary bg-primary/5" : "text-gray-600 hover:bg-gray-50"}`}>
                   <TrendingUp className="w-4 h-4 shrink-0" /> Štatistiky
