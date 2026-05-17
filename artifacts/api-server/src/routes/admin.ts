@@ -269,7 +269,7 @@ router.get("/analytics/realtime", async (req, res) => {
       ga4Realtime(token, { metrics: [{ name: "activeUsers" }] }),
       ga4Realtime(token, { dimensions: [{ name: "minutesAgo" }], metrics: [{ name: "activeUsers" }] }),
       ga4Realtime(token, { dimensions: [{ name: "deviceCategory" }], metrics: [{ name: "activeUsers" }] }),
-      ga4Realtime(token, { dimensions: [{ name: "unifiedPagePathScreen" }], metrics: [{ name: "activeUsers" }], limit: 5 }),
+      ga4Realtime(token, { dimensions: [{ name: "unifiedScreenName" }], metrics: [{ name: "activeUsers" }], limit: 5 }),
     ]);
 
     const activeNow = parseInt(

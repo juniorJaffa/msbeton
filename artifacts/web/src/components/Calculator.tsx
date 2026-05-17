@@ -281,6 +281,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [categoryName, setCategoryName] = useState<string | null>(null);
   const [concreteTypeLabel, setConcreteTypeLabel] = useState<string | null>(null);
   const [quantity, setQuantity] = useState("");
+  const [pumpMode, setPumpMode] = useState<"select" | "timer" | "edit">("select");
+  const [pumpHour, setPumpHour] = useState("1 h");
+  const [pumpMin, setPumpMin] = useState("0 min");
   const [pumpStartTime, setPumpStartTime] = useState<string | null>(null);
   const [pumpStopTime, setPumpStopTime] = useState<string | null>(null);
   const [pumpTimerActive, setPumpTimerActive] = useState(false);
@@ -332,6 +335,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     setMapPin(null); setMapPlusCode(""); setMapKmConfirmed(false); setMapError("");
     setCategoryName(null);
     setConcreteTypeLabel(null);
+    setPumpMode("select"); setPumpHour("1 h"); setPumpMin("0 min");
     setPumpStartTime(null);
     setPumpStopTime(null);
     setPumpTimerActive(false);
@@ -935,13 +939,19 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     // Počet áut = súčet per-item transportTrucks (každá položka má vlastné auto)
     const trucks = concreteBreakdown.reduce((s, ci) => s + ci.transportTrucks, 0);
     const truckCapacity = tab === "pumpa" ? pumpCap : mixCap;
-    // Timer-based pump billing: ceil to 15-min blocks
+    // Pump billing: select=h+min direct, timer/edit=start-stop diff → ceil to 15-min blocks
     let _pumpDurMins = 0;
-    if (tab === "pumpa" && pumpStartTime && pumpStopTime) {
-      const [sh, sm] = pumpStartTime.split(":").map(Number);
-      const [eh, em] = pumpStopTime.split(":").map(Number);
-      _pumpDurMins = (eh * 60 + em) - (sh * 60 + sm);
-      if (_pumpDurMins < 0) _pumpDurMins += 24 * 60;
+    if (tab === "pumpa") {
+      if (pumpMode === "select") {
+        const hrs = parseInt(pumpHour) || 1;
+        const ms = parseInt(pumpMin) || 0;
+        _pumpDurMins = hrs * 60 + ms;
+      } else if (pumpStartTime && pumpStopTime) {
+        const [sh, sm] = pumpStartTime.split(":").map(Number);
+        const [eh, em] = pumpStopTime.split(":").map(Number);
+        _pumpDurMins = (eh * 60 + em) - (sh * 60 + sm);
+        if (_pumpDurMins < 0) _pumpDurMins += 24 * 60;
+      }
     }
     const _pumpBlocks = _pumpDurMins > 0 ? Math.ceil(_pumpDurMins / 15) : 0;
     const _pumpBillingMins = _pumpBlocks * 15;
@@ -1056,7 +1066,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       transportIsMin: transportCalc.isMin, fillupM3, fillupTarget,
       fTransport, fFillup,
     };
-  }, [tab, quantity, distance, selectedType, pumpStartTime, pumpStopTime, waitTotalMins, waitPiecesPumpa, hoseMeters, washing, zimneOpatrenia, betonFactor, dopravaFactor, sluzbyFactor, fPump, fChem, fWash, fHose, fWaitP, fWaitM, pumpServicePrice, chemServicePrice, washServicePrice, waitServicePricePumpa, waitServicePriceMix, hoseServicePrice, zimneServicePrice, tzones, tsettings, extraItems, allCategories, clientDeliveryZone, pumpCap, mixCap, VAT, VAT_HOTOVOST, loggedClient, podmienkyEnabled, podmienkyTrucks, podmienkyPumpa, podmienkyMixC]);
+  }, [tab, pumpMode, pumpHour, pumpMin, quantity, distance, selectedType, pumpStartTime, pumpStopTime, waitTotalMins, waitPiecesPumpa, hoseMeters, washing, zimneOpatrenia, betonFactor, dopravaFactor, sluzbyFactor, fPump, fChem, fWash, fHose, fWaitP, fWaitM, pumpServicePrice, chemServicePrice, washServicePrice, waitServicePricePumpa, waitServicePriceMix, hoseServicePrice, zimneServicePrice, tzones, tsettings, extraItems, allCategories, clientDeliveryZone, pumpCap, mixCap, VAT, VAT_HOTOVOST, loggedClient, podmienkyEnabled, podmienkyTrucks, podmienkyPumpa, podmienkyMixC]);
 
   async function handleLogin() {
     if (!loginId || !loginPwd) return;
@@ -2426,51 +2436,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
           {/* PUMPA extras */}
           {tab === "pumpa" && (
             <>
-              {/* ── Čerpanie timer ── */}
+              {/* ── Čerpanie PUMPA — 3 módy ── */}
               {(() => {
-                const started = pumpStartTime !== null;
-                const stopped = pumpStopTime !== null;
-                let durMins = 0;
-                if (started && stopped) {
-                  const [sh, sm] = pumpStartTime!.split(":").map(Number);
-                  const [eh, em] = pumpStopTime!.split(":").map(Number);
-                  durMins = (eh * 60 + em) - (sh * 60 + sm);
-                  if (durMins < 0) durMins += 24 * 60;
-                }
-                const blocks = durMins > 0 ? Math.ceil(durMins / 15) : 0;
-                const billingMins = blocks * 15;
-
-                const handleStart = () => {
-                  const t = nowHHMM();
-                  setPumpStartTime(t); setPumpStopTime(null);
-                  setPumpTimerActive(true); setPumpLiveMs(0);
-                  if (pumpTimerRef.current) clearInterval(pumpTimerRef.current);
-                  const startedAt = Date.now();
-                  pumpTimerRef.current = setInterval(() => setPumpLiveMs(Date.now() - startedAt), 1000);
-                  setShowResult(false);
-                };
-                const handleStop = () => {
-                  setPumpStopTime(nowHHMM());
-                  setPumpTimerActive(false);
-                  if (pumpTimerRef.current) { clearInterval(pumpTimerRef.current); pumpTimerRef.current = null; }
-                  setShowResult(false);
-                };
-                const adjStart = (d: number) => {
-                  setPumpStartTime(adjustHHMM(pumpStartTime || nowHHMM(), d));
-                  if (pumpTimerActive) { setPumpTimerActive(false); if (pumpTimerRef.current) { clearInterval(pumpTimerRef.current); pumpTimerRef.current = null; } }
-                  setShowResult(false);
-                };
-                const adjStop = (d: number) => { setPumpStopTime(adjustHHMM(pumpStopTime || nowHHMM(), d)); setShowResult(false); };
-                const resetTimer = () => {
-                  setPumpStartTime(null); setPumpStopTime(null); setPumpTimerActive(false); setPumpLiveMs(0);
-                  if (pumpTimerRef.current) { clearInterval(pumpTimerRef.current); pumpTimerRef.current = null; }
-                  setShowResult(false);
-                };
-
-                const liveSecs = Math.floor(pumpLiveMs / 1000);
-                const liveStr = `${Math.floor(liveSecs / 3600).toString().padStart(2, "0")}:${Math.floor((liveSecs % 3600) / 60).toString().padStart(2, "0")}:${(liveSecs % 60).toString().padStart(2, "0")}`;
-                const adjBtnCls = "flex-1 py-2 border border-white/10 text-white/50 hover:border-amber-500/40 hover:text-amber-300 transition-colors rounded-sm font-black text-xs disabled:opacity-20 disabled:cursor-not-allowed";
-                const adjHrCls = "flex-1 py-2 border border-white/10 text-white/35 hover:border-blue-500/40 hover:text-blue-300 transition-colors rounded-sm font-black text-xs";
+                // shared helpers
+                const adjBtnCls = "flex-1 py-2 border border-white/10 text-white/50 hover:border-amber-500/40 hover:text-amber-300 transition-colors rounded-sm font-black text-xs";
+                const adjHrCls  = "flex-1 py-2 border border-white/10 text-white/35 hover:border-blue-500/40 hover:text-blue-300 transition-colors rounded-sm font-black text-xs";
                 const AdjCols = ({ onAdj }: { onAdj: (d: number) => void }) => (
                   <div className="space-y-1 mt-2">
                     <div className="flex gap-1">
@@ -2485,112 +2455,203 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                   </div>
                 );
 
-                // ── STATE: RUNNING ──
-                if (pumpTimerActive) return (
-                  <div className="border border-green-500/40 bg-green-500/5 rounded-sm overflow-hidden">
-                    <div className="flex items-center gap-1.5 px-3 py-2 border-b border-green-500/20">
-                      <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse shrink-0" />
-                      <span className="text-xs font-black text-green-400 uppercase tracking-wider">Čerpanie beží</span>
+                // billing summary box (shared across modes)
+                const selectDurMins = (parseInt(pumpHour) || 1) * 60 + (parseInt(pumpMin) || 0);
+                const timerDurMins = (() => {
+                  if (!pumpStartTime || !pumpStopTime) return 0;
+                  const [sh, sm] = pumpStartTime.split(":").map(Number);
+                  const [eh, em] = pumpStopTime.split(":").map(Number);
+                  let d = (eh * 60 + em) - (sh * 60 + sm);
+                  if (d < 0) d += 24 * 60;
+                  return d;
+                })();
+                const durMins = pumpMode === "select" ? selectDurMins : timerDurMins;
+                const blocks = durMins > 0 ? Math.ceil(durMins / 15) : 0;
+                const billingMins = blocks * 15;
+
+                const BillingSummary = () => blocks > 0 ? (
+                  <div className="bg-amber-500/10 border border-amber-500/25 rounded-sm px-3 py-2.5 flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] text-amber-400/60 uppercase tracking-wide">Fakturuje sa</div>
+                      <div className="font-black text-amber-300 text-lg leading-tight">{blocks} × 15 min</div>
                     </div>
-                    <div className="px-3 pt-3 pb-3 space-y-3">
-                      {/* Štart — editovateľný, prominentný */}
-                      <div className="bg-green-500/10 border border-green-500/20 rounded-sm px-3 py-2">
-                        <div className="text-[9px] text-green-400/50 uppercase tracking-widest mb-1">Štart čerpania</div>
-                        <input
-                          type="time"
-                          value={pumpStartTime || ""}
-                          onChange={(e) => { if (e.target.value) { setPumpStartTime(e.target.value); setShowResult(false); } }}
-                          className="font-mono text-3xl font-black text-green-300 bg-transparent border-b-2 border-green-400/40 hover:border-green-400/70 focus:border-green-400 focus:outline-none cursor-pointer w-full"
-                        />
-                        <AdjCols onAdj={adjStart} />
-                      </div>
-                      {/* Big live clock */}
-                      <div className="text-center">
-                        <div className="font-mono text-5xl font-black text-green-400 tracking-widest leading-none">{liveStr}</div>
-                        <div className="text-[10px] text-green-400/40 mt-1.5 uppercase tracking-widest">
-                          {Math.ceil((liveSecs / 60) / 15) || 1} blok{Math.ceil((liveSecs / 60) / 15) > 1 ? "y" : ""}
-                        </div>
-                      </div>
-                      {/* STOP button — prominent */}
-                      <button type="button" onClick={handleStop}
-                        className="w-full py-4 bg-red-600 hover:bg-red-500 text-white text-base font-black uppercase tracking-widest rounded-sm transition-colors flex items-center justify-center gap-2 shadow-lg">
-                        <span className="text-xl leading-none">■</span> STOP čerpanie
-                      </button>
+                    <div className="text-right">
+                      <div className="text-[10px] text-amber-400/60 uppercase tracking-wide">Skutočný čas</div>
+                      <div className="text-white/50 font-mono text-sm">{Math.floor(durMins / 60)}h{durMins % 60 > 0 ? ` ${durMins % 60}m` : ""} = {Math.floor(billingMins / 60)}h{billingMins % 60 > 0 ? ` ${billingMins % 60}m` : ""}</div>
                     </div>
                   </div>
-                );
+                ) : null;
 
-                // ── STATE: STOPPED ──
-                if (started && stopped) return (
-                  <div className="border border-amber-500/40 bg-amber-500/5 rounded-sm overflow-hidden">
-                    <div className="flex items-center justify-between px-3 py-2 border-b border-amber-500/20">
-                      <div className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-amber-400" />
-                        <span className="text-xs font-black text-amber-400 uppercase tracking-wider">Čerpanie hotové</span>
-                      </div>
-                      <button type="button" onClick={resetTimer} className="text-[10px] text-white/25 hover:text-white/55 transition-colors">× znova</button>
-                    </div>
-                    <div className="px-3 pt-3 pb-3 space-y-3">
-                      {/* Time edit row — priame time inputy */}
-                      <div className="grid grid-cols-2 gap-3">
-                        {/* Začiatok */}
-                        <div>
-                          <div className="text-[9px] text-white/35 uppercase tracking-widest mb-1">Začiatok</div>
-                          <input
-                            type="time"
-                            value={pumpStartTime || ""}
-                            onChange={(e) => { if (e.target.value) { setPumpStartTime(e.target.value); setShowResult(false); } }}
-                            className="font-mono text-2xl font-black text-white/80 bg-transparent border-b-2 border-white/20 hover:border-white/40 focus:border-primary focus:outline-none cursor-pointer w-full"
-                          />
-                          <AdjCols onAdj={adjStart} />
-                        </div>
-                        {/* Koniec */}
-                        <div>
-                          <div className="text-[9px] text-primary/60 uppercase tracking-widest mb-1">Koniec</div>
-                          <input
-                            type="time"
-                            value={pumpStopTime || ""}
-                            onChange={(e) => { if (e.target.value) { setPumpStopTime(e.target.value); setShowResult(false); } }}
-                            className="font-mono text-2xl font-black text-primary bg-transparent border-b-2 border-primary/30 hover:border-primary/60 focus:border-primary focus:outline-none cursor-pointer w-full"
-                          />
-                          <AdjCols onAdj={adjStop} />
-                        </div>
-                      </div>
-                      {/* Billing summary */}
-                      {blocks > 0 && (
-                        <div className="bg-amber-500/10 border border-amber-500/25 rounded-sm px-3 py-2.5 flex items-center justify-between">
-                          <div>
-                            <div className="text-[10px] text-amber-400/60 uppercase tracking-wide">Fakturuje sa</div>
-                            <div className="font-black text-amber-300 text-lg leading-tight">{blocks} × 15 min</div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-[10px] text-amber-400/60 uppercase tracking-wide">Skutočný čas</div>
-                            <div className="text-white/50 font-mono text-sm">{Math.floor(durMins / 60)}h{durMins % 60 > 0 ? ` ${durMins % 60}m` : ""} = {Math.floor(billingMins / 60)}h{billingMins % 60 > 0 ? ` ${billingMins % 60}m` : ""}</div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
+                // timer event handlers
+                const handleStart = () => {
+                  const t = nowHHMM();
+                  setPumpStartTime(t); setPumpStopTime(null);
+                  setPumpTimerActive(true); setPumpLiveMs(0);
+                  if (pumpTimerRef.current) clearInterval(pumpTimerRef.current);
+                  const startedAt = Date.now();
+                  pumpTimerRef.current = setInterval(() => setPumpLiveMs(Date.now() - startedAt), 1000);
+                  setShowResult(false);
+                };
+                const handleStop = () => {
+                  setPumpStopTime(nowHHMM()); setPumpTimerActive(false);
+                  if (pumpTimerRef.current) { clearInterval(pumpTimerRef.current); pumpTimerRef.current = null; }
+                  setShowResult(false);
+                };
+                const adjStart = (d: number) => {
+                  setPumpStartTime(adjustHHMM(pumpStartTime || nowHHMM(), d));
+                  if (pumpTimerActive) { setPumpTimerActive(false); if (pumpTimerRef.current) { clearInterval(pumpTimerRef.current); pumpTimerRef.current = null; } }
+                  setShowResult(false);
+                };
+                const adjStop = (d: number) => { setPumpStopTime(adjustHHMM(pumpStopTime || nowHHMM(), d)); setShowResult(false); };
+                const resetTimer = () => {
+                  setPumpStartTime(null); setPumpStopTime(null); setPumpTimerActive(false); setPumpLiveMs(0);
+                  if (pumpTimerRef.current) { clearInterval(pumpTimerRef.current); pumpTimerRef.current = null; }
+                  setShowResult(false);
+                };
+                const liveSecs = Math.floor(pumpLiveMs / 1000);
+                const liveStr = `${Math.floor(liveSecs / 3600).toString().padStart(2, "0")}:${Math.floor((liveSecs % 3600) / 60).toString().padStart(2, "0")}:${(liveSecs % 60).toString().padStart(2, "0")}`;
 
-                // ── STATE: IDLE ──
+                const modes: { id: "select" | "timer" | "edit"; label: string; hint: string }[] = [
+                  { id: "select", label: "Výber", hint: "h + min" },
+                  { id: "timer",  label: "Stopky", hint: "live" },
+                  { id: "edit",   label: "Čas",    hint: "zač–kon" },
+                ];
+
                 return (
-                  <div className="border border-white/10 bg-white/3 rounded-sm overflow-hidden">
-                    <div className="flex items-center justify-between px-3 py-2 border-b border-white/8">
-                      <div className="flex items-center gap-1.5">
-                        <Timer className="w-3.5 h-3.5 text-white/30" />
-                        <span className="text-xs font-bold text-white/40 uppercase tracking-wider">Čerpanie betónu</span>
+                  <div className="border border-white/10 rounded-sm overflow-hidden">
+                    {/* Mode switcher */}
+                    <div className="grid grid-cols-3 border-b border-white/10">
+                      {modes.map(m => (
+                        <button key={m.id} type="button"
+                          onClick={() => { setPumpMode(m.id); setShowResult(false); }}
+                          className={cn("flex flex-col items-center py-2 px-1 transition-all text-center",
+                            pumpMode === m.id
+                              ? "bg-primary/15 border-b-2 border-primary"
+                              : "border-b-2 border-transparent text-white/40 hover:bg-white/5 hover:text-white/60"
+                          )}>
+                          <span className={cn("text-[10px] font-black uppercase tracking-widest", pumpMode === m.id ? "text-primary" : "")}>{m.label}</span>
+                          <span className={cn("text-[9px] font-medium", pumpMode === m.id ? "text-white/50" : "text-white/25")}>{m.hint}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* ── MODE: VÝBER (select) ── */}
+                    {pumpMode === "select" && (
+                      <div className="px-3 py-3 space-y-3">
+                        <div>
+                          <div className="text-[9px] text-white/35 uppercase tracking-widest mb-1.5">Hodiny</div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {PUMP_HOURS.map(h => (
+                              <button key={h} type="button"
+                                onClick={() => { setPumpHour(h); setShowResult(false); }}
+                                className={cn("px-3 py-1.5 rounded-sm text-xs font-black border transition-colors",
+                                  pumpHour === h
+                                    ? "bg-primary/20 border-primary/60 text-primary"
+                                    : "border-white/10 text-white/40 hover:border-white/25 hover:text-white/70"
+                                )}>
+                                {h}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-[9px] text-white/35 uppercase tracking-widest mb-1.5">Minúty</div>
+                          <div className="flex gap-1.5">
+                            {PUMP_MINS.map(m => (
+                              <button key={m} type="button"
+                                onClick={() => { setPumpMin(m); setShowResult(false); }}
+                                className={cn("flex-1 py-1.5 rounded-sm text-xs font-black border transition-colors",
+                                  pumpMin === m
+                                    ? "bg-primary/20 border-primary/60 text-primary"
+                                    : "border-white/10 text-white/40 hover:border-white/25 hover:text-white/70"
+                                )}>
+                                {m}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <BillingSummary />
                       </div>
-                      <span className="text-[10px] text-white/20">každých 15 min = 1 blok</span>
-                    </div>
-                    <div className="px-3 pt-4 pb-3 space-y-3">
-                      <div className="text-center font-mono text-4xl font-black text-white/10 tracking-widest">00:00:00</div>
-                      <button type="button" onClick={handleStart}
-                        className="w-full py-4 bg-green-700/80 hover:bg-green-600 text-white text-base font-black uppercase tracking-widest rounded-sm transition-colors flex items-center justify-center gap-2 shadow-lg">
-                        <span className="text-xl leading-none">▶</span> ŠTART čerpanie
-                      </button>
-                      <p className="text-[10px] text-white/20 text-center">Stlač ŠTART pri začatí čerpania na stavbe</p>
-                    </div>
+                    )}
+
+                    {/* ── MODE: STOPKY (live timer) ── */}
+                    {pumpMode === "timer" && (
+                      <div className="px-3 py-3 space-y-3">
+                        {pumpTimerActive ? (
+                          <>
+                            <div className="bg-green-500/10 border border-green-500/20 rounded-sm px-3 py-2">
+                              <div className="text-[9px] text-green-400/50 uppercase tracking-widest mb-1">Štart čerpania</div>
+                              <input type="time" value={pumpStartTime || ""}
+                                onChange={(e) => { if (e.target.value) { setPumpStartTime(e.target.value); setShowResult(false); } }}
+                                className="font-mono text-3xl font-black text-green-300 bg-transparent border-b-2 border-green-400/40 hover:border-green-400/70 focus:border-green-400 focus:outline-none cursor-pointer w-full" />
+                              <AdjCols onAdj={adjStart} />
+                            </div>
+                            <div className="text-center">
+                              <div className="flex items-center justify-center gap-1.5 mb-1">
+                                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                                <span className="text-[10px] font-black text-green-400 uppercase tracking-wider">Čerpanie beží</span>
+                              </div>
+                              <div className="font-mono text-5xl font-black text-green-400 tracking-widest leading-none">{liveStr}</div>
+                              <div className="text-[10px] text-green-400/40 mt-1.5 uppercase tracking-widest">
+                                {Math.ceil((liveSecs / 60) / 15) || 1} blok{Math.ceil((liveSecs / 60) / 15) > 1 ? "y" : ""}
+                              </div>
+                            </div>
+                            <button type="button" onClick={handleStop}
+                              className="w-full py-4 bg-red-600 hover:bg-red-500 text-white text-base font-black uppercase tracking-widest rounded-sm transition-colors flex items-center justify-center gap-2">
+                              <span className="text-xl leading-none">■</span> STOP čerpanie
+                            </button>
+                          </>
+                        ) : pumpStartTime && pumpStopTime ? (
+                          <>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1.5">
+                                <Check className="w-3.5 h-3.5 text-amber-400" />
+                                <span className="text-xs font-black text-amber-400 uppercase tracking-wider">Čerpanie hotové</span>
+                              </div>
+                              <button type="button" onClick={resetTimer} className="text-[10px] text-white/25 hover:text-white/55 transition-colors">× znova</button>
+                            </div>
+                            <BillingSummary />
+                          </>
+                        ) : (
+                          <>
+                            <div className="text-center font-mono text-4xl font-black text-white/10 tracking-widest py-2">00:00:00</div>
+                            <button type="button" onClick={handleStart}
+                              className="w-full py-4 bg-green-700/80 hover:bg-green-600 text-white text-base font-black uppercase tracking-widest rounded-sm transition-colors flex items-center justify-center gap-2">
+                              <span className="text-xl leading-none">▶</span> ŠTART čerpanie
+                            </button>
+                            <p className="text-[10px] text-white/20 text-center">Stlač ŠTART pri začatí čerpania na stavbe</p>
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ── MODE: ČAS (manual start–end) ── */}
+                    {pumpMode === "edit" && (
+                      <div className="px-3 py-3 space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <div className="text-[9px] text-white/35 uppercase tracking-widest mb-1">Začiatok</div>
+                            <input type="time" value={pumpStartTime || ""}
+                              onChange={(e) => { if (e.target.value) { setPumpStartTime(e.target.value); setShowResult(false); } }}
+                              onClick={() => { if (!pumpStartTime) setPumpStartTime(nowHHMM()); }}
+                              className="font-mono text-2xl font-black text-white/80 bg-transparent border-b-2 border-white/20 hover:border-white/40 focus:border-primary focus:outline-none cursor-pointer w-full" />
+                            <AdjCols onAdj={adjStart} />
+                          </div>
+                          <div>
+                            <div className="text-[9px] text-primary/60 uppercase tracking-widest mb-1">Koniec</div>
+                            <input type="time" value={pumpStopTime || ""}
+                              onChange={(e) => { if (e.target.value) { setPumpStopTime(e.target.value); setShowResult(false); } }}
+                              onClick={() => { if (!pumpStopTime) setPumpStopTime(nowHHMM()); }}
+                              className="font-mono text-2xl font-black text-primary bg-transparent border-b-2 border-primary/30 hover:border-primary/60 focus:border-primary focus:outline-none cursor-pointer w-full" />
+                            <AdjCols onAdj={adjStop} />
+                          </div>
+                        </div>
+                        <BillingSummary />
+                        {(!pumpStartTime || !pumpStopTime) && (
+                          <p className="text-[10px] text-white/25 text-center">Zadaj čas začiatku a konca čerpania</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })()}
