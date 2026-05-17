@@ -55,6 +55,7 @@ export function Navbar() {
                 +421 909 205 205
               </a>
               <span className="text-white/20">|</span>
+              {/* ── Kalkulačka + Klient sekcia ── */}
               <a
                 href="/#calculator"
                 className="relative flex items-center gap-1.5 text-white/55 hover:text-primary transition-colors text-xs font-bold tracking-wide group shrink-0"
@@ -69,44 +70,46 @@ export function Navbar() {
               {loggedClient ? (
                 <div className="flex items-center gap-2 shrink-0">
                   {loggedClient.id !== "admin" ? (
-                    <a href="/klient-profil" className="hidden sm:flex items-center gap-1 text-white/60 hover:text-white/85 transition-colors text-xs group" title="Môj profil">
-                      <UserCog className="w-3 h-3 shrink-0 opacity-40 group-hover:opacity-80 transition-opacity" />
-                      {loggedClient.name}
+                    <a href="/klient-profil" className="flex items-center gap-1.5 text-white/70 hover:text-white transition-colors text-xs group" title="Môj profil">
+                      <UserCog className="w-3.5 h-3.5 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity" />
+                      <span className="font-bold hidden sm:inline">{loggedClient.name}</span>
                     </a>
                   ) : (
                     <span className="text-white/60 text-xs hidden sm:block">{loggedClient.name}</span>
                   )}
                   {(loggedClient.discountBeton > 0 || loggedClient.discountDoprava > 0 || loggedClient.discountSluzby > 0 || loggedClient.discountCelkovo > 0) && (
-                    <span className="px-1.5 py-0.5 bg-primary text-secondary text-[10px] font-black rounded-sm">
+                    <span className="px-1.5 py-0.5 bg-primary text-secondary text-[10px] font-black rounded-sm hidden sm:inline">
                       Zľava aktívna
                     </span>
                   )}
                   <button
                     onClick={() => { clientAuth.logout(); setLoggedClient(null); }}
-                    className="flex items-center gap-1 text-white/40 hover:text-white/70 transition-colors text-xs cursor-pointer ml-1"
+                    className="flex items-center gap-1.5 px-2.5 py-1 border border-white/15 hover:border-white/35 text-white/50 hover:text-white/80 transition-colors text-xs cursor-pointer rounded-sm"
                   >
-                    <LogOut className="w-3 h-3 shrink-0" />
+                    <LogOut className="w-3.5 h-3.5 shrink-0" />
                     <span className="hidden sm:block">Odhlásiť</span>
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 shrink-0">
-                  <a
-                    href="/prihlasenie"
-                    className="flex items-center gap-1.5 text-white/60 hover:text-primary transition-colors text-xs font-bold shrink-0"
-                  >
-                    <LogIn className="w-3.5 h-3.5 shrink-0" />
-                    <span className="hidden sm:inline">Prihlásenie</span>
-                  </a>
-                  <a
-                    href="/admin/login"
-                    className="flex items-center text-white/20 hover:text-white/40 transition-colors shrink-0 p-1 -m-1"
-                    title="Administrácia"
-                  >
-                    <UserCog className="w-3.5 h-3.5 shrink-0" />
-                  </a>
-                </div>
+                <a
+                  href="/prihlasenie"
+                  className="flex items-center gap-1.5 px-2.5 py-1 border border-primary/50 hover:border-primary bg-primary/10 hover:bg-primary/20 text-primary transition-colors text-xs font-bold rounded-sm shrink-0"
+                >
+                  <LogIn className="w-3.5 h-3.5 shrink-0" />
+                  <span>Klient</span>
+                </a>
               )}
+              {/* ── Oddeľovač ── */}
+              <span className="text-white/15">|</span>
+              {/* ── Admin ── */}
+              <a
+                href="/admin/login"
+                className="flex items-center gap-1 text-white/25 hover:text-white/50 transition-colors shrink-0 py-1 px-1"
+                title="Administrácia"
+              >
+                <UserCog className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden sm:inline text-[10px] font-medium">Admin</span>
+              </a>
             </div>
           </div>
         </div>
