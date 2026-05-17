@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, SlidersHorizontal, ShoppingCart, MessageSquare, BarChart2, TrendingUp, Monitor, Globe, MousePointerClick } from "lucide-react";
+import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, SlidersHorizontal, ShoppingCart, MessageSquare, BarChart2, TrendingUp, Monitor, Globe, MousePointerClick, MoreHorizontal } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { isLoggedIn, logout } from "@/lib/adminAuth";
 import { adminData, adminApi, syncFromServer, SYSTEM_OWNER_ID, ConcreteCategory, ConcreteType, DeliveryZone, Service, Client, TransportPricingZone, TransportSettings, Order } from "@/lib/adminData";
 
-type Tab = "betony" | "sluzby" | "doprava" | "klienti" | "objednavky" | "analytics";
+type Tab = "betony" | "sluzby" | "doprava" | "klienti" | "objednavky" | "analytics" | "statistiky";
 
 function sharedLinkIcon(url: string): { Icon: React.ElementType; cls: string } {
   const u = url.toLowerCase();
@@ -2158,8 +2158,8 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                   {c.sharedLink && (
                     <a href={c.sharedLink} target="_blank" rel="noopener noreferrer" title="Zdielaný odkaz"
                       onClick={e => e.stopPropagation()}
-                      className="p-1.5 transition-colors hover:opacity-70">
-                      {(() => { const { Icon, cls } = sharedLinkIcon(c.sharedLink); return <Icon className={`w-5 h-5 ${cls}`} />; })()}
+                      className="p-1.5 text-gray-300 hover:text-primary transition-colors">
+                      {(() => { const { Icon } = sharedLinkIcon(c.sharedLink); return <Icon className="w-5 h-5" />; })()}
                     </a>
                   )}
                   <button
@@ -3054,12 +3054,176 @@ function AnalyticsTab() {
   );
 }
 
+// ── Štatistiky Tab ───────────────────────────────────────────────────────────
+function StatistikyTab() {
+  const orders = adminData.getOrders();
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0, 10);
+  const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
+  const monthAgo = new Date(now); monthAgo.setDate(monthAgo.getDate() - 30);
+
+  const total = orders.length;
+  const todayCount = orders.filter(o => o.createdAt.slice(0, 10) === todayStr).length;
+  const weekCount = orders.filter(o => new Date(o.createdAt) >= weekAgo).length;
+  const monthCount = orders.filter(o => new Date(o.createdAt) >= monthAgo).length;
+
+  const byStatus = { nova: 0, potvrdena: 0, odoslana: 0, vybavena: 0, vyuctovana: 0, vyplatena: 0, zrusena: 0 } as Record<string, number>;
+  const byType = { pumpa: 0, mix: 0, vlastnadoprava: 0 } as Record<string, number>;
+  const byPayment = { faktura: 0, hotovost: 0 } as Record<string, number>;
+  let sms = 0;
+  orders.forEach(o => {
+    if (o.status in byStatus) byStatus[o.status]++;
+    byType[o.tab] = (byType[o.tab] ?? 0) + 1;
+    byPayment[o.priceMode] = (byPayment[o.priceMode] ?? 0) + 1;
+    if (o.viaSms) sms++;
+  });
+
+  const active = orders.filter(o => o.status !== "zrusena");
+  const totalBezDph = active.reduce((s, o) => s + (o.totalBezDph || 0), 0);
+  const totalSDph = active.reduce((s, o) => s + (o.totalSDph || 0), 0);
+  const avgValue = active.length > 0 ? totalBezDph / active.length : 0;
+
+  const weeks: { label: string; count: number }[] = [];
+  for (let i = 11; i >= 0; i--) {
+    const start = new Date(now); start.setDate(start.getDate() - (i + 1) * 7);
+    const end = new Date(now); end.setDate(end.getDate() - i * 7);
+    weeks.push({
+      label: i === 0 ? "teraz" : `−${i}t`,
+      count: orders.filter(o => { const d = new Date(o.createdAt); return d >= start && d < end; }).length,
+    });
+  }
+  const maxWeek = Math.max(...weeks.map(w => w.count), 1);
+
+  const fmtEur = (n: number) => `${n.toLocaleString("sk", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+  const pct = (n: number) => total > 0 ? Math.round((n / total) * 100) : 0;
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-lg font-black text-secondary uppercase tracking-widest">Štatistiky objednávok</h2>
+
+      {/* Overview */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: "Celkom", value: total, sub: "všetky" },
+          { label: "Dnes", value: todayCount, sub: todayStr },
+          { label: "Týždeň", value: weekCount, sub: "posl. 7 dní" },
+          { label: "Mesiac", value: monthCount, sub: "posl. 30 dní" },
+        ].map(s => (
+          <div key={s.label} className="bg-white rounded-sm border border-gray-200 p-4">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{s.label}</p>
+            <p className="text-3xl font-black text-secondary mt-1">{s.value}</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">{s.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Revenue */}
+      {active.length > 0 && (
+        <div className="bg-white rounded-sm border border-gray-200 p-4">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Obrat (bez zrušených)</p>
+          <div className="grid grid-cols-3 gap-4">
+            <div><p className="text-[10px] text-gray-400 uppercase">Bez DPH</p><p className="text-xl font-black text-secondary">{fmtEur(totalBezDph)}</p></div>
+            <div><p className="text-[10px] text-gray-400 uppercase">S DPH</p><p className="text-xl font-black text-secondary">{fmtEur(totalSDph)}</p></div>
+            <div><p className="text-[10px] text-gray-400 uppercase">Priemerná</p><p className="text-xl font-black text-secondary">{fmtEur(avgValue)}</p></div>
+          </div>
+        </div>
+      )}
+
+      <div className="grid sm:grid-cols-2 gap-3">
+        {/* Status */}
+        <div className="bg-white rounded-sm border border-gray-200 p-4">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Podľa statusu</p>
+          <div className="space-y-2">
+            {([
+              { key: "nova", label: "Nová", color: "bg-blue-500" },
+              { key: "potvrdena", label: "Potvrdená", color: "bg-yellow-400" },
+              { key: "odoslana", label: "Odoslaná", color: "bg-green-500" },
+              { key: "vybavena", label: "Vybavená", color: "bg-teal-500" },
+              { key: "vyuctovana", label: "Vyúčtovaná", color: "bg-purple-400" },
+              { key: "vyplatena", label: "Vyplatená", color: "bg-green-700" },
+              { key: "zrusena", label: "Zrušená", color: "bg-red-400" },
+            ] as { key: string; label: string; color: string }[]).filter(s => byStatus[s.key] > 0).map(s => (
+              <div key={s.key} className="flex items-center gap-2">
+                <span className="w-20 text-xs text-gray-600 shrink-0">{s.label}</span>
+                <div className="flex-1 bg-gray-100 rounded-sm h-2 overflow-hidden">
+                  <div className={`h-full rounded-sm ${s.color}`} style={{ width: `${pct(byStatus[s.key])}%` }} />
+                </div>
+                <span className="w-6 text-xs font-bold text-gray-500 text-right shrink-0">{byStatus[s.key]}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {/* Typ */}
+          <div className="bg-white rounded-sm border border-gray-200 p-4">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Typ</p>
+            <div className="space-y-2">
+              {([
+                { key: "pumpa", label: "Pumpa", color: "bg-secondary" },
+                { key: "mix", label: "Mix", color: "bg-primary" },
+                { key: "vlastnadoprava", label: "Vl. doprava", color: "bg-gray-400" },
+              ] as { key: string; label: string; color: string }[]).filter(t => byType[t.key] > 0).map(t => (
+                <div key={t.key} className="flex items-center gap-2">
+                  <span className="w-20 text-xs text-gray-600 shrink-0">{t.label}</span>
+                  <div className="flex-1 bg-gray-100 rounded-sm h-2 overflow-hidden">
+                    <div className={`h-full rounded-sm ${t.color}`} style={{ width: `${pct(byType[t.key])}%` }} />
+                  </div>
+                  <span className="w-6 text-xs font-bold text-gray-500 text-right shrink-0">{byType[t.key]}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-white rounded-sm border border-gray-200 p-4">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Platba</p>
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs"><span className="text-gray-600">Faktúra</span><span className="font-bold text-secondary">{byPayment.faktura ?? 0}</span></div>
+                <div className="flex justify-between text-xs"><span className="text-gray-600">Hotovosť</span><span className="font-bold text-secondary">{byPayment.hotovost ?? 0}</span></div>
+              </div>
+            </div>
+            <div className="bg-white rounded-sm border border-gray-200 p-4">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Zdroj</p>
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs"><span className="text-gray-600">Košík</span><span className="font-bold text-secondary">{total - sms}</span></div>
+                <div className="flex justify-between text-xs"><span className="text-gray-600">SMS</span><span className="font-bold text-secondary">{sms}</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Weekly trend */}
+      {total > 0 && (
+        <div className="bg-white rounded-sm border border-gray-200 p-4">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Trend (posledných 12 týždňov)</p>
+          <div className="flex items-end gap-0.5 h-16">
+            {weeks.map((w, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                <div className="w-full flex items-end justify-center" style={{ height: "44px" }}>
+                  <div
+                    className={`w-full rounded-sm ${i === 11 ? "bg-primary" : "bg-secondary/35"}`}
+                    style={{ height: `${Math.max((w.count / maxWeek) * 44, w.count > 0 ? 3 : 0)}px` }}
+                    title={`${w.label}: ${w.count}`}
+                  />
+                </div>
+                <span className="text-[7px] text-gray-400 leading-none truncate w-full text-center">{w.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
   const [, navigate] = useLocation();
   const [tab, setTab] = useState<Tab>(() => {
     const hash = window.location.hash.slice(1) as Tab;
-    const valid: Tab[] = ["betony", "sluzby", "doprava", "klienti", "objednavky", "analytics"];
+    const valid: Tab[] = ["betony", "sluzby", "doprava", "klienti", "objednavky", "analytics", "statistiky"];
     return valid.includes(hash) ? hash : "klienti";
   });
   const [syncKey, setSyncKey] = useState(0);
@@ -3113,7 +3277,7 @@ export default function AdminDashboard() {
   }, [tab]);
 
   const handleLogout = () => { logout(); navigate("/admin/login"); };
-
+  const [moreOpen, setMoreOpen] = useState(false);
 
   const tabs: { id: Tab; label: string; short: string; icon: React.ReactNode }[] = [
     { id: "klienti",    label: "KLIENTI",    short: "KLIENTI",  icon: <Users className="w-5 h-5" /> },
@@ -3137,7 +3301,13 @@ export default function AdminDashboard() {
             <VersionBadge className="ml-1 text-white/25 hidden sm:block" />
           </a>
           <div className="flex items-center gap-3">
-            <button onClick={() => { setTab("analytics"); window.location.hash = "analytics"; }}
+            <button onClick={() => { setTab("statistiky"); window.location.hash = "statistiky"; setMoreOpen(false); }}
+              className={`flex items-center gap-1.5 text-xs font-bold transition-colors ${tab === "statistiky" ? "text-primary" : "text-white/35 hover:text-white/65"}`}
+              title="Štatistiky">
+              <TrendingUp className="w-4 h-4" />
+              <span className="hidden sm:inline text-[10px] uppercase tracking-widest">Štatistiky</span>
+            </button>
+            <button onClick={() => { setTab("analytics"); window.location.hash = "analytics"; setMoreOpen(false); }}
               className={`flex items-center gap-1.5 text-xs font-bold transition-colors ${tab === "analytics" ? "text-primary" : "text-white/35 hover:text-white/65"}`}
               title="Analýzy">
               <BarChart2 className="w-4 h-4" />
@@ -3179,7 +3349,7 @@ export default function AdminDashboard() {
       <div className="sm:hidden fixed top-12 left-0 right-0 z-40 bg-white border-b border-gray-200 shadow-sm">
         <div className="flex">
           {tabs.map(t => (
-            <button key={t.id} onClick={() => { setTab(t.id); window.location.hash = t.id; }}
+            <button key={t.id} onClick={() => { setTab(t.id); window.location.hash = t.id; setMoreOpen(false); }}
               className={`flex-1 flex flex-col items-center justify-center py-1.5 gap-0.5 border-b-2 transition-all ${
                 tab === t.id ? "text-primary border-primary" : "text-gray-400 border-transparent"
               }`}>
@@ -3194,6 +3364,29 @@ export default function AdminDashboard() {
               <span className="text-[8px] font-bold uppercase leading-none">{t.short}</span>
             </button>
           ))}
+          {/* More button */}
+          <div className="relative flex-1">
+            <button
+              onClick={() => setMoreOpen(o => !o)}
+              className={`w-full flex flex-col items-center justify-center py-1.5 gap-0.5 border-b-2 transition-all ${
+                (tab === "analytics" || tab === "statistiky") ? "text-primary border-primary" : moreOpen ? "text-secondary border-transparent" : "text-gray-400 border-transparent"
+              }`}>
+              <MoreHorizontal className="w-5 h-5" />
+              <span className="text-[8px] font-bold uppercase leading-none">VIAC</span>
+            </button>
+            {moreOpen && (
+              <div className="absolute bottom-full right-0 mb-1 w-40 bg-white border border-gray-200 rounded-sm shadow-lg overflow-hidden z-50">
+                <button onClick={() => { setTab("statistiky"); window.location.hash = "statistiky"; setMoreOpen(false); }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-bold transition-colors ${tab === "statistiky" ? "text-primary bg-primary/5" : "text-gray-600 hover:bg-gray-50"}`}>
+                  <TrendingUp className="w-4 h-4 shrink-0" /> Štatistiky
+                </button>
+                <button onClick={() => { setTab("analytics"); window.location.hash = "analytics"; setMoreOpen(false); }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-bold transition-colors border-t border-gray-100 ${tab === "analytics" ? "text-primary bg-primary/5" : "text-gray-600 hover:bg-gray-50"}`}>
+                  <BarChart2 className="w-4 h-4 shrink-0" /> Analýzy GA4
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -3206,6 +3399,7 @@ export default function AdminDashboard() {
           {tab === "klienti" && <KlientiTab key={syncKey} expandClientId={goToClientId} onExpanded={() => setGoToClientId(null)} />}
           {tab === "objednavky" && <ObjednavkyTab key={syncKey} onGoToClient={(loginId) => { setTab("klienti"); setGoToClientId(loginId); }} />}
           {tab === "analytics" && <AnalyticsTab />}
+          {tab === "statistiky" && <StatistikyTab />}
         </div>
       </div>
 
