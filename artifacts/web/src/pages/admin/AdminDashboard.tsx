@@ -3121,7 +3121,6 @@ export default function AdminDashboard() {
     { id: "doprava",    label: "DOPRAVA",    short: "DOPRAVA",  icon: <Truck className="w-5 h-5" /> },
     { id: "sluzby",     label: "SLUŽBY",     short: "SLUŽBY",   icon: <Wrench className="w-5 h-5" /> },
     { id: "betony",     label: "BETÓNY",     short: "BETÓNY",   icon: <Layers className="w-5 h-5" /> },
-    { id: "analytics",  label: "ANALÝZY",    short: "ANAL.",    icon: <BarChart2 className="w-5 h-5" /> },
   ];
 
   return (
@@ -3137,11 +3136,19 @@ export default function AdminDashboard() {
             <span className="ml-3 text-primary text-xs font-bold uppercase tracking-widest">Admin</span>
             <VersionBadge className="ml-1 text-white/25 hidden sm:block" />
           </a>
-          <button onClick={handleLogout}
-            className="flex items-center gap-2 text-white/60 hover:text-white text-sm font-semibold transition-colors">
-            <LogOut className="w-4 h-4" />
-            <span className="hidden sm:inline">Odhlásiť</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <button onClick={() => { setTab("analytics"); window.location.hash = "analytics"; }}
+              className={`flex items-center gap-1.5 text-xs font-bold transition-colors ${tab === "analytics" ? "text-primary" : "text-white/35 hover:text-white/65"}`}
+              title="Analýzy">
+              <BarChart2 className="w-4 h-4" />
+              <span className="hidden sm:inline text-[10px] uppercase tracking-widest">Analýzy</span>
+            </button>
+            <button onClick={handleLogout}
+              className="flex items-center gap-2 text-white/60 hover:text-white text-sm font-semibold transition-colors">
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Odhlásiť</span>
+            </button>
+          </div>
         </div>
         {/* Desktop tab row — dark navy, inside header */}
         <div className="hidden sm:block border-t border-white/10">
