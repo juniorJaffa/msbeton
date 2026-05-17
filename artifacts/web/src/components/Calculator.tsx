@@ -461,6 +461,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
       const map = new google.maps.Map(mapEl, {
         center: ORIGIN, zoom: 11,
+        mapTypeId: "hybrid",
         disableDefaultUI: true, zoomControl: true,
         gestureHandling: "cooperative",
         restriction: { latLngBounds: { north: 49.6, south: 47.7, east: 22.6, west: 16.8 }, strictBounds: false },
