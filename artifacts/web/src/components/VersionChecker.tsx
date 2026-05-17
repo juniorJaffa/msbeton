@@ -4,26 +4,36 @@ import { RefreshCw } from "lucide-react";
 const VERSION_KEY = "msbeton_app_version";
 const CHECK_INTERVAL = 90 * 1000; // 90 s
 
+// Clean up _v param left by hard reload (no page reload needed)
+function cleanReloadParam() {
+  const url = new URL(window.location.href);
+  if (url.searchParams.has("_v")) {
+    url.searchParams.delete("_v");
+    window.history.replaceState(null, "", url.pathname + (url.search === "?" ? "" : url.search) + url.hash);
+  }
+}
+
 export function VersionChecker() {
   const [needsRefresh, setNeedsRefresh] = useState(false);
 
   useEffect(() => {
+    cleanReloadParam();
+
     async function check() {
       try {
         const res = await fetch("/api/version", { cache: "no-store" });
         if (!res.ok) return;
-        const { hash } = await res.json();
+        const data = await res.json() as { hash?: string };
+        const hash = data.hash;
         if (!hash || hash === "unknown") return;
         const stored = localStorage.getItem(VERSION_KEY);
         if (!stored) {
           localStorage.setItem(VERSION_KEY, hash);
           return;
         }
-        if (stored !== hash) {
-          setNeedsRefresh(true);
-        }
+        if (stored !== hash) setNeedsRefresh(true);
       } catch {
-        // network error – silently ignore
+        // network error — ignore
       }
     }
 
@@ -44,11 +54,11 @@ export function VersionChecker() {
       <button
         onClick={() => {
           localStorage.removeItem(VERSION_KEY);
-          // Hard reload — obíde Safari/Chrome disk cache (reload() nestačí)
-          const base = window.location.pathname + window.location.hash;
-          window.location.replace(base + (base.includes("?") ? "&" : "?") + "_v=" + Date.now());
+          // Nová unikátna URL obíde Safari/Chrome disk cache — reload() nestačí
+          const clean = window.location.pathname + window.location.hash;
+          window.location.replace(clean + "?_v=" + Date.now());
         }}
-        className="shrink-0 bg-primary text-navy text-xs font-black px-3 py-1.5 rounded-lg hover:bg-primary/80 transition-colors"
+        className="shrink-0 bg-primary text-secondary text-xs font-black px-3 py-1.5 rounded-lg hover:bg-primary/80 transition-colors cursor-pointer"
       >
         Obnoviť
       </button>

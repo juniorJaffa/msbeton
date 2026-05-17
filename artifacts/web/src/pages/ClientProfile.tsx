@@ -4,7 +4,7 @@ import { Navbar } from "@/components/Navbar";
 import { SEOHead } from "@/components/SEOHead";
 import { clientAuth } from "@/lib/clientAuth";
 import { clientApi } from "@/lib/api";
-import { Eye, EyeOff, Check, AlertCircle, Mail } from "lucide-react";
+import { Eye, EyeOff, Check, AlertCircle, Mail, User, Lock, KeyRound } from "lucide-react";
 
 function generateCaptcha() {
   const a = Math.floor(Math.random() * 9) + 1;
@@ -13,20 +13,20 @@ function generateCaptcha() {
 }
 
 const fieldCls = "w-full bg-white/8 border-b-2 border-b-white/20 focus:border-b-primary text-white px-3 py-2.5 focus:outline-none placeholder:text-white/20 text-sm font-medium rounded-sm transition-colors";
-const labelCls = "block text-[10px] font-bold text-white/50 mb-1.5 tracking-widest uppercase";
+const labelCls = "block text-[10px] font-bold text-white/40 mb-1 tracking-widest uppercase";
 
 function MathCheck({ captcha, input, setInput, onRefresh }: { captcha: { a: number; b: number }; input: string; setInput: (v: string) => void; onRefresh: () => void }) {
   return (
-    <div className="bg-white/5 border border-white/10 p-4 space-y-3">
-      <p className="text-white/60 text-xs font-bold uppercase tracking-widest">Overenie – nie ste robot</p>
-      <div className="flex items-center gap-3">
-        <div className="flex-1 bg-secondary/80 border border-white/10 px-4 py-2.5 text-white font-bold text-sm text-center">
+    <div className="bg-white/5 border border-white/10 p-3">
+      <p className="text-white/40 text-[9px] font-black uppercase tracking-widest mb-2">Overenie – nie ste robot</p>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 bg-secondary/80 border border-white/10 px-3 py-2 text-white font-bold text-xs text-center">
           Koľko je <span className="text-primary">{captcha.a}</span> + <span className="text-primary">{captcha.b}</span> ?
         </div>
         <input type="number" value={input} onChange={e => setInput(e.target.value)} inputMode="numeric" autoComplete="off"
           placeholder="?"
-          className="w-20 bg-white/5 text-white border border-white/10 px-3 py-2.5 text-sm text-center focus:outline-none focus:border-primary transition-colors" />
-        <button type="button" onClick={onRefresh} className="text-white/40 hover:text-primary text-base transition-colors">↺</button>
+          className="w-16 bg-white/5 text-white border border-white/10 px-2 py-2 text-sm text-center focus:outline-none focus:border-primary transition-colors" />
+        <button type="button" onClick={onRefresh} className="text-white/30 hover:text-primary text-sm transition-colors">↺</button>
       </div>
     </div>
   );
@@ -35,9 +35,24 @@ function MathCheck({ captcha, input, setInput, onRefresh }: { captcha: { a: numb
 function Msg({ msg }: { msg: { ok: boolean; text: string } | null }) {
   if (!msg) return null;
   return (
-    <div className={`flex items-center gap-1.5 text-xs font-bold mt-3 ${msg.ok ? "text-green-400" : "text-red-400"}`}>
+    <div className={`flex items-center gap-1.5 text-xs font-bold mt-2 ${msg.ok ? "text-green-400" : "text-red-400"}`}>
       {msg.ok ? <Check className="w-3.5 h-3.5 shrink-0" /> : <AlertCircle className="w-3.5 h-3.5 shrink-0" />}
       {msg.text}
+    </div>
+  );
+}
+
+function PasswordInput({ value, onChange, placeholder, show, onToggle, autoComplete }: {
+  value: string; onChange: (v: string) => void; placeholder?: string;
+  show: boolean; onToggle: () => void; autoComplete?: string;
+}) {
+  return (
+    <div className="relative">
+      <input type={show ? "text" : "password"} value={value} onChange={e => onChange(e.target.value)}
+        placeholder={placeholder ?? "••••"} className={fieldCls + " pr-10"} autoComplete={autoComplete} />
+      <button type="button" onClick={onToggle} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
+        {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+      </button>
     </div>
   );
 }
@@ -46,7 +61,6 @@ export default function ClientProfile() {
   const [, navigate] = useLocation();
   const client = clientAuth.getLoggedClient();
 
-  // ── Zmena údajov ──
   const [loginId, setLoginId] = useState(client?.clientId ?? "");
   const [email, setEmail] = useState(client?.email ?? "");
   const [currentPassData, setCurrentPassData] = useState("");
@@ -56,10 +70,10 @@ export default function ClientProfile() {
   const [savingData, setSavingData] = useState(false);
   const [msgData, setMsgData] = useState<{ ok: boolean; text: string } | null>(null);
 
-  // ── Zmena hesla ──
   const [currentPassPwd, setCurrentPassPwd] = useState("");
   const [newPass, setNewPass] = useState("");
   const [confirmPass, setConfirmPass] = useState("");
+  const [showCurrentPwd, setShowCurrentPwd] = useState(false);
   const [showNewPass, setShowNewPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
   const [captchaPwd, setCaptchaPwd] = useState(generateCaptcha);
@@ -67,16 +81,17 @@ export default function ClientProfile() {
   const [savingPwd, setSavingPwd] = useState(false);
   const [msgPwd, setMsgPwd] = useState<{ ok: boolean; text: string } | null>(null);
 
-  // ── Email reset ──
   const [resetSending, setResetSending] = useState(false);
   const [resetMsg, setResetMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
-  if (!client || client.id === "admin") {
-    navigate("/prihlasenie");
-    return null;
-  }
+  if (!client || client.id === "admin") { navigate("/prihlasenie"); return null; }
 
-  const hasDiscount = client.discountBeton > 0 || client.discountDoprava > 0 || client.discountSluzby > 0 || client.discountCelkovo > 0;
+  const discounts = [
+    client.discountBeton   > 0 && { label: `Betón −${client.discountBeton}%` },
+    client.discountDoprava > 0 && { label: `Doprava −${client.discountDoprava}%` },
+    client.discountSluzby  > 0 && { label: `Služby −${client.discountSluzby}%` },
+    client.discountCelkovo > 0 && { label: `Celkovo −${client.discountCelkovo}%` },
+  ].filter(Boolean) as { label: string }[];
 
   async function handleSaveData() {
     if (!currentPassData) { setMsgData({ ok: false, text: "Zadajte aktuálne heslo" }); return; }
@@ -129,6 +144,8 @@ export default function ClientProfile() {
     else setResetMsg({ ok: false, text: res?.error ?? "Chyba pri odosielaní" });
   }
 
+  const btnCls = "px-5 py-2.5 bg-primary text-secondary font-black text-xs uppercase tracking-wider hover:bg-primary/85 transition-colors disabled:opacity-50 rounded-sm cursor-pointer";
+
   return (
     <>
       <SEOHead title="Môj profil – MS-BETON" noIndex />
@@ -136,105 +153,109 @@ export default function ClientProfile() {
       <main className="min-h-screen concrete-navy">
 
         {/* Header */}
-        <div className="bg-secondary border-b border-white/10 px-4 py-5">
-          <div className="max-w-xl mx-auto flex items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-black text-white uppercase tracking-wide">VÁŠ PROFIL</h1>
-              <p className="text-white/40 text-sm mt-0.5">{client.name}{client.company ? ` · ${client.company}` : ""}</p>
+        <div className="bg-secondary border-b border-white/10 px-4 py-4">
+          <div className="max-w-4xl mx-auto flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0">
+                <User className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-lg font-black text-white uppercase tracking-wide leading-tight">
+                  {client.name}
+                  {client.company && <span className="text-white/40 font-medium text-sm ml-2 normal-case tracking-normal">· {client.company}</span>}
+                </h1>
+                <p className="text-white/40 text-xs">ID: <span className="text-white/60 font-mono">{client.clientId}</span></p>
+              </div>
             </div>
-            {hasDiscount && (
-              <div className="flex flex-wrap gap-1 justify-end">
-                {client.discountBeton > 0 && <span className="px-2 py-0.5 bg-primary/20 text-primary text-[10px] font-black rounded">Betón −{client.discountBeton}%</span>}
-                {client.discountDoprava > 0 && <span className="px-2 py-0.5 bg-primary/20 text-primary text-[10px] font-black rounded">Doprava −{client.discountDoprava}%</span>}
-                {client.discountSluzby > 0 && <span className="px-2 py-0.5 bg-primary/20 text-primary text-[10px] font-black rounded">Služby −{client.discountSluzby}%</span>}
-                {client.discountCelkovo > 0 && <span className="px-2 py-0.5 bg-primary/20 text-primary text-[10px] font-black rounded">Celkovo −{client.discountCelkovo}%</span>}
+            {discounts.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {discounts.map(d => (
+                  <span key={d.label} className="px-2.5 py-1 bg-primary/20 text-primary text-[10px] font-black rounded-sm border border-primary/20">
+                    {d.label}
+                  </span>
+                ))}
               </div>
             )}
           </div>
         </div>
 
-        <div className="max-w-xl mx-auto px-4 py-6 space-y-4">
+        {/* 2-col desktop layout */}
+        <div className="max-w-4xl mx-auto px-4 py-5">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-          {/* ── Zmena údajov ── */}
-          <div className="bg-secondary/80 border border-white/10 rounded-sm p-5">
-            <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-4">Zmena údajov</p>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div>
-                <label className={labelCls}>Prihlasovacie ID</label>
-                <input value={loginId} onChange={e => setLoginId(e.target.value)} className={fieldCls} autoComplete="username" />
+            {/* ── Zmena údajov ── */}
+            <div className="bg-secondary/80 border border-white/10 rounded-sm p-4 flex flex-col gap-3">
+              <div className="flex items-center gap-2 mb-1">
+                <User className="w-3.5 h-3.5 text-primary/60" />
+                <p className="text-[10px] font-black text-white/50 uppercase tracking-widest">Zmena prihlasovacích údajov</p>
               </div>
-              <div>
-                <label className={labelCls}>E-mail</label>
-                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="váš@email.sk" className={fieldCls} />
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Prihlasovacie ID</label>
+                  <input value={loginId} onChange={e => setLoginId(e.target.value)} className={fieldCls} autoComplete="username" />
+                </div>
+                <div>
+                  <label className={labelCls}>E-mail</label>
+                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="váš@email.sk" className={fieldCls} />
+                </div>
               </div>
+
               <div>
                 <label className={labelCls}>Aktuálne heslo</label>
-                <div className="relative">
-                  <input type={showCurrentData ? "text" : "password"} value={currentPassData}
-                    onChange={e => setCurrentPassData(e.target.value)}
-                    placeholder="••••" className={fieldCls + " pr-10"} autoComplete="current-password" />
-                  <button type="button" onClick={() => setShowCurrentData(v => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
-                    {showCurrentData ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
+                <PasswordInput value={currentPassData} onChange={setCurrentPassData}
+                  show={showCurrentData} onToggle={() => setShowCurrentData(v => !v)} autoComplete="current-password" />
               </div>
-            </div>
-            <MathCheck captcha={captchaData} input={captchaDataInput} setInput={setCaptchaDataInput}
-              onRefresh={() => { setCaptchaData(generateCaptcha()); setCaptchaDataInput(""); }} />
-            <Msg msg={msgData} />
-            <button onClick={handleSaveData} disabled={savingData}
-              className="mt-4 px-6 py-2.5 bg-primary text-secondary font-black text-xs uppercase tracking-wider hover:bg-primary/85 transition-colors disabled:opacity-50 rounded-sm cursor-pointer">
-              {savingData ? "Ukladám..." : "Zmeniť údaje"}
-            </button>
-          </div>
 
-          {/* ── Zmena hesla ── */}
-          <div className="bg-secondary/80 border border-white/10 rounded-sm p-5">
-            <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-4">Zmena hesla</p>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div>
-                <label className={labelCls}>Aktuálne heslo</label>
-                <input type="password" value={currentPassPwd} onChange={e => setCurrentPassPwd(e.target.value)}
-                  placeholder="••••" className={fieldCls} autoComplete="current-password" />
-              </div>
-              <div>
-                <label className={labelCls}>Nové heslo</label>
-                <div className="relative">
-                  <input type={showNewPass ? "text" : "password"} value={newPass} onChange={e => setNewPass(e.target.value)}
-                    placeholder="min. 6 znakov" className={fieldCls + " pr-10"} autoComplete="new-password" />
-                  <button type="button" onClick={() => setShowNewPass(v => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
-                    {showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-              <div>
-                <label className={labelCls}>Zopakovať</label>
-                <div className="relative">
-                  <input type={showConfirmPass ? "text" : "password"} value={confirmPass} onChange={e => setConfirmPass(e.target.value)}
-                    placeholder="••••" className={fieldCls + " pr-10"} autoComplete="new-password" />
-                  <button type="button" onClick={() => setShowConfirmPass(v => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
-                    {showConfirmPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                {newPass && confirmPass && newPass !== confirmPass && (
-                  <p className="text-red-400 text-[10px] mt-1">Heslá sa nezhodujú</p>
-                )}
-              </div>
-            </div>
-            <MathCheck captcha={captchaPwd} input={captchaPwdInput} setInput={setCaptchaPwdInput}
-              onRefresh={() => { setCaptchaPwd(generateCaptcha()); setCaptchaPwdInput(""); }} />
-            <Msg msg={msgPwd} />
+              <MathCheck captcha={captchaData} input={captchaDataInput} setInput={setCaptchaDataInput}
+                onRefresh={() => { setCaptchaData(generateCaptcha()); setCaptchaDataInput(""); }} />
 
-            <div className="flex flex-wrap items-center gap-3 mt-4">
-              <button onClick={handleChangePassword} disabled={savingPwd}
-                className="px-6 py-2.5 bg-primary text-secondary font-black text-xs uppercase tracking-wider hover:bg-primary/85 transition-colors disabled:opacity-50 rounded-sm cursor-pointer">
-                {savingPwd ? "Mením..." : "Zmeniť heslo"}
+              <Msg msg={msgData} />
+              <button onClick={handleSaveData} disabled={savingData} className={btnCls}>
+                {savingData ? "Ukladám..." : "Zmeniť údaje"}
               </button>
+            </div>
 
-              {/* Email reset — inline, len ak má email */}
-              {client.email && (
-                <div className="flex items-center gap-2">
-                  {resetMsg ? (
+            {/* ── Zmena hesla ── */}
+            <div className="bg-secondary/80 border border-white/10 rounded-sm p-4 flex flex-col gap-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Lock className="w-3.5 h-3.5 text-primary/60" />
+                <p className="text-[10px] font-black text-white/50 uppercase tracking-widest">Zmena hesla</p>
+              </div>
+
+              <div>
+                <label className={labelCls}>Aktuálne heslo</label>
+                <PasswordInput value={currentPassPwd} onChange={setCurrentPassPwd}
+                  show={showCurrentPwd} onToggle={() => setShowCurrentPwd(v => !v)} autoComplete="current-password" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Nové heslo</label>
+                  <PasswordInput value={newPass} onChange={setNewPass} placeholder="min. 6 znakov"
+                    show={showNewPass} onToggle={() => setShowNewPass(v => !v)} autoComplete="new-password" />
+                </div>
+                <div>
+                  <label className={labelCls}>Zopakovať</label>
+                  <PasswordInput value={confirmPass} onChange={setConfirmPass}
+                    show={showConfirmPass} onToggle={() => setShowConfirmPass(v => !v)} autoComplete="new-password" />
+                  {newPass && confirmPass && newPass !== confirmPass && (
+                    <p className="text-red-400 text-[10px] mt-1">Heslá sa nezhodujú</p>
+                  )}
+                </div>
+              </div>
+
+              <MathCheck captcha={captchaPwd} input={captchaPwdInput} setInput={setCaptchaPwdInput}
+                onRefresh={() => { setCaptchaPwd(generateCaptcha()); setCaptchaPwdInput(""); }} />
+
+              <Msg msg={msgPwd} />
+
+              <div className="flex flex-wrap items-center gap-3">
+                <button onClick={handleChangePassword} disabled={savingPwd} className={btnCls}>
+                  {savingPwd ? "Mením..." : "Zmeniť heslo"}
+                </button>
+                {client.email && (
+                  resetMsg ? (
                     <span className={`flex items-center gap-1.5 text-xs font-bold ${resetMsg.ok ? "text-green-400" : "text-red-400"}`}>
                       {resetMsg.ok ? <Check className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
                       {resetMsg.text}
@@ -243,16 +264,21 @@ export default function ClientProfile() {
                     <button onClick={handleEmailReset} disabled={resetSending}
                       className="flex items-center gap-1.5 text-white/35 hover:text-white/65 transition-colors text-xs disabled:opacity-40 cursor-pointer">
                       <Mail className="w-3.5 h-3.5 shrink-0" />
-                      {resetSending ? "Odosiela sa…" : "Zabudnuté heslo? Odoslať na email"}
+                      {resetSending ? "Odosiela sa…" : "Zabudnuté heslo?"}
                     </button>
-                  )}
-                </div>
-              )}
+                  )
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="text-center pt-2">
-            <a href="/#calculator" className="text-white/30 hover:text-white/55 text-xs transition-colors">← Späť na kalkulačku</a>
+          {/* Info row + back */}
+          <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/10">
+            <div className="flex items-center gap-2 text-white/25 text-xs">
+              <KeyRound className="w-3.5 h-3.5" />
+              <span>Zmeny vyžadujú aktuálne heslo</span>
+            </div>
+            <a href="/#calculator" className="text-white/30 hover:text-white/55 text-xs transition-colors">← Kalkulačka</a>
           </div>
         </div>
       </main>
