@@ -2058,37 +2058,39 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     <div className="px-3 pb-3 pt-2.5 space-y-2.5">
                       <p className="text-[10px] text-amber-300/70">Viac vozidiel pri náročnom teréne / počasí. Min. 1 m³/vozidlo.</p>
                       {tab === "pumpa" ? (
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold text-amber-300/90 flex-1 uppercase tracking-wide">Pumpa</span>
-                            <div className="flex items-center gap-1.5">
+                        <div className="grid grid-cols-2 gap-2.5">
+                          {/* PUMPA karta */}
+                          <div className="bg-amber-500/10 border border-amber-400/25 rounded-md px-3 py-2.5">
+                            <div className="text-[9px] font-black text-amber-300/70 uppercase tracking-widest mb-2">🚛 Pumpa</div>
+                            <div className="flex items-center justify-between">
                               <button type="button" onClick={() => setPodmienkyPumpa(p => Math.max(1, p - 1))} disabled={podmienkyPumpa <= 1}
-                                className="w-7 h-7 rounded-sm border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/10 font-bold flex items-center justify-center cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed transition-colors">−</button>
-                              <span className="w-6 text-center font-black text-amber-200">{podmienkyPumpa}</span>
+                                className="w-8 h-8 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">−</button>
+                              <span className="text-2xl font-black text-amber-200 leading-none">{podmienkyPumpa}</span>
                               <button type="button" onClick={() => setPodmienkyPumpa(p => Math.min(maxPumpa, p + 1))} disabled={podmienkyPumpa >= maxPumpa}
-                                className="w-7 h-7 rounded-sm border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/10 font-bold flex items-center justify-center cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed transition-colors">+</button>
+                                className="w-8 h-8 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">+</button>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold text-amber-300/90 flex-1 uppercase tracking-wide">Mix</span>
-                            <div className="flex items-center gap-1.5">
+                          {/* MIX karta */}
+                          <div className="bg-amber-500/10 border border-amber-400/25 rounded-md px-3 py-2.5">
+                            <div className="text-[9px] font-black text-amber-300/70 uppercase tracking-widest mb-2">🚚 Mix</div>
+                            <div className="flex items-center justify-between">
                               <button type="button" onClick={() => setPodmienkyMixC(m => Math.max(0, m - 1))} disabled={podmienkyMixC <= 0}
-                                className="w-7 h-7 rounded-sm border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/10 font-bold flex items-center justify-center cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed transition-colors">−</button>
-                              <span className="w-6 text-center font-black text-amber-200">{podmienkyMixC}</span>
+                                className="w-8 h-8 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">−</button>
+                              <span className="text-2xl font-black text-amber-200 leading-none">{podmienkyMixC}</span>
                               <button type="button" onClick={() => setPodmienkyMixC(m => Math.min(maxMixP, m + 1))} disabled={podmienkyMixC >= maxMixP}
-                                className="w-7 h-7 rounded-sm border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/10 font-bold flex items-center justify-center cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed transition-colors">+</button>
+                                className="w-8 h-8 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">+</button>
                             </div>
                           </div>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold text-amber-300/90 flex-1 uppercase tracking-wide">Mix vozidlá</span>
-                          <div className="flex items-center gap-2">
+                        <div className="bg-amber-500/10 border border-amber-400/25 rounded-md px-3 py-2.5">
+                          <div className="text-[9px] font-black text-amber-300/70 uppercase tracking-widest mb-2">🚚 Mix vozidlá</div>
+                          <div className="flex items-center justify-between">
                             <button type="button" onClick={() => setPodmienkyTrucks(t => Math.max(minMixM, t - 1))} disabled={podmienkyTrucks <= minMixM}
-                              className="w-7 h-7 rounded-sm border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/10 font-bold flex items-center justify-center cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed transition-colors">−</button>
-                            <span className="w-7 text-center font-black text-amber-200">{podmienkyTrucks}</span>
+                              className="w-8 h-8 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">−</button>
+                            <span className="text-2xl font-black text-amber-200 leading-none">{podmienkyTrucks}</span>
                             <button type="button" onClick={() => setPodmienkyTrucks(t => Math.min(maxMixM, t + 1))} disabled={podmienkyTrucks >= maxMixM}
-                              className="w-7 h-7 rounded-sm border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/10 font-bold flex items-center justify-center cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed transition-colors">+</button>
+                              className="w-8 h-8 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">+</button>
                           </div>
                         </div>
                       )}
