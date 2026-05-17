@@ -510,11 +510,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         validateSk(lat, lng);    // SK validácia na pozadí (odstraní pin ak mimo SK)
       });
 
-      const searchInput = document.getElementById("map-search-input") as HTMLInputElement | null;
-
       // Geocode adresu a umiestni pin — volateľné aj zvonka cez ref
       mapGeocodeAddrFnRef.current = (addr: string) => {
-        if (searchInput) searchInput.value = addr;
         new google.maps.Geocoder().geocode({ address: addr, region: "SK" }, (results, gStatus) => {
           if (gStatus === "OK" && results && results[0]) {
             const loc = results[0].geometry.location;
@@ -525,25 +522,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         });
       };
 
-      // Pre-fill z adresného režimu — PRED searchInput, nezávisle od jeho existencie v DOM
+      // Pre-fill z adresného režimu
       const pendingAddr = pendingGeocodeAddressRef.current;
       if (pendingAddr) {
         pendingGeocodeAddressRef.current = null;
         mapGeocodeAddrFnRef.current(pendingAddr);
       } else if (address && !mapPin) {
         mapGeocodeAddrFnRef.current(address);
-      }
-
-      if (searchInput) {
-        const ac = new google.maps.places.Autocomplete(searchInput, { types: ["geocode"], componentRestrictions: { country: "sk" } });
-        ac.addListener("place_changed", () => {
-          const place = ac.getPlace();
-          const loc = place?.geometry?.location;
-          if (!loc) return;
-          map.setCenter({ lat: loc.lat(), lng: loc.lng() });
-          map.setZoom(15);
-          setPinAt(loc.lat(), loc.lng());
-        });
       }
 
       // Auto-locate ak nie je adresa
@@ -1820,7 +1805,31 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
           {/* Delivery */}
           {tab !== "vlastnadoprava" && <div className="space-y-2">
             <label className="block text-sm font-semibold text-white/80">Adresa doručenia</label>
-            {deliveryMode === "distance" ? (
+
+            {/* Mode checkboxes */}
+            <div className="flex gap-5">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" checked={deliveryMode === "distance"}
+                  onChange={() => switchDeliveryMode(deliveryMode === "distance" ? "address" : "distance")}
+                  className="accent-primary w-4 h-4 cursor-pointer" />
+                <span className={cn("text-xs font-bold uppercase tracking-widest transition-colors",
+                  deliveryMode === "distance" ? "text-primary" : "text-white/40 hover:text-white/60")}>
+                  📏 Vzdialenosť (km)
+                </span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" checked={deliveryMode !== "distance"}
+                  onChange={() => switchDeliveryMode(deliveryMode !== "distance" ? "distance" : "address")}
+                  className="accent-primary w-4 h-4 cursor-pointer" />
+                <span className={cn("text-xs font-bold uppercase tracking-widest transition-colors",
+                  deliveryMode !== "distance" ? "text-primary" : "text-white/40 hover:text-white/60")}>
+                  📍 Adresa
+                </span>
+              </label>
+            </div>
+
+            {/* Distance input */}
+            {deliveryMode === "distance" && (
               <div className="relative">
                 <input type="number" min="0" step="0.1" value={distance}
                   onChange={(e) => { setDistance(e.target.value); setShowResult(false); }}
@@ -1841,56 +1850,45 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors text-lg leading-none">×</button>
                 )}
               </div>
-            ) : deliveryMode === "address" ? (
+            )}
+
+            {/* Address input + map — always in DOM when not distance mode */}
+            {deliveryMode !== "distance" && (
               <div className="space-y-2">
-                <div className="relative">
+                {/* Address input row: [input] [🗺️ map toggle] [× clear] */}
+                <div className="flex bg-white/10 border-b-2 border-b-primary rounded-sm overflow-hidden">
                   <input
                     ref={addressInputRef}
                     type="text"
                     defaultValue={address}
                     onChange={(e) => { setAddress(e.target.value); setAddressKm(null); setShowResult(false); }}
                     placeholder="Zadajte adresu stavby"
-                    className="w-full bg-white/10 border-b-2 border-b-primary text-white px-4 py-3 pr-10 focus:outline-none placeholder:text-white/30 text-sm font-medium rounded-sm" />
-                  {addressLoading
-                    ? <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 text-xs">Vypočítavam...</span>
-                    : address && (
-                      <button onClick={() => { setAddress(""); setAddressKm(null); setDistance(""); setShowResult(false); if (addressInputRef.current) addressInputRef.current.value = ""; }}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors text-lg leading-none">×</button>
-                    )
-                  }
+                    className="flex-1 bg-transparent px-4 py-3 text-white text-sm font-medium focus:outline-none placeholder:text-white/30 min-w-0" />
+                  {/* Map icon — always visible, colored */}
+                  <button
+                    type="button"
+                    onClick={() => deliveryMode === "map" ? switchDeliveryMode("address") : switchDeliveryMode("map")}
+                    className={cn("px-3 flex items-center transition-colors border-l border-white/10",
+                      deliveryMode === "map" ? "text-primary bg-primary/10" : "text-primary/50 hover:text-primary")}
+                    title={deliveryMode === "map" ? "Skryť mapu" : "Zobraziť mapu"}>
+                    <MapPin className="w-4 h-4" />
+                  </button>
+                  {/* Clear / loading */}
+                  {addressLoading ? (
+                    <span className="px-3 flex items-center text-white/40 text-xs border-l border-white/10">…</span>
+                  ) : address ? (
+                    <button
+                      onClick={() => { setAddress(""); setAddressKm(null); setDistance(""); setShowResult(false); if (addressInputRef.current) addressInputRef.current.value = ""; }}
+                      className="px-3 flex items-center text-white/30 hover:text-white/70 transition-colors border-l border-white/10 text-lg leading-none">×</button>
+                  ) : null}
                 </div>
-                {addressKm !== null && (
-                  <p className="text-xs text-white/50 px-1">
-                    Vzdialenosť: <strong className="text-primary">{distance} km</strong> (pre výpočet dopravy)
-                  </p>
-                )}
-              </div>
-            ) : (
-              /* Map mode wrapper — map div stays in DOM to prevent Google Maps escape */
-              <div className="space-y-2">
-                {!mapKmConfirmed && (
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <input id="map-search-input" type="text"
-                        placeholder="Hľadajte adresu na mape..."
-                        className="w-full bg-white/10 border-b-2 border-b-primary text-white px-4 py-3 pr-9 focus:outline-none placeholder:text-white/30 text-sm font-medium rounded-sm" />
-                      <button
-                        onClick={() => {
-                          const el = document.getElementById("map-search-input") as HTMLInputElement | null;
-                          if (el) el.value = "";
-                          setMapPin(null); setMapPlusCode(""); setDistance(""); setAddressKm(null); setMapError("");
-                        }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors text-lg leading-none">×</button>
-                    </div>
-                    <button onClick={() => mapLocateFnRef.current?.()}
-                      className="bg-white/10 border-b-2 border-b-primary px-3 text-white/50 hover:text-primary transition-colors" title="Moja poloha">
-                      <Navigation className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
+
+                {/* Map div — always in DOM (Google Maps constraint), shown/hidden via display */}
                 <div id="calculator-map" className="w-full rounded overflow-hidden border border-white/20"
-                  style={{ height: mapKmConfirmed ? 0 : "220px", display: mapKmConfirmed ? "none" : "block" }} />
-                {mapKmConfirmed ? (
+                  style={{ display: deliveryMode === "map" && !mapKmConfirmed ? "block" : "none", height: "220px" }} />
+
+                {/* Map status */}
+                {deliveryMode === "map" && mapKmConfirmed ? (
                   <div className="bg-white/10 px-3 py-2.5 flex items-center gap-3 rounded-sm">
                     <MapPin className="w-4 h-4 text-primary shrink-0" />
                     <div className="flex-1 min-w-0">
@@ -1907,60 +1905,45 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     <button onClick={() => { setMapKmConfirmed(false); setMapPin(null); setMapPlusCode(""); setDistance(""); setAddressKm(null); }}
                       className="text-xs text-white/40 hover:text-white/70 transition-colors shrink-0">Zmeniť</button>
                   </div>
-                ) : mapError ? (
-                  <p className="text-xs text-red-400 px-1">{mapError}</p>
-                ) : mapPin ? (
-                  <div className="bg-white/10 px-3 py-2.5 rounded-sm space-y-2">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
-                      <span className="font-mono text-primary text-sm font-bold tracking-wide">{mapPlusCode || "…"}</span>
-                      {mapPlusCode && (
-                        <button onClick={() => { navigator.clipboard?.writeText(mapPlusCode); setMapCopied(true); setTimeout(() => setMapCopied(false), 1500); }}
-                          className="text-white/40 hover:text-primary transition-colors" title="Kopírovať">
-                          {mapCopied ? <Check className="w-3.5 h-3.5 text-primary" /> : <Copy className="w-3.5 h-3.5" />}
-                        </button>
+                ) : deliveryMode === "map" && !mapKmConfirmed ? (
+                  <div className="flex items-start gap-2">
+                    <div className="flex-1">
+                      {mapError ? (
+                        <p className="text-xs text-red-400 px-1">{mapError}</p>
+                      ) : mapPin ? (
+                        <div className="bg-white/10 px-3 py-2.5 rounded-sm space-y-2">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                            <span className="font-mono text-primary text-sm font-bold tracking-wide">{mapPlusCode || "…"}</span>
+                            {mapPlusCode && (
+                              <button onClick={() => { navigator.clipboard?.writeText(mapPlusCode); setMapCopied(true); setTimeout(() => setMapCopied(false), 1500); }}
+                                className="text-white/40 hover:text-primary transition-colors" title="Kopírovať">
+                                {mapCopied ? <Check className="w-3.5 h-3.5 text-primary" /> : <Copy className="w-3.5 h-3.5" />}
+                              </button>
+                            )}
+                            {distance && <><span className="text-white/20 text-xs">·</span><span className="text-xs text-white/60">od MS-BETON: <strong className="text-primary">{distance} km</strong></span></>}
+                          </div>
+                          <button onClick={() => setMapKmConfirmed(true)}
+                            className="w-full bg-primary text-secondary font-black text-xs uppercase tracking-widest py-2.5 hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
+                            <MapPin className="w-3.5 h-3.5" /> Potvrdiť polohu
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-white/40 px-1">Kliknite na mapu alebo napíšte adresu</p>
                       )}
-                      {distance && <><span className="text-white/20 text-xs">·</span><span className="text-xs text-white/60">od MS-BETON: <strong className="text-primary">{distance} km</strong></span></>}
                     </div>
-                    <button onClick={() => setMapKmConfirmed(true)}
-                      className="w-full bg-primary text-secondary font-black text-xs uppercase tracking-widest py-2.5 hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
-                      <MapPin className="w-3.5 h-3.5" /> Potvrdiť polohu
+                    <button onClick={() => mapLocateFnRef.current?.()}
+                      className="p-2 bg-white/10 border border-white/20 text-white/50 hover:text-primary transition-colors rounded shrink-0" title="Moja poloha">
+                      <Navigation className="w-4 h-4" />
                     </button>
                   </div>
-                ) : (
-                  <p className="text-xs text-white/40 px-1">Kliknite na mapu alebo zadajte adresu</p>
-                )}
+                ) : addressKm !== null ? (
+                  <p className="text-xs text-white/50 px-1">
+                    Vzdialenosť: <strong className="text-primary">{distance} km</strong> (pre výpočet dopravy)
+                  </p>
+                ) : null}
               </div>
             )}
-            {/* Mode switcher — 2 main pills + address/map sub-tabs */}
-            <div className="space-y-2 pt-1">
-              <div className="flex gap-2">
-                <button type="button" onClick={() => switchDeliveryMode("distance")}
-                  className={cn("flex-1 py-2 text-xs font-black uppercase tracking-widest rounded-sm border transition-all",
-                    deliveryMode === "distance" ? "bg-primary/20 border-primary text-primary" : "border-white/15 text-white/40 hover:border-white/30 hover:text-white/60")}>
-                  📏 Vzdialenosť (km)
-                </button>
-                <button type="button" onClick={() => deliveryMode === "distance" ? switchDeliveryMode("address") : undefined}
-                  className={cn("flex-1 py-2 text-xs font-black uppercase tracking-widest rounded-sm border transition-all",
-                    deliveryMode !== "distance" ? "bg-primary/20 border-primary text-primary" : "border-white/15 text-white/40 hover:border-white/30 hover:text-white/60")}>
-                  📍 Adresa / Mapa
-                </button>
-              </div>
-              {deliveryMode !== "distance" && (
-                <div className="flex gap-1">
-                  <button type="button" onClick={() => switchDeliveryMode("address")}
-                    className={cn("flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-sm border transition-all",
-                      deliveryMode === "address" ? "border-white/30 text-white/80 bg-white/10" : "border-white/10 text-white/30 hover:text-white/55")}>
-                    ✏️ Adresa
-                  </button>
-                  <button type="button" onClick={() => switchDeliveryMode("map")}
-                    className={cn("flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-sm border transition-all",
-                      deliveryMode === "map" ? "border-white/30 text-white/80 bg-white/10" : "border-white/10 text-white/30 hover:text-white/55")}>
-                    🗺️ Mapa
-                  </button>
-                </div>
-              )}
-            </div>
           </div>}
 
           {/* Category */}
