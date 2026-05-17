@@ -2372,28 +2372,41 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
                 const liveSecs = Math.floor(pumpLiveMs / 1000);
                 const liveStr = `${Math.floor(liveSecs / 3600).toString().padStart(2, "0")}:${Math.floor((liveSecs % 3600) / 60).toString().padStart(2, "0")}:${(liveSecs % 60).toString().padStart(2, "0")}`;
-                const adjBtnCls = "flex-1 py-2.5 border border-white/10 text-white/40 hover:border-amber-500/40 hover:text-amber-300 transition-colors rounded-sm font-black text-sm disabled:opacity-20 disabled:cursor-not-allowed";
+                const adjBtnCls = "flex-1 py-2 border border-white/10 text-white/50 hover:border-amber-500/40 hover:text-amber-300 transition-colors rounded-sm font-black text-xs disabled:opacity-20 disabled:cursor-not-allowed";
+                const adjHrCls = "flex-1 py-2 border border-white/10 text-white/35 hover:border-blue-500/40 hover:text-blue-300 transition-colors rounded-sm font-black text-xs";
+                const AdjCols = ({ onAdj }: { onAdj: (d: number) => void }) => (
+                  <div className="space-y-1 mt-2">
+                    <div className="flex gap-1">
+                      <button type="button" onClick={() => onAdj(-60)} className={adjHrCls}>−1h</button>
+                      <button type="button" onClick={() => onAdj(+60)} className={adjHrCls}>+1h</button>
+                    </div>
+                    <div className="flex gap-1">
+                      {([-15, -1, +1, +15] as const).map(d => (
+                        <button key={d} type="button" onClick={() => onAdj(d)} className={adjBtnCls}>{d > 0 ? "+" : ""}{d}</button>
+                      ))}
+                    </div>
+                  </div>
+                );
 
                 // ── STATE: RUNNING ──
                 if (pumpTimerActive) return (
                   <div className="border border-green-500/40 bg-green-500/5 rounded-sm overflow-hidden">
-                    <div className="flex items-center justify-between px-3 py-2 border-b border-green-500/20">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                        <span className="text-xs font-black text-green-400 uppercase tracking-wider">Čerpanie beží</span>
-                      </div>
-                      {/* Priamo editovateľný čas štartu */}
-                      <div className="flex items-center gap-1.5 bg-green-500/10 rounded px-2 py-0.5">
-                        <span className="text-[9px] text-green-400/50 uppercase tracking-widest font-bold">štart</span>
+                    <div className="flex items-center gap-1.5 px-3 py-2 border-b border-green-500/20">
+                      <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse shrink-0" />
+                      <span className="text-xs font-black text-green-400 uppercase tracking-wider">Čerpanie beží</span>
+                    </div>
+                    <div className="px-3 pt-3 pb-3 space-y-3">
+                      {/* Štart — editovateľný, prominentný */}
+                      <div className="bg-green-500/10 border border-green-500/20 rounded-sm px-3 py-2">
+                        <div className="text-[9px] text-green-400/50 uppercase tracking-widest mb-1">Štart čerpania</div>
                         <input
                           type="time"
                           value={pumpStartTime || ""}
-                          onChange={(e) => { if (e.target.value) adjStart(0); setPumpStartTime(e.target.value); setShowResult(false); }}
-                          className="font-mono text-base font-black text-green-300 bg-transparent border-b border-green-400/50 focus:border-green-400 focus:outline-none text-center cursor-pointer w-[72px]"
+                          onChange={(e) => { if (e.target.value) { setPumpStartTime(e.target.value); setShowResult(false); } }}
+                          className="font-mono text-3xl font-black text-green-300 bg-transparent border-b-2 border-green-400/40 hover:border-green-400/70 focus:border-green-400 focus:outline-none cursor-pointer w-full"
                         />
+                        <AdjCols onAdj={adjStart} />
                       </div>
-                    </div>
-                    <div className="px-3 pt-4 pb-3 space-y-3">
                       {/* Big live clock */}
                       <div className="text-center">
                         <div className="font-mono text-5xl font-black text-green-400 tracking-widest leading-none">{liveStr}</div>
@@ -2406,15 +2419,6 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                         className="w-full py-4 bg-red-600 hover:bg-red-500 text-white text-base font-black uppercase tracking-widest rounded-sm transition-colors flex items-center justify-center gap-2 shadow-lg">
                         <span className="text-xl leading-none">■</span> STOP čerpanie
                       </button>
-                      {/* Adjust start time — quick buttons */}
-                      <div className="space-y-1">
-                        <div className="text-[10px] text-white/25 text-center">Koriguj čas začiatku (min)</div>
-                        <div className="flex gap-1.5">
-                          {([-15, -1, +1, +15] as const).map(d => (
-                            <button key={d} type="button" onClick={() => adjStart(d)} className={adjBtnCls}>{d > 0 ? "+" : ""}{d}</button>
-                          ))}
-                        </div>
-                      </div>
                     </div>
                   </div>
                 );
@@ -2431,37 +2435,28 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     </div>
                     <div className="px-3 pt-3 pb-3 space-y-3">
                       {/* Time edit row — priame time inputy */}
-                      <div className="flex items-start justify-center gap-4">
+                      <div className="grid grid-cols-2 gap-3">
                         {/* Začiatok */}
-                        <div className="text-center">
+                        <div>
                           <div className="text-[9px] text-white/35 uppercase tracking-widest mb-1">Začiatok</div>
                           <input
                             type="time"
                             value={pumpStartTime || ""}
                             onChange={(e) => { if (e.target.value) { setPumpStartTime(e.target.value); setShowResult(false); } }}
-                            className="font-mono text-2xl font-black text-white/70 bg-transparent border-b-2 border-white/20 hover:border-white/40 focus:border-primary focus:outline-none text-center cursor-pointer w-[100px]"
+                            className="font-mono text-2xl font-black text-white/80 bg-transparent border-b-2 border-white/20 hover:border-white/40 focus:border-primary focus:outline-none cursor-pointer w-full"
                           />
-                          <div className="flex gap-1 mt-2">
-                            {([-15, -1, +1] as const).map(d => (
-                              <button key={d} type="button" onClick={() => adjStart(d)} className={adjBtnCls + " text-[10px] py-1.5"}>{d > 0 ? "+" : ""}{d}</button>
-                            ))}
-                          </div>
+                          <AdjCols onAdj={adjStart} />
                         </div>
-                        <div className="text-white/20 text-lg font-bold mt-5">→</div>
                         {/* Koniec */}
-                        <div className="text-center">
-                          <div className="text-[9px] text-white/35 uppercase tracking-widest mb-1">Koniec</div>
+                        <div>
+                          <div className="text-[9px] text-primary/60 uppercase tracking-widest mb-1">Koniec</div>
                           <input
                             type="time"
                             value={pumpStopTime || ""}
                             onChange={(e) => { if (e.target.value) { setPumpStopTime(e.target.value); setShowResult(false); } }}
-                            className="font-mono text-2xl font-black text-primary bg-transparent border-b-2 border-primary/30 hover:border-primary/60 focus:border-primary focus:outline-none text-center cursor-pointer w-[100px]"
+                            className="font-mono text-2xl font-black text-primary bg-transparent border-b-2 border-primary/30 hover:border-primary/60 focus:border-primary focus:outline-none cursor-pointer w-full"
                           />
-                          <div className="flex gap-1 mt-2">
-                            {([-1, +1, +15] as const).map(d => (
-                              <button key={d} type="button" onClick={() => adjStop(d)} className={adjBtnCls + " text-[10px] py-1.5"}>{d > 0 ? "+" : ""}{d}</button>
-                            ))}
-                          </div>
+                          <AdjCols onAdj={adjStop} />
                         </div>
                       </div>
                       {/* Billing summary */}
