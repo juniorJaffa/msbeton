@@ -1710,7 +1710,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
       discountDoprava: parseFloat(form.discountDoprava) || 0,
       discountSluzby:  parseFloat(form.discountSluzby)  || 0,
       discountCelkovo: parseFloat(form.discountCelkovo) || 0,
-      hotovostDph: parseFloat(form.hotovostDph) / 100 || 0.20,
+      hotovostDph: (() => { const v = parseFloat(form.hotovostDph); return Number.isNaN(v) ? 0.20 : v / 100; })(),
       canHotovost: form.canHotovost, canPridatBeton: form.canPridatBeton,
       canZimneOpatrenia: form.canZimneOpatrenia,
       active: form.active,
@@ -2320,7 +2320,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                                   <span className="text-xs text-gray-400">DPH:</span>
                                   <input type="number" min="0" max="100" value={Math.round((c.hotovostDph ?? 0.20) * 100)}
                                     onClick={e => e.stopPropagation()}
-                                    onChange={e => update(c.id, { hotovostDph: (parseFloat(e.target.value) || 20) / 100 })}
+                                    onChange={e => { const v = parseFloat(e.target.value); if (!Number.isNaN(v) && v >= 0 && v <= 100) update(c.id, { hotovostDph: v / 100 }); }}
                                     className="border border-gray-200 px-2 py-0.5 text-xs focus:outline-none focus:border-primary w-12 text-center" />
                                   <span className="text-xs text-gray-400">%</span>
                                   <span className="text-[10px] text-gray-400 italic">· iba betón</span>
