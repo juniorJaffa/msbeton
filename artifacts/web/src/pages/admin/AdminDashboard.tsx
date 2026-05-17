@@ -3285,6 +3285,8 @@ export default function AdminDashboard() {
     { id: "doprava",    label: "DOPRAVA",    short: "DOPRAVA",  icon: <Truck className="w-5 h-5" /> },
     { id: "sluzby",     label: "SLUŽBY",     short: "SLUŽBY",   icon: <Wrench className="w-5 h-5" /> },
     { id: "betony",     label: "BETÓNY",     short: "BETÓNY",   icon: <Layers className="w-5 h-5" /> },
+    { id: "statistiky", label: "ŠTATISTIKY", short: "ŠTAT.",    icon: <TrendingUp className="w-5 h-5" /> },
+    { id: "analytics",  label: "ANALÝZY",    short: "ANAL.",    icon: <BarChart2 className="w-5 h-5" /> },
   ];
 
   return (
@@ -3301,18 +3303,6 @@ export default function AdminDashboard() {
             <VersionBadge className="ml-1 text-white/25 hidden sm:block" />
           </a>
           <div className="flex items-center gap-3">
-            <button onClick={() => { setTab("statistiky"); window.location.hash = "statistiky"; setMoreOpen(false); }}
-              className={`flex items-center gap-1.5 text-xs font-bold transition-colors ${tab === "statistiky" ? "text-primary" : "text-white/35 hover:text-white/65"}`}
-              title="Štatistiky">
-              <TrendingUp className="w-4 h-4" />
-              <span className="hidden sm:inline text-[10px] uppercase tracking-widest">Štatistiky</span>
-            </button>
-            <button onClick={() => { setTab("analytics"); window.location.hash = "analytics"; setMoreOpen(false); }}
-              className={`flex items-center gap-1.5 text-xs font-bold transition-colors ${tab === "analytics" ? "text-primary" : "text-white/35 hover:text-white/65"}`}
-              title="Analýzy">
-              <BarChart2 className="w-4 h-4" />
-              <span className="hidden sm:inline text-[10px] uppercase tracking-widest">Analýzy</span>
-            </button>
             <button onClick={handleLogout}
               className="flex items-center gap-2 text-white/60 hover:text-white text-sm font-semibold transition-colors">
               <LogOut className="w-4 h-4" />
@@ -3348,7 +3338,7 @@ export default function AdminDashboard() {
       {/* Mobile tab bar — white, fixed pod headerom, ikona + label */}
       <div className="sm:hidden fixed top-12 left-0 right-0 z-40 bg-white border-b border-gray-200 shadow-sm">
         <div className="flex">
-          {tabs.map(t => (
+          {tabs.filter(t => t.id !== "analytics" && t.id !== "statistiky").map(t => (
             <button key={t.id} onClick={() => { setTab(t.id); window.location.hash = t.id; setMoreOpen(false); }}
               className={`flex-1 flex flex-col items-center justify-center py-1.5 gap-0.5 border-b-2 transition-all ${
                 tab === t.id ? "text-primary border-primary" : "text-gray-400 border-transparent"
