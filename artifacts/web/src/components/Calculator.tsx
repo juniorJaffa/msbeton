@@ -42,6 +42,7 @@ function adjustHHMM(t: string, deltaMins: number): string {
 import { PhoneInput } from "@/components/PhoneInput";
 import { adminData } from "@/lib/adminData";
 import { clientAuth, type LoggedClient } from "@/lib/clientAuth";
+import * as adminAuth from "@/lib/adminAuth";
 import { clientApi } from "@/lib/api";
 import {
   Select,
@@ -665,7 +666,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     };
   }, [clientOverride, loggedClientState, allClients]);
 
-  const isAdminMode = clientOverride !== undefined || loggedClient?.id === "admin";
+  const isAdminMode = clientOverride !== undefined || adminAuth.isLoggedIn();
 
   // Klientova zóna dopravy (podľa deliveryZoneId, fallback = prvá zóna)
   const clientDeliveryZone = useMemo(() => {
