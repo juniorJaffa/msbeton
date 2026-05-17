@@ -4,7 +4,7 @@ import { Navbar } from "@/components/Navbar";
 import { SEOHead } from "@/components/SEOHead";
 import { clientAuth } from "@/lib/clientAuth";
 import { clientApi } from "@/lib/api";
-import { Eye, EyeOff, Check, AlertCircle, RefreshCw, Mail } from "lucide-react";
+import { Eye, EyeOff, Check, AlertCircle, Mail } from "lucide-react";
 
 function generateCaptcha() {
   const a = Math.floor(Math.random() * 9) + 1;
@@ -17,15 +17,17 @@ const labelCls = "block text-[10px] font-bold text-white/50 mb-1.5 tracking-wide
 
 function MathCheck({ captcha, input, setInput, onRefresh }: { captcha: { a: number; b: number }; input: string; setInput: (v: string) => void; onRefresh: () => void }) {
   return (
-    <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded px-3 py-2">
-      <span className="text-white/40 text-xs shrink-0">
-        Koľko je <span className="text-primary font-black">{captcha.a}</span> + <span className="text-primary font-black">{captcha.b}</span>?
-      </span>
-      <input type="number" value={input} onChange={e => setInput(e.target.value)} inputMode="numeric" autoComplete="off"
-        placeholder="?" className="w-10 bg-transparent border-b border-white/20 focus:border-primary text-white text-sm font-mono text-center focus:outline-none transition-colors" />
-      <button type="button" onClick={onRefresh} className="text-white/20 hover:text-white/50 transition-colors ml-auto">
-        <RefreshCw className="w-3.5 h-3.5" />
-      </button>
+    <div className="bg-white/5 border border-white/10 p-4 space-y-3">
+      <p className="text-white/60 text-xs font-bold uppercase tracking-widest">Overenie – nie ste robot</p>
+      <div className="flex items-center gap-3">
+        <div className="flex-1 bg-secondary/80 border border-white/10 px-4 py-2.5 text-white font-bold text-sm text-center">
+          Koľko je <span className="text-primary">{captcha.a}</span> + <span className="text-primary">{captcha.b}</span> ?
+        </div>
+        <input type="number" value={input} onChange={e => setInput(e.target.value)} inputMode="numeric" autoComplete="off"
+          placeholder="?"
+          className="w-20 bg-white/5 text-white border border-white/10 px-3 py-2.5 text-sm text-center focus:outline-none focus:border-primary transition-colors" />
+        <button type="button" onClick={onRefresh} className="text-white/40 hover:text-primary text-base transition-colors">↺</button>
+      </div>
     </div>
   );
 }
@@ -176,12 +178,9 @@ export default function ClientProfile() {
                   </button>
                 </div>
               </div>
-              <div>
-                <label className={labelCls}>Overenie</label>
-                <MathCheck captcha={captchaData} input={captchaDataInput} setInput={setCaptchaDataInput}
-                  onRefresh={() => { setCaptchaData(generateCaptcha()); setCaptchaDataInput(""); }} />
-              </div>
             </div>
+            <MathCheck captcha={captchaData} input={captchaDataInput} setInput={setCaptchaDataInput}
+              onRefresh={() => { setCaptchaData(generateCaptcha()); setCaptchaDataInput(""); }} />
             <Msg msg={msgData} />
             <button onClick={handleSaveData} disabled={savingData}
               className="mt-4 px-6 py-2.5 bg-primary text-secondary font-black text-xs uppercase tracking-wider hover:bg-primary/85 transition-colors disabled:opacity-50 rounded-sm cursor-pointer">
@@ -221,12 +220,9 @@ export default function ClientProfile() {
                   <p className="text-red-400 text-[10px] mt-1">Heslá sa nezhodujú</p>
                 )}
               </div>
-              <div>
-                <label className={labelCls}>Overenie</label>
-                <MathCheck captcha={captchaPwd} input={captchaPwdInput} setInput={setCaptchaPwdInput}
-                  onRefresh={() => { setCaptchaPwd(generateCaptcha()); setCaptchaPwdInput(""); }} />
-              </div>
             </div>
+            <MathCheck captcha={captchaPwd} input={captchaPwdInput} setInput={setCaptchaPwdInput}
+              onRefresh={() => { setCaptchaPwd(generateCaptcha()); setCaptchaPwdInput(""); }} />
             <Msg msg={msgPwd} />
 
             <div className="flex flex-wrap items-center gap-3 mt-4">

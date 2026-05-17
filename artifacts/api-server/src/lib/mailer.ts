@@ -201,3 +201,42 @@ export async function sendContactEmail(opts: {
     return { ok: false, error: String(err) };
   }
 }
+
+export async function sendCredentialsEmail(opts: {
+  toEmail: string;
+  clientName: string;
+  loginId: string;
+  resetUrl: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  const conn = createTransport();
+  if (!conn) return { ok: false, error: "SMTP not configured" };
+  const { toEmail, clientName, loginId, resetUrl } = opts;
+  const html = `<!DOCTYPE html><html lang="sk"><head><meta charset="UTF-8">
+<title>Prihlasovacie údaje – MS-BETON</title></head>
+<body style="font-family:Arial,sans-serif;background:#f5f5f5;margin:0;padding:20px">
+<div style="max-width:520px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.1)">
+  <div style="background:#001D3D;padding:28px 32px;text-align:center">
+    <h1 style="color:#EDC531;font-size:28px;margin:0;letter-spacing:2px">MS-BETON</h1>
+    <p style="color:#fff;margin:6px 0 0;font-size:13px;opacity:.7">Kalkulačka betónu</p>
+  </div>
+  <div style="padding:32px">
+    <h2 style="color:#001D3D;margin:0 0 8px">Prihlasovacie údaje</h2>
+    <p style="color:#555;margin:0 0 20px">Dobrý deň, ${clientName}. Tu sú vaše prihlasovacie údaje do kalkulačky MS-BETON.</p>
+    <div style="background:#f8f8f8;border:1px solid #eee;border-radius:8px;padding:16px 20px;margin:0 0 24px">
+      <p style="margin:0 0 8px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:1px">Prihlasovacie ID</p>
+      <p style="margin:0;color:#001D3D;font-size:22px;font-weight:900;letter-spacing:1px">${loginId}</p>
+    </div>
+    <p style="color:#555;margin:0 0 20px">Pre nastavenie hesla kliknite na tlačidlo nižšie. Odkaz je platný <strong>1 hodinu</strong>.</p>
+    <a href="${resetUrl}" style="display:inline-block;background:#EDC531;color:#001D3D;text-decoration:none;font-weight:bold;padding:12px 28px;border-radius:8px;font-size:15px">Nastaviť heslo a prihlásiť sa</a>
+    <hr style="border:none;border-top:1px solid #eee;margin:28px 0">
+    <p style="color:#999;font-size:12px;margin:0">MS-BETON, spol. s r.o. · Turie 468, 013 12 Turie · peter@msbeton.sk</p>
+  </div>
+</div>
+</body></html>`;
+  try {
+    await conn.transport.sendMail({ from: conn.from, to: toEmail, subject: "Prihlasovacie údaje – MS-BETON kalkulačka", html });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
+}

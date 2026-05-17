@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { db, adminConfig } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { randomBytes } from "crypto";
 import { invalidateClientCache } from "./client";
-import { sendRegistrationEmail } from "../lib/mailer";
+import { sendRegistrationEmail, sendCredentialsEmail } from "../lib/mailer";
 
 const router = Router();
 
@@ -158,6 +159,17 @@ async function ga4Report(token: string, body: object): Promise<unknown> {
   return r.json();
 }
 
+async function ga4Realtime(token: string, body: object): Promise<unknown> {
+  const propId = process.env.GA4_PROPERTY_ID ?? "531150585";
+  const r = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${propId}:runRealtimeReport`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(`GA4 Realtime ${r.status}`);
+  return r.json();
+}
+
 function ga4Rows(data: unknown): Array<{ dims: string[]; vals: string[] }> {
   const d = data as { rows?: Array<{ dimensionValues: Array<{ value: string }>; metricValues: Array<{ value: string }> }> };
   return (d.rows ?? []).map(r => ({
@@ -210,6 +222,73 @@ router.get("/analytics", async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "GA4 analytics error");
     res.status(502).json({ error: "GA4 fetch failed" });
+  }
+});
+
+// Admin — send login credentials email to client
+router.post("/clients/:id/send-credentials", async (req, res) => {
+  try {
+    const clientId = req.params.id;
+    const raw = await getConfig(KEYS.clients);
+    const clients = Array.isArray(raw) ? raw as Array<Record<string, unknown>> : [];
+    const client = clients.find((c) => String(c.id) === String(clientId));
+    if (!client) return res.status(404).json({ ok: false, error: "Klient nenájdený" });
+    const email = client.email as string | undefined;
+    const loginId = (client.loginId ?? client.clientId) as string | undefined;
+    if (!email) return res.status(400).json({ ok: false, error: "Klient nemá email" });
+    if (!loginId) return res.status(400).json({ ok: false, error: "Klient nemá nastavené prihlasovacie ID" });
+
+    // Create reset token (same mechanism as client password-reset-request)
+    const token = randomBytes(32).toString("hex");
+    const expires = Date.now() + 60 * 60 * 1000;
+    const tokenRows = await db.select().from(adminConfig).where(eq(adminConfig.key, "password_reset_tokens"));
+    const tokens: Record<string, { clientId: string; expires: number }> = (tokenRows.length > 0 && tokenRows[0].data && typeof tokenRows[0].data === "object" && !Array.isArray(tokenRows[0].data))
+      ? tokenRows[0].data as Record<string, { clientId: string; expires: number }> : {};
+    for (const [k, v] of Object.entries(tokens)) { if (v.expires < Date.now()) delete tokens[k]; }
+    tokens[token] = { clientId: String(clientId), expires };
+    await db.insert(adminConfig).values({ key: "password_reset_tokens", data: tokens })
+      .onConflictDoUpdate({ target: adminConfig.key, set: { data: tokens, updatedAt: new Date() } });
+
+    const name = [client.firstName, client.lastName].filter(Boolean).join(" ") || (client.name as string) || "Klient";
+    const resetUrl = `${process.env["APP_URL"] ?? "https://demo.msbeton.sk"}/klient-reset?token=${token}`;
+    const result = await sendCredentialsEmail({ toEmail: email, clientName: name, loginId, resetUrl });
+    if (!result.ok) return res.status(502).json({ ok: false, error: result.error ?? "Chyba odoslania emailu" });
+    return res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "send-credentials failed");
+    return res.status(500).json({ ok: false, error: "Internal server error" });
+  }
+});
+
+router.get("/analytics/realtime", async (req, res) => {
+  try {
+    const token = await getGa4Token();
+    if (!token) { res.status(503).json({ error: "GA4_KEY_JSON not configured" }); return; }
+
+    const [totalData, minuteData, deviceData, pageData] = await Promise.all([
+      ga4Realtime(token, { metrics: [{ name: "activeUsers" }] }),
+      ga4Realtime(token, { dimensions: [{ name: "minutesAgo" }], metrics: [{ name: "activeUsers" }] }),
+      ga4Realtime(token, { dimensions: [{ name: "deviceCategory" }], metrics: [{ name: "activeUsers" }] }),
+      ga4Realtime(token, { dimensions: [{ name: "unifiedPagePathScreen" }], metrics: [{ name: "activeUsers" }], limit: 5 }),
+    ]);
+
+    const activeNow = parseInt(
+      (totalData as { rows?: Array<{ metricValues: Array<{ value: string }> }> }).rows?.[0]?.metricValues?.[0]?.value ?? "0"
+    );
+    const minuteMap: Record<number, number> = {};
+    ga4Rows(minuteData).forEach(r => { minuteMap[parseInt(r.dims[0])] = parseInt(r.vals[0]); });
+    const byMinute = Array.from({ length: 30 }, (_, i) => ({ minutesAgo: i, users: minuteMap[i] ?? 0 }));
+
+    res.setHeader("Cache-Control", "no-store");
+    res.json({
+      activeNow,
+      byMinute,
+      byDevice: ga4Rows(deviceData).map(r => ({ device: r.dims[0], users: parseInt(r.vals[0]) })),
+      byPage: ga4Rows(pageData).map(r => ({ page: r.dims[0], users: parseInt(r.vals[0]) })),
+    });
+  } catch (err) {
+    req.log.error({ err }, "GA4 realtime error");
+    res.status(502).json({ error: "GA4 realtime failed" });
   }
 });
 

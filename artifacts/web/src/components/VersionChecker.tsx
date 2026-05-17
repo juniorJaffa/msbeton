@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 
 const VERSION_KEY = "msbeton_app_version";
-const CHECK_INTERVAL = 5 * 60 * 1000; // 5 min
+const CHECK_INTERVAL = 90 * 1000; // 90 s
 
 export function VersionChecker() {
   const [needsRefresh, setNeedsRefresh] = useState(false);
@@ -43,8 +43,10 @@ export function VersionChecker() {
       </div>
       <button
         onClick={() => {
-          localStorage.setItem(VERSION_KEY, "");
-          window.location.reload();
+          localStorage.removeItem(VERSION_KEY);
+          // Hard reload — obíde Safari/Chrome disk cache (reload() nestačí)
+          const base = window.location.pathname + window.location.hash;
+          window.location.replace(base + (base.includes("?") ? "&" : "?") + "_v=" + Date.now());
         }}
         className="shrink-0 bg-primary text-navy text-xs font-black px-3 py-1.5 rounded-lg hover:bg-primary/80 transition-colors"
       >

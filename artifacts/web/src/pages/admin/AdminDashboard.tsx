@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
-import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, SlidersHorizontal, ShoppingCart, MessageSquare, BarChart2, TrendingUp, Monitor, Globe, MousePointerClick, MoreHorizontal } from "lucide-react";
+import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, SlidersHorizontal, ShoppingCart, MessageSquare, BarChart2, TrendingUp, Monitor, Globe, MousePointerClick, MoreHorizontal, Activity, Smartphone, Laptop, Tablet, Mail } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
@@ -1624,6 +1624,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
   const [search, setSearch] = useState("");
   const [adding, setAdding] = useState(false);
   const [clientDetailTab, setClientDetailTab] = useState<Record<string, "detail" | "calc">>({});
+  const [sendCredState, setSendCredState] = useState<Record<string, "idle" | "loading" | "ok" | "error">>({});
   const emptyForm = {
     firstName: "", lastName: "", company: "", email: "", phone: "",
     loginId: "", password: "1234",
@@ -2313,6 +2314,45 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                           {c.active ? <ShieldCheck className="w-4 h-4" /> : <ShieldOff className="w-4 h-4" />}
                           {c.active ? "Prístup aktívny" : "Prístup neaktívny"}
                         </button>
+
+                        {/* Odoslať prihlasovacie údaje */}
+                        {hasLogin && (
+                          c.email ? (
+                            (() => {
+                              const state = sendCredState[c.id] ?? "idle";
+                              return (
+                                <button
+                                  disabled={state === "loading"}
+                                  onClick={async () => {
+                                    setSendCredState(s => ({ ...s, [c.id]: "loading" }));
+                                    try {
+                                      const r = await fetch(`/api/admin/clients/${c.id}/send-credentials`, { method: "POST" });
+                                      const json = await r.json() as { ok: boolean; error?: string };
+                                      setSendCredState(s => ({ ...s, [c.id]: json.ok ? "ok" : "error" }));
+                                      setTimeout(() => setSendCredState(s => ({ ...s, [c.id]: "idle" })), 3500);
+                                    } catch {
+                                      setSendCredState(s => ({ ...s, [c.id]: "error" }));
+                                      setTimeout(() => setSendCredState(s => ({ ...s, [c.id]: "idle" })), 3500);
+                                    }
+                                  }}
+                                  className={`w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold uppercase border transition-colors mt-1 ${
+                                    state === "ok" ? "bg-green-50 border-green-300 text-green-700" :
+                                    state === "error" ? "bg-red-50 border-red-300 text-red-600" :
+                                    "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                                  } disabled:opacity-60`}>
+                                  {state === "loading" ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Odosiela sa…</>
+                                    : state === "ok" ? <><Check className="w-3.5 h-3.5" /> Email odoslaný</>
+                                    : state === "error" ? <><X className="w-3.5 h-3.5" /> Chyba odoslania</>
+                                    : <><Mail className="w-3.5 h-3.5" /> Znova odoslať prihlasovacie údaje</>}
+                                </button>
+                              );
+                            })()
+                          ) : (
+                            <p className="text-[10px] text-gray-400 text-center mt-1 flex items-center justify-center gap-1">
+                              <Mail className="w-3 h-3" /> Klient nemá email — prihlasovacie údaje nemožno odoslať
+                            </p>
+                          )
+                        )}
                       </div>
 
                       <div>
@@ -2838,6 +2878,143 @@ ${breakdownHtml ? `
   if (!win) { const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.click(); }
 }
 
+// ── Realtime Card ─────────────────────────────────────────────────────────────
+interface RealtimeData {
+  activeNow: number;
+  byMinute: Array<{ minutesAgo: number; users: number }>;
+  byDevice: Array<{ device: string; users: number }>;
+  byPage: Array<{ page: string; users: number }>;
+}
+
+const REFRESH_SECS = 60;
+const deviceIcon = (d: string) => {
+  if (d === "mobile") return <Smartphone className="w-3.5 h-3.5" />;
+  if (d === "tablet") return <Tablet className="w-3.5 h-3.5" />;
+  return <Laptop className="w-3.5 h-3.5" />;
+};
+const pageLabel = (p: string) => p.length > 28 ? p.slice(0, 26) + "…" : p;
+
+function RealtimeCard() {
+  const [data, setData] = useState<RealtimeData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [errored, setErrored] = useState(false);
+  const [countdown, setCountdown] = useState(REFRESH_SECS);
+
+  const load = useCallback(async () => {
+    try {
+      const r = await fetch("/api/admin/analytics/realtime", { cache: "no-store" });
+      if (!r.ok) throw new Error();
+      setData(await r.json());
+      setErrored(false);
+    } catch {
+      setErrored(true);
+    }
+    setLoading(false);
+    setCountdown(REFRESH_SECS);
+  }, []);
+
+  useEffect(() => { load(); const t = setInterval(load, REFRESH_SECS * 1000); return () => clearInterval(t); }, [load]);
+  useEffect(() => { const t = setInterval(() => setCountdown(c => Math.max(0, c - 1)), 1000); return () => clearInterval(t); }, []);
+
+  // bars: index 0 = 30 min ago, index 29 = now (reverse byMinute which is 0=now)
+  const bars = data ? [...data.byMinute].reverse() : Array.from({ length: 30 }, (_, i) => ({ minutesAgo: 29 - i, users: 0 }));
+  const maxBar = Math.max(...bars.map(b => b.users), 1);
+  const totalDevices = (data?.byDevice ?? []).reduce((s, d) => s + d.users, 0);
+
+  return (
+    <div className="bg-secondary rounded-xl overflow-hidden shadow-xl">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-2">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+          </span>
+          <span className="text-[10px] font-black uppercase tracking-widest text-green-400">Live</span>
+          <span className="text-white/20 text-xs">·</span>
+          <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Aktívni v posledných 30 minútach</span>
+        </div>
+        <button onClick={() => { setLoading(true); load(); }}
+          className="flex items-center gap-1 text-white/30 hover:text-white/60 transition-colors text-[10px] font-bold">
+          <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
+          <span>{countdown}s</span>
+        </button>
+      </div>
+
+      {/* Big number */}
+      <div className="text-center py-4">
+        {errored ? (
+          <p className="text-white/30 text-sm">GA4 nedostupné</p>
+        ) : loading && !data ? (
+          <div className="flex items-center justify-center gap-2 text-white/30 text-sm"><RefreshCw className="w-4 h-4 animate-spin" /> Načítavam…</div>
+        ) : (
+          <>
+            <div className="text-6xl font-black text-white leading-none">{data?.activeNow ?? 0}</div>
+            <div className="text-xs text-white/40 mt-1 font-medium">
+              {data?.activeNow === 1 ? "aktívny používateľ" : data?.activeNow === 0 ? "žiadni aktívni používatelia" : "aktívnych používateľov"}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* 30-bar minute chart */}
+      <div className="px-4 pb-2">
+        <div className="flex items-end gap-[2px] h-12">
+          {bars.map((b, i) => {
+            const pct = Math.max(b.users > 0 ? 8 : 2, (b.users / maxBar) * 100);
+            const isRecent = i >= 25;
+            return (
+              <div key={i} className="flex-1 flex flex-col justify-end" title={`${b.minutesAgo} min späť: ${b.users}`}>
+                <div className="rounded-sm transition-all"
+                  style={{ height: `${pct}%`, background: b.users === 0 ? "rgba(255,255,255,0.08)" : isRecent ? "#4ade80" : "#EDC531", opacity: b.users === 0 ? 1 : 0.85 + (i / 29) * 0.15 }} />
+              </div>
+            );
+          })}
+        </div>
+        <div className="flex justify-between mt-1">
+          <span className="text-[9px] text-white/20">30 min späť</span>
+          <span className="text-[9px] text-white/20">teraz</span>
+        </div>
+      </div>
+
+      {/* Device + Pages */}
+      {data && (data.byDevice.length > 0 || data.byPage.length > 0) && (
+        <div className="grid grid-cols-2 gap-px border-t border-white/10">
+          {/* Devices */}
+          <div className="px-4 py-3">
+            <p className="text-[9px] font-black uppercase tracking-widest text-white/30 mb-2">Zariadenia</p>
+            <div className="space-y-1.5">
+              {data.byDevice.map(d => (
+                <div key={d.device} className="flex items-center gap-2">
+                  <span className="text-white/40">{deviceIcon(d.device)}</span>
+                  <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-primary rounded-full" style={{ width: `${totalDevices > 0 ? (d.users / totalDevices) * 100 : 0}%` }} />
+                  </div>
+                  <span className="text-xs font-black text-white/70 w-4 text-right">{d.users}</span>
+                </div>
+              ))}
+              {data.byDevice.length === 0 && <p className="text-[10px] text-white/20">—</p>}
+            </div>
+          </div>
+          {/* Pages */}
+          <div className="px-4 py-3 border-l border-white/10">
+            <p className="text-[9px] font-black uppercase tracking-widest text-white/30 mb-2">Top stránky</p>
+            <div className="space-y-1.5">
+              {data.byPage.slice(0, 4).map(p => (
+                <div key={p.page} className="flex items-center justify-between gap-1">
+                  <span className="text-[10px] text-white/50 font-mono truncate">{pageLabel(p.page)}</span>
+                  <span className="text-[10px] font-black text-primary shrink-0">{p.users}</span>
+                </div>
+              ))}
+              {data.byPage.length === 0 && <p className="text-[10px] text-white/20">—</p>}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Analytics Tab ────────────────────────────────────────────────────────────
 interface Ga4Data {
   overview: { activeUsers30: number; sessions30: number; pageViews30: number; newUsers30: number; events30: number; activeUsers90: number; sessions90: number; pageViews90: number; newUsers90: number };
@@ -2933,6 +3110,9 @@ function AnalyticsTab() {
 
   return (
     <div className="space-y-6 pb-8">
+      {/* Live realtime widget */}
+      <RealtimeCard />
+
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-black text-secondary uppercase tracking-widest">Google Analytics 4</h2>
         <button onClick={() => setRefreshKey(k => k + 1)} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded text-xs font-semibold transition-colors">

@@ -1,14 +1,5 @@
-<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="180" height="180" rx="32" fill="#001D3D"/>
-  <text
-    x="90"
-    y="108"
-    text-anchor="middle"
-    font-family="Arial Black, Arial, sans-serif"
-    font-weight="900"
-    font-size="80"
-    letter-spacing="-3"
-    fill="#EDC531"
-  >MS</text>
-  <rect x="28" y="120" width="124" height="7" rx="3.5" fill="#EDC531" opacity="0.35"/>
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'>
+  <rect width='180' height='180' fill='#001D3D'/>
+  <text x='90' y='88' font-family='Arial Black,Arial,sans-serif' font-weight='900' font-size='70' fill='#EDC531' text-anchor='middle' dominant-baseline='middle'>MS</text>
+  <text x='90' y='152' font-family='Arial Black,Arial,sans-serif' font-weight='900' font-size='38' fill='#ffffff' text-anchor='middle' dominant-baseline='middle'>BETON</text>
 </svg>

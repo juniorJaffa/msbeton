@@ -260,6 +260,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const addressInputRef = useRef<HTMLInputElement>(null);
   const [mapPin, setMapPin] = useState<{lat: number; lng: number} | null>(null);
   const [mapPlusCode, setMapPlusCode] = useState("");
+  const [mapLocality, setMapLocality] = useState("");
   const [mapKmConfirmed, setMapKmConfirmed] = useState(false);
   const [mapCopied, setMapCopied] = useState(false);
   const [mapError, setMapError] = useState("");
@@ -518,6 +519,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             setAddress(fallbackAddr);
             lastResolvedAddressRef.current = { address: fallbackAddr, lat, lng };
             if (addressInputRef.current) addressInputRef.current.value = fallbackAddr;
+            setMapLocality("");
             return;
           }
           const country = results[0].address_components?.find(
@@ -526,13 +528,17 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
           if (country && country.short_name !== "SK") {
             setMapError("Dodávky betónu sú dostupné iba na území Slovenska.");
             if (marker) { marker.setMap(null); marker = null; mapMarkerRef.current = null; }
-            setMapPin(null); setMapPlusCode(""); setDistance("");
+            setMapPin(null); setMapPlusCode(""); setMapLocality(""); setDistance("");
             setAddress(""); if (addressInputRef.current) addressInputRef.current.value = "";
           } else {
             const addr = results[0].formatted_address;
             setAddress(addr);
             lastResolvedAddressRef.current = { address: addr, lat, lng };
             if (addressInputRef.current) addressInputRef.current.value = addr;
+            const comps = results[0].address_components ?? [];
+            const loc = comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("locality"))?.long_name ?? "";
+            const district = comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("administrative_area_level_2"))?.long_name ?? "";
+            setMapLocality([loc, district].filter(Boolean).join(" · "));
           }
         });
       };
@@ -566,10 +572,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             map.setCenter({ lat: loc.lat(), lng: loc.lng() });
             map.setZoom(15);
             setPinAt(loc.lat(), loc.lng(), true);  // preserveAddress — nemaž input
-            // Nastav rozpoznanú adresu (môže byť presnejšia ako zadaná)
             setAddress(resolvedAddr);
             lastResolvedAddressRef.current = { address: resolvedAddr, lat: loc.lat(), lng: loc.lng() };
             if (addressInputRef.current) addressInputRef.current.value = resolvedAddr;
+            const comps = results[0].address_components ?? [];
+            const village = comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("locality"))?.long_name ?? "";
+            const district = comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("administrative_area_level_2"))?.long_name ?? "";
+            setMapLocality([village, district].filter(Boolean).join(" · "));
           }
         });
       };
@@ -681,15 +690,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     : (pumpSvc?.price ?? 112.50);
   const chemServicePrice = mp[chemSvc?.id ?? ""] !== undefined ? mp[chemSvc!.id] : (chemSvc?.price ?? 31.25);
   const washServicePrice = mp[washSvc?.id ?? ""] ?? washSvc?.price ?? 56.25;
-  // Čakačka: manual override > zona fallback > service price
+  // Čakačka: manual override > service price (zónový waitingRate je legacy — ignoruj)
   const waitServicePricePumpa = mp[waitPumpaSvc?.id ?? ""] !== undefined
     ? mp[waitPumpaSvc!.id]
-    : (clientDeliveryZone?.waitingRatePer15minPumpa
-        ?? clientDeliveryZone?.waitingRatePer15min
-        ?? waitPumpaSvc?.price ?? 8.00);
+    : (waitPumpaSvc?.price ?? 8.00);
   const waitServicePriceMix = mp[waitMixSvc?.id ?? ""] !== undefined
     ? mp[waitMixSvc!.id]
-    : (clientDeliveryZone?.waitingRatePer15min ?? waitMixSvc?.price ?? 8.00);
+    : (waitMixSvc?.price ?? 8.00);
   const hoseService = allServices.find((s) => s.name.toLowerCase().includes("hadice"));
   const hoseServicePrice = mp[hoseService?.id ?? ""] ?? hoseService?.price ?? 10.00;
   const hoseMaxMeters = hoseService?.maxMeters ?? 10;
@@ -1948,6 +1955,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                         mapGeocodeAddrFnRef.current(addressInputRef.current.value);
                       }
                     }}
+                    onPaste={(e) => {
+                      if (deliveryMode === "map" && mapGeocodeAddrFnRef.current) {
+                        const pasted = e.clipboardData.getData("text").trim();
+                        if (pasted) setTimeout(() => mapGeocodeAddrFnRef.current?.(pasted), 0);
+                      }
+                    }}
                     placeholder="Zadajte adresu stavby"
                     className="flex-1 bg-transparent px-4 py-3 text-white text-sm font-medium focus:outline-none placeholder:text-white/30 min-w-0" />
                   {/* Map icon — always visible, colored */}
@@ -1984,11 +1997,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                           className="text-white/40 hover:text-primary transition-colors" title="Kopírovať Plus Code">
                           {mapCopied ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
                         </button>
+                        {mapLocality && <><span className="text-white/20 text-xs">·</span><span className="text-xs text-white/50">{mapLocality}</span></>}
                         <span className="text-white/20 text-xs">·</span>
                         <span className="text-xs text-white/50">od MS-BETON: <strong className="text-primary">{distance} km</strong></span>
                       </div>
                     </div>
-                    <button onClick={() => { setMapKmConfirmed(false); setMapPin(null); setMapPlusCode(""); setDistance(""); setAddressKm(null); if (mapMarkerRef.current) { mapMarkerRef.current.setMap(null); mapMarkerRef.current = null; } }}
+                    <button onClick={() => { setMapKmConfirmed(false); setMapPin(null); setMapPlusCode(""); setMapLocality(""); setDistance(""); setAddressKm(null); if (mapMarkerRef.current) { mapMarkerRef.current.setMap(null); mapMarkerRef.current = null; } }}
                       className="text-xs text-white/40 hover:text-white/70 transition-colors shrink-0">Zmeniť</button>
                   </div>
                 ) : deliveryMode === "map" && !mapKmConfirmed ? (
@@ -1998,7 +2012,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                         <p className="text-xs text-red-400 px-1">{mapError}</p>
                       ) : mapPin ? (
                         <div className="bg-white/10 px-3 py-2.5 rounded-sm space-y-2">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
                             <span className="font-mono text-primary text-sm font-bold tracking-wide">{mapPlusCode || "…"}</span>
                             {mapPlusCode && (
@@ -2007,6 +2021,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                                 {mapCopied ? <Check className="w-3.5 h-3.5 text-primary" /> : <Copy className="w-3.5 h-3.5" />}
                               </button>
                             )}
+                            {mapLocality && <><span className="text-white/20 text-xs">·</span><span className="text-xs text-white/60">{mapLocality}</span></>}
                             {distance && <><span className="text-white/20 text-xs">·</span><span className="text-xs text-white/60">od MS-BETON: <strong className="text-primary">{distance} km</strong></span></>}
                           </div>
                           <button onClick={() => setMapKmConfirmed(true)}

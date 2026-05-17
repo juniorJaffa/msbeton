@@ -21,6 +21,7 @@ function getGitHash(): string {
 }
 
 router.get("/version", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
   res.json({ hash: getGitHash() });
 });
 
