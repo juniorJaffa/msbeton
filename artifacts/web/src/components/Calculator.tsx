@@ -265,8 +265,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [mapError, setMapError] = useState("");
   const mapLocateFnRef = useRef<(() => void) | null>(null);
   const mapGeocodeAddrFnRef = useRef<((addr: string) => void) | null>(null);
+  const mapSetPinAtRef = useRef<((lat: number, lng: number) => void) | null>(null);
   const keepResultOnPinRef = useRef(false);
   const pendingGeocodeAddressRef = useRef<string | null>(null);
+  const pendingGeocodePlaceRef = useRef<{ lat: number; lng: number } | null>(null);
   const [podmienkyEnabled, setPodmienkyEnabled] = useState(false);
   const [podmienkyTrucks, setPodmienkyTrucks] = useState(1);
   const [podmienkyPumpa, setPodmienkyPumpa] = useState(1);
@@ -377,6 +379,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
   useEffect(() => { return () => { if (pumpTimerRef.current) clearInterval(pumpTimerRef.current); }; }, []);
 
+  useEffect(() => {
+    if (!showPriceTable) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setShowPriceTable(false); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [showPriceTable]);
+
   // Google Maps Autocomplete + DistanceMatrix pre adresný režim
   useEffect(() => {
     if (deliveryMode !== "address" || !addressInputRef.current) return;
@@ -389,6 +398,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         const place = ac.getPlace();
         if (!place?.formatted_address) return;
         setAddress(place.formatted_address);
+        // Uloží lat/lng pre okamžité umiestnenie pinu pri prepnutí na mapu
+        if (place.geometry?.location) {
+          pendingGeocodePlaceRef.current = { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() };
+        }
         setAddressLoading(true);
         setShowResult(false);
         new google.maps.DistanceMatrixService().getDistanceMatrix(
@@ -429,11 +442,15 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const mapEl = document.getElementById("calculator-map");
       if (!mapEl) return;
       if (mapEl.childElementCount > 0) {
-        // Mapa už inicializovaná — spusti pending geocode (address→map re-vstup)
-        if (pendingGeocodeAddressRef.current && mapGeocodeAddrFnRef.current) {
-          const addr = pendingGeocodeAddressRef.current;
-          pendingGeocodeAddressRef.current = null;
-          mapGeocodeAddrFnRef.current(addr);
+        // Mapa už inicializovaná (re-vstup) — len spusti pending geocode/place
+        const pendingPlace = pendingGeocodePlaceRef.current;
+        const pendingAddr = pendingGeocodeAddressRef.current;
+        pendingGeocodePlaceRef.current = null;
+        pendingGeocodeAddressRef.current = null;
+        if (pendingPlace && mapSetPinAtRef.current) {
+          mapSetPinAtRef.current(pendingPlace.lat, pendingPlace.lng);
+        } else if (pendingAddr && mapGeocodeAddrFnRef.current) {
+          mapGeocodeAddrFnRef.current(pendingAddr);
         }
         return;
       }
@@ -477,6 +494,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
           }
         );
       };
+
+      // Uloží setPinAt do refu — prístupný aj z early-return path pri re-vstupe
+      mapSetPinAtRef.current = setPinAt;
 
       const validateSk = (lat: number, lng: number) => {
         new google.maps.Geocoder().geocode({ location: { lat, lng } }, (results, gStatus) => {
@@ -522,17 +542,22 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         });
       };
 
-      // Pre-fill z adresného režimu
+      // Pre-fill z adresného režimu — preferuj priame lat/lng z autocomplete (okamžité)
+      const pendingPlace = pendingGeocodePlaceRef.current;
       const pendingAddr = pendingGeocodeAddressRef.current;
-      if (pendingAddr) {
-        pendingGeocodeAddressRef.current = null;
+      pendingGeocodePlaceRef.current = null;
+      pendingGeocodeAddressRef.current = null;
+      if (pendingPlace) {
+        map.setCenter(pendingPlace); map.setZoom(15);
+        setPinAt(pendingPlace.lat, pendingPlace.lng);
+      } else if (pendingAddr) {
         mapGeocodeAddrFnRef.current(pendingAddr);
       } else if (address && !mapPin) {
         mapGeocodeAddrFnRef.current(address);
       }
 
       // Auto-locate ak nie je adresa
-      if (!address) {
+      if (!address && !pendingPlace) {
         navigator.geolocation?.getCurrentPosition(
           pos => { map.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude }); map.setZoom(13); },
           () => {}
@@ -550,7 +575,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     if (!tryInit()) {
       intervalId = setInterval(() => { if (tryInit()) clearInterval(intervalId!); }, 200);
     }
-    return () => { if (intervalId) clearInterval(intervalId); mapLocateFnRef.current = null; };
+    // Nemazať mapLocateFnRef — zostáva platný pri re-vstupe do map modu
+    return () => { if (intervalId) clearInterval(intervalId); };
   }, [deliveryMode, mapKmConfirmed]);
 
   const allCategories = useMemo(() => adminData.getCategories(), [revision]);
