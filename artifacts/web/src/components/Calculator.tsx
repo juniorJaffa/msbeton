@@ -2383,13 +2383,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                         <span className="text-xs font-black text-green-400 uppercase tracking-wider">Čerpanie beží</span>
                       </div>
                       {/* Priamo editovateľný čas štartu */}
-                      <div className="flex items-center gap-1">
-                        <span className="text-[10px] text-green-400/40">štart</span>
+                      <div className="flex items-center gap-1.5 bg-green-500/10 rounded px-2 py-0.5">
+                        <span className="text-[9px] text-green-400/50 uppercase tracking-widest font-bold">štart</span>
                         <input
                           type="time"
                           value={pumpStartTime || ""}
                           onChange={(e) => { if (e.target.value) adjStart(0); setPumpStartTime(e.target.value); setShowResult(false); }}
-                          className="font-mono text-[11px] font-black text-green-400/70 bg-transparent border-b border-green-400/30 focus:border-green-400 focus:outline-none text-center cursor-pointer w-[52px]"
+                          className="font-mono text-base font-black text-green-300 bg-transparent border-b border-green-400/50 focus:border-green-400 focus:outline-none text-center cursor-pointer w-[72px]"
                         />
                       </div>
                     </div>
