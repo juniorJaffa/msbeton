@@ -1145,6 +1145,22 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const subSectionRow = (title: string) =>
       `<tr><td colspan="5" style="background:#fdf6d8;color:#7a6200;font-weight:600;font-size:7.5pt;padding:3px 8px 3px 18px;border-top:1px solid #f0e6b0">↳ ${title}</td></tr>`;
 
+    const transRateStr = (origTotal: number, qty: number, factor: number) => {
+      if (qty <= 0 || origTotal <= 0) return "—";
+      const origRate = origTotal / qty;
+      const discRate = origRate * factor;
+      if (hasDiscount && Math.abs(origRate - discRate) > 0.001)
+        return `<span style="text-decoration:line-through;color:#bbb;font-size:7.5pt">${fmtN(origRate)}&nbsp;€/m³</span><br>${fmtN(discRate)}&nbsp;€/m³`;
+      return `${fmtN(discRate)}&nbsp;€/m³`;
+    };
+
+    const svcRateStr = (rate: number, suffix: string, factor = sluzbyFactor) => {
+      const discRate = rate * factor;
+      if (hasDiscount && Math.abs(rate - discRate) > 0.001)
+        return `<span style="text-decoration:line-through;color:#bbb;font-size:7.5pt">${fmtN(rate)}&nbsp;${suffix}</span><br>${fmtN(discRate)}&nbsp;${suffix}`;
+      return `${fmtN(discRate)}&nbsp;${suffix}`;
+    };
+
     // Build rows — main item only (extras handled separately in extraRows)
     const mainCI = result.concreteBreakdown[0];
     const mainBetonLabel = mainCI?.label.replace(/ – [\d.,]+ m³$/, "") ?? "";
@@ -1211,23 +1227,6 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       chem: tab === "pumpa" ? chemServicePrice : 0,
       waiting: tab === "pumpa" ? result.waitIntervals * waitServicePricePumpa : tab === "mix" ? result.waitIntervals * waitServicePriceMix : 0,
     };
-    // Helper: jednotková cena so zľavou a strikethrough pre Spolu stĺpec
-    const svcRateStr = (rate: number, suffix: string, factor = sluzbyFactor) => {
-      const discRate = rate * factor;
-      if (hasDiscount && Math.abs(rate - discRate) > 0.001)
-        return `<span style="text-decoration:line-through;color:#bbb;font-size:7.5pt">${fmtN(rate)}&nbsp;${suffix}</span><br>${fmtN(discRate)}&nbsp;${suffix}`;
-      return `${fmtN(discRate)}&nbsp;${suffix}`;
-    };
-
-    const transRateStr = (origTotal: number, qty: number, factor: number) => {
-      if (qty <= 0 || origTotal <= 0) return "—";
-      const origRate = origTotal / qty;
-      const discRate = origRate * factor;
-      if (hasDiscount && Math.abs(origRate - discRate) > 0.001)
-        return `<span style="text-decoration:line-through;color:#bbb;font-size:7.5pt">${fmtN(origRate)}&nbsp;€/m³</span><br>${fmtN(discRate)}&nbsp;€/m³`;
-      return `${fmtN(discRate)}&nbsp;€/m³`;
-    };
-
     const hasMainSluzby =
       (tab === "pumpa" && (mainSluzbyOrig.pump + mainSluzbyOrig.hoses + mainSluzbyOrig.washing + mainSluzbyOrig.chem + mainSluzbyOrig.waiting) > 0) ||
       (tab === "mix" && mainSluzbyOrig.waiting > 0);

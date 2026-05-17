@@ -2013,7 +2013,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
           <div className="hidden sm:flex w-40 shrink-0 items-center justify-end">
             {/* spacer pre badge stĺpec — zrkadlí šírku badge sekcie v riadkoch */}
           </div>
-          <div className="flex items-center justify-end w-28 shrink-0">
+          <div className="flex items-center justify-end w-40 shrink-0">
             <button onClick={() => { setAdding(true); setExpanded(null); }} title="Pridať klienta"
               className="flex items-center gap-1.5 px-2.5 py-1.5 bg-primary text-secondary font-black text-[10px] hover:bg-primary/90 shrink-0 uppercase tracking-wide">
               <UserPlus className="w-5 h-5" />
@@ -2289,7 +2289,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                   )}
                 </div>
                 {/* Ikona tlačidlá — pevná šírka zodpovedá header akciám */}
-                <div className="flex items-center justify-end w-28 shrink-0">
+                <div className="flex items-center justify-end w-40 shrink-0">
                   <button
                     onClick={(e) => { e.stopPropagation(); setExpanded(c.id); setClientDetailTab(prev => ({ ...prev, [c.id]: "calc" })); scrollToClientCard(c.id); }}
                     title="Kalkulačka klienta"
