@@ -1660,6 +1660,18 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
   const [inlineTableMode, setInlineTableMode] = useState<"faktura" | "hotovost">("faktura");
   const [tablePdfModal, setTablePdfModal] = useState<Client | null>(null);
   const [tablePdfMode, setTablePdfMode] = useState<"faktura" | "hotovost">("faktura");
+
+  useEffect(() => {
+    if (!tablePdfModal) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      // ak je aktívny input → EditRow to rieši sám; popup ostáva otvorený
+      if (document.activeElement?.tagName === "INPUT") return;
+      setTablePdfModal(null);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [tablePdfModal]);
   const [search, setSearch] = useState("");
   const [adding, setAdding] = useState(false);
   const [clientDetailTab, setClientDetailTab] = useState<Record<string, "detail" | "calc">>({});
@@ -2542,8 +2554,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
 
       {/* ── Popup: Zľavové tabuľky klienta ── */}
       {tablePdfModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 overflow-auto"
-          onKeyDown={e => { if (e.key === "Escape") setTablePdfModal(null); }}>
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 overflow-auto">
           <div className="bg-gray-50 w-full max-w-3xl my-4 shadow-2xl rounded-sm">
 
             {/* Header */}
