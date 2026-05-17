@@ -1690,7 +1690,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         {/* Tabs */}
         <div className="grid grid-cols-3">
           {(["pumpa", "mix", "vlastnadoprava"] as Tab[]).map((t) => (
-            <button key={t} onClick={() => { setTab(t); setExtraItems([]); setShowResult(false); setTabInfoOpen(false); gtagEvent("calc_tab", { tab: t }); }}
+            <button key={t} onClick={() => { if (tab === t) { setTabInfoOpen(o => !o); } else { setTab(t); setExtraItems([]); setShowResult(false); setTabInfoOpen(false); gtagEvent("calc_tab", { tab: t }); } }}
               className={cn("flex flex-col items-center justify-center gap-2 py-4 transition-all cursor-pointer group",
                 tab === t ? "bg-secondary border-b-4 border-primary" : "bg-white/5 border-b-4 border-transparent hover:bg-white/10"
               )}>
@@ -1740,8 +1740,69 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
               <span className={cn("text-[10px] font-medium transition-colors text-center px-1", tab === t ? "text-white/70" : "text-white/30 group-hover:text-white/50")}>
                 {t === "pumpa" ? `Pumpa ${pumpCap}m³ · 28m` : t === "mix" ? `Domiešavač ${mixCap}m³` : "Vlastná doprava"}
               </span>
+              {tab === t && (
+                <span className={cn("md:hidden text-[9px] font-black tracking-widest transition-colors px-1.5 py-0.5 rounded-full border", tabInfoOpen ? "border-primary/60 text-primary bg-primary/15" : "border-white/15 text-white/30")}>
+                  ⓘ
+                </span>
+              )}
             </button>
           ))}
+        </div>
+
+        {/* Mobile info panel — activates via tapping active tab */}
+        <div className={cn("md:hidden overflow-hidden transition-[max-height] duration-300", tabInfoOpen ? "max-h-56" : "max-h-0")}>
+          <div className="px-4 py-3 bg-white/5 border-b border-white/10 flex items-start gap-4">
+            <div className="shrink-0 opacity-60">
+              {tab === "pumpa" ? (
+                <svg viewBox="0 0 130 48" className="w-16 h-10 text-primary" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="27" width="14" height="15" rx="1" /><rect x="3" y="22" width="9" height="6" rx="1" />
+                  <line x1="16" y1="33" x2="44" y2="33" /><line x1="16" y1="42" x2="44" y2="42" /><line x1="44" y1="33" x2="44" y2="42" />
+                  <line x1="26" y1="33" x2="26" y2="21" strokeWidth="2.5" /><line x1="22" y1="21" x2="30" y2="21" strokeWidth="1.8" />
+                  <line x1="26" y1="21" x2="16" y2="6" strokeWidth="3" /><line x1="16" y1="6" x2="122" y2="2" strokeWidth="2.5" />
+                  <line x1="122" y1="2" x2="127" y2="2" strokeWidth="2" /><line x1="126" y1="2" x2="126" y2="17" strokeWidth="1.8" />
+                  <circle cx="8" cy="42" r="4" strokeWidth="2" /><circle cx="36" cy="42" r="4" strokeWidth="2" />
+                </svg>
+              ) : tab === "mix" ? (
+                <svg viewBox="0 0 80 44" className="w-12 h-10 text-primary" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="22" width="18" height="16" rx="1" /><rect x="3" y="18" width="10" height="6" rx="1" />
+                  <line x1="20" y1="30" x2="62" y2="30" /><line x1="20" y1="38" x2="62" y2="38" /><line x1="62" y1="30" x2="62" y2="38" />
+                  <ellipse cx="44" cy="22" rx="18" ry="12" />
+                  <path d="M30 26 Q44 18 58 26" strokeWidth="1.5" /><path d="M30 20 Q44 12 58 20" strokeWidth="1.5" />
+                  <circle cx="10" cy="38" r="4" strokeWidth="2" /><circle cx="52" cy="38" r="4" strokeWidth="2" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 64 46" className="w-12 h-10 text-primary" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="1" y="26" width="62" height="13" rx="2" />
+                  <path d="M10 26 L19 14 L48 14 L56 26" />
+                  <rect x="20" y="15" width="11" height="10" rx="1" /><rect x="33" y="15" width="12" height="10" rx="1" />
+                  <circle cx="25.5" cy="19.5" r="3.2" fill="currentColor" stroke="none" />
+                  <line x1="32" y1="26" x2="32" y2="39" strokeWidth="1.5" />
+                  <circle cx="15" cy="40" r="4.5" strokeWidth="1.8" /><circle cx="49" cy="40" r="4.5" strokeWidth="1.8" />
+                </svg>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-black text-white mb-1">
+                {tab === "pumpa" ? `Betónová pumpa ${pumpCap}m³ · 28m rameno` : tab === "mix" ? `Domiešavač ${mixCap}m³` : "Vlastná doprava"}
+              </div>
+              <ul className="space-y-0.5">
+                {tab === "pumpa" && (<>
+                  <li className="text-[11px] text-white/55">· Prvé auto <span className="text-primary font-bold">{pumpCap}m³</span>, každé ďalšie <span className="text-primary font-bold">{mixCap}m³</span> (domiešavač)</li>
+                  <li className="text-[11px] text-white/55">· Čerpanie sa účtuje od príjazdu na stavbu</li>
+                  <li className="text-[11px] text-white/55">· Dosah ramena <span className="text-primary font-bold">28m</span></li>
+                </>)}
+                {tab === "mix" && (<>
+                  <li className="text-[11px] text-white/55">· Kapacita <span className="text-primary font-bold">{mixCap}m³</span> na jedno auto</li>
+                  <li className="text-[11px] text-white/55">· Prvých <span className="text-primary font-bold">30 min</span> čakania zadarmo</li>
+                  <li className="text-[11px] text-white/55">· Každých začatých 15 min = 1 interval čakania</li>
+                </>)}
+                {tab === "vlastnadoprava" && (<>
+                  <li className="text-[11px] text-white/55">· Zákazník zabezpečuje dopravu vlastným vozidlom</li>
+                  <li className="text-[11px] text-white/55">· Výdaj na prevádzke, doprava sa nepočíta</li>
+                </>)}
+              </ul>
+            </div>
+          </div>
         </div>
 
         {/* Two-column layout: form | result */}
@@ -1749,33 +1810,6 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
         {/* LEFT: Form */}
         <div className="p-6 space-y-5">
-
-          {/* Mobile-only collapsible info — nad login bar, skryté na md+ aj po vypočítaní */}
-          <div className={cn("md:hidden -mt-1", showResult && "hidden")}>
-            <button
-              onClick={() => setTabInfoOpen(o => !o)}
-              className={cn("w-full flex items-center gap-2 px-3 py-2 text-left transition-colors",
-                tabInfoOpen
-                  ? "bg-primary/10 border border-primary/20 rounded-t-lg"
-                  : "bg-primary/10 border border-primary/20 rounded-lg"
-              )}
-            >
-              <Info className="w-4 h-4 text-primary shrink-0" />
-              <span className="text-xs font-semibold text-white/80 flex-1">
-                {tab === "pumpa" ? `Pumpa ${pumpCap}m³ · 28m rameno` : tab === "mix" ? `Domiešavač ${mixCap}m³` : "Vlastná doprava"}
-              </span>
-              <ChevronDown className={cn("w-3.5 h-3.5 text-white/40 transition-transform duration-150", tabInfoOpen && "rotate-180")} />
-            </button>
-            {tabInfoOpen && (
-              <div className="bg-primary/5 border border-primary/10 border-t-0 rounded-b-lg px-3 pb-2.5 pt-1.5">
-                <p className="text-xs text-white/60 leading-relaxed">
-                  {tab === "pumpa" && `Prvé auto ${pumpCap}m³, každé ďalšie ${mixCap}m³ (domiešavač). Čerpanie od príjazdu na stavbu.`}
-                  {tab === "mix" && `Prvých 30 min čakania bez poplatku. Čakanie každých začatých 15 min. Kapacita ${mixCap}m³.`}
-                  {tab === "vlastnadoprava" && "Zákazník si betón vyzdvihne vlastným vozidlom na prevádzke. Doprava sa nepočíta."}
-                </p>
-              </div>
-            )}
-          </div>
 
           {/* Client login bar */}
           <div className="py-2 border-b border-white/10">

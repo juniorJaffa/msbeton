@@ -2160,7 +2160,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                 {/* Ikona tlačidlá — pevná šírka zodpovedá header akciám */}
                 <div className="flex items-center justify-end w-28 shrink-0">
                   <button
-                    onClick={(e) => { e.stopPropagation(); setExpanded(c.id); setClientDetailTab(prev => ({ ...prev, [c.id]: "calc" })); }}
+                    onClick={(e) => { e.stopPropagation(); setExpanded(c.id); setClientDetailTab(prev => ({ ...prev, [c.id]: "calc" })); scrollToClientCard(c.id); }}
                     title="Kalkulačka klienta"
                     className="p-1.5 text-gray-300 hover:text-primary transition-colors">
                     <Calculator className="w-5 h-5" />
@@ -2169,7 +2169,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                     <a href={c.sharedLink} target="_blank" rel="noopener noreferrer" title="Zdielaný odkaz"
                       onClick={e => e.stopPropagation()}
                       className="p-1.5 text-gray-300 hover:text-primary transition-colors">
-                      {(() => { const { Icon } = sharedLinkIcon(c.sharedLink); return <Icon className="w-5 h-5" />; })()}
+                      {(() => { const { Icon, cls } = sharedLinkIcon(c.sharedLink); return <Icon className={`w-5 h-5 ${cls}`} />; })()}
                     </a>
                   )}
                   <button
