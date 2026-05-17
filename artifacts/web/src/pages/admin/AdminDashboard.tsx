@@ -2870,9 +2870,15 @@ function AnalyticsTab() {
   useEffect(() => {
     setLoading(true); setErr(null);
     fetch("/api/admin/analytics")
-      .then(r => r.ok ? r.json() as Promise<Ga4Data> : r.json().then((e: { error?: string }) => Promise.reject(e.error ?? "Chyba")))
+      .then(async r => {
+        const text = await r.text();
+        let json: { error?: string } & Ga4Data;
+        try { json = JSON.parse(text); } catch { throw new Error("API server nie je spustený — spustite lokálny API server (PORT=3000 pnpm dev)"); }
+        if (!r.ok) throw new Error(json.error ?? `HTTP ${r.status}`);
+        return json as Ga4Data;
+      })
       .then(d => { setData(d); setLoading(false); })
-      .catch(e => { setErr(String(e)); setLoading(false); });
+      .catch(e => { setErr(String(e instanceof Error ? e.message : e)); setLoading(false); });
   }, [refreshKey]);
 
   if (loading) return (

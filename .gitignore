@@ -46,9 +46,11 @@ Thumbs.db
 .github/instructions/nx.instructions.md
 
 # Replit
+.replit
+.replitignore
+.replit-artifact/
 .cache/
 .local/
-deploy.sh
 deploy.sh
 
 # Claude Token Monitor data

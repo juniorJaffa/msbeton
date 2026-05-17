@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Menu, X, Phone, Mail, LogIn, LogOut, Calculator, UserCog } from "lucide-react";
+import { Menu, X, Phone, Mail, LogIn, LogOut, Calculator, UserCog, ShieldCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { clientAuth, type LoggedClient } from "@/lib/clientAuth";
@@ -104,10 +104,10 @@ export function Navbar() {
               {/* ── Admin ── */}
               <a
                 href="/admin/login"
-                className="flex items-center gap-1 text-white/25 hover:text-white/50 transition-colors shrink-0 py-1 px-1"
-                title="Administrácia"
+                className="flex items-center gap-1 text-white/20 hover:text-amber-400/60 transition-colors shrink-0 py-1 px-1"
+                title="Admin — administrácia"
               >
-                <UserCog className="w-3.5 h-3.5 shrink-0" />
+                <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
                 <span className="hidden sm:inline text-[10px] font-medium">Admin</span>
               </a>
             </div>
