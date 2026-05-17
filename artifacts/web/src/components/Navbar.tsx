@@ -55,18 +55,7 @@ export function Navbar() {
                 +421 909 205 205
               </a>
               <span className="text-white/20">|</span>
-              {/* ── Kalkulačka + Klient sekcia ── */}
-              <a
-                href="/#calculator"
-                className="relative flex items-center gap-1.5 text-white/55 hover:text-primary transition-colors text-xs font-bold tracking-wide group shrink-0"
-                title="Kalkulačka betónu"
-              >
-                <span className="relative inline-flex">
-                  <span className="absolute inset-0 rounded-full animate-ping opacity-60" style={{ background: "#EDC531" }} />
-                  <Calculator className="relative w-3.5 h-3.5 group-hover:text-primary" />
-                </span>
-                <span className="hidden sm:inline">Kalkulačka</span>
-              </a>
+              {/* ── Klient sekcia ── */}
               {loggedClient ? (
                 <div className="flex items-center gap-2 shrink-0">
                   {loggedClient.id !== "admin" ? (
@@ -99,6 +88,18 @@ export function Navbar() {
                   <span>Klient</span>
                 </a>
               )}
+              {/* ── Kalkulačka ── */}
+              <a
+                href="/#calculator"
+                className="relative flex items-center gap-1.5 text-white/55 hover:text-primary transition-colors text-xs font-bold tracking-wide group shrink-0"
+                title="Kalkulačka betónu"
+              >
+                <span className="relative inline-flex">
+                  <span className="absolute inset-0 rounded-full animate-ping opacity-60" style={{ background: "#EDC531" }} />
+                  <Calculator className="relative w-3.5 h-3.5 group-hover:text-primary" />
+                </span>
+                <span className="hidden sm:inline">Kalkulačka</span>
+              </a>
               {/* ── Oddeľovač ── */}
               <span className="text-white/15">|</span>
               {/* ── Admin ── */}
