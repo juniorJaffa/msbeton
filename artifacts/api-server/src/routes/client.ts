@@ -236,7 +236,7 @@ router.post("/order", async (req, res) => {
 // Update client loginId / email (requires current password verification)
 router.put("/profile", async (req, res) => {
   try {
-    const { id, currentPassword, newLoginId, newEmail } = req.body ?? {};
+    const { id, currentPassword, newLoginId, newEmail, newPassword } = req.body ?? {};
     if (!id || !currentPassword) return res.status(400).json({ ok: false, error: "Chýba ID alebo aktuálne heslo" });
     if (!checkRate(`profile:${id}`)) return res.status(429).json({ ok: false, error: "Príliš veľa pokusov. Skúste znova o hodinu." });
 
@@ -252,14 +252,19 @@ router.put("/profile", async (req, res) => {
         return res.status(409).json({ ok: false, error: "Prihlasovacie ID je už obsadené" });
       }
     }
+    if (newPassword && String(newPassword).length < 6) {
+      return res.status(400).json({ ok: false, error: "Nové heslo musí mať aspoň 6 znakov" });
+    }
 
     const clientRows = await db.select().from(adminConfig).where(eq(adminConfig.key, "clients"));
     if (!clientRows.length || !Array.isArray(clientRows[0].data)) return res.status(500).json({ ok: false, error: "Chyba databázy" });
     const clients = clientRows[0].data as UnifiedClient[];
+    const hashedNew = newPassword ? await bcrypt.hash(String(newPassword), 10) : undefined;
     const updated = clients.map((c) => c.id === account.id ? {
       ...c,
       ...(newLoginId ? { loginId: String(newLoginId) } : {}),
       ...(newEmail !== undefined ? { email: String(newEmail) } : {}),
+      ...(hashedNew ? { password: hashedNew } : {}),
     } : c);
     await db.insert(adminConfig).values({ key: "clients", data: updated })
       .onConflictDoUpdate({ target: adminConfig.key, set: { data: updated, updatedAt: new Date() } });

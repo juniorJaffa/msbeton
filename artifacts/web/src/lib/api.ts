@@ -75,10 +75,10 @@ export const clientApi = {
       method: "POST",
       body: JSON.stringify(order),
     }),
-  updateProfile: (id: string, currentPassword: string, newLoginId?: string, newEmail?: string) =>
+  updateProfile: (id: string, currentPassword: string, newLoginId?: string, newEmail?: string, newPassword?: string) =>
     apiFetch<{ ok: boolean; client?: LoggedClient; error?: string }>(CLIENT_API, "/profile", {
       method: "PUT",
-      body: JSON.stringify({ id, currentPassword, newLoginId, newEmail }),
+      body: JSON.stringify({ id, currentPassword, newLoginId, newEmail, newPassword }),
     }),
   requestPasswordReset: (id: string) =>
     apiFetch<{ ok: boolean; error?: string }>(CLIENT_API, "/password-reset-request", {

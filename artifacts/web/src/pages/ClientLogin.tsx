@@ -1,34 +1,212 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { Navbar } from "@/components/Navbar";
-import { clientAuth } from "@/lib/clientAuth";
+import {
+  clientAuth,
+  isBiometricAvailable, hasClientBiometric,
+  authenticateClientBiometric, registerClientBiometric, clearClientBiometric,
+  getClientAttemptInfo, recordClientFailedAttempt, resetClientAttempts,
+} from "@/lib/clientAuth";
 import { SEOHead } from "@/components/SEOHead";
-import { LogIn } from "lucide-react";
+import { LogIn, Fingerprint, AlertCircle, Clock, RefreshCw, Check } from "lucide-react";
+
+function generateCaptcha() {
+  const a = Math.floor(Math.random() * 9) + 1;
+  const b = Math.floor(Math.random() * 9) + 1;
+  return { a, b, answer: a + b };
+}
+
+type Screen = "form" | "bio-pending" | "bio-failed" | "bio-register";
 
 export default function ClientLogin() {
   const [, setLocation] = useLocation();
+  const [screen, setScreen] = useState<Screen>("form");
   const [id, setId] = useState("");
   const [pwd, setPwd] = useState("");
+  const [captcha, setCaptcha] = useState(generateCaptcha);
+  const [captchaInput, setCaptchaInput] = useState("");
+  const [honeypot, setHoneypot] = useState("");
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
+  const [lockInfo, setLockInfo] = useState({ locked: false, remainingMs: 0 });
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  async function handleLogin(e?: React.FormEvent) {
+  const refreshCaptcha = () => { setCaptcha(generateCaptcha()); setCaptchaInput(""); };
+
+  const formatLockTime = (ms: number) => {
+    const mins = Math.floor(ms / 60000);
+    const secs = Math.floor((ms % 60000) / 1000);
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  useEffect(() => {
+    if (clientAuth.getLoggedClient()) { setLocation("/#calculator"); return; }
+
+    const info = getClientAttemptInfo();
+    setLockInfo({ locked: info.locked, remainingMs: info.remainingMs });
+    if (info.locked) {
+      timerRef.current = setInterval(() => {
+        const cur = getClientAttemptInfo();
+        setLockInfo({ locked: cur.locked, remainingMs: cur.remainingMs });
+        if (!cur.locked && timerRef.current) clearInterval(timerRef.current);
+      }, 1000);
+    }
+
+    if (isBiometricAvailable() && hasClientBiometric()) {
+      setScreen("bio-pending");
+      authenticateClientBiometric().then(result => {
+        if (result.ok && result.clientId) {
+          const session = clientAuth.getLoggedClient();
+          if (session) {
+            window.dispatchEvent(new Event("client-session-changed"));
+            setLocation("/#calculator");
+          } else {
+            setScreen("bio-failed");
+          }
+        } else {
+          setScreen("bio-failed");
+        }
+      });
+    }
+
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [setLocation]);
+
+  const retryBiometric = () => {
+    setScreen("bio-pending");
+    authenticateClientBiometric().then(result => {
+      if (result.ok) {
+        const session = clientAuth.getLoggedClient();
+        if (session) { window.dispatchEvent(new Event("client-session-changed")); setLocation("/#calculator"); }
+        else setScreen("bio-failed");
+      } else setScreen("bio-failed");
+    });
+  };
+
+  const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!id.trim() || !pwd.trim()) {
-      setErr("Vyplňte ID klienta a heslo");
+    setErr("");
+    if (honeypot) { setErr("Odoslanie zamietnuté."); return; }
+    if (lockInfo.locked) { setErr("Účet je dočasne zablokovaný."); return; }
+    if (parseInt(captchaInput) !== captcha.answer) {
+      setErr("Nesprávna odpoveď na overenie.");
+      refreshCaptcha();
       return;
     }
+    if (!id.trim() || !pwd.trim()) { setErr("Vyplňte ID klienta a heslo"); return; }
     setLoading(true);
-    setErr("");
+    await new Promise(r => setTimeout(r, 400));
     const res = await clientAuth.login(id.trim(), pwd.trim());
     setLoading(false);
-    if (res.ok) {
-      setLocation("/#calculator");
+    if (res.ok && res.client) {
+      resetClientAttempts();
+      if (isBiometricAvailable() && !hasClientBiometric()) {
+        setScreen("bio-register");
+      } else {
+        setLocation("/#calculator");
+      }
     } else {
-      setErr(res.error ?? "Nesprávne prihlasovacie údaje");
+      const count = recordClientFailedAttempt();
+      const info = getClientAttemptInfo();
+      setLockInfo({ locked: info.locked, remainingMs: info.remainingMs });
+      if (info.locked) {
+        timerRef.current = setInterval(() => {
+          const cur = getClientAttemptInfo();
+          setLockInfo({ locked: cur.locked, remainingMs: cur.remainingMs });
+          if (!cur.locked && timerRef.current) clearInterval(timerRef.current);
+        }, 1000);
+        setErr(`Príliš veľa pokusov (${count}). Účet zablokovaný na 5 minút.`);
+      } else {
+        setErr(res.error ?? "Nesprávne prihlasovacie údaje");
+      }
+      refreshCaptcha();
     }
-  }
+  };
 
+  const registerBio = async () => {
+    const session = clientAuth.getLoggedClient();
+    if (!session) { setLocation("/#calculator"); return; }
+    const res = await registerClientBiometric(session.id, session.name);
+    if (res.ok) setLocation("/#calculator");
+    else setLocation("/#calculator");
+  };
+
+  // ── BIOMETRIC PENDING ──
+  if (screen === "bio-pending") return (
+    <>
+      <SEOHead title="Prihlásenie klienta – MS-BETON" noIndex />
+      <Navbar />
+      <div className="min-h-screen concrete-navy flex items-center justify-center p-4">
+        <div className="w-full max-w-sm bg-secondary/95 rounded-2xl shadow-2xl border border-white/10 p-10 text-center">
+          <div className="w-16 h-16 bg-primary/20 border-2 border-primary/40 rounded-full flex items-center justify-center mx-auto mb-5 animate-pulse">
+            <Fingerprint className="w-8 h-8 text-primary" />
+          </div>
+          <p className="text-white font-black text-lg mb-2">Biometrické overenie</p>
+          <p className="text-white/40 text-sm">Potvrďte odtlačok prsta alebo Face ID…</p>
+        </div>
+      </div>
+    </>
+  );
+
+  // ── BIOMETRIC FAILED ──
+  if (screen === "bio-failed") return (
+    <>
+      <SEOHead title="Prihlásenie klienta – MS-BETON" noIndex />
+      <Navbar />
+      <div className="min-h-screen concrete-navy flex items-center justify-center p-4">
+        <div className="w-full max-w-sm bg-secondary/95 rounded-2xl shadow-2xl border border-white/10 overflow-hidden">
+          <div className="px-8 py-7 border-b border-white/10 text-center">
+            <div className="w-12 h-12 bg-red-500/20 border border-red-500/30 rounded-full flex items-center justify-center mx-auto mb-3">
+              <AlertCircle className="w-6 h-6 text-red-400" />
+            </div>
+            <p className="text-white font-black">Biometria zlyhala</p>
+            <p className="text-white/40 text-xs mt-1">Skúste znova alebo zadajte heslo</p>
+          </div>
+          <div className="px-8 py-5 space-y-3">
+            <button onClick={retryBiometric}
+              className="w-full py-3 bg-primary text-secondary font-black text-sm tracking-widest hover:bg-primary/85 transition-all rounded-sm flex items-center justify-center gap-2 cursor-pointer">
+              <Fingerprint className="w-4 h-4" /> Skúsiť znova
+            </button>
+            <button onClick={() => { clearClientBiometric(); setScreen("form"); }}
+              className="w-full py-3 border border-white/15 text-white/50 hover:text-white/80 hover:border-white/30 font-semibold text-sm tracking-widest transition-all rounded-sm cursor-pointer">
+              Prihlásiť heslom
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+
+  // ── BIOMETRIC REGISTER ──
+  if (screen === "bio-register") return (
+    <>
+      <SEOHead title="Prihlásenie klienta – MS-BETON" noIndex />
+      <Navbar />
+      <div className="min-h-screen concrete-navy flex items-center justify-center p-4">
+        <div className="w-full max-w-sm bg-secondary/95 rounded-2xl shadow-2xl border border-white/10 overflow-hidden">
+          <div className="px-8 py-7 border-b border-white/10 text-center">
+            <div className="w-12 h-12 bg-primary/20 border border-primary/30 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Fingerprint className="w-6 h-6 text-primary" />
+            </div>
+            <p className="text-white font-black text-lg">Zapamätať biometricky?</p>
+            <p className="text-white/40 text-sm mt-1">Budúce prihlásenie bez hesla — odtlačok prsta alebo Face ID</p>
+          </div>
+          <div className="px-8 py-5 space-y-3">
+            <button onClick={registerBio}
+              className="w-full py-3.5 bg-primary text-secondary font-black text-sm tracking-widest hover:bg-primary/85 transition-all rounded-sm flex items-center justify-center gap-2 cursor-pointer">
+              <Check className="w-4 h-4" /> Áno, aktivovať
+            </button>
+            <button onClick={() => setLocation("/#calculator")}
+              className="w-full py-3 border border-white/15 text-white/50 hover:text-white/80 font-semibold text-sm tracking-widest transition-all rounded-sm cursor-pointer">
+              Nie, preskočiť
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+
+  // ── MAIN FORM ──
   return (
     <>
       <SEOHead title="Prihlásenie klienta – MS-BETON" noIndex />
@@ -43,34 +221,81 @@ export default function ClientLogin() {
                 <div className="w-9 h-9 bg-primary/20 border border-primary/30 rounded-full flex items-center justify-center">
                   <LogIn className="w-4 h-4 text-primary" />
                 </div>
-                <h1 className="text-xl font-black text-white tracking-wide">Prihlásenie</h1>
+                <h1 className="text-xl font-black text-white tracking-wide">Prihlásenie klienta</h1>
               </div>
               <p className="text-white/45 text-sm ml-12">Zadajte vaše klientské ID a heslo</p>
             </div>
 
             {/* Form */}
-            <form onSubmit={handleLogin} className="px-8 py-7 space-y-4" noValidate>
-              <div>
-                <label className="block text-xs font-semibold text-white/60 mb-2 tracking-wider uppercase">ID klienta</label>
-                <input
-                  value={id}
-                  onChange={(e) => setId(e.target.value)}
-                  placeholder="napr. 20"
-                  autoComplete="username"
-                  className="w-full bg-white/8 border-b-2 border-b-primary/60 focus:border-b-primary text-white px-4 py-3 focus:outline-none placeholder:text-white/25 text-sm font-medium rounded-sm transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-white/60 mb-2 tracking-wider uppercase">Heslo</label>
-                <input
-                  type="password"
-                  value={pwd}
-                  onChange={(e) => setPwd(e.target.value)}
-                  placeholder="••••"
-                  autoComplete="current-password"
-                  className="w-full bg-white/8 border-b-2 border-b-primary/60 focus:border-b-primary text-white px-4 py-3 focus:outline-none placeholder:text-white/25 text-sm font-medium rounded-sm transition-colors"
-                />
-              </div>
+            <form onSubmit={handleLogin} className="px-8 py-7 space-y-4" noValidate autoComplete="off">
+
+              {/* Honeypot — hidden from humans */}
+              <input
+                type="text"
+                name="website"
+                value={honeypot}
+                onChange={e => setHoneypot(e.target.value)}
+                tabIndex={-1}
+                aria-hidden="true"
+                style={{ position: "absolute", left: "-9999px", opacity: 0, height: 0 }}
+              />
+
+              {lockInfo.locked ? (
+                <div className="bg-red-500/15 border border-red-500/30 rounded-lg px-4 py-4 flex items-center gap-3">
+                  <Clock className="w-5 h-5 text-red-400 shrink-0" />
+                  <div>
+                    <p className="text-red-400 text-sm font-bold">Príliš veľa pokusov</p>
+                    <p className="text-red-400/70 text-xs">Skúste znova o {formatLockTime(lockInfo.remainingMs)}</p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-xs font-semibold text-white/60 mb-2 tracking-wider uppercase">ID klienta</label>
+                    <input
+                      value={id}
+                      onChange={e => setId(e.target.value)}
+                      placeholder="napr. 20"
+                      autoComplete="username"
+                      className="w-full bg-white/8 border-b-2 border-b-primary/60 focus:border-b-primary text-white px-4 py-3 focus:outline-none placeholder:text-white/25 text-sm font-medium rounded-sm transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-white/60 mb-2 tracking-wider uppercase">Heslo</label>
+                    <input
+                      type="password"
+                      value={pwd}
+                      onChange={e => setPwd(e.target.value)}
+                      placeholder="••••"
+                      autoComplete="current-password"
+                      className="w-full bg-white/8 border-b-2 border-b-primary/60 focus:border-b-primary text-white px-4 py-3 focus:outline-none placeholder:text-white/25 text-sm font-medium rounded-sm transition-colors"
+                    />
+                  </div>
+
+                  {/* Math captcha */}
+                  <div className="bg-white/5 border border-white/10 rounded-lg px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <p className="text-white/50 text-xs mb-2 uppercase tracking-wider">Koľko je <span className="text-primary font-black">{captcha.a}</span> + <span className="text-primary font-black">{captcha.b}</span> ?</p>
+                        <input
+                          type="number"
+                          value={captchaInput}
+                          onChange={e => setCaptchaInput(e.target.value)}
+                          onKeyDown={e => e.key === "Enter" && handleLogin()}
+                          placeholder="Výsledok"
+                          inputMode="numeric"
+                          autoComplete="off"
+                          className="w-full bg-white/8 border-b border-b-white/20 focus:border-b-primary text-white px-2 py-1.5 focus:outline-none placeholder:text-white/20 text-sm font-mono rounded-sm transition-colors"
+                        />
+                      </div>
+                      <button type="button" onClick={refreshCaptcha}
+                        className="text-white/25 hover:text-white/50 transition-colors p-1" title="Nová otázka">
+                        <RefreshCw className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
 
               {err && (
                 <div className="bg-red-500/15 border border-red-500/30 rounded-lg px-4 py-3">
@@ -78,13 +303,22 @@ export default function ClientLogin() {
                 </div>
               )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full mt-2 py-3.5 bg-primary text-white font-black text-sm tracking-widest hover:bg-primary/85 transition-all disabled:opacity-50 disabled:cursor-not-allowed rounded-sm cursor-pointer"
-              >
-                {loading ? "Prihlasovanie..." : "PRIHLÁSIŤ SA"}
-              </button>
+              {!lockInfo.locked && (
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full mt-2 py-3.5 bg-primary text-white font-black text-sm tracking-widest hover:bg-primary/85 transition-all disabled:opacity-50 disabled:cursor-not-allowed rounded-sm cursor-pointer"
+                >
+                  {loading ? "Prihlasovanie..." : "PRIHLÁSIŤ SA"}
+                </button>
+              )}
+
+              {isBiometricAvailable() && hasClientBiometric() && !lockInfo.locked && (
+                <button type="button" onClick={retryBiometric}
+                  className="w-full py-2.5 border border-primary/30 text-primary/70 hover:border-primary hover:text-primary font-bold text-xs tracking-widest transition-all rounded-sm flex items-center justify-center gap-2 cursor-pointer">
+                  <Fingerprint className="w-4 h-4" /> Prihlásiť biometricky
+                </button>
+              )}
 
               <p className="text-center text-white/30 text-xs pt-2">
                 Prihlasovacie údaje vám poskytne MS-BETON
@@ -93,9 +327,7 @@ export default function ClientLogin() {
           </div>
 
           <div className="mt-6 text-center">
-            <a href="/" className="text-white/35 hover:text-white/60 text-xs transition-colors">
-              ← Späť na hlavnú stránku
-            </a>
+            <a href="/" className="text-white/35 hover:text-white/60 text-xs transition-colors">← Späť na hlavnú stránku</a>
           </div>
         </div>
       </div>
