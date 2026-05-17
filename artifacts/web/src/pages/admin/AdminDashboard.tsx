@@ -2945,7 +2945,7 @@ function AnalyticsTab() {
         <div className="mt-3 space-y-1 max-h-48 overflow-y-auto">
           {[...daily].reverse().slice(0, 14).map(d => (
             <div key={d.date} className="flex items-center gap-2 text-[11px]">
-              <span className="w-20 text-gray-400 font-mono shrink-0">{d.date.slice(4, 6)}.{d.date.slice(6, 8)}.{d.date.slice(0, 4)}</span>
+              <span className="w-20 text-gray-400 font-mono shrink-0">{d.date.slice(6, 8)}.{d.date.slice(4, 6)}.{d.date.slice(0, 4)}</span>
               <MiniBar value={d.sessions} max={maxSess} />
               <span className="w-8 text-right font-bold text-secondary shrink-0">{d.sessions}</span>
               <span className="w-12 text-right text-gray-400 shrink-0">{d.users} usr</span>

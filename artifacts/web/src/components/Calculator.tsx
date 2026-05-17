@@ -1932,17 +1932,34 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 )}
               </div>
             )}
-            <div className="flex items-center gap-6 pt-1">
-              {(["distance", "address", "map"] as const).map((m) => (
-                <label key={m} className="flex items-center gap-2 cursor-pointer">
-                  <div onClick={() => switchDeliveryMode(m)}
-                    className={cn("w-4 h-4 border-2 flex items-center justify-center transition-all flex-shrink-0",
-                      deliveryMode === m ? "bg-primary border-primary" : "bg-white/10 border-white/30")}>
-                    {deliveryMode === m && <span className="text-white text-[9px] font-bold">✓</span>}
-                  </div>
-                  <span className="text-sm text-white/70">{m === "distance" ? "Vzdialenosť" : m === "address" ? "Adresa" : "Mapa"}</span>
-                </label>
-              ))}
+            {/* Mode switcher — 2 main pills + address/map sub-tabs */}
+            <div className="space-y-2 pt-1">
+              <div className="flex gap-2">
+                <button type="button" onClick={() => switchDeliveryMode("distance")}
+                  className={cn("flex-1 py-2 text-xs font-black uppercase tracking-widest rounded-sm border transition-all",
+                    deliveryMode === "distance" ? "bg-primary/20 border-primary text-primary" : "border-white/15 text-white/40 hover:border-white/30 hover:text-white/60")}>
+                  📏 Vzdialenosť (km)
+                </button>
+                <button type="button" onClick={() => deliveryMode === "distance" ? switchDeliveryMode("address") : undefined}
+                  className={cn("flex-1 py-2 text-xs font-black uppercase tracking-widest rounded-sm border transition-all",
+                    deliveryMode !== "distance" ? "bg-primary/20 border-primary text-primary" : "border-white/15 text-white/40 hover:border-white/30 hover:text-white/60")}>
+                  📍 Adresa / Mapa
+                </button>
+              </div>
+              {deliveryMode !== "distance" && (
+                <div className="flex gap-1">
+                  <button type="button" onClick={() => switchDeliveryMode("address")}
+                    className={cn("flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-sm border transition-all",
+                      deliveryMode === "address" ? "border-white/30 text-white/80 bg-white/10" : "border-white/10 text-white/30 hover:text-white/55")}>
+                    ✏️ Adresa
+                  </button>
+                  <button type="button" onClick={() => switchDeliveryMode("map")}
+                    className={cn("flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-sm border transition-all",
+                      deliveryMode === "map" ? "border-white/30 text-white/80 bg-white/10" : "border-white/10 text-white/30 hover:text-white/55")}>
+                    🗺️ Mapa
+                  </button>
+                </div>
+              )}
             </div>
           </div>}
 
@@ -2318,96 +2335,111 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
                 const liveSecs = Math.floor(pumpLiveMs / 1000);
                 const liveStr = `${Math.floor(liveSecs / 3600).toString().padStart(2, "0")}:${Math.floor((liveSecs % 3600) / 60).toString().padStart(2, "0")}:${(liveSecs % 60).toString().padStart(2, "0")}`;
+                const adjBtnCls = "flex-1 py-2.5 border border-white/10 text-white/40 hover:border-amber-500/40 hover:text-amber-300 transition-colors rounded-sm font-black text-sm disabled:opacity-20 disabled:cursor-not-allowed";
 
-                const adjBtnCls = "flex-1 text-[11px] py-2 border border-white/10 text-white/40 hover:border-amber-500/40 hover:text-amber-400 transition-colors rounded-sm font-bold disabled:opacity-20 disabled:cursor-not-allowed";
-
-                return (
-                  <div className="border border-amber-500/25 bg-amber-500/5 rounded-sm overflow-hidden">
-                    <div className="flex items-center justify-between px-3 py-2 border-b border-amber-500/15">
+                // ── STATE: RUNNING ──
+                if (pumpTimerActive) return (
+                  <div className="border border-green-500/40 bg-green-500/5 rounded-sm overflow-hidden">
+                    <div className="flex items-center justify-between px-3 py-2 border-b border-green-500/20">
                       <div className="flex items-center gap-1.5">
-                        <Timer className="w-3.5 h-3.5 text-amber-400/70" />
-                        <span className="text-xs font-bold text-white/70 uppercase tracking-wider">Čerpanie betónu</span>
+                        <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                        <span className="text-xs font-black text-green-400 uppercase tracking-wider">Čerpanie beží</span>
                       </div>
-                      <span className="text-[10px] text-amber-400/50">každých začatých 15 min = 1 blok</span>
+                      <span className="text-[10px] text-green-400/50 font-mono">štart {pumpStartTime}</span>
                     </div>
-                    <div className="p-3 space-y-3">
-                      {/* START / STOP columns */}
-                      <div className="grid grid-cols-2 gap-3">
-                        {/* START */}
-                        <div className="space-y-1.5">
-                          <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Začiatok</div>
-                          <div className={cn(
-                            "text-center py-2.5 px-1 border font-mono text-xl font-black transition-colors rounded-sm",
-                            started ? "text-primary border-amber-500/40 bg-amber-500/10" : "text-white/20 border-white/10 bg-white/5"
-                          )}>
-                            {pumpStartTime ?? "——:——"}
-                          </div>
-                          <div className="flex gap-1">
-                            <button type="button" onClick={() => adjStart(-15)} className={adjBtnCls}>−15</button>
-                            <button type="button" onClick={() => adjStart(-1)} className={adjBtnCls}>−1</button>
-                            <button type="button" onClick={() => adjStart(+1)} className={adjBtnCls}>+1</button>
-                          </div>
-                          {!pumpTimerActive ? (
-                            <button type="button" onClick={handleStart}
-                              className="w-full py-3 bg-green-700/80 hover:bg-green-700 text-white text-sm font-black uppercase tracking-wider rounded-sm transition-colors flex items-center justify-center gap-1.5">
-                              ▶ ŠTART
-                            </button>
-                          ) : (
-                            <div className="text-center text-[11px] text-green-400 font-bold py-2 animate-pulse">● beží…</div>
-                          )}
-                        </div>
-                        {/* STOP */}
-                        <div className="space-y-1.5">
-                          <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Koniec</div>
-                          <div className={cn(
-                            "text-center py-2.5 px-1 border font-mono text-xl font-black transition-colors rounded-sm",
-                            stopped ? "text-primary border-amber-500/40 bg-amber-500/10" : "text-white/20 border-white/10 bg-white/5"
-                          )}>
-                            {pumpStopTime ?? "——:——"}
-                          </div>
-                          <div className="flex gap-1">
-                            <button type="button" onClick={() => adjStop(-15)} disabled={!stopped} className={adjBtnCls}>−15</button>
-                            <button type="button" onClick={() => adjStop(-1)} disabled={!stopped} className={adjBtnCls}>−1</button>
-                            <button type="button" onClick={() => adjStop(+1)} disabled={!stopped} className={adjBtnCls}>+1</button>
-                          </div>
-                          <button type="button" onClick={handleStop} disabled={!started}
-                            className="w-full py-3 bg-red-700/80 hover:bg-red-700 text-white text-sm font-black uppercase tracking-wider rounded-sm transition-colors flex items-center justify-center gap-1.5 disabled:opacity-25 disabled:cursor-not-allowed">
-                            ■ STOP
-                          </button>
+                    <div className="px-3 pt-4 pb-3 space-y-3">
+                      {/* Big live clock */}
+                      <div className="text-center">
+                        <div className="font-mono text-5xl font-black text-green-400 tracking-widest leading-none">{liveStr}</div>
+                        <div className="text-[10px] text-green-400/40 mt-1.5 uppercase tracking-widest">
+                          {Math.ceil((liveSecs / 60) / 15) || 1} blok{Math.ceil((liveSecs / 60) / 15) > 1 ? "y" : ""}
                         </div>
                       </div>
+                      {/* STOP button — prominent */}
+                      <button type="button" onClick={handleStop}
+                        className="w-full py-4 bg-red-600 hover:bg-red-500 text-white text-base font-black uppercase tracking-widest rounded-sm transition-colors flex items-center justify-center gap-2 shadow-lg">
+                        <span className="text-xl leading-none">■</span> STOP čerpanie
+                      </button>
+                      {/* Adjust start time */}
+                      <div className="space-y-1">
+                        <div className="text-[10px] text-white/30 text-center">Koriguj čas začiatku</div>
+                        <div className="flex gap-1.5">
+                          {([-15, -1, +1, +15] as const).map(d => (
+                            <button key={d} type="button" onClick={() => adjStart(d)} className={adjBtnCls}>{d > 0 ? "+" : ""}{d}</button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
 
-                      {/* Live timer */}
-                      {pumpTimerActive && (
-                        <div className="text-center py-2 bg-green-500/10 border border-green-500/20 rounded-sm">
-                          <span className="font-mono text-2xl font-black text-green-400 tracking-widest">{liveStr}</span>
+                // ── STATE: STOPPED ──
+                if (started && stopped) return (
+                  <div className="border border-amber-500/40 bg-amber-500/5 rounded-sm overflow-hidden">
+                    <div className="flex items-center justify-between px-3 py-2 border-b border-amber-500/20">
+                      <div className="flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5 text-amber-400" />
+                        <span className="text-xs font-black text-amber-400 uppercase tracking-wider">Čerpanie hotové</span>
+                      </div>
+                      <button type="button" onClick={resetTimer} className="text-[10px] text-white/25 hover:text-white/55 transition-colors">× znova</button>
+                    </div>
+                    <div className="px-3 pt-3 pb-3 space-y-3">
+                      {/* Time row */}
+                      <div className="flex items-center justify-center gap-3">
+                        <div className="text-center">
+                          <div className="text-[9px] text-white/35 uppercase tracking-widest mb-0.5">Začiatok</div>
+                          <div className="font-mono text-2xl font-black text-white/70">{pumpStartTime}</div>
+                          <div className="flex gap-1 mt-1.5">
+                            {([-15, -1, +1] as const).map(d => (
+                              <button key={d} type="button" onClick={() => adjStart(d)} className={adjBtnCls + " text-[10px] py-1.5"}>{d > 0 ? "+" : ""}{d}</button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="text-white/20 text-lg font-bold">→</div>
+                        <div className="text-center">
+                          <div className="text-[9px] text-white/35 uppercase tracking-widest mb-0.5">Koniec</div>
+                          <div className="font-mono text-2xl font-black text-primary">{pumpStopTime}</div>
+                          <div className="flex gap-1 mt-1.5">
+                            {([-1, +1, +15] as const).map(d => (
+                              <button key={d} type="button" onClick={() => adjStop(d)} className={adjBtnCls + " text-[10px] py-1.5"}>{d > 0 ? "+" : ""}{d}</button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      {/* Billing summary */}
+                      {blocks > 0 && (
+                        <div className="bg-amber-500/10 border border-amber-500/25 rounded-sm px-3 py-2.5 flex items-center justify-between">
+                          <div>
+                            <div className="text-[10px] text-amber-400/60 uppercase tracking-wide">Fakturuje sa</div>
+                            <div className="font-black text-amber-300 text-lg leading-tight">{blocks} × 15 min</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-[10px] text-amber-400/60 uppercase tracking-wide">Skutočný čas</div>
+                            <div className="text-white/50 font-mono text-sm">{Math.floor(durMins / 60)}h{durMins % 60 > 0 ? ` ${durMins % 60}m` : ""} = {Math.floor(billingMins / 60)}h{billingMins % 60 > 0 ? ` ${billingMins % 60}m` : ""}</div>
+                          </div>
                         </div>
                       )}
+                    </div>
+                  </div>
+                );
 
-                      {/* Result summary */}
-                      {started && stopped && blocks > 0 && (
-                        <div className="bg-white/5 border border-white/10 rounded-sm p-2.5 space-y-1.5">
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="text-white/45">Skutočný čas</span>
-                            <span className="text-white/65 font-semibold">{Math.floor(durMins / 60)}h{durMins % 60 > 0 ? ` ${durMins % 60} min` : ""}</span>
-                          </div>
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="text-white/45">Fakturuje sa</span>
-                            <span className="text-amber-400 font-black">{blocks} × 15 min = {Math.floor(billingMins / 60)}h{billingMins % 60 > 0 ? ` ${billingMins % 60} min` : ""}</span>
-                          </div>
-                        </div>
-                      )}
-
-                      {!started && (
-                        <p className="text-[10px] text-white/25 text-center">Stlač ŠTART pri začatí čerpania na stavbe</p>
-                      )}
-
-                      {(started || stopped) && (
-                        <button type="button" onClick={resetTimer}
-                          className="text-[10px] text-white/20 hover:text-white/45 transition-colors w-full text-center py-0.5">
-                          × Zmazať a začať znova
-                        </button>
-                      )}
+                // ── STATE: IDLE ──
+                return (
+                  <div className="border border-white/10 bg-white/3 rounded-sm overflow-hidden">
+                    <div className="flex items-center justify-between px-3 py-2 border-b border-white/8">
+                      <div className="flex items-center gap-1.5">
+                        <Timer className="w-3.5 h-3.5 text-white/30" />
+                        <span className="text-xs font-bold text-white/40 uppercase tracking-wider">Čerpanie betónu</span>
+                      </div>
+                      <span className="text-[10px] text-white/20">každých 15 min = 1 blok</span>
+                    </div>
+                    <div className="px-3 pt-4 pb-3 space-y-3">
+                      <div className="text-center font-mono text-4xl font-black text-white/10 tracking-widest">00:00:00</div>
+                      <button type="button" onClick={handleStart}
+                        className="w-full py-4 bg-green-700/80 hover:bg-green-600 text-white text-base font-black uppercase tracking-widest rounded-sm transition-colors flex items-center justify-center gap-2 shadow-lg">
+                        <span className="text-xl leading-none">▶</span> ŠTART čerpanie
+                      </button>
+                      <p className="text-[10px] text-white/20 text-center">Stlač ŠTART pri začatí čerpania na stavbe</p>
                     </div>
                   </div>
                 );
