@@ -12,21 +12,21 @@ function generateCaptcha() {
   return { a, b, answer: a + b };
 }
 
-const fieldCls = "w-full bg-white/8 border-b-2 border-b-white/20 focus:border-b-primary text-white px-3 py-2.5 focus:outline-none placeholder:text-white/20 text-sm font-medium rounded-sm transition-colors";
-const labelCls = "block text-[10px] font-bold text-white/40 mb-1 tracking-widest uppercase";
+const fieldCls = "w-full bg-white/10 border border-white/20 focus:border-primary text-white px-3 py-2.5 focus:outline-none placeholder:text-white/35 text-base font-medium rounded-sm transition-colors";
+const labelCls = "block text-xs font-bold text-white/60 mb-1.5 tracking-widest uppercase";
 
 function MathCheck({ captcha, input, setInput, onRefresh }: { captcha: { a: number; b: number }; input: string; setInput: (v: string) => void; onRefresh: () => void }) {
   return (
-    <div className="bg-white/5 border border-white/10 p-3">
-      <p className="text-white/40 text-[9px] font-black uppercase tracking-widest mb-2">Overenie – nie ste robot</p>
+    <div className="bg-white/8 border border-white/15 p-3">
+      <p className="text-white/55 text-[10px] font-black uppercase tracking-widest mb-2">Overenie – nie ste robot</p>
       <div className="flex items-center gap-2">
-        <div className="flex-1 bg-secondary/80 border border-white/10 px-3 py-2 text-white font-bold text-xs text-center">
-          Koľko je <span className="text-primary">{captcha.a}</span> + <span className="text-primary">{captcha.b}</span> ?
+        <div className="flex-1 bg-secondary/80 border border-white/15 px-3 py-2.5 text-white font-bold text-sm text-center">
+          Koľko je <span className="text-primary font-black">{captcha.a}</span> + <span className="text-primary font-black">{captcha.b}</span> ?
         </div>
         <input type="number" value={input} onChange={e => setInput(e.target.value)} inputMode="numeric" autoComplete="off"
           placeholder="?"
-          className="w-16 bg-white/5 text-white border border-white/10 px-2 py-2 text-sm text-center focus:outline-none focus:border-primary transition-colors" />
-        <button type="button" onClick={onRefresh} className="text-white/30 hover:text-primary text-sm transition-colors">↺</button>
+          className="w-16 bg-white/10 text-white border border-white/20 px-2 py-2.5 text-base font-bold text-center focus:outline-none focus:border-primary transition-colors" />
+        <button type="button" onClick={onRefresh} className="text-white/40 hover:text-primary text-base transition-colors">↺</button>
       </div>
     </div>
   );
@@ -50,7 +50,7 @@ function PasswordInput({ value, onChange, placeholder, show, onToggle, autoCompl
     <div className="relative">
       <input type={show ? "text" : "password"} value={value} onChange={e => onChange(e.target.value)}
         placeholder={placeholder ?? "••••"} className={fieldCls + " pr-10"} autoComplete={autoComplete} />
-      <button type="button" onClick={onToggle} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
+      <button type="button" onClick={onToggle} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/45 hover:text-white/75">
         {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
       </button>
     </div>
@@ -162,9 +162,9 @@ export default function ClientProfile() {
               <div>
                 <h1 className="text-lg font-black text-white uppercase tracking-wide leading-tight">
                   {client.name}
-                  {client.company && <span className="text-white/40 font-medium text-sm ml-2 normal-case tracking-normal">· {client.company}</span>}
+                  {client.company && <span className="text-white/55 font-medium text-sm ml-2 normal-case tracking-normal">· {client.company}</span>}
                 </h1>
-                <p className="text-white/40 text-xs">ID: <span className="text-white/60 font-mono">{client.clientId}</span></p>
+                <p className="text-white/55 text-xs">ID: <span className="text-white/60 font-mono">{client.clientId}</span></p>
               </div>
             </div>
             {discounts.length > 0 && (
@@ -187,7 +187,7 @@ export default function ClientProfile() {
             <div className="bg-secondary/80 border border-white/10 rounded-sm p-4 flex flex-col gap-3">
               <div className="flex items-center gap-2 mb-1">
                 <User className="w-3.5 h-3.5 text-primary/60" />
-                <p className="text-[10px] font-black text-white/50 uppercase tracking-widest">Zmena prihlasovacích údajov</p>
+                <p className="text-xs font-black text-white/70 uppercase tracking-widest">Zmena prihlasovacích údajov</p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -220,7 +220,7 @@ export default function ClientProfile() {
             <div className="bg-secondary/80 border border-white/10 rounded-sm p-4 flex flex-col gap-3">
               <div className="flex items-center gap-2 mb-1">
                 <Lock className="w-3.5 h-3.5 text-primary/60" />
-                <p className="text-[10px] font-black text-white/50 uppercase tracking-widest">Zmena hesla</p>
+                <p className="text-xs font-black text-white/70 uppercase tracking-widest">Zmena hesla</p>
               </div>
 
               <div>
@@ -240,7 +240,7 @@ export default function ClientProfile() {
                   <PasswordInput value={confirmPass} onChange={setConfirmPass}
                     show={showConfirmPass} onToggle={() => setShowConfirmPass(v => !v)} autoComplete="new-password" />
                   {newPass && confirmPass && newPass !== confirmPass && (
-                    <p className="text-red-400 text-[10px] mt-1">Heslá sa nezhodujú</p>
+                    <p className="text-red-400 text-xs mt-1">Heslá sa nezhodujú</p>
                   )}
                 </div>
               </div>
@@ -262,7 +262,7 @@ export default function ClientProfile() {
                     </span>
                   ) : (
                     <button onClick={handleEmailReset} disabled={resetSending}
-                      className="flex items-center gap-1.5 text-white/35 hover:text-white/65 transition-colors text-xs disabled:opacity-40 cursor-pointer">
+                      className="flex items-center gap-1.5 text-white/55 hover:text-white/80 transition-colors text-xs disabled:opacity-40 cursor-pointer">
                       <Mail className="w-3.5 h-3.5 shrink-0" />
                       {resetSending ? "Odosiela sa…" : "Zabudnuté heslo?"}
                     </button>
@@ -274,11 +274,11 @@ export default function ClientProfile() {
 
           {/* Info row + back */}
           <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/10">
-            <div className="flex items-center gap-2 text-white/25 text-xs">
+            <div className="flex items-center gap-2 text-white/45 text-xs">
               <KeyRound className="w-3.5 h-3.5" />
               <span>Zmeny vyžadujú aktuálne heslo</span>
             </div>
-            <a href="/#calculator" className="text-white/30 hover:text-white/55 text-xs transition-colors">← Kalkulačka</a>
+            <a href="/#calculator" className="text-white/50 hover:text-white/75 text-xs transition-colors">← Kalkulačka</a>
           </div>
         </div>
       </main>
