@@ -1508,9 +1508,8 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                           <div className="flex gap-2 items-start">
                             <span className="text-gray-400 w-24 shrink-0">Adresa</span>
                             <span className="text-gray-600 break-words flex-1">
-                              {o.mapPlusCode ? (
-                                <><span className="font-mono text-xs">{o.mapPlusCode}</span>{o.mapLocality ? <span className="text-gray-400"> · {o.mapLocality}</span> : null}</>
-                              ) : o.address}
+                              {o.address && <span>{o.address}</span>}
+                              {o.mapPlusCode && <span className="block text-gray-400 text-[10px] font-mono mt-0.5">{o.mapPlusCode}{o.mapLocality ? ` · ${o.mapLocality}` : ""}</span>}
                             </span>
                             {(o.mapPlusCode || o.address) && (
                               <button onClick={e => { e.stopPropagation(); setMapModalOrder(o); }}
@@ -1585,12 +1584,14 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                             ) : null}
                             {/* Celková suma */}
                             <div className="mt-3 pt-2.5 border-t border-gray-200 space-y-1">
-                              <div className="flex justify-between items-center text-xs">
-                                <span className="text-gray-400">Bez DPH</span>
-                                <span className="font-semibold text-gray-600">{fmtEur(o.totalBezDph)}</span>
-                              </div>
+                              {o.priceMode !== "hotovost" && (
+                                <div className="flex justify-between items-center text-xs">
+                                  <span className="text-gray-400">Bez DPH</span>
+                                  <span className="font-semibold text-gray-600">{fmtEur(o.totalBezDph)}</span>
+                                </div>
+                              )}
                               <div className="flex justify-between items-center bg-secondary rounded-sm px-3 py-2">
-                                <span className="text-xs font-bold text-white/70">Spolu s DPH</span>
+                                <span className="text-xs font-bold text-white/70">{o.priceMode === "hotovost" ? "Spolu" : "Spolu s DPH"}</span>
                                 <span className="text-lg font-black text-primary">{fmtEur(o.totalSDph)}</span>
                               </div>
                             </div>
@@ -1622,7 +1623,8 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                 <MapPin className="w-4 h-4 text-primary shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="font-black text-sm uppercase tracking-widest">Poloha doručenia</div>
-                  <div className="text-white/50 text-xs truncate">{query}</div>
+                  {mapModalOrder.address && <div className="text-white/80 text-xs truncate">{mapModalOrder.address}</div>}
+                  {mapModalOrder.mapPlusCode && <div className="text-white/40 text-[10px] font-mono truncate">{mapModalOrder.mapPlusCode}{mapModalOrder.mapLocality ? ` · ${mapModalOrder.mapLocality}` : ""}</div>}
                 </div>
                 <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-secondary text-xs font-black rounded-lg hover:bg-primary/80 transition-colors shrink-0">
@@ -2972,7 +2974,7 @@ function exportOrderPDF(o: Order) {
       <tr><td style="color:#888;padding:1px 6px 1px 0;width:90px">Typ</td><td style="font-weight:bold">${tabLabels[o.tab] ?? o.tab}</td></tr>
       <tr><td style="color:#888;padding:1px 6px 1px 0">Množstvo</td><td style="font-weight:bold">${o.totalQty} m³</td></tr>
       ${o.km ? `<tr><td style="color:#888;padding:1px 6px 1px 0">Vzdialenosť</td><td>${o.km} km</td></tr>` : ""}
-      ${o.address ? `<tr><td style="color:#888;padding:1px 6px 1px 0;vertical-align:top">Adresa</td><td>${o.address}</td></tr>` : ""}
+      ${(o.address || o.mapPlusCode) ? `<tr><td style="color:#888;padding:1px 6px 1px 0;vertical-align:top">Adresa</td><td>${o.address ? o.address : ""}${o.mapPlusCode ? `<br><span style="font-family:monospace;font-size:7.5pt;color:#aaa">${o.mapPlusCode}${o.mapLocality ? " · " + o.mapLocality : ""}</span>` : ""}</td></tr>` : ""}
       ${o.deliveryZoneName ? `<tr><td style="color:#888;padding:1px 6px 1px 0">Zóna</td><td>${o.deliveryZoneName}</td></tr>` : ""}
       <tr><td style="color:#888;padding:1px 6px 1px 0">Platba</td><td style="font-weight:bold">${o.priceMode === "hotovost" ? "Hotovosť" : "Faktúra"}</td></tr>
       ${o.viaSms ? `<tr><td style="color:#888;padding:1px 6px 1px 0">Zdroj</td><td>SMS</td></tr>` : ""}
@@ -2988,12 +2990,12 @@ ${breakdownHtml ? `
 </div>` : ""}
 
 <div style="background:#001D3D;color:#fff;padding:4mm;border-radius:2px;display:flex;justify-content:space-between;align-items:center">
-  <div>
+  ${o.priceMode !== "hotovost" ? `<div>
     <div style="font-size:8pt;color:rgba(255,255,255,0.6)">Bez DPH</div>
     <div style="font-size:9.5pt;font-weight:bold;color:rgba(255,255,255,0.8)">${fmtEurPdf(o.totalBezDph)}</div>
-  </div>
+  </div>` : "<div></div>"}
   <div style="text-align:right">
-    <div style="font-size:8pt;color:rgba(255,255,255,0.6)">Celkom s DPH</div>
+    <div style="font-size:8pt;color:rgba(255,255,255,0.6)">${o.priceMode === "hotovost" ? "Spolu" : "Celkom s DPH"}</div>
     <div style="font-size:16pt;font-weight:bold;color:#EDC531">${fmtEurPdf(o.totalSDph)}</div>
   </div>
 </div>

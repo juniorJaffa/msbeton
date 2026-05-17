@@ -1648,27 +1648,27 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         const uFillOrig = ci.transportFillupM3 > 0 ? fmt2(fOrig / ci.transportFillupM3) : undefined;
         rows.push({ l: `Doťaženie do ${ci.transportFillupTarget} m³`, v: fDisc, ...(Math.abs(fOrig - fDisc) > 0.01 ? { o: fOrig } : {}), ...(uFill !== undefined ? { u: uFill, uSuffix: "€/m³", ...(uFillOrig !== undefined && Math.abs(uFillOrig - uFill) > 0.001 ? { uOrig: uFillOrig } : {}) } : {}) });
       }
-      const svcRows: { l: string; v: number; o?: number }[] = [];
+      const svcRows: { l: string; v: number; o?: number; u?: number; uOrig?: number; uSuffix?: string }[] = [];
       if (idx === 0) {
         const pumpBase = result.pumpHrs + result.pumpMs / 60;
         if (tab === "pumpa" && pumpBase > 0 && pumpServicePrice > 0) {
           const pOrig = fmt2(pumpBase * pumpServicePrice);
-          svcRows.push({ l: `Čerpanie betónu – ${result.pumpHrs} h${result.pumpMs > 0 ? ` ${result.pumpMs} min` : ""}`, v: fmt2(pOrig * fPump), ...(fPump < 1 ? { o: pOrig } : {}) });
+          svcRows.push({ l: `Čerpanie betónu – ${result.pumpHrs} h${result.pumpMs > 0 ? ` ${result.pumpMs} min` : ""}`, v: fmt2(pOrig * fPump), ...(fPump < 1 ? { o: pOrig } : {}), u: fmt2(pumpServicePrice * fPump), uSuffix: "€/h", ...(fPump < 1 ? { uOrig: pumpServicePrice } : {}) });
         }
-        if (hoseMeters > 0) { const ho = fmt2(hoseMeters * hoseServicePrice); svcRows.push({ l: `Prídavné hadice – ${hoseMeters} m`, v: fmt2(ho * fHose), ...(fHose < 1 ? { o: ho } : {}) }); }
-        if (tab === "pumpa" && chemServicePrice > 0) { const co = fmt2(chemServicePrice); svcRows.push({ l: "Rozbehová chémia", v: fmt2(co * fChem), ...(fChem < 1 ? { o: co } : {}) }); }
-        if (washing) { const wo = fmt2(washServicePrice); svcRows.push({ l: "Umývanie mimo stavby", v: fmt2(wo * fWash), ...(fWash < 1 ? { o: wo } : {}) }); }
+        if (hoseMeters > 0) { const ho = fmt2(hoseMeters * hoseServicePrice); svcRows.push({ l: `Prídavné hadice – ${hoseMeters} m`, v: fmt2(ho * fHose), ...(fHose < 1 ? { o: ho } : {}), u: fmt2(hoseServicePrice * fHose), uSuffix: "€/m", ...(fHose < 1 ? { uOrig: hoseServicePrice } : {}) }); }
+        if (tab === "pumpa" && chemServicePrice > 0) { const co = fmt2(chemServicePrice); svcRows.push({ l: "Rozbehová chémia", v: fmt2(co * fChem), ...(fChem < 1 ? { o: co } : {}), u: fmt2(chemServicePrice * fChem), uSuffix: "€", ...(fChem < 1 ? { uOrig: chemServicePrice } : {}) }); }
+        if (washing) { const wo = fmt2(washServicePrice); svcRows.push({ l: "Umývanie mimo stavby", v: fmt2(wo * fWash), ...(fWash < 1 ? { o: wo } : {}), u: fmt2(washServicePrice * fWash), uSuffix: "€", ...(fWash < 1 ? { uOrig: washServicePrice } : {}) }); }
         if (result.waitIntervals > 0) {
           const wFactor = tab === "pumpa" ? fWaitP : fWaitM;
           const wRate = tab === "pumpa" ? waitServicePricePumpa : waitServicePriceMix;
           const wOrig = fmt2(result.waitIntervals * wRate);
-          svcRows.push({ l: `Čakačky – ${result.waitLabel}`, v: fmt2(wOrig * wFactor), ...(wFactor < 1 ? { o: wOrig } : {}) });
+          svcRows.push({ l: `Čakačky – ${result.waitLabel}`, v: fmt2(wOrig * wFactor), ...(wFactor < 1 ? { o: wOrig } : {}), u: fmt2(wRate * wFactor), uSuffix: "€/int.", ...(wFactor < 1 ? { uOrig: wRate } : {}) });
         }
       } else {
-        if (ci.svcPumpCost > 0) { svcRows.push({ l: `Čerpanie betónu – ${ci.svcPumpHrs} h${ci.svcPumpMs > 0 ? ` ${ci.svcPumpMs} min` : ""}`, v: fmt2(ci.svcPumpCost * fPump), ...(fPump < 1 ? { o: fmt2(ci.svcPumpCost) } : {}) }); }
-        if (ci.svcHoseCost > 0) { svcRows.push({ l: `Prídavné hadice – ${ci.svcHoseMeters} m`, v: fmt2(ci.svcHoseCost * fHose), ...(fHose < 1 ? { o: fmt2(ci.svcHoseCost) } : {}) }); }
-        if (ci.svcWashCost > 0) { svcRows.push({ l: "Umývanie mimo stavby", v: fmt2(ci.svcWashCost * fWash), ...(fWash < 1 ? { o: fmt2(ci.svcWashCost) } : {}) }); }
-        if (ci.svcWaitCost > 0) { const wfExtra = tab === "pumpa" ? fWaitP : fWaitM; svcRows.push({ l: `Čakačky – ${ci.svcWaitLabel}`, v: fmt2(ci.svcWaitCost * wfExtra), ...(wfExtra < 1 ? { o: fmt2(ci.svcWaitCost) } : {}) }); }
+        if (ci.svcPumpCost > 0) { svcRows.push({ l: `Čerpanie betónu – ${ci.svcPumpHrs} h${ci.svcPumpMs > 0 ? ` ${ci.svcPumpMs} min` : ""}`, v: fmt2(ci.svcPumpCost * fPump), ...(fPump < 1 ? { o: fmt2(ci.svcPumpCost) } : {}), u: fmt2(pumpServicePrice * fPump), uSuffix: "€/h", ...(fPump < 1 ? { uOrig: pumpServicePrice } : {}) }); }
+        if (ci.svcHoseCost > 0) { svcRows.push({ l: `Prídavné hadice – ${ci.svcHoseMeters} m`, v: fmt2(ci.svcHoseCost * fHose), ...(fHose < 1 ? { o: fmt2(ci.svcHoseCost) } : {}), u: fmt2(hoseServicePrice * fHose), uSuffix: "€/m", ...(fHose < 1 ? { uOrig: hoseServicePrice } : {}) }); }
+        if (ci.svcWashCost > 0) { svcRows.push({ l: "Umývanie mimo stavby", v: fmt2(ci.svcWashCost * fWash), ...(fWash < 1 ? { o: fmt2(ci.svcWashCost) } : {}), u: fmt2(washServicePrice * fWash), uSuffix: "€", ...(fWash < 1 ? { uOrig: washServicePrice } : {}) }); }
+        if (ci.svcWaitCost > 0) { const wfExtra = tab === "pumpa" ? fWaitP : fWaitM; const wRateExtra = tab === "pumpa" ? waitServicePricePumpa : waitServicePriceMix; svcRows.push({ l: `Čakačky – ${ci.svcWaitLabel}`, v: fmt2(ci.svcWaitCost * wfExtra), ...(wfExtra < 1 ? { o: fmt2(ci.svcWaitCost) } : {}), u: fmt2(wRateExtra * wfExtra), uSuffix: "€/int.", ...(wfExtra < 1 ? { uOrig: wRateExtra } : {}) }); }
       }
       bdSections.push({ h: header, rows });
       if (svcRows.length > 0) {
