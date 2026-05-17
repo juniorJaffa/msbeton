@@ -2057,9 +2057,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                   <div className="mt-1.5 border border-amber-500/25 rounded-sm bg-amber-500/5 px-2.5 py-2 space-y-2">
                     {/* Stepper riadky — kompaktné, SVG ikona + label + − count + */}
                     {tab === "pumpa" ? (
-                      <div className="flex gap-2">
+                      <div className="flex flex-col gap-1.5">
                         {/* PUMPA stepper */}
-                        <div className="flex-1 flex items-center gap-1.5 bg-amber-500/10 border border-amber-400/25 rounded px-2 py-1.5">
+                        <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-400/25 rounded px-3 py-2">
                           <svg viewBox="0 0 130 48" className="w-10 h-[15px] text-amber-300/60 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                             <rect x="2" y="27" width="14" height="15" rx="1"/><rect x="3" y="22" width="9" height="6" rx="1"/>
                             <line x1="16" y1="33" x2="44" y2="33"/><line x1="16" y1="42" x2="44" y2="42"/><line x1="44" y1="33" x2="44" y2="42"/>
@@ -2067,43 +2067,43 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                             <line x1="122" y1="2" x2="127" y2="2" strokeWidth="2.2"/><line x1="126" y1="2" x2="126" y2="17" strokeWidth="2"/>
                             <circle cx="8" cy="42" r="4" strokeWidth="2"/><circle cx="36" cy="42" r="4" strokeWidth="2"/>
                           </svg>
-                          <span className="text-[9px] font-black text-amber-300/80 uppercase tracking-widest flex-1 leading-none">Pumpa</span>
+                          <span className="text-[10px] font-black text-amber-300/80 uppercase tracking-widest flex-1">Pumpa</span>
                           <button type="button" onClick={() => setPodmienkyPumpa(p => Math.max(1, p - 1))} disabled={podmienkyPumpa <= 1}
-                            className="w-7 h-7 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-base font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">−</button>
-                          <span className="text-lg font-black text-amber-200 w-5 text-center leading-none">{podmienkyPumpa}</span>
+                            className="w-8 h-8 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">−</button>
+                          <span className="text-xl font-black text-amber-200 w-7 text-center">{podmienkyPumpa}</span>
                           <button type="button" onClick={() => setPodmienkyPumpa(p => Math.min(maxPumpa, p + 1))} disabled={podmienkyPumpa >= maxPumpa}
-                            className="w-7 h-7 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-base font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">+</button>
+                            className="w-8 h-8 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">+</button>
                         </div>
                         {/* MIX stepper */}
-                        <div className="flex-1 flex items-center gap-1.5 bg-amber-500/10 border border-amber-400/25 rounded px-2 py-1.5">
-                          <svg viewBox="0 0 80 44" className="w-8 h-[15px] text-amber-300/60 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-400/25 rounded px-3 py-2">
+                          <svg viewBox="0 0 80 44" className="w-9 h-[15px] text-amber-300/60 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                             <rect x="2" y="22" width="18" height="16" rx="1"/>
                             <line x1="20" y1="30" x2="62" y2="30"/><line x1="20" y1="38" x2="62" y2="38"/><line x1="62" y1="30" x2="62" y2="38"/>
                             <ellipse cx="44" cy="22" rx="18" ry="12"/>
                             <circle cx="10" cy="38" r="4" strokeWidth="2"/><circle cx="52" cy="38" r="4" strokeWidth="2"/>
                           </svg>
-                          <span className="text-[9px] font-black text-amber-300/80 uppercase tracking-widest flex-1 leading-none">Mix</span>
+                          <span className="text-[10px] font-black text-amber-300/80 uppercase tracking-widest flex-1">Mix</span>
                           <button type="button" onClick={() => setPodmienkyMixC(m => Math.max(0, m - 1))} disabled={podmienkyMixC <= 0}
-                            className="w-7 h-7 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-base font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">−</button>
-                          <span className="text-lg font-black text-amber-200 w-5 text-center leading-none">{podmienkyMixC}</span>
+                            className="w-8 h-8 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">−</button>
+                          <span className="text-xl font-black text-amber-200 w-7 text-center">{podmienkyMixC}</span>
                           <button type="button" onClick={() => setPodmienkyMixC(m => Math.min(maxMixP, m + 1))} disabled={podmienkyMixC >= maxMixP}
-                            className="w-7 h-7 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-base font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">+</button>
+                            className="w-8 h-8 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">+</button>
                         </div>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-400/25 rounded px-2 py-1.5">
-                        <svg viewBox="0 0 80 44" className="w-8 h-[15px] text-amber-300/60 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-400/25 rounded px-3 py-2">
+                        <svg viewBox="0 0 80 44" className="w-9 h-[15px] text-amber-300/60 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                           <rect x="2" y="22" width="18" height="16" rx="1"/>
                           <line x1="20" y1="30" x2="62" y2="30"/><line x1="20" y1="38" x2="62" y2="38"/><line x1="62" y1="30" x2="62" y2="38"/>
                           <ellipse cx="44" cy="22" rx="18" ry="12"/>
                           <circle cx="10" cy="38" r="4" strokeWidth="2"/><circle cx="52" cy="38" r="4" strokeWidth="2"/>
                         </svg>
-                        <span className="text-[9px] font-black text-amber-300/80 uppercase tracking-widest flex-1 leading-none">Mix vozidlá</span>
+                        <span className="text-[10px] font-black text-amber-300/80 uppercase tracking-widest flex-1">Mix vozidlá</span>
                         <button type="button" onClick={() => setPodmienkyTrucks(t => Math.max(minMixM, t - 1))} disabled={podmienkyTrucks <= minMixM}
-                          className="w-7 h-7 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-base font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">−</button>
-                        <span className="text-lg font-black text-amber-200 w-5 text-center leading-none">{podmienkyTrucks}</span>
+                          className="w-8 h-8 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">−</button>
+                        <span className="text-xl font-black text-amber-200 w-7 text-center">{podmienkyTrucks}</span>
                         <button type="button" onClick={() => setPodmienkyTrucks(t => Math.min(maxMixM, t + 1))} disabled={podmienkyTrucks >= maxMixM}
-                          className="w-7 h-7 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-base font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">+</button>
+                          className="w-8 h-8 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">+</button>
                       </div>
                     )}
                     <div className="text-[10px] text-amber-200/80 font-mono px-0.5">
