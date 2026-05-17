@@ -1693,15 +1693,17 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
   const scrollToClientCard = (id: string) => {
     setTimeout(() => {
       const container = document.getElementById("admin-content");
-      const sticky = document.getElementById("klienti-sticky");
+      const toolbar = document.getElementById("klienti-toolbar");
       if (!container) return;
       const cR = container.getBoundingClientRect();
-      // Use full sticky height (toolbar + floating indicator) so tabs appear below all sticky elements
-      const stickyH = sticky?.getBoundingClientRect().height ?? 90;
+      const toolbarH = toolbar?.getBoundingClientRect().height ?? 82;
+      // Always reserve floating indicator height — it will appear after scroll even if not visible yet
+      const floatingEl = document.getElementById("floating-client-indicator");
+      const floatingH = floatingEl ? floatingEl.getBoundingClientRect().height : 32;
       const targetEl = document.getElementById(`client-tabs-${id}`) ?? document.getElementById(`client-card-${id}`);
       if (!targetEl) return;
       const eR = targetEl.getBoundingClientRect();
-      container.scrollTo({ top: container.scrollTop + (eR.top - cR.top) - stickyH - 4, behavior: "smooth" });
+      container.scrollTo({ top: container.scrollTop + (eR.top - cR.top) - toolbarH - floatingH - 4, behavior: "smooth" });
     }, 250);
   };
 
@@ -1934,7 +1936,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
         </div>
       </div>
       {floatingClient && (
-        <div className="bg-secondary/97 border-b border-white/10 px-4 py-1 flex items-center gap-2 text-xs shadow-sm">
+        <div id="floating-client-indicator" className="bg-secondary/97 border-b border-white/10 px-4 py-1 flex items-center gap-2 text-xs shadow-sm">
           <span className="text-white/30 text-[9px]">▸</span>
           {floatingClient.isOwner && <Crown className="w-3 h-3 text-primary shrink-0" />}
           <span className="font-bold text-white truncate">{[floatingClient.firstName, floatingClient.lastName].filter(Boolean).join(" ") || floatingClient.company || "—"}</span>
@@ -2932,9 +2934,18 @@ interface RealtimeData {
   byMinute: Array<{ minutesAgo: number; users: number }>;
   byDevice: Array<{ device: string; users: number }>;
   byPage: Array<{ page: string; users: number }>;
+  byCountry: Array<{ country: string; users: number }>;
 }
 
 const REFRESH_SECS = 60;
+const COUNTRY_FLAG: Record<string, string> = {
+  "Slovakia": "🇸🇰", "Czech Republic": "🇨🇿", "Czechia": "🇨🇿",
+  "Austria": "🇦🇹", "Hungary": "🇭🇺", "Poland": "🇵🇱",
+  "Germany": "🇩🇪", "Ukraine": "🇺🇦", "Romania": "🇷🇴",
+  "United States": "🇺🇸", "United Kingdom": "🇬🇧", "France": "🇫🇷",
+  "Netherlands": "🇳🇱", "Italy": "🇮🇹", "Spain": "🇪🇸",
+};
+const countryFlag = (c: string) => COUNTRY_FLAG[c] ?? "🌍";
 const deviceIcon = (d: string) => {
   if (d === "mobile") return <Smartphone className="w-3.5 h-3.5" />;
   if (d === "tablet") return <Tablet className="w-3.5 h-3.5" />;
@@ -3059,6 +3070,22 @@ function RealtimeCard() {
           </div>
         </div>
       )}
+
+      {/* Countries */}
+      {data && data.byCountry.length > 0 && (
+        <div className="border-t border-white/10 px-4 py-3">
+          <p className="text-[9px] font-black uppercase tracking-widest text-white/30 mb-2">Krajiny</p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+            {data.byCountry.map(c => (
+              <div key={c.country} className="flex items-center gap-2">
+                <span className="text-sm leading-none">{countryFlag(c.country)}</span>
+                <span className="text-[10px] text-white/50 truncate flex-1">{c.country}</span>
+                <span className="text-[10px] font-black text-primary shrink-0">{c.users}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -3127,16 +3154,17 @@ function AnalyticsTab() {
   );
   if (!data) return null;
 
-  const { overview, daily, events, devices, sources, pages } = data;
+  const { overview, daily, events, devices, sources, pages, countries } = data;
   const maxSess = Math.max(...daily.map(d => d.sessions), 1);
   const calcEvents = events.filter(e => CALC_EVENTS.includes(e.name));
   const otherEvents = events.filter(e => !CALC_EVENTS.includes(e.name));
   const maxEvt = Math.max(...events.map(e => e.count), 1);
   const maxSrc = Math.max(...sources.map(s => s.sessions), 1);
   const maxPg = Math.max(...pages.map(p => p.views), 1);
+  const maxCtry = Math.max(...(countries ?? []).map(c => c.sessions), 1);
   const totalDevSess = devices.reduce((s, d) => s + d.sessions, 0);
 
-  const kpi = (label: string, val30: number, val90: number, icon: React.ReactNode) => (
+  const kpi = (label: string, val30: number, val90: number, icon: React.ReactNode, tooltip: string) => (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
       <div className="flex items-center gap-2 mb-1">
         <span className="text-gray-400">{icon}</span>
@@ -3144,6 +3172,7 @@ function AnalyticsTab() {
       </div>
       <div className="text-3xl font-black text-secondary">{val30.toLocaleString("sk")}</div>
       <div className="text-[11px] text-gray-400 mt-0.5">90 dní: {val90.toLocaleString("sk")}</div>
+      <div className="text-[10px] text-gray-300 mt-1.5 leading-tight">{tooltip}</div>
     </div>
   );
 
@@ -3170,10 +3199,10 @@ function AnalyticsTab() {
 
       {/* KPI row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {kpi("Aktívni užívatelia", overview.activeUsers30, overview.activeUsers90, <Users className="w-4 h-4" />)}
-        {kpi("Sessiony", overview.sessions30, overview.sessions90, <TrendingUp className="w-4 h-4" />)}
-        {kpi("Zobrazenia stránok", overview.pageViews30, overview.pageViews90, <Globe className="w-4 h-4" />)}
-        {kpi("Noví užívatelia", overview.newUsers30, overview.newUsers90, <UserPlus className="w-4 h-4" />)}
+        {kpi("Aktívni užívatelia", overview.activeUsers30, overview.activeUsers90, <Users className="w-4 h-4" />, "Unikátni ľudia, ktorí navštívili stránku — každý sa počíta raz bez ohľadu na počet návštev.")}
+        {kpi("Sessiony", overview.sessions30, overview.sessions90, <TrendingUp className="w-4 h-4" />, "Jedno súvislé navštívenie stránky (relácia). Počíta sa ako ukončená po 30 min nečinnosti alebo o polnoci.")}
+        {kpi("Zobrazenia stránok", overview.pageViews30, overview.pageViews90, <Globe className="w-4 h-4" />, "Celkový počet zobrazených stránok vrátane opakovaných načítaní — väčší ako počet sessionov.")}
+        {kpi("Noví užívatelia", overview.newUsers30, overview.newUsers90, <UserPlus className="w-4 h-4" />, "Prvá návšteva z daného prehliadača alebo zariadenia. Vyčistenie cookies = nový užívateľ.")}
       </div>
 
       {/* Daily trend */}
@@ -3268,6 +3297,26 @@ function AnalyticsTab() {
             ))}
           </div>
         </div>
+
+        {/* Countries */}
+        {countries && countries.length > 0 && (
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 sm:col-span-2">
+            <div className="flex items-center gap-2 mb-3">
+              <Globe className="w-4 h-4 text-gray-400" />
+              <span className="text-xs font-black uppercase tracking-widest text-gray-500">Krajiny návštevníkov (30 dní)</span>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
+              {countries.map(c => (
+                <div key={c.country} className="flex items-center gap-2 text-[11px]">
+                  <span className="text-base leading-none shrink-0">{countryFlag(c.country)}</span>
+                  <span className="w-28 text-gray-600 font-medium truncate shrink-0">{c.country}</span>
+                  <MiniBar value={c.sessions} max={maxCtry} color="#0ea5e9" />
+                  <span className="w-8 text-right font-bold text-secondary shrink-0">{c.sessions}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* All events */}

@@ -474,7 +474,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
       let marker: google.maps.Marker | null = null;
 
-      const setPinAt = (lat: number, lng: number, preserveAddress = false) => {
+      const setPinAt = (lat: number, lng: number, preserveAddress = false, autoConfirmAfterDM = false) => {
         const pos = { lat, lng };
         if (marker) marker.setPosition(pos);
         else marker = new google.maps.Marker({ position: pos, map, animation: google.maps.Animation.DROP });
@@ -486,13 +486,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         if (!keepResultOnPinRef.current) setShowResult(false);
         keepResultOnPinRef.current = false;
         setMapError("");
-        // Vymaz adresu len keď používateľ ručne presúva pin — nie pri pre-fill z existujúcej adresy
         if (!preserveAddress) {
           setAddress("");
           if (addressInputRef.current) addressInputRef.current.value = "";
           lastResolvedAddressRef.current = null;
         }
-        // Distance Matrix — rovnaká metóda ako adresný režim
+        // Distance Matrix — autoConfirmAfterDM: confirm pin only after km is known
         new google.maps.DistanceMatrixService().getDistanceMatrix(
           { origins: [ORIGIN], destinations: [pos], travelMode: google.maps.TravelMode.DRIVING, unitSystem: google.maps.UnitSystem.METRIC },
           (response, status) => {
@@ -502,12 +501,14 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 const oneWayKm = el.distance.value / 1000;
                 setAddressKm(oneWayKm);
                 setDistance(String(Math.round((oneWayKm * 2 + 2) * 10) / 10));
+                if (autoConfirmAfterDM) setMapKmConfirmed(true);
                 return;
               }
             }
             const fallback = haversineKm(ORIGIN.lat, ORIGIN.lng, lat, lng);
             setAddressKm(fallback);
             setDistance(String(Math.round((fallback * 2 + 2) * 10) / 10));
+            if (autoConfirmAfterDM) setMapKmConfirmed(true);
           }
         );
       };
@@ -576,7 +577,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             const resolvedAddr = results[0].formatted_address;
             map.setCenter({ lat: loc.lat(), lng: loc.lng() });
             map.setZoom(15);
-            setPinAt(loc.lat(), loc.lng(), true);  // preserveAddress — nemaž input
+            setPinAt(loc.lat(), loc.lng(), true, autoConfirm);  // autoConfirm fires after DM resolves
             setAddress(resolvedAddr);
             lastResolvedAddressRef.current = { address: resolvedAddr, lat: loc.lat(), lng: loc.lng() };
             if (addressInputRef.current) addressInputRef.current.value = resolvedAddr;
@@ -584,7 +585,6 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             const village = comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("locality"))?.long_name ?? "";
             const district = comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("administrative_area_level_2"))?.long_name ?? "";
             setMapLocality([village, district].filter(Boolean).join(" · "));
-            if (autoConfirm) setMapKmConfirmed(true);
           }
         });
       };
@@ -1424,8 +1424,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       `${(qty + " x " + unit.toFixed(2) + " €").padEnd(22)}= ${total.toFixed(2)} €`;
 
     const lines: string[] = [];
-    lines.push(div, "          MS-BETON", "    Záväzná objednávka", div);
-    if (address) lines.push(`${address} - ${result.km}km`);
+    lines.push(div, "          MS-BETON", "      Cenová ponuka", div);
+    if (mapPlusCode) lines.push(`${mapPlusCode}${mapLocality ? " · " + mapLocality : ""} – ${result.km}km`);
+    else if (address) lines.push(`${address} – ${result.km}km`);
     else if (result.km > 0) lines.push(`${result.km}km`);
     if (result.isOwn) lines.push("Vlastná doprava – odber na prevádzke");
     lines.push(div);
@@ -1551,7 +1552,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       }).catch(() => {});
     }
 
-    if (navigator.share) {
+    const rawPhone = loggedClient?.phone ?? "";
+    const normalPhone = rawPhone.startsWith("0") ? "+421" + rawPhone.slice(1) : rawPhone.replace(/^00421/, "+421");
+    if (normalPhone && normalPhone.length > 6) {
+      window.open(`sms:${normalPhone}?body=${encodeURIComponent(text)}`, "_blank");
+    } else if (navigator.share) {
       navigator.share({ text }).catch(() => {});
     } else {
       navigator.clipboard.writeText(text).then(() => {
@@ -1762,15 +1767,19 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                   <circle cx="49" cy="40" r="4.5" strokeWidth="1.8" />
                 </svg>
               )}
-              <span className={cn("font-black text-xs tracking-widest transition-colors", tab === t ? "text-primary" : "text-white/50 group-hover:text-white/80")}>
-                {t === "pumpa" ? "PUMPA" : t === "mix" ? "MIX" : "VL. DOPRAVA"}
-              </span>
-              <span className={cn("text-[10px] font-medium transition-colors text-center px-1", tab === t ? "text-white/70" : "text-white/30 group-hover:text-white/50")}>
-                {t === "pumpa" ? `Pumpa ${pumpCap}m³ · 28m` : t === "mix" ? `Domiešavač ${mixCap}m³` : "Vlastná doprava"}
-              </span>
-              {tab === t && (
-                <span className={cn("md:hidden text-[9px] font-black tracking-widest transition-colors px-1.5 py-0.5 rounded-full border", tabInfoOpen ? "border-primary/60 text-primary bg-primary/15" : "border-white/15 text-white/30")}>
-                  ⓘ
+              <div className="flex items-center gap-1 justify-center">
+                <span className={cn("font-black text-xs tracking-widest transition-colors", tab === t ? "text-primary" : "text-white/50 group-hover:text-white/80")}>
+                  {t === "pumpa" ? "PUMPA" : t === "mix" ? "MIX" : "VL. DOPRAVA"}
+                </span>
+                {tab === t && (
+                  <span className={cn("md:hidden text-[9px] font-black tracking-widest transition-colors px-1 py-0.5 rounded-full border leading-none", tabInfoOpen ? "border-primary/60 text-primary bg-primary/15" : "border-white/15 text-white/30")}>
+                    ⓘ
+                  </span>
+                )}
+              </div>
+              {(t === "pumpa" || t === "mix") && (
+                <span className={cn("text-[10px] font-medium transition-colors text-center px-1", tab === t ? "text-white/70" : "text-white/30 group-hover:text-white/50")}>
+                  {t === "pumpa" ? `${pumpCap}m³ · 28m` : `${mixCap}m³`}
                 </span>
               )}
             </button>

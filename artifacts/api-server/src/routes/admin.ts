@@ -265,11 +265,12 @@ router.get("/analytics/realtime", async (req, res) => {
     const token = await getGa4Token();
     if (!token) { res.status(503).json({ error: "GA4_KEY_JSON not configured" }); return; }
 
-    const [totalData, minuteData, deviceData, pageData] = await Promise.all([
+    const [totalData, minuteData, deviceData, pageData, countryData] = await Promise.all([
       ga4Realtime(token, { metrics: [{ name: "activeUsers" }] }),
       ga4Realtime(token, { dimensions: [{ name: "minutesAgo" }], metrics: [{ name: "activeUsers" }] }),
       ga4Realtime(token, { dimensions: [{ name: "deviceCategory" }], metrics: [{ name: "activeUsers" }] }),
       ga4Realtime(token, { dimensions: [{ name: "unifiedScreenName" }], metrics: [{ name: "activeUsers" }], limit: 5 }),
+      ga4Realtime(token, { dimensions: [{ name: "country" }], metrics: [{ name: "activeUsers" }], limit: 8 }),
     ]);
 
     const activeNow = parseInt(
@@ -285,6 +286,7 @@ router.get("/analytics/realtime", async (req, res) => {
       byMinute,
       byDevice: ga4Rows(deviceData).map(r => ({ device: r.dims[0], users: parseInt(r.vals[0]) })),
       byPage: ga4Rows(pageData).map(r => ({ page: r.dims[0], users: parseInt(r.vals[0]) })),
+      byCountry: ga4Rows(countryData).map(r => ({ country: r.dims[0], users: parseInt(r.vals[0]) })),
     });
   } catch (err) {
     req.log.error({ err }, "GA4 realtime error");
