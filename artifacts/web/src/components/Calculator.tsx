@@ -269,6 +269,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const keepResultOnPinRef = useRef(false);
   const pendingGeocodeAddressRef = useRef<string | null>(null);
   const pendingGeocodePlaceRef = useRef<{ lat: number; lng: number } | null>(null);
+  const lastResolvedAddressRef = useRef<{ address: string; lat: number; lng: number } | null>(null);
   const [podmienkyEnabled, setPodmienkyEnabled] = useState(false);
   const [podmienkyTrucks, setPodmienkyTrucks] = useState(1);
   const [podmienkyPumpa, setPodmienkyPumpa] = useState(1);
@@ -400,7 +401,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         setAddress(place.formatted_address);
         // Uloží lat/lng pre okamžité umiestnenie pinu pri prepnutí na mapu
         if (place.geometry?.location) {
-          pendingGeocodePlaceRef.current = { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() };
+          const lat = place.geometry.location.lat(), lng = place.geometry.location.lng();
+          pendingGeocodePlaceRef.current = { lat, lng };
+          lastResolvedAddressRef.current = { address: place.formatted_address, lat, lng };
         }
         setAddressLoading(true);
         setShowResult(false);
@@ -500,13 +503,20 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
       const validateSk = (lat: number, lng: number) => {
         new google.maps.Geocoder().geocode({ location: { lat, lng } }, (results, gStatus) => {
-          const country = gStatus === "OK" && results && results[0]
-            ? results[0].address_components?.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("country"))
-            : null;
+          if (gStatus !== "OK" || !results || !results[0]) return;
+          const country = results[0].address_components?.find(
+            (c: google.maps.GeocoderAddressComponent) => c.types.includes("country")
+          );
           if (country && country.short_name !== "SK") {
             setMapError("Dodávky betónu sú dostupné iba na území Slovenska.");
             if (marker) { marker.setMap(null); marker = null; }
             setMapPin(null); setMapPlusCode(""); setDistance("");
+          } else {
+            // Reverse geocode → aktualizuj adresný input
+            const addr = results[0].formatted_address;
+            setAddress(addr);
+            lastResolvedAddressRef.current = { address: addr, lat, lng };
+            if (addressInputRef.current) addressInputRef.current.value = addr;
           }
         });
       };
@@ -1512,11 +1522,16 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
     setDeliveryMode(newMode);
 
-    // Adresa→Mapa: pendingGeocodeAddressRef nesie adresu cez async hranicu useEffect
-    // keepResultOnPinRef zachová result
+    // Adresa→Mapa: preniesť adresu cez async hranicu useEffect
+    // Prednosť má uložený lat/lng z autocomplete (okamžité umiestnenie pinu bez Geocoder delay)
     if (isAddrToMap) {
       keepResultOnPinRef.current = showResult;
-      if (address) pendingGeocodeAddressRef.current = address;
+      const last = lastResolvedAddressRef.current;
+      if (last && last.address === address) {
+        pendingGeocodePlaceRef.current = { lat: last.lat, lng: last.lng };
+      } else if (address) {
+        pendingGeocodeAddressRef.current = address;
+      }
     }
   }
 
