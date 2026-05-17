@@ -266,6 +266,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const mapLocateFnRef = useRef<(() => void) | null>(null);
   const mapGeocodeAddrFnRef = useRef<((addr: string) => void) | null>(null);
   const mapSetPinAtRef = useRef<((lat: number, lng: number) => void) | null>(null);
+  const mapMarkerRef = useRef<google.maps.Marker | null>(null);
   const keepResultOnPinRef = useRef(false);
   const pendingGeocodeAddressRef = useRef<string | null>(null);
   const pendingGeocodePlaceRef = useRef<{ lat: number; lng: number } | null>(null);
@@ -471,6 +472,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         const pos = { lat, lng };
         if (marker) marker.setPosition(pos);
         else marker = new google.maps.Marker({ position: pos, map, animation: google.maps.Animation.DROP });
+        mapMarkerRef.current = marker;
         if ((map.getZoom() ?? 0) < 14) map.setZoom(15);
         map.panTo(pos);
         setMapPin({ lat, lng });
@@ -478,6 +480,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         if (!keepResultOnPinRef.current) setShowResult(false);
         keepResultOnPinRef.current = false;
         setMapError("");
+        // Okamžite vymaz starú adresu — reverseGeocode ju doplní async
+        setAddress("");
+        if (addressInputRef.current) addressInputRef.current.value = "";
+        lastResolvedAddressRef.current = null;
         // Distance Matrix — rovnaká metóda ako adresný režim
         new google.maps.DistanceMatrixService().getDistanceMatrix(
           { origins: [ORIGIN], destinations: [pos], travelMode: google.maps.TravelMode.DRIVING, unitSystem: google.maps.UnitSystem.METRIC },
@@ -501,18 +507,25 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       // Uloží setPinAt do refu — prístupný aj z early-return path pri re-vstupe
       mapSetPinAtRef.current = setPinAt;
 
-      const validateSk = (lat: number, lng: number) => {
+      const reverseGeocode = (lat: number, lng: number) => {
         new google.maps.Geocoder().geocode({ location: { lat, lng } }, (results, gStatus) => {
-          if (gStatus !== "OK" || !results || !results[0]) return;
+          if (gStatus !== "OK" || !results || !results[0]) {
+            // Geocoder zlyhal — ukáž súradnice ako fallback
+            const fallbackAddr = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+            setAddress(fallbackAddr);
+            lastResolvedAddressRef.current = { address: fallbackAddr, lat, lng };
+            if (addressInputRef.current) addressInputRef.current.value = fallbackAddr;
+            return;
+          }
           const country = results[0].address_components?.find(
             (c: google.maps.GeocoderAddressComponent) => c.types.includes("country")
           );
           if (country && country.short_name !== "SK") {
             setMapError("Dodávky betónu sú dostupné iba na území Slovenska.");
-            if (marker) { marker.setMap(null); marker = null; }
+            if (marker) { marker.setMap(null); marker = null; mapMarkerRef.current = null; }
             setMapPin(null); setMapPlusCode(""); setDistance("");
+            setAddress(""); if (addressInputRef.current) addressInputRef.current.value = "";
           } else {
-            // Reverse geocode → aktualizuj adresný input
             const addr = results[0].formatted_address;
             setAddress(addr);
             lastResolvedAddressRef.current = { address: addr, lat, lng };
@@ -525,8 +538,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         navigator.geolocation?.getCurrentPosition(
           pos => {
             const lat = pos.coords.latitude, lng = pos.coords.longitude;
-            map.setCenter({ lat, lng }); map.setZoom(14);
+            map.setCenter({ lat, lng }); map.setZoom(15);
             setPinAt(lat, lng);
+            reverseGeocode(lat, lng);
           },
           () => {}
         );
@@ -536,8 +550,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         if (!e.latLng) return;
         const lat = e.latLng.lat(), lng = e.latLng.lng();
         setMapError("");
-        setPinAt(lat, lng);       // okamžitý pin bez čakania na geocoder
-        validateSk(lat, lng);    // SK validácia na pozadí (odstraní pin ak mimo SK)
+        setPinAt(lat, lng);        // okamžitý pin + okamžite vymaže adresu
+        reverseGeocode(lat, lng);  // async: SK validácia + doplní adresu
       });
 
       // Geocode adresu a umiestni pin — volateľné aj zvonka cez ref
@@ -1535,6 +1549,17 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     }
   }
 
+  function clearDelivery() {
+    setAddress(""); setAddressKm(null); setDistance(""); setShowResult(false);
+    setMapPin(null); setMapPlusCode(""); setMapKmConfirmed(false); setMapError("");
+    lastResolvedAddressRef.current = null;
+    pendingGeocodePlaceRef.current = null;
+    pendingGeocodeAddressRef.current = null;
+    if (addressInputRef.current) addressInputRef.current.value = "";
+    if (mapMarkerRef.current) { mapMarkerRef.current.setMap(null); mapMarkerRef.current = null; }
+  }
+
+
   function buildBreakdown(): string {
     if (!result) return JSON.stringify({ v: 2, s: [] });
     const fmt2 = (n: number) => parseFloat(n.toFixed(2));
@@ -1917,9 +1942,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                   {/* Clear / loading */}
                   {addressLoading ? (
                     <span className="px-3 flex items-center text-white/40 text-xs border-l border-white/10">…</span>
-                  ) : address ? (
+                  ) : (address || mapPin || mapPlusCode) ? (
                     <button
-                      onClick={() => { setAddress(""); setAddressKm(null); setDistance(""); setShowResult(false); if (addressInputRef.current) addressInputRef.current.value = ""; }}
+                      onClick={clearDelivery}
                       className="px-3 flex items-center text-white/30 hover:text-white/70 transition-colors border-l border-white/10 text-lg leading-none">×</button>
                   ) : null}
                 </div>
@@ -1943,7 +1968,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                         <span className="text-xs text-white/50">od MS-BETON: <strong className="text-primary">{distance} km</strong></span>
                       </div>
                     </div>
-                    <button onClick={() => { setMapKmConfirmed(false); setMapPin(null); setMapPlusCode(""); setDistance(""); setAddressKm(null); }}
+                    <button onClick={() => { setMapKmConfirmed(false); setMapPin(null); setMapPlusCode(""); setDistance(""); setAddressKm(null); if (mapMarkerRef.current) { mapMarkerRef.current.setMap(null); mapMarkerRef.current = null; } }}
                       className="text-xs text-white/40 hover:text-white/70 transition-colors shrink-0">Zmeniť</button>
                   </div>
                 ) : deliveryMode === "map" && !mapKmConfirmed ? (
