@@ -2149,9 +2149,6 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                 </div>
                 {/* Ikona tlačidlá — pevná šírka zodpovedá header akciám */}
                 <div className="flex items-center justify-end w-28 shrink-0">
-                  <span className="p-1 text-gray-400">
-                    {isExpanded ? <ChevronUp className="w-5 h-5 sm:w-4 sm:h-4" /> : <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4" />}
-                  </span>
                   <button
                     onClick={(e) => { e.stopPropagation(); setExpanded(c.id); setClientDetailTab(prev => ({ ...prev, [c.id]: "calc" })); }}
                     title="Kalkulačka klienta"
@@ -2176,6 +2173,9 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                       <Trash2 className="w-5 h-5" />
                     </button>
                   )}
+                  <span className="p-1 text-gray-300">
+                    {isExpanded ? <ChevronUp className="w-5 h-5 sm:w-4 sm:h-4" /> : <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4" />}
+                  </span>
                 </div>
               </div>
 
