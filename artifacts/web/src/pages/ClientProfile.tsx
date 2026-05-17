@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { Navbar } from "@/components/Navbar";
 import { SEOHead } from "@/components/SEOHead";
@@ -10,6 +10,34 @@ function generateCaptcha() {
   const a = Math.floor(Math.random() * 9) + 1;
   const b = Math.floor(Math.random() * 9) + 1;
   return { a, b, answer: a + b };
+}
+
+const fieldCls = "w-full bg-white/8 border-b-2 border-b-white/20 focus:border-b-primary text-white px-3 py-2.5 focus:outline-none placeholder:text-white/20 text-sm font-medium rounded-sm transition-colors";
+const labelCls = "block text-[10px] font-bold text-white/50 mb-1.5 tracking-widest uppercase";
+
+function MathCheck({ captcha, input, setInput, onRefresh }: { captcha: { a: number; b: number }; input: string; setInput: (v: string) => void; onRefresh: () => void }) {
+  return (
+    <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded px-3 py-2">
+      <span className="text-white/40 text-xs shrink-0">
+        Koľko je <span className="text-primary font-black">{captcha.a}</span> + <span className="text-primary font-black">{captcha.b}</span>?
+      </span>
+      <input type="number" value={input} onChange={e => setInput(e.target.value)} inputMode="numeric" autoComplete="off"
+        placeholder="?" className="w-10 bg-transparent border-b border-white/20 focus:border-primary text-white text-sm font-mono text-center focus:outline-none transition-colors" />
+      <button type="button" onClick={onRefresh} className="text-white/20 hover:text-white/50 transition-colors ml-auto">
+        <RefreshCw className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+}
+
+function Msg({ msg }: { msg: { ok: boolean; text: string } | null }) {
+  if (!msg) return null;
+  return (
+    <div className={`flex items-center gap-1.5 text-xs font-bold mt-3 ${msg.ok ? "text-green-400" : "text-red-400"}`}>
+      {msg.ok ? <Check className="w-3.5 h-3.5 shrink-0" /> : <AlertCircle className="w-3.5 h-3.5 shrink-0" />}
+      {msg.text}
+    </div>
+  );
 }
 
 export default function ClientProfile() {
@@ -52,22 +80,18 @@ export default function ClientProfile() {
     if (!currentPassData) { setMsgData({ ok: false, text: "Zadajte aktuálne heslo" }); return; }
     if (parseInt(captchaDataInput) !== captchaData.answer) {
       setMsgData({ ok: false, text: "Nesprávna odpoveď na overenie" });
-      setCaptchaData(generateCaptcha()); setCaptchaDataInput("");
-      return;
+      setCaptchaData(generateCaptcha()); setCaptchaDataInput(""); return;
     }
     const changedLoginId = loginId.trim() !== client.clientId ? loginId.trim() : undefined;
     const changedEmail = email.trim() !== (client.email ?? "") ? email.trim() : undefined;
-    if (!changedLoginId && changedEmail === undefined) {
-      setMsgData({ ok: false, text: "Žiadne zmeny na uloženie" }); return;
-    }
+    if (!changedLoginId && changedEmail === undefined) { setMsgData({ ok: false, text: "Žiadne zmeny na uloženie" }); return; }
     setSavingData(true); setMsgData(null);
     const res = await clientApi.updateProfile(client.id, currentPassData, changedLoginId, changedEmail);
     setSavingData(false);
     if (res?.ok && res.client) {
       clientAuth.updateSession(res.client);
       setMsgData({ ok: true, text: "Údaje uložené" });
-      setCurrentPassData("");
-      setCaptchaData(generateCaptcha()); setCaptchaDataInput("");
+      setCurrentPassData(""); setCaptchaData(generateCaptcha()); setCaptchaDataInput("");
     } else {
       setMsgData({ ok: false, text: res?.error ?? "Chyba pri ukladaní" });
       setCaptchaData(generateCaptcha()); setCaptchaDataInput("");
@@ -80,8 +104,7 @@ export default function ClientProfile() {
     if (newPass !== confirmPass) { setMsgPwd({ ok: false, text: "Heslá sa nezhodujú" }); return; }
     if (parseInt(captchaPwdInput) !== captchaPwd.answer) {
       setMsgPwd({ ok: false, text: "Nesprávna odpoveď na overenie" });
-      setCaptchaPwd(generateCaptcha()); setCaptchaPwdInput("");
-      return;
+      setCaptchaPwd(generateCaptcha()); setCaptchaPwdInput(""); return;
     }
     setSavingPwd(true); setMsgPwd(null);
     const res = await clientApi.updateProfile(client.id, currentPassPwd, undefined, undefined, newPass);
@@ -100,34 +123,19 @@ export default function ClientProfile() {
     setResetSending(true); setResetMsg(null);
     const res = await clientApi.requestPasswordReset(client.id);
     setResetSending(false);
-    if (res?.ok) setResetMsg({ ok: true, text: "Odkaz bol odoslaný na váš email" });
+    if (res?.ok) setResetMsg({ ok: true, text: "Odkaz odoslaný na váš email" });
     else setResetMsg({ ok: false, text: res?.error ?? "Chyba pri odosielaní" });
   }
-
-  const fieldCls = "w-full bg-white/8 border-b-2 border-b-white/20 focus:border-b-primary text-white px-3 py-2.5 focus:outline-none placeholder:text-white/20 text-sm font-medium rounded-sm transition-colors";
-  const labelCls = "block text-[10px] font-bold text-white/50 mb-1.5 tracking-widest uppercase";
-
-  const MathCheck = ({ captcha, input, setInput, onRefresh }: { captcha: { a: number; b: number }; input: string; setInput: (v: string) => void; onRefresh: () => void }) => (
-    <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded px-3 py-2">
-      <span className="text-white/40 text-xs shrink-0">
-        Koľko je <span className="text-primary font-black">{captcha.a}</span> + <span className="text-primary font-black">{captcha.b}</span> ?
-      </span>
-      <input type="number" value={input} onChange={e => setInput(e.target.value)} inputMode="numeric" autoComplete="off"
-        placeholder="?" className="w-12 bg-transparent border-b border-white/20 focus:border-primary text-white text-sm font-mono text-center focus:outline-none transition-colors" />
-      <button type="button" onClick={onRefresh} className="text-white/20 hover:text-white/50 transition-colors ml-auto">
-        <RefreshCw className="w-3.5 h-3.5" />
-      </button>
-    </div>
-  );
 
   return (
     <>
       <SEOHead title="Môj profil – MS-BETON" noIndex />
       <Navbar />
       <main className="min-h-screen concrete-navy">
-        {/* Compact header */}
+
+        {/* Header */}
         <div className="bg-secondary border-b border-white/10 px-4 py-5">
-          <div className="max-w-2xl mx-auto flex items-center justify-between">
+          <div className="max-w-xl mx-auto flex items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-black text-white uppercase tracking-wide">VÁŠ PROFIL</h1>
               <p className="text-white/40 text-sm mt-0.5">{client.name}{client.company ? ` · ${client.company}` : ""}</p>
@@ -143,29 +151,7 @@ export default function ClientProfile() {
           </div>
         </div>
 
-        <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
-
-          {/* ── Email reset ── */}
-          {client.email && (
-            <div className="bg-secondary/80 border border-white/10 rounded-sm p-5">
-              <div className="flex items-start justify-between gap-4 flex-wrap">
-                <div>
-                  <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1">Odoslanie emailu</p>
-                  <p className="text-white/60 text-sm">Na emailovú adresu bude odoslaný odkaz na reset hesla</p>
-                  {resetMsg && (
-                    <div className={`flex items-center gap-1.5 text-xs font-bold mt-2 ${resetMsg.ok ? "text-green-400" : "text-red-400"}`}>
-                      {resetMsg.ok ? <Check className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
-                      {resetMsg.text}
-                    </div>
-                  )}
-                </div>
-                <button onClick={handleEmailReset} disabled={resetSending || !!resetMsg?.ok}
-                  className="shrink-0 flex items-center gap-2 px-5 py-2.5 bg-primary text-secondary font-black text-xs uppercase tracking-wider hover:bg-primary/85 transition-colors disabled:opacity-50 rounded-sm cursor-pointer">
-                  <Mail className="w-3.5 h-3.5" /> Odoslať e-mail
-                </button>
-              </div>
-            </div>
-          )}
+        <div className="max-w-xl mx-auto px-4 py-6 space-y-4">
 
           {/* ── Zmena údajov ── */}
           <div className="bg-secondary/80 border border-white/10 rounded-sm p-5">
@@ -176,13 +162,14 @@ export default function ClientProfile() {
                 <input value={loginId} onChange={e => setLoginId(e.target.value)} className={fieldCls} autoComplete="username" />
               </div>
               <div>
-                <label className={labelCls}>E-Mail</label>
+                <label className={labelCls}>E-mail</label>
                 <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="váš@email.sk" className={fieldCls} />
               </div>
               <div>
                 <label className={labelCls}>Aktuálne heslo</label>
                 <div className="relative">
-                  <input type={showCurrentData ? "text" : "password"} value={currentPassData} onChange={e => setCurrentPassData(e.target.value)}
+                  <input type={showCurrentData ? "text" : "password"} value={currentPassData}
+                    onChange={e => setCurrentPassData(e.target.value)}
                     placeholder="••••" className={fieldCls + " pr-10"} autoComplete="current-password" />
                   <button type="button" onClick={() => setShowCurrentData(v => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
                     {showCurrentData ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -195,14 +182,10 @@ export default function ClientProfile() {
                   onRefresh={() => { setCaptchaData(generateCaptcha()); setCaptchaDataInput(""); }} />
               </div>
             </div>
-            {msgData && (
-              <div className={`flex items-center gap-1.5 text-xs font-bold mt-3 ${msgData.ok ? "text-green-400" : "text-red-400"}`}>
-                {msgData.ok ? <Check className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />} {msgData.text}
-              </div>
-            )}
+            <Msg msg={msgData} />
             <button onClick={handleSaveData} disabled={savingData}
               className="mt-4 px-6 py-2.5 bg-primary text-secondary font-black text-xs uppercase tracking-wider hover:bg-primary/85 transition-colors disabled:opacity-50 rounded-sm cursor-pointer">
-              {savingData ? "Ukladám..." : "ZMENIŤ ÚDAJE"}
+              {savingData ? "Ukladám..." : "Zmeniť údaje"}
             </button>
           </div>
 
@@ -226,10 +209,10 @@ export default function ClientProfile() {
                 </div>
               </div>
               <div>
-                <label className={labelCls}>Zopakovať heslo</label>
+                <label className={labelCls}>Zopakovať</label>
                 <div className="relative">
                   <input type={showConfirmPass ? "text" : "password"} value={confirmPass} onChange={e => setConfirmPass(e.target.value)}
-                    placeholder="Zopakovať heslo" className={fieldCls + " pr-10"} autoComplete="new-password" />
+                    placeholder="••••" className={fieldCls + " pr-10"} autoComplete="new-password" />
                   <button type="button" onClick={() => setShowConfirmPass(v => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
                     {showConfirmPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -244,15 +227,32 @@ export default function ClientProfile() {
                   onRefresh={() => { setCaptchaPwd(generateCaptcha()); setCaptchaPwdInput(""); }} />
               </div>
             </div>
-            {msgPwd && (
-              <div className={`flex items-center gap-1.5 text-xs font-bold mt-3 ${msgPwd.ok ? "text-green-400" : "text-red-400"}`}>
-                {msgPwd.ok ? <Check className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />} {msgPwd.text}
-              </div>
-            )}
-            <button onClick={handleChangePassword} disabled={savingPwd}
-              className="mt-4 px-6 py-2.5 bg-primary text-secondary font-black text-xs uppercase tracking-wider hover:bg-primary/85 transition-colors disabled:opacity-50 rounded-sm cursor-pointer">
-              {savingPwd ? "Mením..." : "ZMENIŤ HESLO"}
-            </button>
+            <Msg msg={msgPwd} />
+
+            <div className="flex flex-wrap items-center gap-3 mt-4">
+              <button onClick={handleChangePassword} disabled={savingPwd}
+                className="px-6 py-2.5 bg-primary text-secondary font-black text-xs uppercase tracking-wider hover:bg-primary/85 transition-colors disabled:opacity-50 rounded-sm cursor-pointer">
+                {savingPwd ? "Mením..." : "Zmeniť heslo"}
+              </button>
+
+              {/* Email reset — inline, len ak má email */}
+              {client.email && (
+                <div className="flex items-center gap-2">
+                  {resetMsg ? (
+                    <span className={`flex items-center gap-1.5 text-xs font-bold ${resetMsg.ok ? "text-green-400" : "text-red-400"}`}>
+                      {resetMsg.ok ? <Check className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
+                      {resetMsg.text}
+                    </span>
+                  ) : (
+                    <button onClick={handleEmailReset} disabled={resetSending}
+                      className="flex items-center gap-1.5 text-white/35 hover:text-white/65 transition-colors text-xs disabled:opacity-40 cursor-pointer">
+                      <Mail className="w-3.5 h-3.5 shrink-0" />
+                      {resetSending ? "Odosiela sa…" : "Zabudnuté heslo? Odoslať na email"}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="text-center pt-2">
