@@ -265,7 +265,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [mapCopied, setMapCopied] = useState(false);
   const [mapError, setMapError] = useState("");
   const mapLocateFnRef = useRef<(() => void) | null>(null);
-  const mapGeocodeAddrFnRef = useRef<((addr: string) => void) | null>(null);
+  const mapGeocodeAddrFnRef = useRef<((addr: string, autoConfirm?: boolean) => void) | null>(null);
   const mapSetPinAtRef = useRef<((lat: number, lng: number) => void) | null>(null);
   const mapMarkerRef = useRef<google.maps.Marker | null>(null);
   const keepResultOnPinRef = useRef(false);
@@ -568,7 +568,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       });
 
       // Geocode adresu a umiestni pin — volateľné aj zvonka cez ref (Enter v inpute, paste, adresa→mapa)
-      mapGeocodeAddrFnRef.current = (addr: string) => {
+      // autoConfirm=true: po úspešnom geocode automaticky potvrdí polohu (bez kliknutia "Potvrdiť polohu")
+      mapGeocodeAddrFnRef.current = (addr: string, autoConfirm = false) => {
         new google.maps.Geocoder().geocode({ address: addr, region: "SK" }, (results, gStatus) => {
           if (gStatus === "OK" && results && results[0]) {
             const loc = results[0].geometry.location;
@@ -583,6 +584,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             const village = comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("locality"))?.long_name ?? "";
             const district = comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("administrative_area_level_2"))?.long_name ?? "";
             setMapLocality([village, district].filter(Boolean).join(" · "));
+            if (autoConfirm) setMapKmConfirmed(true);
           }
         });
       };
@@ -1180,14 +1182,14 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       ? (hasDiscount && Math.abs(mainMinFeePerTruck - mainMinFeeDisc) > 0.001
         ? `<span style="text-decoration:line-through;color:#bbb;font-size:7.5pt">${fmtN(mainMinFeePerTruck)}&nbsp;€/auto</span><br>${fmtN(mainMinFeeDisc)}&nbsp;€/auto`
         : `${fmtN(mainMinFeeDisc)}&nbsp;€/auto`)
-      : "—";
+      : transRateStr(mainTransportOrig, result.qty, result.fTransport);
     const transportRow = mainTransportOrig > 0
       ? trow(dopravaLabel, `${result.qty}&nbsp;m³`, transportUnitStr, mainTransportOrig, mainTransportDisc)
       : "";
     const mainFillupOrig = mainCI?.transportFillup ?? 0;
     const mainFillupDisc = mainFillupOrig * result.fFillup;
     const fillupRow = mainFillupOrig > 0
-      ? trow(`Doťaženie do&nbsp;${result.fillupTarget}&nbsp;m³`, `${mainCI?.transportFillupM3}&nbsp;m³`, "—", mainFillupOrig, mainFillupDisc)
+      ? trow(`Doťaženie do&nbsp;${result.fillupTarget}&nbsp;m³`, `${mainCI?.transportFillupM3}&nbsp;m³`, transRateStr(mainFillupOrig, mainCI?.transportFillupM3 ?? 0, result.fFillup), mainFillupOrig, mainFillupDisc)
       : "";
     const zimneRow = origItems.zimne > 0
       ? trow(`Zimné opatrenia`, `${result.qty}&nbsp;m³`, `${fmtN(zimneServicePrice)}&nbsp;€/m³`, origItems.zimne, baseItems.zimne)
@@ -1208,6 +1210,15 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       if (hasDiscount && Math.abs(rate - discRate) > 0.001)
         return `<span style="text-decoration:line-through;color:#bbb;font-size:7.5pt">${fmtN(rate)}&nbsp;${suffix}</span><br>${fmtN(discRate)}&nbsp;${suffix}`;
       return `${fmtN(discRate)}&nbsp;${suffix}`;
+    };
+
+    const transRateStr = (origTotal: number, qty: number, factor: number) => {
+      if (qty <= 0 || origTotal <= 0) return "—";
+      const origRate = origTotal / qty;
+      const discRate = origRate * factor;
+      if (hasDiscount && Math.abs(origRate - discRate) > 0.001)
+        return `<span style="text-decoration:line-through;color:#bbb;font-size:7.5pt">${fmtN(origRate)}&nbsp;€/m³</span><br>${fmtN(discRate)}&nbsp;€/m³`;
+      return `${fmtN(discRate)}&nbsp;€/m³`;
     };
 
     const hasMainSluzby =
@@ -1251,12 +1262,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         ? (hasDiscount && Math.abs(mainMinFeePerTruck - extraMinFeeDisc) > 0.001
           ? `<span style="text-decoration:line-through;color:#bbb;font-size:7.5pt">${fmtN(mainMinFeePerTruck)}&nbsp;€/auto</span><br>${fmtN(extraMinFeeDisc)}&nbsp;€/auto`
           : `${fmtN(extraMinFeeDisc)}&nbsp;€/auto`)
-        : "—";
+        : transRateStr(transOrig, ci.qty, result.fTransport);
       const extraBetonLabel = ci.label.replace(/ – [\d.,]+ m³$/, "");
       let rows = sectionRow(`Pridaná položka ${idx + 1}${extraBetonLabel ? ` – ${extraBetonLabel}` : ""}`);
       rows += trow(ci.label, `${ci.qty}&nbsp;m³`, unitStr, betonOrig, betonDisc);
       rows += trow(dopravaExtraLabel, `${ci.qty}&nbsp;m³`, extraTransportUnitStr, transOrig, transDisc);
-      rows += trow(`Doťaženie do&nbsp;${ci.transportFillupTarget}&nbsp;m³`, `${ci.transportFillupM3}&nbsp;m³`, "—", fillupOrig, fillupDisc);
+      rows += trow(`Doťaženie do&nbsp;${ci.transportFillupTarget}&nbsp;m³`, `${ci.transportFillupM3}&nbsp;m³`, transRateStr(fillupOrig, ci.transportFillupM3, result.fFillup), fillupOrig, fillupDisc);
       const hasExtraSvc = ci.svcPumpCost > 0 || ci.svcHoseCost > 0 || ci.svcWashCost > 0 || ci.svcWaitCost > 0;
       if (hasExtraSvc) rows += subSectionRow(svcLabel);
       if (ci.svcPumpCost > 0) {
@@ -1598,7 +1609,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const pdfTrucksLabel = (ci: typeof result.concreteBreakdown[0]) =>
       tab === "pumpa" ? `1×Pumpa${ci.transportTrucks > 1 ? `+${ci.transportTrucks - 1}×Mix` : ""}` : `${ci.transportTrucks}×Mix`;
     const zoneStr = result.transportZone ? `${result.transportZone.fromKm}–${result.transportZone.toKm} km` : "";
-    const bdSections: { h: string; rows: { l: string; v: number; o?: number }[] }[] = [];
+    const bdSections: { h: string; rows: { l: string; v: number; o?: number; u?: number; uOrig?: number; uSuffix?: string }[] }[] = [];
 
     result.concreteBreakdown.forEach((ci, idx) => {
       const bOrig = fmt2(isFakt ? ci.bezDph : ci.bezDph * (1 + VAT_HOTOVOST));
@@ -1607,15 +1618,22 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const tDisc = fmt2(ci.transport * dopravaFactor);
       const catLabel = ci.label.replace(/ – [\d.,]+ m³$/, "");
       const header = idx === 0 ? `Produkty – ${catLabel}` : `Pridaná položka ${idx} – ${catLabel}`;
-      const rows: { l: string; v: number; o?: number }[] = [];
-      rows.push({ l: ci.label, v: bDisc, ...(Math.abs(bOrig - bDisc) > 0.01 ? { o: bOrig } : {}) });
+      const rows: { l: string; v: number; o?: number; u?: number; uOrig?: number; uSuffix?: string }[] = [];
+      const uBeton = ci.qty > 0 ? fmt2(bDisc / ci.qty) : undefined;
+      const uBetonOrig = ci.qty > 0 ? fmt2(bOrig / ci.qty) : undefined;
+      rows.push({ l: ci.label, v: bDisc, ...(Math.abs(bOrig - bDisc) > 0.01 ? { o: bOrig } : {}), ...(uBeton !== undefined ? { u: uBeton, uSuffix: "€/m³", ...(uBetonOrig !== undefined && Math.abs(uBetonOrig - uBeton) > 0.001 ? { uOrig: uBetonOrig } : {}) } : {}) });
       if (ci.transport > 0) {
         const dopravaLbl = `${ci.transportIsMin ? "Min. doprava" : "Doprava"}${zoneStr ? ` ${zoneStr}` : ""} · ${pdfTrucksLabel(ci)}`;
-        rows.push({ l: dopravaLbl, v: tDisc, ...(Math.abs(tOrig - tDisc) > 0.01 ? { o: tOrig } : {}) });
+        const uTrans = ci.qty > 0 ? fmt2(tDisc / ci.qty) : undefined;
+        const uTransOrig = ci.qty > 0 ? fmt2(tOrig / ci.qty) : undefined;
+        rows.push({ l: dopravaLbl, v: tDisc, ...(Math.abs(tOrig - tDisc) > 0.01 ? { o: tOrig } : {}), ...(uTrans !== undefined ? { u: uTrans, uSuffix: "€/m³", ...(uTransOrig !== undefined && Math.abs(uTransOrig - uTrans) > 0.001 ? { uOrig: uTransOrig } : {}) } : {}) });
       }
       if (ci.transportFillup > 0) {
+        const fOrig = fmt2(ci.transportFillup);
         const fDisc = fmt2(ci.transportFillup * dopravaFactor);
-        rows.push({ l: `Doťaženie do ${ci.transportFillupTarget} m³`, v: fDisc });
+        const uFill = ci.transportFillupM3 > 0 ? fmt2(fDisc / ci.transportFillupM3) : undefined;
+        const uFillOrig = ci.transportFillupM3 > 0 ? fmt2(fOrig / ci.transportFillupM3) : undefined;
+        rows.push({ l: `Doťaženie do ${ci.transportFillupTarget} m³`, v: fDisc, ...(Math.abs(fOrig - fDisc) > 0.01 ? { o: fOrig } : {}), ...(uFill !== undefined ? { u: uFill, uSuffix: "€/m³", ...(uFillOrig !== undefined && Math.abs(uFillOrig - uFill) > 0.001 ? { uOrig: uFillOrig } : {}) } : {}) });
       }
       const svcRows: { l: string; v: number; o?: number }[] = [];
       if (idx === 0) {
@@ -1996,13 +2014,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && deliveryMode === "map" && mapGeocodeAddrFnRef.current && addressInputRef.current?.value) {
                         e.preventDefault();
-                        mapGeocodeAddrFnRef.current(addressInputRef.current.value);
+                        mapGeocodeAddrFnRef.current(addressInputRef.current.value, true);
                       }
                     }}
                     onPaste={(e) => {
                       if (deliveryMode === "map" && mapGeocodeAddrFnRef.current) {
                         const pasted = e.clipboardData.getData("text").trim();
-                        if (pasted) setTimeout(() => mapGeocodeAddrFnRef.current?.(pasted), 0);
+                        if (pasted) setTimeout(() => mapGeocodeAddrFnRef.current?.(pasted, true), 0);
                       }
                     }}
                     placeholder="Zadajte adresu stavby"
@@ -2074,7 +2092,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                           </button>
                         </div>
                       ) : (
-                        <p className="text-xs text-white/40 px-1">Kliknite na mapu alebo napíšte adresu</p>
+                        <div className="px-1 space-y-1">
+                          <p className="text-xs text-white/40">Kliknite na mapu, napíšte adresu alebo vložte Plus Code</p>
+                          <p className="text-xs text-white/25">Plus Code vyžaduje mesto: napr. <span className="font-mono">VW3G+78 Višňové</span></p>
+                        </div>
                       )}
                     </div>
                     <button onClick={() => mapLocateFnRef.current?.()}
@@ -2114,8 +2135,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             const qty = parseFloat(quantity) || 0;
             const autoMixP = Math.max(0, (calcPumpTrucks(qty) || 1) - 1);
             const autoTrucksM = Math.max(1, Math.ceil(qty / mixCap) || 1);
-            const maxPumpa = 2;
-            const maxMixP = qty > 0 ? Math.max(0, Math.floor(qty) - podmienkyPumpa) : 8;
+            const maxPumpa = tsettings.condPumpaMax ?? 2;
+            const minPumpa = tsettings.condPumpaMin ?? 1;
+            const adminMaxMix = tsettings.condMixMax ?? 2;
+            const adminMinMix = tsettings.condMixMin ?? 0;
+            const maxMixP = qty > 0 ? Math.min(adminMaxMix, Math.max(0, Math.floor(qty) - podmienkyPumpa)) : adminMaxMix;
             const minMixM = Math.max(1, autoTrucksM);
             const maxMixM = qty > 0 ? Math.max(minMixM, Math.floor(qty)) : minMixM + 8;
             const totalP = podmienkyPumpa + podmienkyMixC;
@@ -2175,7 +2199,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                             <circle cx="8" cy="42" r="4" strokeWidth="2"/><circle cx="36" cy="42" r="4" strokeWidth="2"/>
                           </svg>
                           <span className="text-[10px] font-black text-amber-300/80 uppercase tracking-widest flex-1">Pumpa</span>
-                          <button type="button" onClick={() => setPodmienkyPumpa(p => Math.max(1, p - 1))} disabled={podmienkyPumpa <= 1}
+                          <button type="button" onClick={() => setPodmienkyPumpa(p => Math.max(minPumpa, p - 1))} disabled={podmienkyPumpa <= minPumpa}
                             className="w-8 h-8 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">−</button>
                           <span className="text-xl font-black text-amber-200 w-7 text-center">{podmienkyPumpa}</span>
                           <button type="button" onClick={() => setPodmienkyPumpa(p => Math.min(maxPumpa, p + 1))} disabled={podmienkyPumpa >= maxPumpa}
@@ -2190,7 +2214,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                             <circle cx="10" cy="38" r="4" strokeWidth="2"/><circle cx="52" cy="38" r="4" strokeWidth="2"/>
                           </svg>
                           <span className="text-[10px] font-black text-amber-300/80 uppercase tracking-widest flex-1">Mix</span>
-                          <button type="button" onClick={() => setPodmienkyMixC(m => Math.max(0, m - 1))} disabled={podmienkyMixC <= 0}
+                          <button type="button" onClick={() => setPodmienkyMixC(m => Math.max(adminMinMix, m - 1))} disabled={podmienkyMixC <= adminMinMix}
                             className="w-8 h-8 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">−</button>
                           <span className="text-xl font-black text-amber-200 w-7 text-center">{podmienkyMixC}</span>
                           <button type="button" onClick={() => setPodmienkyMixC(m => Math.min(maxMixP, m + 1))} disabled={podmienkyMixC >= maxMixP}

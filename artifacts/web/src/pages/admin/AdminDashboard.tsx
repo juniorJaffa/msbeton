@@ -297,6 +297,44 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
   return (
     <div className="space-y-3">
       {/* ── Typy dopravy ── */}
+      {/* Podmienky — min/max počet vozidiel pre kalkulačku */}
+      <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-5 py-2.5 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+          <h3 className="font-black text-secondary text-sm uppercase tracking-widest flex-1">Podmienky – počet vozidiel</h3>
+          <span className="text-[10px] text-gray-400">min/max pre Pumpa tab kalkulačky</span>
+        </div>
+        <div className="grid grid-cols-4 divide-x divide-gray-100">
+          <div className="px-4 py-3">
+            <div className="text-[10px] text-blue-600 font-bold uppercase tracking-wide mb-1">Pumpa min.</div>
+            <div className="flex items-baseline gap-1 font-bold text-secondary text-sm">
+              <EditableField value={ts.condPumpaMin ?? 1} type="number" onSave={v => saveTs({ ...ts, condPumpaMin: Math.max(1, parseInt(v) || 1) })} />
+              <span className="text-gray-400 text-xs">voz.</span>
+            </div>
+          </div>
+          <div className="px-4 py-3">
+            <div className="text-[10px] text-blue-600 font-bold uppercase tracking-wide mb-1">Pumpa max.</div>
+            <div className="flex items-baseline gap-1 font-bold text-secondary text-sm">
+              <EditableField value={ts.condPumpaMax ?? 2} type="number" onSave={v => saveTs({ ...ts, condPumpaMax: Math.max(1, parseInt(v) || 2) })} />
+              <span className="text-gray-400 text-xs">voz.</span>
+            </div>
+          </div>
+          <div className="px-4 py-3">
+            <div className="text-[10px] text-amber-600 font-bold uppercase tracking-wide mb-1">Mix min.</div>
+            <div className="flex items-baseline gap-1 font-bold text-secondary text-sm">
+              <EditableField value={ts.condMixMin ?? 0} type="number" onSave={v => saveTs({ ...ts, condMixMin: Math.max(0, parseInt(v) || 0) })} />
+              <span className="text-gray-400 text-xs">voz.</span>
+            </div>
+          </div>
+          <div className="px-4 py-3">
+            <div className="text-[10px] text-amber-600 font-bold uppercase tracking-wide mb-1">Mix max.</div>
+            <div className="flex items-baseline gap-1 font-bold text-secondary text-sm">
+              <EditableField value={ts.condMixMax ?? 2} type="number" onSave={v => saveTs({ ...ts, condMixMax: Math.max(0, parseInt(v) || 2) })} />
+              <span className="text-gray-400 text-xs">voz.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
           <h3 className="font-black text-secondary text-sm uppercase tracking-widest">Typy dopravy</h3>
@@ -417,10 +455,11 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                     );
                   })()}
                 {/* Zóny tohto typu */}
-                {!isStandard && typeZones.map(z => (
-                  <div key={z.id} className="border-t border-gray-100">
+                {!isStandard && typeZones.map((z, zIdx) => (
+                  <div key={z.id} className={zIdx > 0 ? "border-t-2 border-slate-300" : "border-t border-gray-200"}>
                     {/* Zone name row */}
-                    <div className="flex items-center gap-2 px-5 py-2 pl-14 bg-gray-50/60">
+                    <div className={`flex items-center gap-2 px-4 py-2 ${zIdx > 0 ? "bg-slate-100/70" : "bg-gray-50/60"}`}>
+                      <span className="w-5 h-5 rounded-full bg-slate-300 text-slate-700 text-[9px] font-black flex items-center justify-center shrink-0">{zIdx + 1}</span>
                       <div className="font-semibold text-secondary text-sm flex-1">
                         <EditableField value={z.name} onSave={v => updateZone(z.id, { name: v })} />
                       </div>
@@ -1654,15 +1693,15 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
   const scrollToClientCard = (id: string) => {
     setTimeout(() => {
       const container = document.getElementById("admin-content");
-      const toolbar = document.getElementById("klienti-toolbar");
+      const sticky = document.getElementById("klienti-sticky");
       if (!container) return;
       const cR = container.getBoundingClientRect();
-      const toolH = toolbar?.getBoundingClientRect().height ?? 90;
-      // Scroll to tabs so card header goes above toolbar → current client shows in floating indicator
+      // Use full sticky height (toolbar + floating indicator) so tabs appear below all sticky elements
+      const stickyH = sticky?.getBoundingClientRect().height ?? 90;
       const targetEl = document.getElementById(`client-tabs-${id}`) ?? document.getElementById(`client-card-${id}`);
       if (!targetEl) return;
       const eR = targetEl.getBoundingClientRect();
-      container.scrollTo({ top: container.scrollTop + (eR.top - cR.top) - toolH - 8, behavior: "smooth" });
+      container.scrollTo({ top: container.scrollTop + (eR.top - cR.top) - stickyH - 4, behavior: "smooth" });
     }, 250);
   };
 
@@ -1759,23 +1798,27 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
   useEffect(() => {
     const container = document.getElementById("admin-content");
     if (!container) return;
+    let floatTimer: ReturnType<typeof setTimeout> | null = null;
     const onScroll = () => {
-      const toolbar = document.getElementById("klienti-toolbar");
-      const tbBottom = toolbar ? toolbar.getBoundingClientRect().bottom : 82;
+      const sticky = document.getElementById("klienti-sticky");
+      const tbBottom = sticky ? sticky.getBoundingClientRect().bottom : 82;
       const cards = container.querySelectorAll("[id^='client-card-']");
       let last: Client | null = null;
       for (const el of Array.from(cards)) {
-        // 4px hysteresis buffer eliminates Safari flicker on slow scroll near boundary
         if (el.getBoundingClientRect().top < tbBottom - 4) {
           const id = el.id.replace("client-card-", "");
           const found = filteredRef.current.find(c => c.id === id);
           if (found) last = found;
         } else break;
       }
-      setFloatingClient(prev => prev?.id === last?.id ? prev : last);
+      // 50ms debounce eliminates Safari elastic scroll micro-oscillations at boundary
+      if (floatTimer) clearTimeout(floatTimer);
+      floatTimer = setTimeout(() => {
+        setFloatingClient(prev => prev?.id === last?.id ? prev : last);
+      }, 50);
     };
     container.addEventListener("scroll", onScroll, { passive: true });
-    return () => container.removeEventListener("scroll", onScroll);
+    return () => { container.removeEventListener("scroll", onScroll); if (floatTimer) clearTimeout(floatTimer); };
   }, []);
 
   return (
@@ -1863,7 +1906,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
       </div>
 
       {/* Sticky toolbar — search + table header + floating client indicator */}
-      <div className="sticky top-0 z-20">
+      <div id="klienti-sticky" className="sticky top-0 z-20">
       <div id="klienti-toolbar" className="shadow-sm">
         <div className="py-2 px-1 bg-white border-b border-gray-100">
           <input placeholder="Hľadať klienta..." value={search} onChange={e => setSearch(e.target.value)}
@@ -2773,19 +2816,26 @@ function exportOrderPDF(o: Order) {
   const today = new Date(o.createdAt).toLocaleDateString("sk-SK");
   const fmtEurPdf = (n: number | undefined) => n !== undefined ? n.toFixed(2) + " €" : "";
 
-  let parsed: { v: number; s: { h: string; rows: { l: string; v: number; o?: number }[] }[] } | null = null;
+  let parsed: { v: number; s: { h: string; rows: { l: string; v: number; o?: number; u?: number; uOrig?: number; uSuffix?: string }[] }[] } | null = null;
   try { if (o.breakdown?.startsWith("{")) parsed = JSON.parse(o.breakdown); } catch { /* */ }
 
+  const fmtRate = (n: number, suffix?: string) => n.toFixed(2) + " " + (suffix ?? "€");
   const breakdownHtml = parsed ? parsed.s.map(sec => {
     const isMain = sec.h.startsWith("Pridaná") || sec.h.startsWith("Produkty");
     const rows = sec.rows.map(row => {
       const orig = row.o !== undefined ? `<span style="text-decoration:line-through;color:#aaa;font-size:7.5pt">${fmtEurPdf(row.o)}</span> ` : "";
+      const unitCell = row.u !== undefined
+        ? (row.uOrig !== undefined
+          ? `<span style="text-decoration:line-through;color:#aaa;font-size:7.5pt">${fmtRate(row.uOrig, row.uSuffix)}</span><br><span style="font-weight:bold">${fmtRate(row.u, row.uSuffix)}</span>`
+          : fmtRate(row.u, row.uSuffix))
+        : "—";
       return `<tr>
         <td style="padding:3px 8px;font-size:8.5pt;border-bottom:1px solid #f0f0f0;color:#444">${row.l}</td>
-        <td style="padding:3px 8px;font-size:8.5pt;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:bold;color:${row.o !== undefined ? "#b45309" : "#222"}">${orig}${fmtEurPdf(row.v)}</td>
+        <td style="padding:3px 8px;font-size:8.5pt;border-bottom:1px solid #f0f0f0;text-align:right;color:#666;white-space:nowrap">${unitCell}</td>
+        <td style="padding:3px 8px;font-size:8.5pt;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:bold;color:${row.o !== undefined ? "#b45309" : "#222"};white-space:nowrap">${orig}${fmtEurPdf(row.v)}</td>
       </tr>`;
     }).join("");
-    return `<tr><td colspan="2" style="padding:4px 8px 2px;font-size:8pt;font-weight:bold;background:${isMain ? "#001D3D" : "#f5f5f5"};color:${isMain ? "#EDC531" : "#666"}">${sec.h}</td></tr>${rows}`;
+    return `<tr><td colspan="3" style="padding:4px 8px 2px;font-size:8pt;font-weight:bold;background:${isMain ? "#001D3D" : "#f5f5f5"};color:${isMain ? "#EDC531" : "#666"}">${sec.h}</td></tr>${rows}`;
   }).join("") : "";
 
   const discountInfo = [
@@ -2847,7 +2897,7 @@ function exportOrderPDF(o: Order) {
 ${breakdownHtml ? `
 <div style="margin-bottom:5mm">
   <div style="font-size:9.5pt;font-weight:bold;color:#001D3D;border-bottom:2px solid #EDC531;padding-bottom:2px;margin-bottom:4px">KALKULÁCIA</div>
-  <table><tbody>${breakdownHtml}</tbody></table>
+  <table><thead><tr style="background:#001D3D;color:#fff;font-size:8pt"><th style="padding:4px 8px;text-align:left;font-weight:bold">Popis</th><th style="padding:4px 8px;text-align:right;font-weight:bold">Jedn.&nbsp;cena</th><th style="padding:4px 8px;text-align:right;font-weight:bold">Spolu</th></tr></thead><tbody>${breakdownHtml}</tbody></table>
 </div>` : ""}
 
 <div style="background:#001D3D;color:#fff;padding:4mm;border-radius:2px;display:flex;justify-content:space-between;align-items:center">

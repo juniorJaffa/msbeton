@@ -127,8 +127,12 @@ export interface TransportSettings {
   waitingRatePer15min: number;
   minimumLoadM3: number;
   dph?: number;
-  defaultHotovostDph?: number;  // default DPH hotovosť pre klientov, default 0.20
-  smsOrderEnabled?: boolean;    // či môžu prihlásení klienti vytvárať objednávky cez SMS export
+  defaultHotovostDph?: number;
+  smsOrderEnabled?: boolean;
+  condPumpaMin?: number;  // Podmienky – min počet Pumpa vozidiel (default 1)
+  condPumpaMax?: number;  // Podmienky – max počet Pumpa vozidiel (default 2)
+  condMixMin?: number;    // Podmienky – min počet Mix vozidiel v pumpa tab (default 0)
+  condMixMax?: number;    // Podmienky – max počet Mix vozidiel v pumpa tab (default 2)
 }
 
 const DEFAULT_CATEGORIES: ConcreteCategory[] = [

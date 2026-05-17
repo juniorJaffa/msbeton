@@ -39,7 +39,10 @@ export function VersionChecker() {
 
     check();
     const timer = setInterval(check, CHECK_INTERVAL);
-    return () => clearInterval(timer);
+    // Safari iOS pauses JS timers when tab is backgrounded — recheck on visibility change
+    const onVisible = () => { if (document.visibilityState === "visible") check(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { clearInterval(timer); document.removeEventListener("visibilitychange", onVisible); };
   }, []);
 
   if (!needsRefresh) return null;
