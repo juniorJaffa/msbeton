@@ -366,9 +366,34 @@ export function ClientPriceTable({
                     <EditRow id={`km_rate_${clientDZone.id}`} orig={clientDZone.ratePerKm ?? 1.8} factor={dopravaFactor}
                       manualPrice={manualPrices?.[`km_rate_${clientDZone.id}`]} dark={dark} onManualPriceChange={onManualPriceChange} />
                   </div>
-                  {clientDZone.minimumFeeKm != null && infoRow("Min. poplatok / auto", fmtE(clientDZone.minimumFeeKm), 1)}
-                  {clientDZone.minKm != null && clientDZone.minKm > 0 && infoRow("Min. vzdialenosť", `${clientDZone.minKm} km`, 2)}
-                  {clientDZone.maxKm != null && clientDZone.maxKm > 0 && infoRow("Max. polomer", `${clientDZone.maxKm} km`, 3)}
+                  {/* Min. poplatok Pumpa */}
+                  {(() => {
+                    const base = clientDZone.minimumFeeKmPumpa ?? clientDZone.minimumFeeKm;
+                    if (base == null) return null;
+                    const key = `km_min_pumpa_${clientDZone.id}`;
+                    return (
+                      <div className={cn("flex items-center justify-between px-3 py-2.5 border-b text-sm", dark ? "border-white/5 bg-white/3" : "border-gray-50 bg-gray-50/60")}>
+                        <span className={dark ? "text-white/60" : "text-secondary"}>Min. poplatok Pumpa</span>
+                        <EditRow id={key} orig={base} factor={dopravaFactor}
+                          manualPrice={manualPrices?.[key]} dark={dark} onManualPriceChange={onManualPriceChange} />
+                      </div>
+                    );
+                  })()}
+                  {/* Min. poplatok Mix */}
+                  {(() => {
+                    const base = clientDZone.minimumFeeKmMix ?? clientDZone.minimumFeeKm;
+                    if (base == null) return null;
+                    const key = `km_min_mix_${clientDZone.id}`;
+                    return (
+                      <div className={cn("flex items-center justify-between px-3 py-2.5 border-b text-sm", dark ? "border-white/5" : "border-gray-50")}>
+                        <span className={dark ? "text-white/60" : "text-secondary"}>Min. poplatok Mix</span>
+                        <EditRow id={key} orig={base} factor={dopravaFactor}
+                          manualPrice={manualPrices?.[key]} dark={dark} onManualPriceChange={onManualPriceChange} />
+                      </div>
+                    );
+                  })()}
+                  {clientDZone.minKm != null && clientDZone.minKm > 0 && infoRow("Min. vzdialenosť", `${clientDZone.minKm} km`, 4)}
+                  {clientDZone.maxKm != null && clientDZone.maxKm > 0 && infoRow("Max. polomer", `${clientDZone.maxKm} km`, 5)}
                 </>
               );
             })()}

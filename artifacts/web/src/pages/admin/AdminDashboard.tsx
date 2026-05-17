@@ -1643,6 +1643,13 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
 
   const save = (data: Client[]) => { setClients(data); adminData.saveClients(data); };
 
+  // Refresh ts from external changes (e.g. Doprava tab) without remounting/closing expanded
+  useEffect(() => {
+    const handler = () => setTs(adminData.getTransportSettings());
+    window.addEventListener("admin-data-synced", handler);
+    return () => window.removeEventListener("admin-data-synced", handler);
+  }, []);
+
   const scrollToClientCard = (id: string) => {
     setTimeout(() => {
       const container = document.getElementById("admin-content");
@@ -3386,7 +3393,7 @@ export default function AdminDashboard() {
           {tab === "betony" && <BetonTab key={syncKey} />}
           {tab === "sluzby" && <SluzbyTab key={syncKey} onGoToDoprava={() => { setTab("doprava"); window.location.hash = "doprava"; }} scrollToPumpa={sluzbyScrollPumpa} onScrollDone={() => setSluzbyScrollPumpa(false)} />}
           {tab === "doprava" && <DopravaTab key={syncKey} onGoToSluzby={() => { setTab("sluzby"); setSluzbyScrollPumpa(true); window.location.hash = "sluzby"; }} />}
-          {tab === "klienti" && <KlientiTab key={syncKey} expandClientId={goToClientId} onExpanded={() => setGoToClientId(null)} />}
+          {tab === "klienti" && <KlientiTab expandClientId={goToClientId} onExpanded={() => setGoToClientId(null)} />}
           {tab === "objednavky" && <ObjednavkyTab key={syncKey} onGoToClient={(loginId) => { setTab("klienti"); setGoToClientId(loginId); }} />}
           {tab === "analytics" && <AnalyticsTab />}
           {tab === "statistiky" && <StatistikyTab />}

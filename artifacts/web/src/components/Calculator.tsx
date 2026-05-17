@@ -765,9 +765,14 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const rate = mp[`km_rate_${dZone?.id}`] ?? baseRate;
       const effectiveKm = Math.max(km, dZone?.minKm ?? 0);
       const cost = effectiveKm * rate * trucks;
-      const kmMinFee = dZone?.minimumFeeKm;
-      const minCost = kmMinFee ? trucks * kmMinFee : 0;
-      const isMin = !!(kmMinFee && trucks > 0 && cost / trucks < kmMinFee);
+      const isPumpaTab = tabType === "pumpa";
+      const kmMinFeeBase = isPumpaTab
+        ? (dZone?.minimumFeeKmPumpa ?? dZone?.minimumFeeKm)
+        : (dZone?.minimumFeeKmMix ?? dZone?.minimumFeeKm);
+      const kmMinFeeKey = isPumpaTab ? `km_min_pumpa_${dZone?.id}` : `km_min_mix_${dZone?.id}`;
+      const kmMinFee = mp[kmMinFeeKey] !== undefined ? mp[kmMinFeeKey] : kmMinFeeBase;
+      const minCost = kmMinFee != null ? trucks * kmMinFee : 0;
+      const isMin = !!(kmMinFee != null && trucks > 0 && cost / trucks < kmMinFee);
       return { cost: isMin ? minCost : cost, isMin, fillupM3: 0, fillupCost: 0 };
     }
 
