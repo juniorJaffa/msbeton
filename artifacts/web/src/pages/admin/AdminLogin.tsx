@@ -32,6 +32,13 @@ export default function AdminLogin() {
 
   // Auto-trigger biometric on mount if credential is stored
   useEffect(() => {
+    const el = document.querySelector<HTMLLinkElement>("link[rel='manifest']");
+    const prev = el?.href ?? "";
+    if (el) el.href = "/admin-manifest.json";
+    return () => { if (el) el.href = prev; };
+  }, []);
+
+  useEffect(() => {
     if (new URLSearchParams(window.location.search).has("reset")) {
       resetAttempts();
       clearBiometric();

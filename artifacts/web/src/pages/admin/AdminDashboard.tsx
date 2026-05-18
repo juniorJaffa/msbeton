@@ -3623,6 +3623,13 @@ export default function AdminDashboard() {
   }, [navigate]);
 
   useEffect(() => {
+    const el = document.querySelector<HTMLLinkElement>("link[rel='manifest']");
+    const prev = el?.href ?? "";
+    if (el) el.href = "/admin-manifest.json";
+    return () => { if (el) el.href = prev; };
+  }, []);
+
+  useEffect(() => {
     syncFromServer().then(() => setSyncKey(k => k + 1));
   }, []);
 
