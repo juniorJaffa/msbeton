@@ -81,7 +81,7 @@ const DEFAULT_VAT = 0.23;
 const DEFAULT_VAT_HOTOVOST = 0.20;
 const PUMP_TRUCK_CAPACITY = 7;
 const MIX_TRUCK_CAPACITY = 9;
-const PUMP_HOURS = ["1 h", "2 h", "3 h", "4 h", "5 h", "6 h", "7 h", "8 h"];
+const PUMP_HOURS = ["0 h", "1 h", "2 h", "3 h", "4 h", "5 h", "6 h", "7 h", "8 h"];
 const PUMP_MINS = ["0 min", "15 min", "30 min", "45 min"];
 const WAIT_HOURS = ["0 h", "1 h", "2 h", "3 h", "4 h", "5 h", "6 h", "7 h", "8 h"];
 const WAIT_MINS = ["0 min", "15 min", "30 min", "45 min"];
@@ -906,7 +906,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         if (item.svc) {
           const s = item.svc;
           if (tab === "pumpa") {
-            svcPumpHrs = parseInt(s.pumpHour) || 1;
+            svcPumpHrs = parseInt(s.pumpHour) || 0;
             svcPumpMs = parseInt(s.pumpMin) || 0;
             svcPumpCost = (svcPumpHrs + svcPumpMs / 60) * pumpServicePrice;
             svcHoseMeters = s.hoseMeters;
@@ -2416,7 +2416,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 {!item.svc && tab !== "vlastnadoprava" && (
                   <button type="button"
                     onClick={() => {
-                      const defaults: ExtraItemServices = { pumpHour: "1 h", pumpMin: "0 min", waitPiecesPumpa: 0, hoseMeters: 0, washing: false, waitHour: "0 h", waitMin: "0 min" };
+                      const defaults: ExtraItemServices = { pumpHour: "0 h", pumpMin: "0 min", waitPiecesPumpa: 0, hoseMeters: 0, washing: false, waitHour: "0 h", waitMin: "0 min" };
                       setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, svc: defaults, showSvc: true } : i));
                       setShowResult(false);
                     }}
@@ -2612,7 +2612,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 return (
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm font-semibold text-white/80">Čas čerpania betónu</label>
+                      <label className="text-sm font-semibold text-white/80">Čerpanie betónu</label>
                       <span className="text-[10px] text-white/35 font-mono">{pumpServicePrice > 0 ? `${pumpServicePrice.toFixed(2)} €/h` : ""}</span>
                     </div>
                   <div className="border border-white/10 rounded-sm overflow-hidden">
