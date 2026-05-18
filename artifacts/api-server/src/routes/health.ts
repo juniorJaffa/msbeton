@@ -12,12 +12,14 @@ router.get("/healthz", (_req, res) => {
 let _gitHash: string | null = null;
 function getGitHash(): string {
   if (_gitHash) return _gitHash;
-  try {
-    _gitHash = execSync("git rev-parse --short HEAD", { encoding: "utf8" }).trim();
-  } catch {
-    _gitHash = "unknown";
+  const candidates = [process.cwd(), "/var/www/msbeton", "/app"];
+  for (const cwd of candidates) {
+    try {
+      const h = execSync("git rev-parse --short HEAD", { cwd, encoding: "utf8", timeout: 2000 }).trim();
+      if (h) { _gitHash = h; return _gitHash; }
+    } catch { /* try next */ }
   }
-  return _gitHash;
+  return "unknown"; // intentionally not cached — retry on next request
 }
 
 router.get("/version", (_req, res) => {
