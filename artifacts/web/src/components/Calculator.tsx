@@ -2610,6 +2610,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 ];
 
                 return (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-semibold text-white/80">Čas čerpania betónu</label>
+                      <span className="text-[10px] text-white/35 font-mono">{pumpServicePrice > 0 ? `${pumpServicePrice.toFixed(2)} €/h` : ""}</span>
+                    </div>
                   <div className="border border-white/10 rounded-sm overflow-hidden">
                     {/* Mode switcher */}
                     <div className="grid grid-cols-3 border-b border-white/10">
@@ -2744,6 +2749,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                         )}
                       </div>
                     )}
+                  </div>
                   </div>
                 );
               })()}
