@@ -1684,6 +1684,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         if (ci.svcWashCost > 0) { svcRows.push({ l: "Umývanie mimo stavby", v: fmt2(ci.svcWashCost * fWash), ...(fWash < 1 ? { o: fmt2(ci.svcWashCost) } : {}), u: fmt2(washServicePrice * fWash), uSuffix: "€", ...(fWash < 1 ? { uOrig: washServicePrice } : {}) }); }
         if (ci.svcWaitCost > 0) { const wfExtra = tab === "pumpa" ? fWaitP : fWaitM; const wRateExtra = tab === "pumpa" ? waitServicePricePumpa : waitServicePriceMix; svcRows.push({ l: `Čakačky – ${ci.svcWaitLabel}`, v: fmt2(ci.svcWaitCost * wfExtra), ...(wfExtra < 1 ? { o: fmt2(ci.svcWaitCost) } : {}), u: fmt2(wRateExtra * wfExtra), uSuffix: "€/int.", ...(wfExtra < 1 ? { uOrig: wRateExtra } : {}) }); }
       }
+      if (podmienkyEnabled && idx === 0 && ci.transportFillup > 0) {
+        const pTotalTrucks = tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks;
+        const pVehicleStr = tab === "pumpa" ? `1× Pumpa + ${podmienkyMixC}× Mix` : `${podmienkyTrucks}× Mix`;
+        const pM3 = pTotalTrucks > 0 ? Math.round(((ci.qty + ci.transportFillupM3) / pTotalTrucks) * 10) / 10 : 0;
+        rows.push({ l: `★ Pretaženie: ${pVehicleStr} · ∅ ${pM3} m³/vozidlo`, v: 0, u: undefined });
+      }
       bdSections.push({ h: header, rows });
       if (svcRows.length > 0) {
         bdSections.push({ h: tab === "pumpa" ? "Služby – Pumpa" : "Čakačky", rows: svcRows });

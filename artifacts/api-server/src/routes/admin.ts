@@ -186,7 +186,7 @@ router.get("/analytics", async (req, res) => {
     const range30 = { startDate: "30daysAgo", endDate: "today" };
     const range90 = { startDate: "90daysAgo", endDate: "today" };
 
-    const [overview30, overview90, daily, events30, devices, sources, pages, countries] = await Promise.all([
+    const [overview30, overview90, daily, events30, devices, sources, pages, countries, cities] = await Promise.all([
       ga4Report(token, { dateRanges: [range30], metrics: [{ name: "activeUsers" }, { name: "sessions" }, { name: "screenPageViews" }, { name: "newUsers" }, { name: "eventCount" }] }),
       ga4Report(token, { dateRanges: [range90], metrics: [{ name: "activeUsers" }, { name: "sessions" }, { name: "screenPageViews" }, { name: "newUsers" }] }),
       ga4Report(token, { dateRanges: [range30], dimensions: [{ name: "date" }], metrics: [{ name: "sessions" }, { name: "activeUsers" }], orderBys: [{ dimension: { dimensionName: "date" } }] }),
@@ -195,6 +195,7 @@ router.get("/analytics", async (req, res) => {
       ga4Report(token, { dateRanges: [range30], dimensions: [{ name: "sessionDefaultChannelGrouping" }], metrics: [{ name: "sessions" }], orderBys: [{ metric: { metricName: "sessions" }, desc: true }], limit: 8 }),
       ga4Report(token, { dateRanges: [range30], dimensions: [{ name: "pagePath" }], metrics: [{ name: "screenPageViews" }], orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }], limit: 10 }),
       ga4Report(token, { dateRanges: [range30], dimensions: [{ name: "country" }], metrics: [{ name: "sessions" }], orderBys: [{ metric: { metricName: "sessions" }, desc: true }], limit: 6 }),
+      ga4Report(token, { dateRanges: [range30], dimensions: [{ name: "city" }, { name: "country" }], metrics: [{ name: "sessions" }], orderBys: [{ metric: { metricName: "sessions" }, desc: true }], limit: 20 }),
     ]);
 
     const o30 = (overview30 as { rows?: Array<{ metricValues: Array<{ value: string }> }> }).rows?.[0]?.metricValues ?? [];
@@ -218,6 +219,7 @@ router.get("/analytics", async (req, res) => {
       sources: ga4Rows(sources).map(r => ({ channel: r.dims[0], sessions: parseInt(r.vals[0]) })),
       pages: ga4Rows(pages).map(r => ({ path: r.dims[0], views: parseInt(r.vals[0]) })),
       countries: ga4Rows(countries).map(r => ({ country: r.dims[0], sessions: parseInt(r.vals[0]) })),
+      cities: ga4Rows(cities).map(r => ({ city: r.dims[0], country: r.dims[1], sessions: parseInt(r.vals[0]) })),
     });
   } catch (err) {
     req.log.error({ err }, "GA4 analytics error");

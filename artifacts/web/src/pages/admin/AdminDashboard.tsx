@@ -1514,11 +1514,29 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                             {tabLabel[o.tab]}
                           </span>
                         </div>
-                        <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Množstvo</span><span className="font-bold text-gray-800">{o.totalQty} m³</span></div>
+                        <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Množstvo</span>
+                          <span className="font-bold text-gray-800">{o.totalQty} m³{(o.fillupM3 ?? 0) > 0 && <span className="text-[10px] text-amber-600 ml-1 font-normal">(+ {o.fillupM3} m³ doťaženie)</span>}</span>
+                        </div>
                         {(o.fillupM3 ?? 0) > 0 && (
-                          <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Doťaženie</span><span className="font-medium text-amber-700">+{o.fillupM3} m³ → {o.fillupTarget} m³</span></div>
+                          <div className="flex gap-2 items-start">
+                            <span className="text-gray-400 w-24 shrink-0 pt-1.5">Doťaženie</span>
+                            <div className="bg-amber-50 border border-amber-200 rounded-md px-2.5 py-1.5 flex-1">
+                              <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-800">
+                                <span>{o.totalQty} m³</span>
+                                <span className="text-amber-400 font-bold">→</span>
+                                <span className="text-amber-600">+{o.fillupM3} m³</span>
+                                <span className="text-amber-400 font-bold">→</span>
+                                <span className="font-black">{o.fillupTarget} m³/auto</span>
+                              </div>
+                              {o.podmienky && (
+                                <p className="text-[10px] text-amber-700 mt-0.5 font-medium">
+                                  ★ {o.podmienky.pumpa > 0 ? `1× Pumpa + ${o.podmienky.mix}× Mix` : `${o.podmienky.trucks}× Mix`} · ∅ {o.podmienky.m3PerTruck?.toFixed(1) ?? "—"} m³/vozidlo — terén/počasie
+                                </p>
+                              )}
+                            </div>
+                          </div>
                         )}
-                        {o.podmienky && (
+                        {o.podmienky && (o.fillupM3 ?? 0) === 0 && (
                           <div className="flex gap-2 items-start">
                             <span className="text-gray-400 w-24 shrink-0 mt-0.5">Podmienky</span>
                             <div className="space-y-0.5">
@@ -3019,6 +3037,9 @@ function exportOrderPDF(o: Order) {
   const breakdownHtml = parsed ? parsed.s.map(sec => {
     const isMain = sec.h.startsWith("Pridaná") || sec.h.startsWith("Produkty");
     const rows = sec.rows.map(row => {
+      if (row.l.startsWith("★") && row.v === 0) {
+        return `<tr><td colspan="3" style="padding:3px 8px 3px 14px;font-size:7.5pt;color:#92400e;background:#fffbeb;border-bottom:1px solid #fde68a">${row.l}</td></tr>`;
+      }
       const orig = row.o !== undefined ? `<span style="text-decoration:line-through;color:#aaa;font-size:7.5pt">${fmtEurPdf(row.o)}</span> ` : "";
       const unitCell = row.u !== undefined
         ? (row.uOrig !== undefined
@@ -3031,7 +3052,7 @@ function exportOrderPDF(o: Order) {
         <td style="padding:3px 8px;font-size:8.5pt;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:bold;color:${row.o !== undefined ? "#b45309" : "#222"};white-space:nowrap">${orig}${fmtEurPdf(row.v)}</td>
       </tr>`;
     }).join("");
-    return `<tr><td colspan="3" style="padding:4px 8px 2px;font-size:8pt;font-weight:bold;background:${isMain ? "#001D3D" : "#f5f5f5"};color:${isMain ? "#EDC531" : "#666"}">${sec.h}</td></tr>${rows}`;
+    return `<tr><td colspan="3" style="padding:4px 8px;font-size:8.5pt;font-weight:bold;background:${isMain ? "#001D3D" : "#EDC531"};color:${isMain ? "#EDC531" : "#001D3D"}">${sec.h}</td></tr>${rows}`;
   }).join("") : "";
 
   const discountInfo = [
@@ -3079,7 +3100,9 @@ function exportOrderPDF(o: Order) {
     <div style="font-size:8pt;font-weight:bold;color:#001D3D;border-bottom:1px solid #eee;padding-bottom:2mm;margin-bottom:3mm">DORUČENIE</div>
     <table style="font-size:8.5pt"><tbody>
       <tr><td style="color:#888;padding:1px 6px 1px 0;width:90px">Typ</td><td style="font-weight:bold">${tabLabels[o.tab] ?? o.tab}</td></tr>
-      <tr><td style="color:#888;padding:1px 6px 1px 0">Množstvo</td><td style="font-weight:bold">${o.totalQty} m³</td></tr>
+      <tr><td style="color:#888;padding:1px 6px 1px 0">Množstvo</td><td style="font-weight:bold">${o.totalQty} m³${(o.fillupM3 ?? 0) > 0 ? ` <span style="color:#92400e;font-size:8pt;font-weight:normal">+ ${o.fillupM3} m³ doťaženie</span>` : ""}</td></tr>
+      ${(o.fillupM3 ?? 0) > 0 ? `<tr><td style="color:#888;padding:1px 6px 1px 0;vertical-align:top">Doťaženie</td><td style="color:#92400e;font-size:8.5pt">${o.totalQty}&nbsp;m³ → +${o.fillupM3}&nbsp;m³ → <strong>${o.fillupTarget}&nbsp;m³/auto</strong></td></tr>` : ""}
+      ${o.podmienky ? `<tr><td style="color:#888;padding:1px 6px 1px 0;vertical-align:top">Podmienky</td><td style="color:#92400e;font-size:8pt;font-weight:600">★ ${o.podmienky.pumpa > 0 ? `1× Pumpa + ${o.podmienky.mix}× Mix` : `${o.podmienky.trucks}× Mix`} · ∅ ${o.podmienky.m3PerTruck?.toFixed(1) ?? "—"} m³/vozidlo</td></tr>` : ""}
       ${o.km ? `<tr><td style="color:#888;padding:1px 6px 1px 0">Vzdialenosť</td><td>${o.km} km</td></tr>` : ""}
       ${(o.address || o.mapPlusCode) ? `<tr><td style="color:#888;padding:1px 6px 1px 0;vertical-align:top">Adresa</td><td>${o.address ? o.address : ""}${o.mapPlusCode ? `<br><span style="font-family:monospace;font-size:7.5pt;color:#aaa">${o.mapPlusCode}${o.mapLocality ? " · " + o.mapLocality : ""}</span>` : ""}</td></tr>` : ""}
       ${o.deliveryZoneName ? `<tr><td style="color:#888;padding:1px 6px 1px 0">Zóna</td><td>${o.deliveryZoneName}</td></tr>` : ""}
@@ -3293,9 +3316,39 @@ interface Ga4Data {
   sources: Array<{ channel: string; sessions: number }>;
   pages: Array<{ path: string; views: number }>;
   countries: Array<{ country: string; sessions: number }>;
+  cities?: Array<{ city: string; country: string; sessions: number }>;
 }
 
 const CALC_EVENTS = ["calculator_complete", "pdf_export", "sms_export", "order_submitted", "calc_tab", "calc_type_select"];
+
+const PATH_LABELS: Record<string, string> = {
+  "/": "Domov",
+  "/admin/dashboard": "Admin",
+  "/admin/login": "Admin login",
+  "/cennik": "Cenník",
+  "/prihlasenie": "Prihlásenie",
+  "/klient-profil": "Klient profil",
+  "/vozovy-park": "Vozový park",
+  "/klient-reset": "Reset hesla",
+  "/kontakt": "Kontakt",
+  "/o-nas": "O nás",
+};
+const pathHuman = (p: string) => PATH_LABELS[p] ?? p;
+
+// SVK cities: [svgX, svgY] in viewBox 0 0 400 160
+// projection: x=(lon-16.80)/5.80*400, y=(49.60-lat)/1.90*160
+const SVK_CITY_SVG: Record<string, [number, number]> = {
+  "Bratislava": [21, 122], "Trnava": [55, 96], "Piešťany": [48, 90], "Piestany": [48, 90],
+  "Trenčín": [86, 58], "Trencin": [86, 58], "Nitra": [89, 103], "Nové Zámky": [80, 118], "Nove Zamky": [80, 118],
+  "Komárno": [85, 135], "Komarno": [85, 135], "Žilina": [134, 32], "Zilina": [134, 32],
+  "Martin": [148, 41], "Ružomberok": [175, 40], "Ruzomberok": [175, 40],
+  "Liptovský Mikuláš": [199, 40], "Liptovsky Mikulas": [199, 40],
+  "Banská Bystrica": [162, 72], "Banska Bystrica": [162, 72],
+  "Zvolen": [162, 86], "Lučenec": [185, 103], "Lucenec": [185, 103],
+  "Poprad": [241, 45], "Spišská Nová Ves": [275, 52], "Spisska Nova Ves": [275, 52],
+  "Prešov": [306, 51], "Presov": [306, 51], "Košice": [308, 74], "Kosice": [308, 74],
+  "Humenné": [358, 52], "Humenne": [358, 52], "Michalovce": [371, 67],
+};
 
 function MiniBar({ value, max, color = "#EDC531" }: { value: number; max: number; color?: string }) {
   const pct = max > 0 ? Math.max(2, (value / max) * 100) : 0;
@@ -3476,38 +3529,80 @@ function AnalyticsTab() {
         </div>
 
         {/* Top pages */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 sm:col-span-2">
           <div className="flex items-center gap-2 mb-3">
             <FileText className="w-4 h-4 text-gray-400" />
             <span className="text-xs font-black uppercase tracking-widest text-gray-500">Top stránky (30 dní)</span>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {pages.map(p => (
-              <div key={p.path} className="flex items-center gap-2 text-[11px]">
-                <span className="flex-1 text-gray-600 font-mono truncate">{p.path}</span>
+              <div key={p.path}>
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <div className="min-w-0">
+                    <span className="text-[12px] font-bold text-secondary">{pathHuman(p.path)}</span>
+                    <span className="text-[10px] text-gray-400 font-mono ml-2">{p.path}</span>
+                  </div>
+                  <span className="text-sm font-black text-secondary shrink-0">{p.views}</span>
+                </div>
                 <MiniBar value={p.views} max={maxPg} color="#8b5cf6" />
-                <span className="w-8 text-right font-bold text-secondary shrink-0">{p.views}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Countries */}
+        {/* Countries + SK cities map */}
         {countries && countries.length > 0 && (
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 sm:col-span-2">
             <div className="flex items-center gap-2 mb-3">
               <Globe className="w-4 h-4 text-gray-400" />
-              <span className="text-xs font-black uppercase tracking-widest text-gray-500">Krajiny návštevníkov (30 dní)</span>
+              <span className="text-xs font-black uppercase tracking-widest text-gray-500">Krajiny a mestá návštevníkov (30 dní)</span>
             </div>
-            <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
-              {countries.map(c => (
-                <div key={c.country} className="flex items-center gap-2 text-[11px]">
-                  <span className="text-base leading-none shrink-0">{countryFlag(c.country)}</span>
-                  <span className="w-28 text-gray-600 font-medium truncate shrink-0">{c.country}</span>
-                  <MiniBar value={c.sessions} max={maxCtry} color="#0ea5e9" />
-                  <span className="w-8 text-right font-bold text-secondary shrink-0">{c.sessions}</span>
-                </div>
-              ))}
+            <div className="grid sm:grid-cols-2 gap-6">
+              {/* Countries list */}
+              <div className="space-y-2">
+                {countries.map(c => (
+                  <div key={c.country} className="flex items-center gap-2 text-[11px]">
+                    <span className="text-base leading-none shrink-0">{countryFlag(c.country)}</span>
+                    <span className="w-28 text-gray-600 font-medium truncate shrink-0">{c.country}</span>
+                    <MiniBar value={c.sessions} max={maxCtry} color="#0ea5e9" />
+                    <span className="w-8 text-right font-bold text-secondary shrink-0">{c.sessions}</span>
+                  </div>
+                ))}
+              </div>
+              {/* SVK cities map */}
+              {data.cities && data.cities.filter(c => c.country === "Slovakia").length > 0 && (() => {
+                const skCities = data.cities!.filter(c => c.country === "Slovakia" && SVK_CITY_SVG[c.city]);
+                const maxC = Math.max(...skCities.map(c => c.sessions), 1);
+                return (
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">🇸🇰 Slovensko — mestá</p>
+                    <svg viewBox="0 0 400 160" className="w-full" style={{ height: 120 }}>
+                      <path d="M 2,128 L 3,19 L 48,6 L 150,3 L 215,4 L 232,1 L 248,12 L 289,17 L 324,28 L 358,30 L 399,34 L 399,76 L 386,93 L 352,152 L 290,152 L 220,152 L 128,152 L 83,152 L 62,152 L 14,152 L 3,147 Z"
+                        fill="#f0f4f8" stroke="#cbd5e1" strokeWidth="1.5" />
+                      {skCities.map(c => {
+                        const xy = SVK_CITY_SVG[c.city];
+                        if (!xy) return null;
+                        const r = Math.max(3, Math.min(12, 3 + (c.sessions / maxC) * 9));
+                        return (
+                          <g key={c.city}>
+                            <circle cx={xy[0]} cy={xy[1]} r={r} fill="#EDC531" fillOpacity="0.85" stroke="#b45309" strokeWidth="0.8" />
+                            {r >= 6 && <text x={xy[0]} y={xy[1] - r - 1.5} textAnchor="middle" fontSize="6" fill="#374151" fontFamily="Arial,sans-serif" fontWeight="bold">{c.city}</text>}
+                          </g>
+                        );
+                      })}
+                    </svg>
+                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                      {skCities.slice(0, 6).map(c => (
+                        <div key={c.city} className="flex items-center gap-1 text-[10px]">
+                          <span className="w-2 h-2 rounded-full bg-primary inline-block" />
+                          <span className="text-gray-600">{c.city}</span>
+                          <span className="font-black text-secondary">{c.sessions}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
