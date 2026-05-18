@@ -522,7 +522,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const reverseGeocode = (lat: number, lng: number) => {
         new google.maps.Geocoder().geocode({ location: { lat, lng } }, (results, gStatus) => {
           if (gStatus !== "OK" || !results || !results[0]) {
-            setMapLocality(""); setMapGeocodedAddress("");
+            setMapLocality("");
+            setMapGeocodedAddress(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
             return;
           }
           const country = results[0].address_components?.find(
@@ -2094,11 +2095,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                   <div className="bg-white/10 px-3 py-2.5 flex items-center gap-3 rounded-sm">
                     <MapPin className="w-4 h-4 text-primary shrink-0" />
                     <div className="flex-1 min-w-0">
-                      {mapGeocodedAddress && (
-                        <div className="text-sm text-white/90 font-medium truncate leading-snug">
-                          {mapGeocodedAddress}
-                        </div>
-                      )}
+                      <div className="text-sm text-white/90 font-medium truncate leading-snug">
+                        {mapGeocodedAddress || mapLocality || (mapPin ? `${mapPin.lat.toFixed(5)}, ${mapPin.lng.toFixed(5)}` : "")}
+                      </div>
                       <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                         {mapPlusCode && <>
                           <span className="font-mono text-primary text-[10px] font-bold tracking-wide">{mapPlusCode}{mapLocality ? `, ${mapLocality}` : ""}</span>
@@ -2125,11 +2124,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                             <div className="flex items-start gap-2">
                               <MapPin className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
                               <div className="flex-1 min-w-0">
-                                {mapGeocodedAddress && (
-                                  <div className="text-sm text-white/90 font-medium leading-snug truncate">
-                                    {mapGeocodedAddress}
-                                  </div>
-                                )}
+                                <div className="text-sm text-white/90 font-medium leading-snug truncate">
+                                  {mapGeocodedAddress || mapLocality || (mapPin ? `${mapPin.lat.toFixed(5)}, ${mapPin.lng.toFixed(5)}` : "")}
+                                </div>
                                 <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                                   {mapPlusCode && <>
                                     <span className="font-mono text-primary text-[10px] font-bold tracking-wide">{mapPlusCode}{mapLocality ? `, ${mapLocality}` : ""}</span>

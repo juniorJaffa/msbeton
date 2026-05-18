@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
-import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, SlidersHorizontal, ShoppingCart, MessageSquare, BarChart2, TrendingUp, Monitor, Globe, MousePointerClick, MoreHorizontal, Activity, Smartphone, Laptop, Tablet, Mail, MapPin, Navigation, Copy } from "lucide-react";
+import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, SlidersHorizontal, ShoppingCart, MessageSquare, BarChart2, TrendingUp, Monitor, Globe, MousePointerClick, MoreHorizontal, Activity, Smartphone, Laptop, Tablet, Mail, MapPin, Navigation, Copy, Fingerprint } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
@@ -8,7 +8,7 @@ import { VersionBadge } from "@/components/VersionBadge";
 import { PhoneInput } from "@/components/PhoneInput";
 import { cn, formatPhone } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { isLoggedIn, logout } from "@/lib/adminAuth";
+import { isLoggedIn, logout, isBiometricAvailable, hasStoredCredential } from "@/lib/adminAuth";
 import { adminData, adminApi, syncFromServer, SYSTEM_OWNER_ID, ConcreteCategory, ConcreteType, DeliveryZone, Service, Client, TransportPricingZone, TransportSettings, Order } from "@/lib/adminData";
 
 type Tab = "betony" | "sluzby" | "doprava" | "klienti" | "objednavky" | "analytics" | "statistiky";
@@ -3707,6 +3707,13 @@ export default function AdminDashboard() {
   const [syncKey, setSyncKey] = useState(0);
   const [goToClientId, setGoToClientId] = useState<string | null>(null);
   const [sluzbyScrollPumpa, setSluzbyScrollPumpa] = useState(false);
+  const [bioActive, setBioActive] = useState(() => isBiometricAvailable() && hasStoredCredential());
+
+  useEffect(() => {
+    const onBio = () => setBioActive(isBiometricAvailable() && hasStoredCredential());
+    window.addEventListener("bio-status-changed", onBio);
+    return () => window.removeEventListener("bio-status-changed", onBio);
+  }, []);
 
   useEffect(() => {
     if (!isLoggedIn()) navigate("/admin/login");
@@ -3785,6 +3792,7 @@ export default function AdminDashboard() {
             <span className="font-black text-2xl tracking-tighter text-primary/40">-</span>
             <span className="font-black text-2xl tracking-tighter text-white">BETON</span>
             <span className="ml-3 text-primary text-xs font-bold uppercase tracking-widest">Admin</span>
+            {bioActive && <Fingerprint className="ml-1 w-3.5 h-3.5 text-primary" title="Biometrické prihlásenie aktívne" />}
             <VersionBadge className="ml-1 text-white/25 hidden sm:block" />
           </a>
           <div className="flex items-center gap-3">
