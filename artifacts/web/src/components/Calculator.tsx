@@ -277,6 +277,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [podmienkyTrucks, setPodmienkyTrucks] = useState(1);
   const [podmienkyPumpa, setPodmienkyPumpa] = useState(1);
   const [podmienkyMixC, setPodmienkyMixC] = useState(0);
+  const [podmienkyInfoOpen, setPodmienkyInfoOpen] = useState(false);
   const calcWrapRef = useRef<HTMLDivElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const [categoryName, setCategoryName] = useState<string | null>(null);
@@ -2281,12 +2282,35 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                           className="w-8 h-8 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">+</button>
                       </div>
                     )}
-                    <div className="text-[10px] text-amber-200/80 font-mono px-0.5">
-                      {tab === "pumpa"
-                        ? `${podmienkyPumpa}× Pumpa${podmienkyMixC > 0 ? ` + ${podmienkyMixC}× Mix` : ""} · ∅ ${m3PerT > 0 ? m3PerT.toFixed(1) : "—"} m³/voz.${podmienkyFillupM3ui > 0 ? ` (+${podmienkyFillupM3ui} doť.)` : ""}`
-                        : `${podmienkyTrucks}× Mix · ∅ ${m3PerT > 0 ? m3PerT.toFixed(1) : "—"} m³/voz.${podmienkyFillupM3ui > 0 ? ` (+${podmienkyFillupM3ui} doť.)` : ""}`
-                      }
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-[10px] text-amber-200/80 font-mono">
+                        {tab === "pumpa"
+                          ? `${podmienkyPumpa}× Pumpa${podmienkyMixC > 0 ? ` + ${podmienkyMixC}× Mix` : ""} · ∅ ${m3PerT > 0 ? m3PerT.toFixed(1) : "—"} m³/voz.${podmienkyFillupM3ui > 0 ? ` (+${podmienkyFillupM3ui} doť.)` : ""}`
+                          : `${podmienkyTrucks}× Mix · ∅ ${m3PerT > 0 ? m3PerT.toFixed(1) : "—"} m³/voz.${podmienkyFillupM3ui > 0 ? ` (+${podmienkyFillupM3ui} doť.)` : ""}`
+                        }
+                      </div>
+                      <button type="button" onClick={() => setPodmienkyInfoOpen(v => !v)}
+                        className="shrink-0 w-5 h-5 rounded-full border border-amber-400/40 text-amber-300/60 hover:text-amber-300 hover:border-amber-400 transition-colors flex items-center justify-center text-[10px] font-black">
+                        ⓘ
+                      </button>
                     </div>
+                    {podmienkyInfoOpen && (
+                      <div className="text-[10px] text-amber-100/60 bg-amber-500/5 border border-amber-400/15 rounded px-2.5 py-2 space-y-1.5 leading-relaxed">
+                        <p className="font-black text-amber-200/80 uppercase tracking-widest text-[9px]">Ako funguje pretaženie vozidiel</p>
+                        <p>Podmienky umožňujú ručne navýšiť počet vozidiel nad bežný výpočet — napr. pri sťaženom teréne alebo zlom počasí.</p>
+                        <p>Keď je vozidiel viac ako štandardne, každé vezme <strong className="text-amber-200/80">menej m³</strong>. Ak je betónu na vozidlo menej ako minimálny prah, platí rovnaké pravidlo doťaženia ako vždy:</p>
+                        <ul className="space-y-0.5 pl-2">
+                          <li>· &lt; 5 m³/voz → doťaženie na <strong className="text-amber-200/80">5 m³/voz</strong></li>
+                          <li>· &gt; kapacita mixéra a &lt; 10 m³/voz → doťaženie na <strong className="text-amber-200/80">10 m³/voz</strong></li>
+                        </ul>
+                        {m3PerT > 0 && qty > 0 && (
+                          <p className="font-mono text-amber-200/70 border-t border-amber-400/15 pt-1.5">
+                            {qty.toFixed(1)} m³ ÷ {tab === "pumpa" ? totalP : podmienkyTrucks} voz = ∅ {(qty / (tab === "pumpa" ? totalP : podmienkyTrucks)).toFixed(2)} m³/voz
+                            {podmienkyFillupM3ui > 0 ? ` → doťaženie +${podmienkyFillupM3ui} m³ (do ${(qty + podmienkyFillupM3ui).toFixed(1)} m³)` : " → bez doťaženia"}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
