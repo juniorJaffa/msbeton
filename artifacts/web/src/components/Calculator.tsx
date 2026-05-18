@@ -262,6 +262,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [mapPin, setMapPin] = useState<{lat: number; lng: number} | null>(null);
   const [mapPlusCode, setMapPlusCode] = useState("");
   const [mapLocality, setMapLocality] = useState("");
+  const [mapGeocodedAddress, setMapGeocodedAddress] = useState("");
   const [mapKmConfirmed, setMapKmConfirmed] = useState(false);
   const [mapCopied, setMapCopied] = useState(false);
   const [mapError, setMapError] = useState("");
@@ -332,7 +333,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     setAddress("");
     setAddressKm(null);
     setDeliveryMode("distance");
-    setMapPin(null); setMapPlusCode(""); setMapKmConfirmed(false); setMapError("");
+    setMapPin(null); setMapPlusCode(""); setMapKmConfirmed(false); setMapError(""); setMapLocality(""); setMapGeocodedAddress("");
     setCategoryName(null);
     setConcreteTypeLabel(null);
     setPumpMode("select"); setPumpHour("1 h"); setPumpMin("0 min");
@@ -479,7 +480,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         if (marker) marker.setPosition(pos);
         else marker = new google.maps.Marker({ position: pos, map, animation: google.maps.Animation.DROP });
         mapMarkerRef.current = marker;
-        if ((map.getZoom() ?? 0) < 14) map.setZoom(15);
+        map.setZoom(17);
         map.panTo(pos);
         setMapPin({ lat, lng });
         setMapPlusCode(encodeOLC(lat, lng));
@@ -519,7 +520,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const reverseGeocode = (lat: number, lng: number) => {
         new google.maps.Geocoder().geocode({ location: { lat, lng } }, (results, gStatus) => {
           if (gStatus !== "OK" || !results || !results[0]) {
-            setMapLocality("");
+            setMapLocality(""); setMapGeocodedAddress("");
             return;
           }
           const country = results[0].address_components?.find(
@@ -528,8 +529,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
           if (country && country.short_name !== "SK") {
             setMapError("Dodávky betónu sú dostupné iba na území Slovenska.");
             if (marker) { marker.setMap(null); marker = null; mapMarkerRef.current = null; }
-            setMapPin(null); setMapPlusCode(""); setMapLocality(""); setDistance("");
+            setMapPin(null); setMapPlusCode(""); setMapLocality(""); setMapGeocodedAddress(""); setDistance("");
           } else {
+            const addr = results[0].formatted_address.replace(/, Slovensko$/, "").replace(/, Slovakia$/, "");
+            setMapGeocodedAddress(addr);
             const comps = results[0].address_components ?? [];
             const loc = comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("locality"))?.long_name
               ?? comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("postal_town"))?.long_name
@@ -1577,7 +1580,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
     // Opustenie mapy → reset map stavu (nie km ak Map→Adresa)
     if (deliveryMode === "map") {
-      setMapPin(null); setMapPlusCode(""); setMapKmConfirmed(false); setMapError("");
+      setMapPin(null); setMapPlusCode(""); setMapKmConfirmed(false); setMapError(""); setMapLocality(""); setMapGeocodedAddress("");
     }
     // Reset km + výpočtu len keď prechádza cez "distance" alebo z "distance"
     const preserveKm = isAddrToMap || isMapToAddr;
@@ -1602,7 +1605,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
   function clearDelivery() {
     setAddress(""); setAddressKm(null); setDistance(""); setShowResult(false);
-    setMapPin(null); setMapPlusCode(""); setMapKmConfirmed(false); setMapError("");
+    setMapPin(null); setMapPlusCode(""); setMapKmConfirmed(false); setMapError(""); setMapLocality(""); setMapGeocodedAddress("");
     lastResolvedAddressRef.current = null;
     pendingGeocodePlaceRef.current = null;
     pendingGeocodeAddressRef.current = null;
@@ -2026,7 +2029,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     type="text"
                     defaultValue={address}
                     onChange={(e) => { setAddress(e.target.value); setAddressKm(null); setShowResult(false); }}
-                    onKeyDown={(e) => {
+                    onKeyUp={(e) => {
                       if (e.key === "Enter" && deliveryMode === "map" && mapGeocodeAddrFnRef.current && addressInputRef.current?.value) {
                         e.preventDefault();
                         mapGeocodeAddrFnRef.current(addressInputRef.current.value, true);
@@ -2068,15 +2071,15 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                   <div className="bg-white/10 px-3 py-2.5 flex items-center gap-3 rounded-sm">
                     <MapPin className="w-4 h-4 text-primary shrink-0" />
                     <div className="flex-1 min-w-0">
-                      {mapLocality && (
+                      {mapGeocodedAddress && (
                         <div className="text-sm text-white/90 font-medium truncate leading-snug">
-                          {mapLocality}
+                          {mapGeocodedAddress}
                         </div>
                       )}
                       <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                         {mapPlusCode && <>
-                          <span className="font-mono text-primary text-[10px] font-bold tracking-wide">{mapPlusCode}</span>
-                          <button onClick={() => { navigator.clipboard?.writeText(`${mapPlusCode}${mapLocality ? " " + mapLocality : ""}`); setMapCopied(true); setTimeout(() => setMapCopied(false), 1500); }}
+                          <span className="font-mono text-primary text-[10px] font-bold tracking-wide">{mapPlusCode}{mapLocality ? `, ${mapLocality}` : ""}</span>
+                          <button onClick={() => { navigator.clipboard?.writeText(`${mapPlusCode}${mapLocality ? `, ${mapLocality}` : ""}`); setMapCopied(true); setTimeout(() => setMapCopied(false), 1500); }}
                             className="text-white/40 hover:text-primary transition-colors" title="Kopírovať Plus Code">
                             {mapCopied ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
                           </button>
@@ -2085,7 +2088,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                         <span className="text-[10px] text-white/50">od MS-BETON: <strong className="text-primary">{distance} km</strong></span>
                       </div>
                     </div>
-                    <button onClick={() => { setMapKmConfirmed(false); setMapPin(null); setMapPlusCode(""); setMapLocality(""); setDistance(""); setAddressKm(null); if (mapMarkerRef.current) { mapMarkerRef.current.setMap(null); mapMarkerRef.current = null; } }}
+                    <button onClick={() => { setMapKmConfirmed(false); setMapPin(null); setMapPlusCode(""); setMapLocality(""); setMapGeocodedAddress(""); setDistance(""); setAddressKm(null); if (mapMarkerRef.current) { mapMarkerRef.current.setMap(null); mapMarkerRef.current = null; } }}
                       className="text-xs text-white/40 hover:text-white/70 transition-colors shrink-0">Zmeniť</button>
                   </div>
                 ) : deliveryMode === "map" && !mapKmConfirmed ? (
@@ -2099,22 +2102,22 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                             <div className="flex items-start gap-2">
                               <MapPin className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
                               <div className="flex-1 min-w-0">
-                                {mapLocality && (
+                                {mapGeocodedAddress && (
                                   <div className="text-sm text-white/90 font-medium leading-snug truncate">
-                                    {mapLocality}
+                                    {mapGeocodedAddress}
                                   </div>
                                 )}
                                 <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                                   {mapPlusCode && <>
-                                    <span className="font-mono text-primary text-[10px] font-bold tracking-wide">{mapPlusCode || "…"}</span>
-                                    <button onClick={() => { navigator.clipboard?.writeText(`${mapPlusCode}${mapLocality ? " " + mapLocality : ""}`); setMapCopied(true); setTimeout(() => setMapCopied(false), 1500); }}
+                                    <span className="font-mono text-primary text-[10px] font-bold tracking-wide">{mapPlusCode}{mapLocality ? `, ${mapLocality}` : ""}</span>
+                                    <button onClick={() => { navigator.clipboard?.writeText(`${mapPlusCode}${mapLocality ? `, ${mapLocality}` : ""}`); setMapCopied(true); setTimeout(() => setMapCopied(false), 1500); }}
                                       className="text-white/40 hover:text-primary transition-colors" title="Kopírovať">
                                       {mapCopied ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
                                     </button>
                                     <span className="text-white/20 text-[10px]">·</span>
                                   </>}
                                   {distance && <span className="text-[10px] text-white/60">od MS-BETON: <strong className="text-primary">{distance} km</strong></span>}
-                                  {!distance && !mapLocality && <span className="text-[10px] text-white/40">Určuje sa adresa…</span>}
+                                  {!distance && !mapLocality && !mapGeocodedAddress && <span className="text-[10px] text-white/40">Určuje sa adresa…</span>}
                                 </div>
                               </div>
                             </div>

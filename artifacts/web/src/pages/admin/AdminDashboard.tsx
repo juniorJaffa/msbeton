@@ -1621,7 +1621,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
         const query = mapModalOrder.mapPlusCode
           ? `${mapModalOrder.mapPlusCode}${mapModalOrder.mapLocality ? " " + mapModalOrder.mapLocality : ""}`
           : mapModalOrder.address ?? "";
-        const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=15&output=embed`;
+        const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=17&t=h&output=embed`;
         const mapsUrl  = `https://maps.google.com/?q=${encodeURIComponent(query)}`;
         return (
           <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
