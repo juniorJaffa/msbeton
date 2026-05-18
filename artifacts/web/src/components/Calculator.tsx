@@ -291,6 +291,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [pumpStopTime, setPumpStopTime] = useState<string | null>(null);
   const [pumpTimerActive, setPumpTimerActive] = useState(false);
   const [pumpLiveMs, setPumpLiveMs] = useState(0);
+  const [editStartTime, setEditStartTime] = useState<string | null>(null);
+  const [editStopTime, setEditStopTime] = useState<string | null>(null);
   const pumpTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [waitHour, setWaitHour] = useState("0 h");
   const [waitMin, setWaitMin] = useState("0 min");
@@ -336,9 +338,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     setMapPin(null); setMapPlusCode(""); setMapKmConfirmed(false); setMapError(""); setMapLocality(""); setMapGeocodedAddress("");
     setCategoryName(null);
     setConcreteTypeLabel(null);
-    setPumpMode("select"); setPumpHour("1 h"); setPumpMin("0 min");
-    setPumpStartTime(null);
-    setPumpStopTime(null);
+    setPumpMode("select"); setPumpHour("0 h"); setPumpMin("0 min");
+    setPumpStartTime(null); setPumpStopTime(null);
+    setEditStartTime(null); setEditStopTime(null);
     setPumpTimerActive(false);
     setPumpLiveMs(0);
     if (pumpTimerRef.current) { clearInterval(pumpTimerRef.current); pumpTimerRef.current = null; }
@@ -951,12 +953,17 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     let _pumpDurMins = 0;
     if (tab === "pumpa") {
       if (pumpMode === "select") {
-        const hrs = parseInt(pumpHour) || 1;
+        const hrs = parseInt(pumpHour) || 0;
         const ms = parseInt(pumpMin) || 0;
         _pumpDurMins = hrs * 60 + ms;
-      } else if (pumpStartTime && pumpStopTime) {
+      } else if (pumpMode === "timer" && pumpStartTime && pumpStopTime) {
         const [sh, sm] = pumpStartTime.split(":").map(Number);
         const [eh, em] = pumpStopTime.split(":").map(Number);
+        _pumpDurMins = (eh * 60 + em) - (sh * 60 + sm);
+        if (_pumpDurMins < 0) _pumpDurMins += 24 * 60;
+      } else if (pumpMode === "edit" && editStartTime && editStopTime) {
+        const [sh, sm] = editStartTime.split(":").map(Number);
+        const [eh, em] = editStopTime.split(":").map(Number);
         _pumpDurMins = (eh * 60 + em) - (sh * 60 + sm);
         if (_pumpDurMins < 0) _pumpDurMins += 24 * 60;
       }
@@ -1074,7 +1081,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       transportIsMin: transportCalc.isMin, fillupM3, fillupTarget,
       fTransport, fFillup,
     };
-  }, [tab, pumpMode, pumpHour, pumpMin, quantity, distance, selectedType, pumpStartTime, pumpStopTime, waitTotalMins, waitPiecesPumpa, hoseMeters, washing, zimneOpatrenia, betonFactor, dopravaFactor, sluzbyFactor, fPump, fChem, fWash, fHose, fWaitP, fWaitM, pumpServicePrice, chemServicePrice, washServicePrice, waitServicePricePumpa, waitServicePriceMix, hoseServicePrice, zimneServicePrice, tzones, tsettings, extraItems, allCategories, clientDeliveryZone, pumpCap, mixCap, VAT, VAT_HOTOVOST, loggedClient, podmienkyEnabled, podmienkyTrucks, podmienkyPumpa, podmienkyMixC]);
+  }, [tab, pumpMode, pumpHour, pumpMin, quantity, distance, selectedType, pumpStartTime, pumpStopTime, editStartTime, editStopTime, waitTotalMins, waitPiecesPumpa, hoseMeters, washing, zimneOpatrenia, betonFactor, dopravaFactor, sluzbyFactor, fPump, fChem, fWash, fHose, fWaitP, fWaitM, pumpServicePrice, chemServicePrice, washServicePrice, waitServicePricePumpa, waitServicePriceMix, hoseServicePrice, zimneServicePrice, tzones, tsettings, extraItems, allCategories, clientDeliveryZone, pumpCap, mixCap, VAT, VAT_HOTOVOST, loggedClient, podmienkyEnabled, podmienkyTrucks, podmienkyPumpa, podmienkyMixC]);
 
   async function handleLogin() {
     if (!loginId || !loginPwd) return;
@@ -1551,7 +1558,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         totalSDph: isFakt ? result.totalDiscSDph : result.hotovostTotal,
         breakdown: buildBreakdown(),
         viaSms: true,
-        ...(tab === "pumpa" && pumpStartTime && pumpStopTime ? { pumpTimer: { start: pumpStartTime, stop: pumpStopTime } } : {}),
+        ...(tab === "pumpa" && pumpMode === "timer" && pumpStartTime && pumpStopTime ? { pumpTimer: { start: pumpStartTime, stop: pumpStopTime } } : tab === "pumpa" && pumpMode === "edit" && editStartTime && editStopTime ? { pumpTimer: { start: editStartTime, stop: editStopTime } } : {}),
         ...(podmienkyEnabled ? { podmienky: { trucks: tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks, pumpa: tab === "pumpa" ? podmienkyPumpa : 0, mix: tab === "pumpa" ? podmienkyMixC : podmienkyTrucks, m3PerTruck: (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks) > 0 ? Math.round(((result!.qty + (result!.concreteBreakdown[0]?.transportFillupM3 ?? 0)) / (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks)) * 10) / 10 : 0 } } : {}),
       }).then(() => {
         setSmsOrderCreated(true);
@@ -2555,11 +2562,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 );
 
                 // billing summary box (shared across modes)
-                const selectDurMins = (parseInt(pumpHour) || 1) * 60 + (parseInt(pumpMin) || 0);
+                const selectDurMins = (parseInt(pumpHour) || 0) * 60 + (parseInt(pumpMin) || 0);
                 const timerDurMins = (() => {
-                  if (!pumpStartTime || !pumpStopTime) return 0;
-                  const [sh, sm] = pumpStartTime.split(":").map(Number);
-                  const [eh, em] = pumpStopTime.split(":").map(Number);
+                  const st = pumpMode === "timer" ? pumpStartTime : editStartTime;
+                  const en = pumpMode === "timer" ? pumpStopTime : editStopTime;
+                  if (!st || !en) return 0;
+                  const [sh, sm] = st.split(":").map(Number);
+                  const [eh, em] = en.split(":").map(Number);
                   let d = (eh * 60 + em) - (sh * 60 + sm);
                   if (d < 0) d += 24 * 60;
                   return d;
@@ -2643,7 +2652,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     {pumpMode === "select" && (
                       <div className="px-3 py-3 space-y-3">
                         <div>
-                          <div className="text-[9px] text-white/35 uppercase tracking-widest mb-1.5">Hodiny</div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <div className="text-[9px] text-white/35 uppercase tracking-widest">Hodiny</div>
+                            {(pumpHour !== "0 h" || pumpMin !== "0 min") && (
+                              <button type="button" onClick={() => { setPumpHour("0 h"); setPumpMin("0 min"); setShowResult(false); }}
+                                className="text-[9px] text-white/25 hover:text-primary transition-colors">× reset</button>
+                            )}
+                          </div>
                           <div className="flex flex-wrap gap-1.5">
                             {PUMP_HOURS.map(h => (
                               <button key={h} type="button"
@@ -2680,7 +2695,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
                     {/* ── MODE: STOPKY (live timer) ── */}
                     {pumpMode === "timer" && (
-                      <div className="px-3 py-3 space-y-3">
+                      <div className="px-3 py-3 space-y-3 min-h-[210px]">
                         {pumpTimerActive ? (
                           <>
                             <div className="bg-green-500/10 border border-green-500/20 rounded-sm px-3 py-2">
@@ -2735,23 +2750,29 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <div className="text-[9px] text-white/35 uppercase tracking-widest mb-1">Začiatok</div>
-                            <input type="time" value={pumpStartTime || ""}
-                              onChange={(e) => { if (e.target.value) { setPumpStartTime(e.target.value); setShowResult(false); } }}
-                              onClick={() => { if (!pumpStartTime) setPumpStartTime(nowHHMM()); }}
+                            <input type="time" value={editStartTime || ""}
+                              onChange={(e) => { const v = e.target.value; if (v) { const [h,m] = v.split(":").map(Number); setEditStartTime(m > 59 ? `${h.toString().padStart(2,"0")}:59` : v); setShowResult(false); } }}
+                              onClick={() => { if (!editStartTime) setEditStartTime(nowHHMM()); }}
                               className="font-mono text-2xl font-black text-white/80 bg-transparent border-b-2 border-white/20 hover:border-white/40 focus:border-primary focus:outline-none cursor-pointer w-full" />
-                            <AdjCols onAdj={adjStart} />
+                            <AdjCols onAdj={(d) => { setEditStartTime(adjustHHMM(editStartTime || nowHHMM(), d)); setShowResult(false); }} />
                           </div>
                           <div>
                             <div className="text-[9px] text-primary/60 uppercase tracking-widest mb-1">Koniec</div>
-                            <input type="time" value={pumpStopTime || ""}
-                              onChange={(e) => { if (e.target.value) { setPumpStopTime(e.target.value); setShowResult(false); } }}
-                              onClick={() => { if (!pumpStopTime) setPumpStopTime(nowHHMM()); }}
+                            <input type="time" value={editStopTime || ""}
+                              onChange={(e) => { const v = e.target.value; if (v) { const [h,m] = v.split(":").map(Number); setEditStopTime(m > 59 ? `${h.toString().padStart(2,"0")}:59` : v); setShowResult(false); } }}
+                              onClick={() => { if (!editStopTime) setEditStopTime(nowHHMM()); }}
                               className="font-mono text-2xl font-black text-primary bg-transparent border-b-2 border-primary/30 hover:border-primary/60 focus:border-primary focus:outline-none cursor-pointer w-full" />
-                            <AdjCols onAdj={adjStop} />
+                            <AdjCols onAdj={(d) => { setEditStopTime(adjustHHMM(editStopTime || nowHHMM(), d)); setShowResult(false); }} />
                           </div>
                         </div>
+                        {(editStartTime || editStopTime) && (
+                          <div className="flex justify-end">
+                            <button type="button" onClick={() => { setEditStartTime(null); setEditStopTime(null); setShowResult(false); }}
+                              className="text-[9px] text-white/25 hover:text-primary transition-colors">× reset</button>
+                          </div>
+                        )}
                         <BillingSummary />
-                        {(!pumpStartTime || !pumpStopTime) && (
+                        {(!editStartTime || !editStopTime) && (
                           <p className="text-[10px] text-white/25 text-center">Zadaj čas začiatku a konca čerpania</p>
                         )}
                       </div>
