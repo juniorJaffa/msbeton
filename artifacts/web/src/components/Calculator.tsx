@@ -297,6 +297,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [waitHour, setWaitHour] = useState("0 h");
   const [waitMin, setWaitMin] = useState("0 min");
   const [waitPiecesPumpa, setWaitPiecesPumpa] = useState(0); // čakačka pumpa: kusy (1 kus = 15 min)
+  const [waitPiecesMix, setWaitPiecesMix] = useState(0);    // čakačka mix KM režim: kusy (1 kus = 15 min)
   const [hoseMeters, setHoseMeters] = useState(0);
   const [washing, setWashing] = useState(false);
   const [showResult, setShowResult] = useState(false);
@@ -347,6 +348,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     setWaitHour("0 h");
     setWaitMin("0 min");
     setWaitPiecesPumpa(0);
+    setWaitPiecesMix(0);
     setHoseMeters(0);
     setWashing(false);
     setZimneOpatrenia(false);
@@ -978,9 +980,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const pumpBlocks = _pumpBlocks;
     const pumpCost = tab === "pumpa" ? (_pumpBillingMins / 60) * pumpServicePrice : 0;
 
-    // Čakačky: pumpa = kusy (1 kus = 15 min), mix = hodiny + minúty
+    // Čakačky: pumpa = kusy (1 kus = 15 min), mix = hodiny+minúty alebo kusy (KM klient)
     const waitIntervalsPumpa = waitPiecesPumpa;
-    const waitIntervalsMix = Math.ceil(Math.max(0, waitTotalMins - 30) / 15);
+    const waitIntervalsMix = clientDeliveryZone?.pricingType === "km"
+      ? waitPiecesMix
+      : Math.ceil(Math.max(0, waitTotalMins - 30) / 15);
     const waitIntervals = tab === "pumpa" ? waitIntervalsPumpa : waitIntervalsMix;
 
     const transportCalc = { cost: totalTransportCost, isMin: concreteBreakdown[0] ? (isOwn ? false : calcTransport(km, qty, tab, clientDeliveryZone).isMin) : false, fillupM3: concreteBreakdown[0]?.transportFillupM3 ?? 0, fillupCost: totalFillupCost };
@@ -1061,11 +1065,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
     const waitLabel = tab === "pumpa"
       ? `${waitPiecesPumpa} ks`
-      : (() => {
-        const wh = parseInt(waitHour) || 0;
-        const wm = parseInt(waitMin) || 0;
-        return [wh > 0 ? `${wh} h` : "", wm > 0 ? `${wm} min` : ""].filter(Boolean).join(" ");
-      })();
+      : clientDeliveryZone?.pricingType === "km"
+        ? `${waitPiecesMix} ks`
+        : (() => {
+          const wh = parseInt(waitHour) || 0;
+          const wm = parseInt(waitMin) || 0;
+          return [wh > 0 ? `${wh} h` : "", wm > 0 ? `${wm} min` : ""].filter(Boolean).join(" ");
+        })();
 
     const mixTrucksCount = tab === "pumpa" ? trucks - 1 : trucks;
     const transportZone = !isOwn && km > 0 && (clientDeliveryZone?.pricingType ?? "standard") === "standard"
@@ -1083,7 +1089,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       transportIsMin: transportCalc.isMin, fillupM3, fillupTarget,
       fTransport, fFillup,
     };
-  }, [tab, pumpMode, pumpHour, pumpMin, quantity, distance, selectedType, pumpStartTime, pumpStopTime, editStartTime, editStopTime, waitTotalMins, waitPiecesPumpa, hoseMeters, washing, zimneOpatrenia, betonFactor, dopravaFactor, sluzbyFactor, fPump, fChem, fWash, fHose, fWaitP, fWaitM, pumpServicePrice, chemServicePrice, washServicePrice, waitServicePricePumpa, waitServicePriceMix, hoseServicePrice, zimneServicePrice, tzones, tsettings, extraItems, allCategories, clientDeliveryZone, pumpCap, mixCap, VAT, VAT_HOTOVOST, loggedClient, podmienkyEnabled, podmienkyTrucks, podmienkyPumpa, podmienkyMixC]);
+  }, [tab, pumpMode, pumpHour, pumpMin, quantity, distance, selectedType, pumpStartTime, pumpStopTime, editStartTime, editStopTime, waitTotalMins, waitPiecesPumpa, waitPiecesMix, hoseMeters, washing, zimneOpatrenia, betonFactor, dopravaFactor, sluzbyFactor, fPump, fChem, fWash, fHose, fWaitP, fWaitM, pumpServicePrice, chemServicePrice, washServicePrice, waitServicePricePumpa, waitServicePriceMix, hoseServicePrice, zimneServicePrice, tzones, tsettings, extraItems, allCategories, clientDeliveryZone, pumpCap, mixCap, VAT, VAT_HOTOVOST, loggedClient, podmienkyEnabled, podmienkyTrucks, podmienkyPumpa, podmienkyMixC]);
 
   async function handleLogin() {
     if (!loginId || !loginPwd) return;
@@ -2864,21 +2870,55 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     {(waitServicePriceMix * fWaitM).toFixed(2)} € / 15 min
                   </span>
                 </span>
-                {(parseInt(waitHour) > 0 || parseInt(waitMin) > 0) && (
-                  <span className="text-xs text-primary font-bold">
-                    {[parseInt(waitHour) > 0 ? `${parseInt(waitHour)} h` : "", parseInt(waitMin) > 0 ? `${parseInt(waitMin)} min` : ""].filter(Boolean).join(" ")}
-                  </span>
+                {clientDeliveryZone?.pricingType === "km" ? (
+                  waitPiecesMix > 0 && <span className="text-xs text-primary font-bold">{waitPiecesMix} ks</span>
+                ) : (
+                  (parseInt(waitHour) > 0 || parseInt(waitMin) > 0) && (
+                    <span className="text-xs text-primary font-bold">
+                      {[parseInt(waitHour) > 0 ? `${parseInt(waitHour)} h` : "", parseInt(waitMin) > 0 ? `${parseInt(waitMin)} min` : ""].filter(Boolean).join(" ")}
+                    </span>
+                  )
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <SelectField label="Hodiny čakania" value={waitHour} onChange={(v) => { setWaitHour(v); setShowResult(false); }} options={WAIT_HOURS} />
-                <SelectField label="Minúty čakania" value={waitMin} onChange={(v) => { setWaitMin(v); setShowResult(false); }} options={WAIT_MINS} />
-              </div>
-              {waitTotalMins > 0 && waitTotalMins <= 30 && (
-                <p className="text-xs text-green-400/80 flex items-center gap-1.5 mt-0.5">
-                  <span className="text-green-400 font-bold">✓</span>
-                  Prvých 30 min zadarmo – táto doba sa neúčtuje
-                </p>
+              {clientDeliveryZone?.pricingType === "km" ? (
+                /* KM klient — ks counter (rovnaký vzor ako PUMPA čakačky) */
+                <>
+                  <div className="flex items-center gap-2">
+                    <button type="button"
+                      onClick={() => { setWaitPiecesMix(Math.max(0, waitPiecesMix - 1)); setShowResult(false); }}
+                      className="w-7 h-7 flex items-center justify-center border border-white/20 text-white/60 hover:border-primary hover:text-primary transition-colors rounded-sm cursor-pointer text-base font-bold flex-shrink-0">
+                      −
+                    </button>
+                    <div className="flex-1 text-center">
+                      <span className={cn("text-xl font-black", waitPiecesMix > 0 ? "text-primary" : "text-white/30")}>
+                        {waitPiecesMix}
+                      </span>
+                      <span className="text-[10px] text-white/35 ml-0.5">ks</span>
+                    </div>
+                    <button type="button"
+                      onClick={() => { setWaitPiecesMix(waitPiecesMix + 1); setShowResult(false); }}
+                      className="w-7 h-7 flex items-center justify-center border border-white/20 text-white/60 hover:border-primary hover:text-primary transition-colors rounded-sm cursor-pointer text-base font-bold flex-shrink-0">
+                      +
+                    </button>
+                  </div>
+                  {waitPiecesMix > 0 && (
+                    <p className="text-[10px] text-primary mt-1 text-center font-semibold">{(waitPiecesMix * waitServicePriceMix * fWaitM).toFixed(2)} €</p>
+                  )}
+                </>
+              ) : (
+                /* Štandard — hodiny + minúty dropdown */
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <SelectField label="Hodiny čakania" value={waitHour} onChange={(v) => { setWaitHour(v); setShowResult(false); }} options={WAIT_HOURS} />
+                    <SelectField label="Minúty čakania" value={waitMin} onChange={(v) => { setWaitMin(v); setShowResult(false); }} options={WAIT_MINS} />
+                  </div>
+                  {waitTotalMins > 0 && waitTotalMins <= 30 && (
+                    <p className="text-xs text-green-400/80 flex items-center gap-1.5 mt-0.5">
+                      <span className="text-green-400 font-bold">✓</span>
+                      Prvých 30 min zadarmo – táto doba sa neúčtuje
+                    </p>
+                  )}
+                </>
               )}
             </div>
           )}
