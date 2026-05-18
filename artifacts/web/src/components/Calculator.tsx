@@ -2707,38 +2707,40 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
                     {/* ── MODE: STOPKY (live timer) ── */}
                     {pumpMode === "timer" && (
-                      <div className="px-3 py-3 h-[320px] flex flex-col gap-2.5">
+                      <div className="px-3 py-3 h-[320px] flex flex-col">
                         {pumpTimerActive ? (
                           <>
-                            {/* Štart box — kompaktný */}
-                            <div className="bg-green-500/10 border border-green-500/20 rounded-sm px-2.5 py-1.5 shrink-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-[8px] text-green-400/50 uppercase tracking-widest shrink-0">Štart</span>
-                                <input type="time" value={pumpStartTime || ""}
-                                  onChange={(e) => { if (e.target.value) { setPumpStartTime(e.target.value); setShowResult(false); } }}
-                                  className="font-mono text-xl font-black text-green-300 bg-transparent border-b border-green-400/30 focus:border-green-400 focus:outline-none cursor-pointer flex-1 min-w-0" />
-                              </div>
+                            {/* Compact start row */}
+                            <div className="shrink-0 flex items-center gap-2 px-0.5 mb-2">
+                              <span className="text-[8px] text-green-400/50 uppercase tracking-widest shrink-0">Štart</span>
+                              <input type="time" value={pumpStartTime || ""}
+                                onChange={(e) => { if (e.target.value) { setPumpStartTime(e.target.value); setShowResult(false); } }}
+                                className="font-mono text-sm font-black text-green-300 bg-transparent border-b border-green-400/20 focus:border-green-400 focus:outline-none cursor-pointer w-20 shrink-0" />
                               <AdjCols onAdj={adjStart} />
                             </div>
-                            {/* Live timer */}
+                            {/* Timer center */}
                             <div className="flex-1 flex flex-col items-center justify-center text-center">
-                              <div className="flex items-center justify-center gap-1.5 mb-1.5">
+                              <div className="flex items-center justify-center gap-1.5 mb-2">
                                 <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                                <span className="text-[9px] font-black text-green-400 uppercase tracking-wider">Čerpanie beží</span>
+                                <span className="text-[8px] font-black text-green-400 uppercase tracking-widest">Čerpanie beží</span>
                               </div>
-                              <div className="font-mono text-4xl font-black text-green-400 tracking-widest leading-none">{liveStr}</div>
+                              <div className="font-mono text-4xl font-black text-green-400 tracking-widest leading-none tabular-nums">{liveStr}</div>
                               <div className="text-[9px] text-green-400/40 mt-1 uppercase tracking-widest">
                                 {Math.ceil((liveSecs / 60) / 15) || 1} blok{Math.ceil((liveSecs / 60) / 15) > 1 ? "y" : ""}
                               </div>
                             </div>
-                            <button type="button" onClick={handleStop}
-                              className="shrink-0 w-full py-3 bg-red-600 hover:bg-red-500 text-white text-sm font-black uppercase tracking-widest rounded-sm transition-colors flex items-center justify-center gap-2">
-                              <span className="text-base leading-none">■</span> Stop čerpanie
-                            </button>
+                            {/* Round STOP button */}
+                            <div className="shrink-0 flex justify-center pb-1">
+                              <button type="button" onClick={handleStop}
+                                className="w-20 h-20 rounded-full bg-red-700 hover:bg-red-600 active:scale-95 text-white font-black transition-all flex flex-col items-center justify-center gap-0.5 shadow-[0_0_22px_rgba(185,28,28,0.45)] hover:shadow-[0_0_32px_rgba(220,38,38,0.65)] border-4 border-red-500/30 cursor-pointer select-none">
+                                <span className="text-base leading-none">■</span>
+                                <span className="text-[8px] font-black tracking-widest">STOP</span>
+                              </button>
+                            </div>
                           </>
                         ) : pumpStartTime && pumpStopTime ? (
                           <>
-                            <div className="shrink-0 flex items-center justify-between">
+                            <div className="shrink-0 flex items-center justify-between mb-2">
                               <div className="flex items-center gap-1.5">
                                 <Check className="w-3.5 h-3.5 text-amber-400" />
                                 <span className="text-xs font-black text-amber-400 uppercase tracking-wider">Čerpanie hotové</span>
@@ -2748,13 +2750,15 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                             <div className="flex-1 overflow-y-auto"><BillingSummary /></div>
                           </>
                         ) : (
+                          /* IDLE — big round START button */
                           <div className="flex-1 flex flex-col items-center justify-center gap-3">
-                            <div className="font-mono text-3xl font-black text-white/10 tracking-widest">00:00:00</div>
+                            <div className="font-mono text-2xl font-black text-white/10 tracking-widest tabular-nums">00:00:00</div>
                             <button type="button" onClick={handleStart}
-                              className="w-full py-3 bg-green-700/80 hover:bg-green-600 text-white text-sm font-black uppercase tracking-widest rounded-sm transition-colors flex items-center justify-center gap-2">
-                              <span className="text-base leading-none">▶</span> Štart čerpanie
+                              className="w-24 h-24 rounded-full bg-green-900 hover:bg-green-800 active:scale-95 text-white font-black transition-all flex flex-col items-center justify-center gap-1 shadow-[0_0_28px_rgba(22,163,74,0.30)] hover:shadow-[0_0_40px_rgba(22,163,74,0.55)] border-4 border-green-600/35 cursor-pointer select-none">
+                              <svg viewBox="0 0 24 24" className="w-8 h-8" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                              <span className="text-[9px] font-black tracking-widest text-green-200">START</span>
                             </button>
-                            <p className="text-[9px] text-white/20 text-center">Stlač Štart pri začatí čerpania na stavbe</p>
+                            <p className="text-[9px] text-white/20 text-center">Stlač pri začatí čerpania</p>
                           </div>
                         )}
                       </div>
