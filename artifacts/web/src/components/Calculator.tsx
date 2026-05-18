@@ -2030,15 +2030,31 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     defaultValue={address}
                     onChange={(e) => { setAddress(e.target.value); setAddressKm(null); setShowResult(false); }}
                     onKeyUp={(e) => {
-                      if (e.key === "Enter" && deliveryMode === "map" && mapGeocodeAddrFnRef.current && addressInputRef.current?.value) {
-                        e.preventDefault();
-                        mapGeocodeAddrFnRef.current(addressInputRef.current.value, true);
+                      if (e.key === "Enter" && deliveryMode === "map") {
+                        const val = addressInputRef.current?.value.trim();
+                        if (!val) return;
+                        if (mapGeocodeAddrFnRef.current) { mapGeocodeAddrFnRef.current(val, true); return; }
+                        if (typeof google !== "undefined" && google.maps?.Geocoder && mapSetPinAtRef.current) {
+                          const setPinFn = mapSetPinAtRef.current;
+                          new google.maps.Geocoder().geocode({ address: val, region: "SK" }, (results, st) => {
+                            if (st === "OK" && results?.[0]) { const loc = results[0].geometry.location; setPinFn(loc.lat(), loc.lng(), true, true); }
+                          });
+                        }
                       }
                     }}
-                    onPaste={(e) => {
-                      if (deliveryMode === "map" && mapGeocodeAddrFnRef.current) {
-                        const pasted = e.clipboardData.getData("text").trim();
-                        if (pasted) setTimeout(() => mapGeocodeAddrFnRef.current?.(pasted, true), 0);
+                    onPaste={() => {
+                      if (deliveryMode === "map") {
+                        setTimeout(() => {
+                          const val = addressInputRef.current?.value.trim();
+                          if (!val) return;
+                          if (mapGeocodeAddrFnRef.current) { mapGeocodeAddrFnRef.current(val, true); return; }
+                          if (typeof google !== "undefined" && google.maps?.Geocoder && mapSetPinAtRef.current) {
+                            const setPinFn = mapSetPinAtRef.current;
+                            new google.maps.Geocoder().geocode({ address: val, region: "SK" }, (results, st) => {
+                              if (st === "OK" && results?.[0]) { const loc = results[0].geometry.location; setPinFn(loc.lat(), loc.lng(), true, true); }
+                            });
+                          }
+                        }, 100);
                       }
                     }}
                     placeholder="Zadajte adresu stavby"
