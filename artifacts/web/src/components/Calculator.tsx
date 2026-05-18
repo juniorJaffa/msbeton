@@ -815,7 +815,14 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const effectiveMinFee = mpStd["min_fee"] !== undefined ? mpStd["min_fee"] : minimumFee;
 
     let fillupM3 = 0;
-    if (tabType === "pumpa") {
+    if (overrideTrucks && overrideTrucks > 1) {
+      const qtyPerTruck = qty / overrideTrucks;
+      const cap = tabType === "pumpa" ? pumpCap : mixCap;
+      let fillupPerTruck = 0;
+      if (qtyPerTruck < 5) fillupPerTruck = 5 - qtyPerTruck;
+      else if (qtyPerTruck > cap && qtyPerTruck < 10) fillupPerTruck = 10 - qtyPerTruck;
+      fillupM3 = Math.round(Math.max(0, fillupPerTruck) * overrideTrucks * 10) / 10;
+    } else if (tabType === "pumpa") {
       if (qty < 5) fillupM3 = 5 - qty;
       else if (qty > pumpCap && qty < 10) fillupM3 = 10 - qty;
     } else {
@@ -875,7 +882,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       transport: mainTC.cost,
       transportFillup: mainTC.fillupCost,
       transportFillupM3: mainTC.fillupM3,
-      transportFillupTarget: mainTC.fillupM3 > 0 ? (qty < 5 ? 5 : 10) : 0,
+      transportFillupTarget: mainTC.fillupM3 > 0 ? Math.round((qty + mainTC.fillupM3) * 10) / 10 : 0,
       transportIsMin: mainTC.isMin,
       transportTrucks: mainTrucks,
       svcPumpHrs: 0, svcPumpMs: 0, svcPumpCost: 0,
@@ -926,7 +933,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
           transport: extraTC.cost,
           transportFillup: extraTC.fillupCost,
           transportFillupM3: extraTC.fillupM3,
-          transportFillupTarget: extraTC.fillupM3 > 0 ? (q < 5 ? 5 : 10) : 0,
+          transportFillupTarget: extraTC.fillupM3 > 0 ? Math.round((q + extraTC.fillupM3) * 10) / 10 : 0,
           transportIsMin: extraTC.isMin,
           transportTrucks: extraTrucks,
           svcPumpHrs, svcPumpMs, svcPumpCost,
@@ -1065,7 +1072,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       : null;
 
     const fillupM3 = transportCalc.fillupM3;
-    const fillupTarget = fillupM3 > 0 ? (qty < 5 ? 5 : 10) : 0;
+    const fillupTarget = fillupM3 > 0 ? Math.round((qty + fillupM3) * 10) / 10 : 0;
 
     return {
       trucks, truckCapacity, mixTrucksCount, items, totalBezDph, totalSDph: totalBezDph * (1 + VAT),
@@ -1234,7 +1241,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const sluzbyRows = hasMainSluzby
       ? subSectionRow(svcLabel) +
         (tab === "pumpa"
-          ? trow(`Čerpanie betónu – ${result.pumpBlocks > 0 ? `${result.pumpBlocks}×15min` : `${result.pumpHrs}h${result.pumpMs > 0 ? `&nbsp;${result.pumpMs}min` : ""}`}`,
+          ? trow(`Čerpanie betónu – ${result.pumpHrs}&nbsp;h${result.pumpMs > 0 ? `&nbsp;${result.pumpMs}&nbsp;min` : ""}`,
               `${result.pumpHrs}&nbsp;h${result.pumpMs > 0 ? `&nbsp;${result.pumpMs}&nbsp;min` : ""}`, svcRateStr(pumpServicePrice, "€/h", fPump), mainSluzbyOrig.pump, mainSluzbyOrig.pump * fPump) +
             (hoseMeters > 0 ? trow(`Prídavné hadice`, `${hoseMeters}&nbsp;m`, svcRateStr(hoseServicePrice, "€/m", fHose), mainSluzbyOrig.hoses, mainSluzbyOrig.hoses * fHose) : "") +
             (washing ? trow("Umývanie mimo stavby", "1&nbsp;ks", svcRateStr(washServicePrice, "€", fWash), mainSluzbyOrig.washing, mainSluzbyOrig.washing * fWash) : "") +
@@ -3062,7 +3069,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                                 <SvcBlock label={tab === "pumpa" ? "Služby – Pumpa" : "Čakačky"} />
                                 {idx === 0 ? (
                                   <>
-                                    {mainPumpBase > 0 && <PriceRow label={`Čerpanie betónu – ${result.pumpBlocks > 0 ? `${result.pumpBlocks}× 15 min` : `${result.pumpHrs} h${result.pumpMs > 0 ? ` ${result.pumpMs} min` : ""}`}`}
+                                    {mainPumpBase > 0 && <PriceRow label={`Čerpanie betónu – ${result.pumpHrs} h${result.pumpMs > 0 ? ` ${result.pumpMs} min` : ""}`}
                                       original={mainPumpBase} discounted={mainPumpBase * fPump} hasDiscount={hasDiscount} />}
                                     {mainChemBase > 0 && <PriceRow label="Rozbehová chémia"
                                       original={mainChemBase} discounted={mainChemBase * fChem} hasDiscount={hasDiscount} />}
@@ -3147,6 +3154,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                       {podmienkyEnabled && (
                         <span className="px-1.5 py-0.5 bg-amber-400/20 text-amber-300 text-[10px] font-black rounded-sm uppercase tracking-wide">Podmienky</span>
                       )}
+                      {podmienkyEnabled && result.fillupM3 > 0 && (() => {
+                        const totT = tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks;
+                        const qPT = totT > 0 ? Math.round(result.qty / totT * 10) / 10 : 0;
+                        return <span className="text-[10px] text-amber-300/70">∅&nbsp;{qPT}&nbsp;m³/voz → doťaženie&nbsp;+{result.fillupM3}&nbsp;m³</span>;
+                      })()}
                     </div>
                   )}
                   {!isAdminMode && tab !== "vlastnadoprava" && (
@@ -3370,9 +3382,14 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                           <span className="text-white/50">{result.totalQty} m³ · {selectedType?.label.replace(/ – .*/, "")}</span>
                           <span className="text-primary font-bold">{(isFaktura ? result.totalDiscSDph : result.hotovostTotal).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-white/30 text-xs">{tab === "pumpa" ? "Pumpa" : tab === "mix" ? "Mix" : "Vlastná doprava"}{address ? ` · ${address}` : ""}</span>
-                          <span className="text-white/30 text-xs">{dayLabel}</span>
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-white/30 text-xs flex items-center gap-1.5 flex-wrap">
+                            <span>{tab === "pumpa" ? "Pumpa" : tab === "mix" ? "Mix" : "Vlastná doprava"}{address ? ` · ${address}` : ""}</span>
+                            <span className={`px-1.5 py-0.5 text-[10px] font-black rounded-sm ${isFaktura ? "bg-blue-500/20 text-blue-300" : "bg-amber-500/20 text-amber-300"}`}>
+                              {isFaktura ? "Faktúra" : "Hotovosť"}
+                            </span>
+                          </span>
+                          <span className="text-white/30 text-xs shrink-0">{dayLabel}</span>
                         </div>
                       </div>
                     );
