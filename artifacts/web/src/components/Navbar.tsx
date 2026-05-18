@@ -1,13 +1,30 @@
 import { useState, useEffect } from "react";
-import { Menu, X, Phone, Mail, LogIn, LogOut, Calculator, UserCog, ShieldCheck } from "lucide-react";
+import { Menu, X, Phone, Mail, LogIn, LogOut, Calculator, UserCog, ShieldCheck, Fingerprint } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { clientAuth, type LoggedClient } from "@/lib/clientAuth";
+import { hasStoredCredential, isBiometricAvailable } from "@/lib/adminAuth";
+import { hasClientBiometric, isBiometricAvailable as isClientBioAvailable } from "@/lib/clientAuth";
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [loggedClient, setLoggedClient] = useState<LoggedClient | null>(() => clientAuth.getLoggedClient());
+  const [adminBioActive, setAdminBioActive] = useState(() => isBiometricAvailable() && hasStoredCredential());
+  const [clientBioActive, setClientBioActive] = useState(() => isClientBioAvailable() && hasClientBiometric());
+
+  useEffect(() => {
+    const onBioChange = () => {
+      setAdminBioActive(isBiometricAvailable() && hasStoredCredential());
+      setClientBioActive(isClientBioAvailable() && hasClientBiometric());
+    };
+    window.addEventListener("bio-status-changed", onBioChange);
+    window.addEventListener("client-session-changed", onBioChange);
+    return () => {
+      window.removeEventListener("bio-status-changed", onBioChange);
+      window.removeEventListener("client-session-changed", onBioChange);
+    };
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -84,7 +101,10 @@ export function Navbar() {
                   href="/prihlasenie"
                   className="flex items-center gap-1.5 px-2.5 py-1 border border-primary/50 hover:border-primary bg-primary/10 hover:bg-primary/20 text-primary transition-colors text-xs font-bold rounded-sm shrink-0"
                 >
-                  <LogIn className="w-3.5 h-3.5 shrink-0" />
+                  <span className="relative inline-flex items-center justify-center w-3.5 h-3.5">
+                    <LogIn className="w-3.5 h-3.5 shrink-0" />
+                    {clientBioActive && <Fingerprint className="absolute -bottom-1 -right-1 w-2.5 h-2.5 text-primary" />}
+                  </span>
                   <span>Klient</span>
                 </a>
               )}
@@ -105,10 +125,17 @@ export function Navbar() {
               {/* ── Admin ── */}
               <a
                 href="/admin/login"
-                className="flex items-center gap-1 text-white/20 hover:text-amber-400/60 transition-colors shrink-0 py-1 px-1"
+                className="flex items-center gap-1 text-white/20 hover:text-amber-400/60 transition-colors shrink-0 py-1 px-1 relative"
                 title="Admin — administrácia"
               >
-                <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                {adminBioActive ? (
+                  <span className="relative inline-flex items-center justify-center w-3.5 h-3.5">
+                    <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-primary/70" />
+                    <Fingerprint className="absolute -bottom-1 -right-1 w-2.5 h-2.5 text-primary" />
+                  </span>
+                ) : (
+                  <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                )}
                 <span className="hidden sm:inline text-[10px] font-medium">Admin</span>
               </a>
             </div>

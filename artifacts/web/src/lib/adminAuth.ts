@@ -1,6 +1,12 @@
 const AUTH_KEY = "msbeton_admin_auth";
 const ATTEMPTS_KEY = "msbeton_login_attempts";
 const WEBAUTHN_KEY = "msbeton_webauthn_cred";
+const DEVICE_FP_KEY = "msbeton_admin_bio_device";
+
+function getDeviceFingerprint(): string {
+  return [navigator.platform, `${screen.width}x${screen.height}`, navigator.hardwareConcurrency ?? 0].join("|");
+}
+
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_DURATION = 5 * 60 * 1000;
 
@@ -72,11 +78,15 @@ export function isBiometricAvailable(): boolean {
 }
 
 export function hasStoredCredential(): boolean {
-  return !!localStorage.getItem(WEBAUTHN_KEY);
+  if (!localStorage.getItem(WEBAUTHN_KEY)) return false;
+  const fp = localStorage.getItem(DEVICE_FP_KEY);
+  if (!fp) return true; // legacy registration without fingerprint
+  return fp === getDeviceFingerprint();
 }
 
 export function clearBiometric(): void {
   localStorage.removeItem(WEBAUTHN_KEY);
+  localStorage.removeItem(DEVICE_FP_KEY);
 }
 
 function randomBytes(n: number): Uint8Array {
@@ -120,6 +130,7 @@ export async function registerBiometric(): Promise<{ ok: boolean; error?: string
       },
     }) as PublicKeyCredential;
     localStorage.setItem(WEBAUTHN_KEY, b64url(cred.rawId));
+    localStorage.setItem(DEVICE_FP_KEY, getDeviceFingerprint());
     return { ok: true };
   } catch (err: unknown) {
     return { ok: false, error: String(err) };
@@ -141,6 +152,11 @@ export async function authenticateBiometric(): Promise<{ ok: boolean; error?: st
     });
     return { ok: true };
   } catch (err: unknown) {
-    return { ok: false, error: String(err) };
+    const msg = String(err);
+    // If credential not found on this device, clear stale key so next visit shows form directly
+    if (msg.includes("NotAllowedError") || msg.includes("NotSupportedError") || msg.includes("InvalidStateError")) {
+      clearBiometric();
+    }
+    return { ok: false, error: msg };
   }
 }
