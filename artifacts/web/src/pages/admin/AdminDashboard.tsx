@@ -3415,11 +3415,11 @@ function AnalyticsTab() {
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
       <div className="flex items-center gap-2 mb-1">
         <span className="text-gray-400">{icon}</span>
-        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{label}</span>
+        <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{label}</span>
       </div>
       <div className="text-3xl font-black text-secondary">{val30.toLocaleString("sk")}</div>
-      <div className="text-[11px] text-gray-400 mt-0.5">90 dní: {val90.toLocaleString("sk")}</div>
-      <div className="text-[10px] text-gray-300 mt-1.5 leading-tight">{tooltip}</div>
+      <div className="text-[11px] text-gray-500 mt-0.5 font-medium">90 dní: {val90.toLocaleString("sk")}</div>
+      <div className="text-[10px] text-gray-500 mt-1.5 leading-tight">{tooltip}</div>
     </div>
   );
 
@@ -3571,32 +3571,98 @@ function AnalyticsTab() {
               </div>
               {/* SVK cities map */}
               {data.cities && data.cities.filter(c => c.country === "Slovakia").length > 0 && (() => {
-                const skCities = data.cities!.filter(c => c.country === "Slovakia" && SVK_CITY_SVG[c.city]);
+                const skCities = data.cities!
+                  .filter(c => c.country === "Slovakia" && SVK_CITY_SVG[c.city])
+                  .sort((a, b) => b.sessions - a.sessions);
                 const maxC = Math.max(...skCities.map(c => c.sessions), 1);
                 return (
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">🇸🇰 Slovensko — mestá</p>
-                    <svg viewBox="0 0 400 160" className="w-full" style={{ height: 120 }}>
-                      <path d="M 2,128 L 3,19 L 48,6 L 150,3 L 215,4 L 232,1 L 248,12 L 289,17 L 324,28 L 358,30 L 399,34 L 399,76 L 386,93 L 352,152 L 290,152 L 220,152 L 128,152 L 83,152 L 62,152 L 14,152 L 3,147 Z"
-                        fill="#f0f4f8" stroke="#cbd5e1" strokeWidth="1.5" />
-                      {skCities.map(c => {
-                        const xy = SVK_CITY_SVG[c.city];
-                        if (!xy) return null;
-                        const r = Math.max(3, Math.min(12, 3 + (c.sessions / maxC) * 9));
-                        return (
-                          <g key={c.city}>
-                            <circle cx={xy[0]} cy={xy[1]} r={r} fill="#EDC531" fillOpacity="0.85" stroke="#b45309" strokeWidth="0.8" />
-                            {r >= 6 && <text x={xy[0]} y={xy[1] - r - 1.5} textAnchor="middle" fontSize="6" fill="#374151" fontFamily="Arial,sans-serif" fontWeight="bold">{c.city}</text>}
-                          </g>
-                        );
-                      })}
+                  <div className="mt-3 rounded-xl overflow-hidden border border-slate-700/60" style={{ background: "linear-gradient(135deg,#0d1f3c 0%,#071526 100%)" }}>
+                    <div className="px-3 pt-2.5 pb-0 flex items-center justify-between">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">🇸🇰 Slovensko — mestá</span>
+                      <span className="text-[9px] text-slate-600">{skCities.length} {skCities.length === 1 ? "mesto" : "miest"}</span>
+                    </div>
+                    <svg viewBox="0 0 420 175" className="w-full" style={{ height: 145, display: "block" }}>
+                      <defs>
+                        <linearGradient id="svkGrad" x1="0" y1="0" x2="0.6" y2="1">
+                          <stop offset="0%" stopColor="#1a3a62" />
+                          <stop offset="100%" stopColor="#0d2444" />
+                        </linearGradient>
+                        <filter id="svkGlow" x="-50%" y="-50%" width="200%" height="200%">
+                          <feGaussianBlur stdDeviation="3" result="blur" />
+                          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                        </filter>
+                        <filter id="svkShadow">
+                          <feDropShadow dx="0" dy="3" stdDeviation="4" floodColor="#000" floodOpacity="0.5" />
+                        </filter>
+                      </defs>
+                      <g transform="translate(10,8)">
+                        {/* Slovakia outline */}
+                        <path
+                          d="M 2,128 L 3,19 L 48,6 L 150,3 L 215,4 L 232,1 L 248,12 L 289,17 L 324,28 L 358,30 L 399,34 L 399,76 L 386,93 L 352,152 L 290,152 L 220,152 L 128,152 L 83,152 L 62,152 L 14,152 L 3,147 Z"
+                          fill="url(#svkGrad)" stroke="#2d5a99" strokeWidth="1.5" filter="url(#svkShadow)"
+                        />
+                        {/* Subtle horizontal grid */}
+                        {[38, 76, 114].map(y => (
+                          <line key={y} x1="2" y1={y} x2="399" y2={y} stroke="#1e3a5f" strokeWidth="0.4" strokeDasharray="6,6" />
+                        ))}
+                        {/* City dots — back to front (small first) */}
+                        {[...skCities].reverse().map((c, ri) => {
+                          const i = skCities.length - 1 - ri;
+                          const xy = SVK_CITY_SVG[c.city];
+                          if (!xy) return null;
+                          const pct = c.sessions / maxC;
+                          const r = Math.max(4, Math.min(15, 4 + pct * 11));
+                          const isTop3 = i < 3;
+                          const showLabel = isTop3 || r >= 8;
+                          const lw = c.city.length * 3.6 + 8;
+                          return (
+                            <g key={c.city}>
+                              {/* Outer glow ring */}
+                              <circle cx={xy[0]} cy={xy[1]} r={r + 5} fill="#EDC531" fillOpacity={pct * 0.18} />
+                              {/* Mid glow */}
+                              <circle cx={xy[0]} cy={xy[1]} r={r + 2} fill="#EDC531" fillOpacity={pct * 0.28} />
+                              {/* Main dot */}
+                              <circle cx={xy[0]} cy={xy[1]} r={r} fill="#EDC531" fillOpacity={0.55 + pct * 0.45}
+                                stroke={isTop3 ? "#fff8e1" : "#b38600"} strokeWidth={isTop3 ? 1.5 : 0.7} />
+                              {/* Inner highlight */}
+                              <circle cx={xy[0] - r * 0.25} cy={xy[1] - r * 0.25} r={r * 0.35} fill="#fff" fillOpacity="0.25" />
+                              {/* Label pill */}
+                              {showLabel && (
+                                <g>
+                                  <rect x={xy[0] - lw / 2} y={xy[1] - r - 15} width={lw} height={11} rx="3"
+                                    fill="#071526" fillOpacity="0.9" stroke="#2d5a99" strokeWidth="0.6" />
+                                  <text x={xy[0]} y={xy[1] - r - 6.5} textAnchor="middle" fontSize="5.8"
+                                    fill={isTop3 ? "#EDC531" : "#cbd5e1"} fontFamily="system-ui,sans-serif" fontWeight="700" letterSpacing="0.3">
+                                    {c.city}
+                                  </text>
+                                </g>
+                              )}
+                              {/* Rank badge for top 3 */}
+                              {isTop3 && (
+                                <>
+                                  <circle cx={xy[0] + r - 1} cy={xy[1] - r + 1} r={4.5} fill="#071526" stroke="#EDC531" strokeWidth="0.8" />
+                                  <text x={xy[0] + r - 1} y={xy[1] - r + 3.8} textAnchor="middle" fontSize="5" fill="#EDC531" fontFamily="system-ui,sans-serif" fontWeight="900">{i + 1}</text>
+                                </>
+                              )}
+                            </g>
+                          );
+                        })}
+                      </g>
                     </svg>
-                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-                      {skCities.slice(0, 6).map(c => (
-                        <div key={c.city} className="flex items-center gap-1 text-[10px]">
-                          <span className="w-2 h-2 rounded-full bg-primary inline-block" />
-                          <span className="text-gray-600">{c.city}</span>
-                          <span className="font-black text-secondary">{c.sessions}</span>
+                    {/* Ranked legend */}
+                    <div className="px-3 pb-3 grid grid-cols-2 gap-x-4 gap-y-1.5 border-t border-slate-700/40 pt-2.5 mt-0">
+                      {skCities.slice(0, 8).map((c, i) => (
+                        <div key={c.city} className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-[8px] font-black text-slate-600 w-2.5 text-right shrink-0">{i + 1}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-1 mb-0.5">
+                              <span className="text-[9px] font-medium truncate" style={{ color: i < 3 ? "#EDC531" : "#94a3b8" }}>{c.city}</span>
+                              <span className="text-[9px] font-black text-primary shrink-0">{c.sessions}</span>
+                            </div>
+                            <div className="h-[2px] rounded-full" style={{ background: "#1e3a5f" }}>
+                              <div className="h-full rounded-full" style={{ width: `${(c.sessions / maxC) * 100}%`, background: i === 0 ? "#EDC531" : i === 1 ? "#d4a017" : i === 2 ? "#b38600" : "#4a6fa5" }} />
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -3669,6 +3735,38 @@ function StatistikyTab() {
 
   const fmtEur = (n: number) => `${n.toLocaleString("sk", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
   const pct = (n: number) => total > 0 ? Math.round((n / total) * 100) : 0;
+
+  // ── Mesačné uzávierky ──
+  const SK_MONTHS = ["Jan","Feb","Mar","Apr","Máj","Jún","Júl","Aug","Sep","Okt","Nov","Dec"];
+  const fmtMonth = (ym: string) => { const [y, m] = ym.split("-"); return `${SK_MONTHS[parseInt(m) - 1]} ${y}`; };
+  const monthlyMap = new Map<string, { count: number; m3: number; bezDph: number; sDph: number; faktura: number; hotovost: number }>();
+  active.forEach(o => {
+    const ym = o.createdAt.slice(0, 7);
+    const cur = monthlyMap.get(ym) ?? { count: 0, m3: 0, bezDph: 0, sDph: 0, faktura: 0, hotovost: 0 };
+    cur.count++;
+    cur.m3 += o.totalQty || 0;
+    cur.bezDph += o.totalBezDph || 0;
+    cur.sDph += o.totalSDph || 0;
+    if (o.priceMode === "faktura") cur.faktura += o.totalBezDph || 0;
+    else cur.hotovost += o.totalBezDph || 0;
+    monthlyMap.set(ym, cur);
+  });
+  const monthlyData = Array.from(monthlyMap.entries()).sort(([a], [b]) => b.localeCompare(a));
+  const maxMonthRev = Math.max(...monthlyData.map(([, v]) => v.bezDph), 1);
+
+  // ── Klientský obrat ──
+  const clientMap = new Map<string, { name: string; clientId?: string; count: number; m3: number; bezDph: number; sDph: number }>();
+  active.forEach(o => {
+    const key = o.clientId ? `id:${o.clientId}` : `name:${o.clientName}`;
+    const cur = clientMap.get(key) ?? { name: o.clientName, clientId: o.clientId, count: 0, m3: 0, bezDph: 0, sDph: 0 };
+    cur.count++;
+    cur.m3 = Math.round((cur.m3 + (o.totalQty || 0)) * 10) / 10;
+    cur.bezDph += o.totalBezDph || 0;
+    cur.sDph += o.totalSDph || 0;
+    clientMap.set(key, cur);
+  });
+  const clientData = Array.from(clientMap.values()).sort((a, b) => b.bezDph - a.bezDph);
+  const maxClientRev = Math.max(...clientData.map(c => c.bezDph), 1);
 
   return (
     <div className="space-y-4">
@@ -3784,6 +3882,115 @@ function StatistikyTab() {
                 <span className="text-[7px] text-gray-400 leading-none truncate w-full text-center">{w.label}</span>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Mesačné uzávierky ── */}
+      {monthlyData.length > 0 && (
+        <div className="bg-white rounded-sm border border-gray-200 overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mesačné uzávierky</p>
+            <p className="text-[10px] text-gray-400">{monthlyData.length} mesiacov</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="text-left px-4 py-2 text-[10px] font-black text-gray-400 uppercase tracking-wide">Mesiac</th>
+                  <th className="text-right px-3 py-2 text-[10px] font-black text-gray-400 uppercase">Obj.</th>
+                  <th className="text-right px-3 py-2 text-[10px] font-black text-gray-400 uppercase">m³</th>
+                  <th className="text-right px-3 py-2 text-[10px] font-black text-gray-400 uppercase">Bez DPH</th>
+                  <th className="text-right px-3 py-2 text-[10px] font-black text-gray-400 uppercase">S DPH</th>
+                  <th className="text-right px-3 py-2 text-[10px] font-black text-gray-400 uppercase hidden sm:table-cell">Faktúra</th>
+                  <th className="text-right px-3 py-2 text-[10px] font-black text-gray-400 uppercase hidden sm:table-cell">Hotovosť</th>
+                  <th className="w-20 px-3 py-2 hidden md:table-cell"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {monthlyData.map(([ym, v], idx) => (
+                  <tr key={ym} className={`border-b border-gray-50 hover:bg-gray-50/60 transition-colors ${idx === 0 ? "bg-amber-50/40" : ""}`}>
+                    <td className="px-4 py-2.5 font-bold text-secondary whitespace-nowrap">
+                      {fmtMonth(ym)}
+                      {idx === 0 && <span className="ml-1.5 text-[9px] font-black text-primary bg-primary/10 px-1 py-0.5 rounded">aktuálny</span>}
+                    </td>
+                    <td className="text-right px-3 py-2.5 font-bold text-gray-700">{v.count}</td>
+                    <td className="text-right px-3 py-2.5 text-gray-600">{v.m3.toFixed(1)}</td>
+                    <td className="text-right px-3 py-2.5 font-black text-secondary whitespace-nowrap">{fmtEur(v.bezDph)}</td>
+                    <td className="text-right px-3 py-2.5 text-gray-500 whitespace-nowrap">{fmtEur(v.sDph)}</td>
+                    <td className="text-right px-3 py-2.5 text-gray-400 whitespace-nowrap hidden sm:table-cell">{v.faktura > 0 ? fmtEur(v.faktura) : "—"}</td>
+                    <td className="text-right px-3 py-2.5 text-gray-400 whitespace-nowrap hidden sm:table-cell">{v.hotovost > 0 ? fmtEur(v.hotovost) : "—"}</td>
+                    <td className="px-3 py-2.5 hidden md:table-cell">
+                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-secondary rounded-full" style={{ width: `${Math.round((v.bezDph / maxMonthRev) * 100)}%` }} />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="bg-secondary/5 border-t-2 border-secondary/20">
+                  <td className="px-4 py-2.5 font-black text-secondary text-[10px] uppercase tracking-wide">CELKOM</td>
+                  <td className="text-right px-3 py-2.5 font-black text-secondary">{active.length}</td>
+                  <td className="text-right px-3 py-2.5 font-black text-secondary">{active.reduce((s, o) => s + (o.totalQty || 0), 0).toFixed(1)}</td>
+                  <td className="text-right px-3 py-2.5 font-black text-secondary whitespace-nowrap">{fmtEur(totalBezDph)}</td>
+                  <td className="text-right px-3 py-2.5 font-black text-secondary whitespace-nowrap">{fmtEur(totalSDph)}</td>
+                  <td className="text-right px-3 py-2.5 font-black text-gray-500 whitespace-nowrap hidden sm:table-cell">{fmtEur(active.filter(o => o.priceMode === "faktura").reduce((s, o) => s + (o.totalBezDph || 0), 0))}</td>
+                  <td className="text-right px-3 py-2.5 font-black text-gray-500 whitespace-nowrap hidden sm:table-cell">{fmtEur(active.filter(o => o.priceMode === "hotovost").reduce((s, o) => s + (o.totalBezDph || 0), 0))}</td>
+                  <td className="hidden md:table-cell" />
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── Klientský obrat ── */}
+      {clientData.length > 0 && (
+        <div className="bg-white rounded-sm border border-gray-200 overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">TOP klienti – obrat</p>
+            <p className="text-[10px] text-gray-400">{clientData.length} klientov</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="text-left px-4 py-2 text-[10px] font-black text-gray-400 uppercase">#</th>
+                  <th className="text-left px-3 py-2 text-[10px] font-black text-gray-400 uppercase">Klient</th>
+                  <th className="text-right px-3 py-2 text-[10px] font-black text-gray-400 uppercase">Obj.</th>
+                  <th className="text-right px-3 py-2 text-[10px] font-black text-gray-400 uppercase">m³</th>
+                  <th className="text-right px-3 py-2 text-[10px] font-black text-gray-400 uppercase">Bez DPH</th>
+                  <th className="text-right px-3 py-2 text-[10px] font-black text-gray-400 uppercase">S DPH</th>
+                  <th className="w-24 px-3 py-2 hidden md:table-cell"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {clientData.map((c, idx) => (
+                  <tr key={idx} className="border-b border-gray-50 hover:bg-gray-50/60 transition-colors">
+                    <td className="px-4 py-2.5">
+                      {idx === 0 ? <span className="text-primary font-black">🥇</span>
+                       : idx === 1 ? <span className="text-gray-400 font-black">🥈</span>
+                       : idx === 2 ? <span className="text-amber-700 font-black">🥉</span>
+                       : <span className="text-gray-400 font-bold">{idx + 1}</span>}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <div className="font-bold text-secondary truncate max-w-[140px]">{c.name}</div>
+                      {c.clientId && <div className="text-[10px] text-gray-400 font-mono">ID: {c.clientId}</div>}
+                    </td>
+                    <td className="text-right px-3 py-2.5 font-bold text-gray-700">{c.count}</td>
+                    <td className="text-right px-3 py-2.5 text-gray-600">{c.m3.toFixed(1)}</td>
+                    <td className="text-right px-3 py-2.5 font-black text-secondary whitespace-nowrap">{fmtEur(c.bezDph)}</td>
+                    <td className="text-right px-3 py-2.5 text-gray-500 whitespace-nowrap">{fmtEur(c.sDph)}</td>
+                    <td className="px-3 py-2.5 hidden md:table-cell">
+                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-primary rounded-full" style={{ width: `${Math.round((c.bezDph / maxClientRev) * 100)}%` }} />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
