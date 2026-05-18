@@ -2695,51 +2695,53 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
                     {/* ── MODE: STOPKY (live timer) ── */}
                     {pumpMode === "timer" && (
-                      <div className="px-3 py-3 space-y-3 min-h-[210px]">
+                      <div className="px-3 py-3 h-[400px] flex flex-col gap-3">
                         {pumpTimerActive ? (
                           <>
-                            <div className="bg-green-500/10 border border-green-500/20 rounded-sm px-3 py-2">
+                            <div className="bg-green-500/10 border border-green-500/20 rounded-sm px-3 py-2 shrink-0">
                               <div className="text-[9px] text-green-400/50 uppercase tracking-widest mb-1">Štart čerpania</div>
                               <input type="time" value={pumpStartTime || ""}
                                 onChange={(e) => { if (e.target.value) { setPumpStartTime(e.target.value); setShowResult(false); } }}
                                 className="font-mono text-3xl font-black text-green-300 bg-transparent border-b-2 border-green-400/40 hover:border-green-400/70 focus:border-green-400 focus:outline-none cursor-pointer w-full" />
                               <AdjCols onAdj={adjStart} />
                             </div>
-                            <div className="text-center">
-                              <div className="flex items-center justify-center gap-1.5 mb-1">
+                            <div className="flex-1 flex flex-col items-center justify-center text-center">
+                              <div className="flex items-center justify-center gap-1.5 mb-2">
                                 <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
                                 <span className="text-[10px] font-black text-green-400 uppercase tracking-wider">Čerpanie beží</span>
                               </div>
                               <div className="font-mono text-5xl font-black text-green-400 tracking-widest leading-none">{liveStr}</div>
-                              <div className="text-[10px] text-green-400/40 mt-1.5 uppercase tracking-widest">
+                              <div className="text-[10px] text-green-400/40 mt-2 uppercase tracking-widest">
                                 {Math.ceil((liveSecs / 60) / 15) || 1} blok{Math.ceil((liveSecs / 60) / 15) > 1 ? "y" : ""}
                               </div>
                             </div>
                             <button type="button" onClick={handleStop}
-                              className="w-full py-4 bg-red-600 hover:bg-red-500 text-white text-base font-black uppercase tracking-widest rounded-sm transition-colors flex items-center justify-center gap-2">
+                              className="shrink-0 w-full py-4 bg-red-600 hover:bg-red-500 text-white text-base font-black uppercase tracking-widest rounded-sm transition-colors flex items-center justify-center gap-2">
                               <span className="text-xl leading-none">■</span> STOP čerpanie
                             </button>
                           </>
                         ) : pumpStartTime && pumpStopTime ? (
                           <>
-                            <div className="flex items-center justify-between">
+                            <div className="shrink-0 flex items-center justify-between">
                               <div className="flex items-center gap-1.5">
                                 <Check className="w-3.5 h-3.5 text-amber-400" />
                                 <span className="text-xs font-black text-amber-400 uppercase tracking-wider">Čerpanie hotové</span>
                               </div>
                               <button type="button" onClick={resetTimer} className="text-[10px] text-white/25 hover:text-white/55 transition-colors">× znova</button>
                             </div>
-                            <BillingSummary />
+                            <div className="flex-1 overflow-y-auto">
+                              <BillingSummary />
+                            </div>
                           </>
                         ) : (
-                          <>
-                            <div className="text-center font-mono text-4xl font-black text-white/10 tracking-widest py-2">00:00:00</div>
+                          <div className="flex-1 flex flex-col items-center justify-center gap-4">
+                            <div className="font-mono text-4xl font-black text-white/10 tracking-widest">00:00:00</div>
                             <button type="button" onClick={handleStart}
                               className="w-full py-4 bg-green-700/80 hover:bg-green-600 text-white text-base font-black uppercase tracking-widest rounded-sm transition-colors flex items-center justify-center gap-2">
                               <span className="text-xl leading-none">▶</span> ŠTART čerpanie
                             </button>
                             <p className="text-[10px] text-white/20 text-center">Stlač ŠTART pri začatí čerpania na stavbe</p>
-                          </>
+                          </div>
                         )}
                       </div>
                     )}
