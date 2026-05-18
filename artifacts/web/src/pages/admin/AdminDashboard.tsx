@@ -1379,7 +1379,13 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                       <span className="font-medium text-gray-600">{o.concreteType.replace(/ – [\d.,]+ €.*/, "")}</span>
                       <span className="font-bold text-secondary">{o.totalQty} m³</span>
                       {o.km ? <span className="text-gray-400">{o.km} km</span> : null}
-                      {o.address ? <span className="text-gray-400 truncate max-w-[100px] sm:max-w-[180px]">{o.address}</span> : null}
+                      {(o.address || o.mapPlusCode) ? (
+                        <button onClick={e => { e.stopPropagation(); setMapModalOrder(o); }}
+                          className="inline-flex items-center gap-0.5 text-primary/50 hover:text-primary transition-colors shrink-0" title="Zobraziť na mape">
+                          <MapPin className="w-3 h-3 shrink-0" />
+                          {o.address && <span className="text-gray-400 hover:text-gray-600 truncate max-w-[80px] sm:max-w-[150px]">{o.address}</span>}
+                        </button>
+                      ) : null}
                     </div>
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className={`text-[10px] font-bold ${o.createdAt.slice(0,10) === todayStr ? "text-primary" : o.createdAt.slice(0,10) === yesterdayStr ? "text-blue-400" : "text-gray-400 font-normal"}`}>{fmtDate(o.createdAt)}</span>
@@ -1623,6 +1629,9 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
           : mapModalOrder.address ?? "";
         const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=17&t=h&output=embed`;
         const mapsUrl  = `https://maps.google.com/?q=${encodeURIComponent(query)}`;
+        const isGpsAddr = /^\s*-?\d{1,3}\.\d+,\s*-?\d{1,3}\.\d+\s*$/.test(mapModalOrder.address ?? "");
+        const humanAddr = !isGpsAddr ? (mapModalOrder.address ?? "") : "";
+        const gpsAddr   = isGpsAddr  ? (mapModalOrder.address ?? "") : "";
         return (
           <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
             onClick={() => setMapModalOrder(null)}>
@@ -1632,7 +1641,9 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                 <MapPin className="w-4 h-4 text-primary shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="font-black text-sm uppercase tracking-widest">Poloha doručenia</div>
-                  {mapModalOrder.address && <div className="text-white/80 text-xs truncate">{mapModalOrder.address}</div>}
+                  {/* 1. Human address (non-GPS) */}
+                  {humanAddr && <div className="text-white/80 text-xs truncate">{humanAddr}</div>}
+                  {/* 2. Plus Code + locality */}
                   {mapModalOrder.mapPlusCode && (
                     <div className="flex items-center gap-1.5">
                       <span className="text-white/40 text-[10px] font-mono truncate">{mapModalOrder.mapPlusCode}{mapModalOrder.mapLocality ? ` · ${mapModalOrder.mapLocality}` : ""}</span>
@@ -1642,6 +1653,8 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                       </button>
                     </div>
                   )}
+                  {/* 3. GPS fallback — only if no human address */}
+                  {!humanAddr && gpsAddr && <div className="text-white/30 text-[10px] font-mono truncate">{gpsAddr}</div>}
                 </div>
                 <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-secondary text-xs font-black rounded-lg hover:bg-primary/80 transition-colors shrink-0">
@@ -2154,19 +2167,47 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                 </label>
                 <div className="px-3 py-3">
                   <div className="text-xs text-gray-400 mb-1.5">Typ dopravy</div>
-                  <div className="flex gap-1">
-                    {zones.map(z => (
-                      <button key={z.id} type="button"
-                        onClick={() => setForm({ ...form, deliveryZoneId: z.id })}
-                        className={`flex-1 py-2 px-1 text-xs font-semibold border rounded transition-colors ${
-                          form.deliveryZoneId === z.id
-                            ? "bg-secondary text-white border-secondary"
-                            : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"
-                        }`}>
-                        {z.name}
-                      </button>
-                    ))}
-                  </div>
+                  {(() => {
+                    const selZ = zones.find(z => z.id === form.deliveryZoneId) ?? zones[0];
+                    const selType = selZ?.pricingType ?? "standard";
+                    const kmZones = zones.filter(z => z.pricingType === "km");
+                    const btnCls = (active: boolean) => `py-1.5 px-2 text-xs font-semibold border rounded transition-colors ${active ? "bg-secondary text-white border-secondary" : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"}`;
+                    const typeRow = zones.filter((z, i, arr) => {
+                      if (z.pricingType === "km") return arr.findIndex(x => x.pricingType === "km") === i;
+                      return true;
+                    });
+                    return (
+                      <div className="space-y-1">
+                        <div className="flex gap-1 flex-wrap">
+                          {typeRow.map(z => {
+                            const isKmGroup = z.pricingType === "km";
+                            const isActive = isKmGroup ? selType === "km" : (form.deliveryZoneId ?? zones[0]?.id) === z.id;
+                            return (
+                              <button key={z.id} type="button"
+                                onClick={() => {
+                                  if (isKmGroup && selType !== "km") { const first = kmZones[0]; if (first) setForm({ ...form, deliveryZoneId: first.id }); }
+                                  else if (!isKmGroup) setForm({ ...form, deliveryZoneId: z.id });
+                                }}
+                                className={btnCls(isActive)}>
+                                {isKmGroup ? "Kilometre" : z.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {selType === "km" && kmZones.length > 1 && (
+                          <div className="flex gap-1 pl-2 border-l-2 border-primary/30">
+                            {kmZones.map(z => (
+                              <button key={z.id} type="button"
+                                onClick={() => setForm({ ...form, deliveryZoneId: z.id })}
+                                className={btnCls((form.deliveryZoneId ?? zones[0]?.id) === z.id)}>
+                                {z.name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                   {(() => {
                     const selZ = zones.find(z => z.id === form.deliveryZoneId) ?? zones[0];
                     if (!selZ) return null;
@@ -2539,19 +2580,49 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                           </label>
                           <div className="px-3 py-2.5">
                             <div className="text-xs text-gray-400 mb-1">Typ dopravy</div>
-                            <div className="flex gap-1">
-                              {adminData.getDelivery().map(z => (
-                                <button key={z.id} type="button"
-                                  onClick={() => update(c.id, { deliveryZoneId: z.id })}
-                                  className={`flex-1 py-1.5 px-1 text-xs font-semibold border rounded transition-colors ${
-                                    (c.deliveryZoneId ?? adminData.getDelivery()[0]?.id) === z.id
-                                      ? "bg-secondary text-white border-secondary"
-                                      : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"
-                                  }`}>
-                                  {z.name}
-                                </button>
-                              ))}
-                            </div>
+                            {(() => {
+                              const allZ = adminData.getDelivery();
+                              const curId = c.deliveryZoneId ?? allZ[0]?.id;
+                              const selZ = allZ.find(z => z.id === curId) ?? allZ[0];
+                              const selType = selZ?.pricingType ?? "standard";
+                              const kmZones = allZ.filter(z => z.pricingType === "km");
+                              const btnCls = (active: boolean) => `py-1 px-2 text-xs font-semibold border rounded transition-colors ${active ? "bg-secondary text-white border-secondary" : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"}`;
+                              const typeRow = allZ.filter((z, i, arr) => {
+                                if (z.pricingType === "km") return arr.findIndex(x => x.pricingType === "km") === i;
+                                return true;
+                              });
+                              return (
+                                <div className="space-y-1">
+                                  <div className="flex gap-1 flex-wrap">
+                                    {typeRow.map(z => {
+                                      const isKmGroup = z.pricingType === "km";
+                                      const isActive = isKmGroup ? selType === "km" : curId === z.id;
+                                      return (
+                                        <button key={z.id} type="button"
+                                          onClick={() => {
+                                            if (isKmGroup && selType !== "km") { const first = kmZones[0]; if (first) update(c.id, { deliveryZoneId: first.id }); }
+                                            else if (!isKmGroup) update(c.id, { deliveryZoneId: z.id });
+                                          }}
+                                          className={btnCls(isActive)}>
+                                          {isKmGroup ? "Kilometre" : z.name}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                  {selType === "km" && kmZones.length > 1 && (
+                                    <div className="flex gap-1 pl-2 border-l-2 border-primary/30">
+                                      {kmZones.map(z => (
+                                        <button key={z.id} type="button"
+                                          onClick={() => update(c.id, { deliveryZoneId: z.id })}
+                                          className={btnCls(curId === z.id)}>
+                                          {z.name}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()}
                             {clientZone && (
                               <div className="mt-1 text-[11px] text-blue-600 font-medium">
                                 {zonePricingType === "km" && `Sadzba: ${clientZone.ratePerKm?.toFixed(2)} €/km`}
