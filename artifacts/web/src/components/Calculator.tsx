@@ -2735,63 +2735,74 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
                     {/* ── MODE: STOPKY (live timer) ── */}
                     {pumpMode === "timer" && (
-                      <div className="px-3 py-4">
-                        {pumpTimerActive ? (
-                          <div className="flex flex-col gap-3">
-                            {/* Status + live timer in one row */}
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse shrink-0" />
-                                <span className="text-[9px] font-black text-green-400 uppercase tracking-widest">Čerpanie beží</span>
-                              </div>
-                              <div className="text-right">
-                                <div className="font-mono text-xl font-black text-green-400 tracking-widest tabular-nums leading-none">{liveStr}</div>
-                                <div className="text-[8px] text-green-400/40 uppercase tracking-wide mt-0.5">
-                                  {Math.ceil((liveSecs / 60) / 15) || 1} blok{Math.ceil((liveSecs / 60) / 15) > 1 ? "y" : ""}
+                      <div className="px-3 py-4 overflow-hidden">
+                        <AnimatePresence mode="wait" initial={false}>
+                          {pumpTimerActive ? (
+                            <motion.div key="running"
+                              initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+                              transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
+                              className="flex flex-col gap-3">
+                              {/* Status + live timer in one row */}
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse shrink-0" />
+                                  <span className="text-[9px] font-black text-green-400 uppercase tracking-widest">Čerpanie beží</span>
+                                </div>
+                                <div className="text-right">
+                                  <div className="font-mono text-xl font-black text-green-400 tracking-widest tabular-nums leading-none">{liveStr}</div>
+                                  <div className="text-[8px] text-green-400/40 uppercase tracking-wide mt-0.5">
+                                    {Math.ceil((liveSecs / 60) / 15) || 1} blok{Math.ceil((liveSecs / 60) / 15) > 1 ? "y" : ""}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                            {/* Start time + single-row adj strip */}
-                            <div>
-                              <div className="flex items-center gap-2 mb-1.5">
-                                <span className="text-[8px] text-white/30 uppercase tracking-widest shrink-0">Štart</span>
-                                <input type="time" value={pumpStartTime || ""}
-                                  onChange={(e) => { if (e.target.value) { setPumpStartTime(e.target.value); setShowResult(false); } }}
-                                  className="font-mono text-sm font-black text-green-300 bg-transparent border-b border-green-400/20 focus:border-green-400 focus:outline-none cursor-pointer" />
+                              {/* Start time + single-row adj strip */}
+                              <div>
+                                <div className="flex items-center gap-2 mb-1.5">
+                                  <span className="text-[8px] text-white/30 uppercase tracking-widest shrink-0">Štart</span>
+                                  <input type="time" value={pumpStartTime || ""}
+                                    onChange={(e) => { if (e.target.value) { setPumpStartTime(e.target.value); setShowResult(false); } }}
+                                    className="font-mono text-sm font-black text-green-300 bg-transparent border-b border-green-400/20 focus:border-green-400 focus:outline-none cursor-pointer" />
+                                </div>
+                                <AdjRow onAdj={adjStart} />
                               </div>
-                              <AdjRow onAdj={adjStart} />
-                            </div>
-                            {/* STOP button */}
-                            <div className="flex justify-center pt-1">
-                              <button type="button" onClick={handleStop}
-                                className="w-20 h-20 rounded-full bg-red-700 hover:bg-red-600 active:scale-95 text-white font-black transition-all flex flex-col items-center justify-center gap-0.5 shadow-[0_0_22px_rgba(185,28,28,0.45)] hover:shadow-[0_0_32px_rgba(220,38,38,0.65)] border-4 border-red-500/30 cursor-pointer select-none">
-                                <span className="text-base leading-none">■</span>
-                                <span className="text-[8px] font-black tracking-widest">STOP</span>
+                              {/* STOP button */}
+                              <div className="flex justify-center pt-1">
+                                <button type="button" onClick={handleStop}
+                                  className="w-20 h-20 rounded-full bg-red-700 hover:bg-red-600 active:scale-95 text-white font-black transition-[transform,box-shadow] duration-150 flex flex-col items-center justify-center gap-0.5 shadow-[0_0_22px_rgba(185,28,28,0.45)] hover:shadow-[0_0_32px_rgba(220,38,38,0.65)] border-4 border-red-500/30 cursor-pointer select-none">
+                                  <span className="text-base leading-none">■</span>
+                                  <span className="text-[8px] font-black tracking-widest">STOP</span>
+                                </button>
+                              </div>
+                            </motion.div>
+                          ) : pumpStartTime && pumpStopTime ? (
+                            <motion.div key="done"
+                              initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+                              transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
+                              className="flex flex-col gap-2">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1.5">
+                                  <Check className="w-3.5 h-3.5 text-amber-400" />
+                                  <span className="text-xs font-black text-amber-400 uppercase tracking-wider">Čerpanie hotové</span>
+                                </div>
+                                <button type="button" onClick={resetTimer} className="text-[10px] text-white/25 hover:text-white/55 transition-colors cursor-pointer">× znova</button>
+                              </div>
+                              <BillingSummary />
+                            </motion.div>
+                          ) : (
+                            /* IDLE — round START button */
+                            <motion.div key="idle"
+                              initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+                              transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
+                              className="flex flex-col items-center gap-3 py-2">
+                              <button type="button" onClick={handleStart}
+                                className="w-24 h-24 rounded-full bg-green-900 hover:bg-green-800 active:scale-95 text-white font-black transition-[transform,box-shadow] duration-150 flex flex-col items-center justify-center gap-1 shadow-[0_0_28px_rgba(22,163,74,0.30)] hover:shadow-[0_0_40px_rgba(22,163,74,0.55)] border-4 border-green-600/35 cursor-pointer select-none">
+                                <svg viewBox="0 0 24 24" className="w-8 h-8" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                                <span className="text-[9px] font-black tracking-widest text-green-200">START</span>
                               </button>
-                            </div>
-                          </div>
-                        ) : pumpStartTime && pumpStopTime ? (
-                          <div className="flex flex-col gap-2">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-1.5">
-                                <Check className="w-3.5 h-3.5 text-amber-400" />
-                                <span className="text-xs font-black text-amber-400 uppercase tracking-wider">Čerpanie hotové</span>
-                              </div>
-                              <button type="button" onClick={resetTimer} className="text-[10px] text-white/25 hover:text-white/55 transition-colors cursor-pointer">× znova</button>
-                            </div>
-                            <BillingSummary />
-                          </div>
-                        ) : (
-                          /* IDLE — round START button */
-                          <div className="flex flex-col items-center gap-3 py-2">
-                            <button type="button" onClick={handleStart}
-                              className="w-24 h-24 rounded-full bg-green-900 hover:bg-green-800 active:scale-95 text-white font-black transition-all flex flex-col items-center justify-center gap-1 shadow-[0_0_28px_rgba(22,163,74,0.30)] hover:shadow-[0_0_40px_rgba(22,163,74,0.55)] border-4 border-green-600/35 cursor-pointer select-none">
-                              <svg viewBox="0 0 24 24" className="w-8 h-8" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                              <span className="text-[9px] font-black tracking-widest text-green-200">START</span>
-                            </button>
-                            <p className="text-[9px] text-white/20 text-center">Stlač pri začatí čerpania</p>
-                          </div>
-                        )}
+                              <p className="text-[9px] text-white/20 text-center">Stlač pri začatí čerpania</p>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     )}
 
