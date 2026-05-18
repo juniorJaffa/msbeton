@@ -18,6 +18,7 @@ import {
 import { lazy, Suspense } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { PhoneInput } from "@/components/PhoneInput";
 const ConcreteCalculator = lazy(() => import("@/components/Calculator").then(m => ({ default: m.ConcreteCalculator })));
 // Spoločnosti, s ktorými spolupracujeme (partnerský zoznam – oddelené od klientov kalkulačky)
 const PARTNERS = [
@@ -328,13 +329,6 @@ export default function Home() {
       {/* CONTACT SECTION */}
       <section id="contact" className="py-14 concrete-light">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-8">
-            <h2 className="text-sm font-bold text-primary tracking-widest mb-2 [text-shadow:0_1px_3px_rgba(0,0,0,0.35)]">KONTAKT</h2>
-            <h3 className="text-3xl md:text-4xl font-bold text-secondary uppercase">
-              Máte otázky? Napíšte nám
-            </h3>
-          </div>
-
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 bg-white rounded-3xl shadow-xl overflow-hidden">
             
             {/* Contact Info */}
@@ -383,7 +377,6 @@ export default function Home() {
                       <h5 className="font-bold text-lg mb-1">Email</h5>
                       <p className="text-white/70 leading-relaxed">
                         info@msbeton.sk<br />
-                        objednavky@msbeton.sk<br />
                         <span className="text-primary font-semibold">www.msbeton.sk</span>
                       </p>
                     </div>
@@ -418,19 +411,17 @@ export default function Home() {
                         required
                         value={contactName}
                         onChange={e => setContactName(e.target.value)}
-                        className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
+                        className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-[border-color,box-shadow]"
                         placeholder="Jozef Novák"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-bold text-secondary mb-2">Telefónne číslo</label>
-                      <input
-                        type="tel"
-                        required
+                      <PhoneInput
                         value={contactPhone}
-                        onChange={e => setContactPhone(e.target.value)}
-                        className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
-                        placeholder="+421 9XX XXX XXX"
+                        onChange={v => setContactPhone(v)}
+                        className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-[border-color,box-shadow]"
+                        placeholder="0944 xxx xxx"
                       />
                     </div>
                   </div>
@@ -442,7 +433,7 @@ export default function Home() {
                       required
                       value={contactEmail}
                       onChange={e => setContactEmail(e.target.value)}
-                      className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
+                      className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-[border-color,box-shadow]"
                       placeholder="jozef@priklad.sk"
                     />
                   </div>
@@ -454,7 +445,7 @@ export default function Home() {
                       rows={4}
                       value={contactMessage}
                       onChange={e => setContactMessage(e.target.value)}
-                      className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all resize-none"
+                      className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-[border-color,box-shadow] resize-none"
                       placeholder="Mám záujem o cenovú ponuku na betón pre základovú dosku..."
                     ></textarea>
                   </div>
@@ -462,7 +453,7 @@ export default function Home() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full sm:w-auto inline-flex justify-center items-center gap-2 px-8 py-4 bg-secondary text-white font-bold text-lg rounded-xl hover:bg-primary transition-all shadow-lg hover:shadow-primary/30 disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="w-full sm:w-auto inline-flex justify-center items-center gap-2 px-8 py-4 bg-secondary text-white font-bold text-lg rounded-xl hover:bg-primary transition-[background-color,transform,box-shadow] duration-150 active:scale-[0.97] shadow-lg hover:shadow-primary/30 disabled:opacity-70 disabled:cursor-not-allowed"
                   >
                     {isSubmitting ? "Odosielam..." : "Odoslať správu"}
                     {!isSubmitting && <Send className="w-5 h-5" />}

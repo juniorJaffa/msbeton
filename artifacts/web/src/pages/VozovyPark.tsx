@@ -80,7 +80,7 @@ export default function VozovyPark() {
               BETÓN.
             </motion.h1>
             <motion.p variants={fadeUp} className="text-white/50 text-base leading-relaxed max-w-md mb-7">
-              Dve vozidlá, jedno číslo. Betón doručíme kdekoľvek v Žilinskom kraji.
+              2 pumpy, 2 mixy — jedno číslo. Betón doručíme kdekoľvek v Žilinskom kraji.
             </motion.p>
             <motion.div variants={fadeUp} className="flex flex-wrap gap-3">
               <a
@@ -119,7 +119,7 @@ export default function VozovyPark() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-4 divide-x divide-primary/10">
             {[
-              { n: "2", u: "×", l: "Vozidlá" },
+              { n: "4", u: "×", l: "Pumpy a Mixy" },
               { n: "28", u: "m", l: "Dosah pumpy" },
               { n: "9", u: "m³", l: "Objem mixeru" },
               { n: "30", u: "min", l: "Čakanie zdarma" },
@@ -174,7 +174,7 @@ export default function VozovyPark() {
                   <div className="w-px bg-white/10 hidden sm:block" />
                   <div>
                     <div className="text-primary font-black text-xl leading-none">7 m³</div>
-                    <div className="text-white/40 text-[10px] uppercase tracking-wide mt-0.5">kapacita</div>
+                    <div className="text-white/40 text-[10px] uppercase tracking-wide mt-0.5">čerpacia kapacita</div>
                   </div>
                   <div className="w-px bg-white/10 hidden sm:block" />
                   <div>
@@ -267,8 +267,8 @@ export default function VozovyPark() {
               <PhotoCard
                 src="/images/vozovy-park/pumpa-scania.jpg"
                 alt="MS-BETON Scania betónová pumpa"
-                label="Scania + MAN TGA — moderný vozový park"
-                sub="Fleet MS-BETON"
+                label="2 pumpy, 2 mixy — dostupní každý deň"
+                sub="Vozový park"
                 pos="center 45%"
                 className="col-span-12 md:col-span-4 h-[200px] md:h-[320px]"
               />
