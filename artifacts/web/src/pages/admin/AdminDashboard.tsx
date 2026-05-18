@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
-import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, SlidersHorizontal, ShoppingCart, MessageSquare, BarChart2, TrendingUp, Monitor, Globe, MousePointerClick, MoreHorizontal, Activity, Smartphone, Laptop, Tablet, Mail, MapPin, Navigation } from "lucide-react";
+import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, SlidersHorizontal, ShoppingCart, MessageSquare, BarChart2, TrendingUp, Monitor, Globe, MousePointerClick, MoreHorizontal, Activity, Smartphone, Laptop, Tablet, Mail, MapPin, Navigation, Copy } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
@@ -978,6 +978,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
   const [quickMY, setQuickMY] = useState({ m: new Date().getMonth() + 1, y: new Date().getFullYear() });
   const [newBadge, setNewBadge] = useState(0);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [copiedPlusCode, setCopiedPlusCode] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [ts, setTs] = useState<TransportSettings>(adminData.getTransportSettings());
   const saveTs = (data: TransportSettings) => { setTs(data); adminData.saveTransportSettings(data); };
@@ -1509,7 +1510,15 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                             <span className="text-gray-400 w-24 shrink-0">Adresa</span>
                             <span className="text-gray-600 break-words flex-1">
                               {o.address && <span>{o.address}</span>}
-                              {o.mapPlusCode && <span className="block text-gray-400 text-[10px] font-mono mt-0.5">{o.mapPlusCode}{o.mapLocality ? ` · ${o.mapLocality}` : ""}</span>}
+                              {o.mapPlusCode && (
+                                <span className="flex items-center gap-1 mt-0.5">
+                                  <span className="text-gray-400 text-[10px] font-mono">{o.mapPlusCode}{o.mapLocality ? ` · ${o.mapLocality}` : ""}</span>
+                                  <button onClick={e => { e.stopPropagation(); const txt = `${o.mapPlusCode}${o.mapLocality ? " " + o.mapLocality : ""}`; navigator.clipboard?.writeText(txt); setCopiedPlusCode(o.id); setTimeout(() => setCopiedPlusCode(null), 1500); }}
+                                    className="text-gray-300 hover:text-blue-500 transition-colors" title="Kopírovať Plus Code">
+                                    {copiedPlusCode === o.id ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                                  </button>
+                                </span>
+                              )}
                             </span>
                             {(o.mapPlusCode || o.address) && (
                               <button onClick={e => { e.stopPropagation(); setMapModalOrder(o); }}
@@ -1624,7 +1633,15 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                 <div className="flex-1 min-w-0">
                   <div className="font-black text-sm uppercase tracking-widest">Poloha doručenia</div>
                   {mapModalOrder.address && <div className="text-white/80 text-xs truncate">{mapModalOrder.address}</div>}
-                  {mapModalOrder.mapPlusCode && <div className="text-white/40 text-[10px] font-mono truncate">{mapModalOrder.mapPlusCode}{mapModalOrder.mapLocality ? ` · ${mapModalOrder.mapLocality}` : ""}</div>}
+                  {mapModalOrder.mapPlusCode && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-white/40 text-[10px] font-mono truncate">{mapModalOrder.mapPlusCode}{mapModalOrder.mapLocality ? ` · ${mapModalOrder.mapLocality}` : ""}</span>
+                      <button onClick={() => { const txt = `${mapModalOrder.mapPlusCode}${mapModalOrder.mapLocality ? " " + mapModalOrder.mapLocality : ""}`; navigator.clipboard?.writeText(txt); setCopiedPlusCode(mapModalOrder.id); setTimeout(() => setCopiedPlusCode(null), 1500); }}
+                        className="shrink-0 text-white/30 hover:text-primary transition-colors" title="Kopírovať Plus Code">
+                        {copiedPlusCode === mapModalOrder.id ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-secondary text-xs font-black rounded-lg hover:bg-primary/80 transition-colors shrink-0">
