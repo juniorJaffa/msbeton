@@ -1,23 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
 
-const VERSION_KEY = "msbeton_app_version";
+// v2 — resets stuck localStorage from old key name
+const VERSION_KEY = "msbeton_app_version_v2";
 const CHECK_INTERVAL = 90 * 1000; // 90 s
-
-// Clean up _v param left by hard reload (no page reload needed)
-function cleanReloadParam() {
-  const url = new URL(window.location.href);
-  if (url.searchParams.has("_v")) {
-    url.searchParams.delete("_v");
-    window.history.replaceState(null, "", url.pathname + (url.search === "?" ? "" : url.search) + url.hash);
-  }
-}
 
 export function VersionChecker() {
   const [needsRefresh, setNeedsRefresh] = useState(false);
+  const latestHashRef = useRef<string>("");
 
   useEffect(() => {
-    cleanReloadParam();
+    // Remove old key from previous naming to avoid phantom mismatches
+    localStorage.removeItem("msbeton_app_version");
 
     async function check() {
       try {
@@ -26,6 +20,7 @@ export function VersionChecker() {
         const data = await res.json() as { hash?: string };
         const hash = data.hash;
         if (!hash || hash === "unknown") return;
+        latestHashRef.current = hash;
         const stored = localStorage.getItem(VERSION_KEY);
         if (!stored) {
           localStorage.setItem(VERSION_KEY, hash);
@@ -57,7 +52,10 @@ export function VersionChecker() {
       <button
         type="button"
         onClick={() => {
-          localStorage.removeItem(VERSION_KEY);
+          // Store the new hash BEFORE reload — prevents banner from showing again
+          const h = latestHashRef.current;
+          if (h) localStorage.setItem(VERSION_KEY, h);
+          else localStorage.removeItem(VERSION_KEY);
           window.location.reload();
         }}
         className="shrink-0 bg-primary text-secondary text-xs font-black px-3 py-1.5 rounded-lg hover:bg-primary/80 transition-colors cursor-pointer"

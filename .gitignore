@@ -55,3 +55,4 @@ deploy.sh
 
 # Claude Token Monitor data
 .claude-monitor/
+.gstack/
