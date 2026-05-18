@@ -318,14 +318,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [orderDone, setOrderDone] = useState(false);
   const [priceTableMode, setPriceTableMode] = useState<"faktura" | "hotovost">("faktura");
 
-  // Po vypočítaní vždy scrollni na vrchol kalkulačky — viditeľný výsledok bez ohľadu na scroll pozíciu
   useEffect(() => {
     if (!showResult) return;
+    const el = resultRef.current;
+    if (!el) return;
     const NAVBAR_H = 96;
-    const target = calcWrapRef.current ?? resultRef.current;
-    if (!target) return;
-    const top = target.getBoundingClientRect().top + window.scrollY - NAVBAR_H - 8;
-    window.scrollTo({ top, behavior: "smooth" });
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - NAVBAR_H - 8, behavior: "smooth" });
   }, [showResult]);
 
   const resetForm = () => {
@@ -521,11 +519,6 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const reverseGeocode = (lat: number, lng: number) => {
         new google.maps.Geocoder().geocode({ location: { lat, lng } }, (results, gStatus) => {
           if (gStatus !== "OK" || !results || !results[0]) {
-            // Geocoder zlyhal — ukáž súradnice ako fallback
-            const fallbackAddr = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-            setAddress(fallbackAddr);
-            lastResolvedAddressRef.current = { address: fallbackAddr, lat, lng };
-            if (addressInputRef.current) addressInputRef.current.value = fallbackAddr;
             setMapLocality("");
             return;
           }
@@ -536,12 +529,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             setMapError("Dodávky betónu sú dostupné iba na území Slovenska.");
             if (marker) { marker.setMap(null); marker = null; mapMarkerRef.current = null; }
             setMapPin(null); setMapPlusCode(""); setMapLocality(""); setDistance("");
-            setAddress(""); if (addressInputRef.current) addressInputRef.current.value = "";
           } else {
-            const addr = results[0].formatted_address;
-            setAddress(addr);
-            lastResolvedAddressRef.current = { address: addr, lat, lng };
-            if (addressInputRef.current) addressInputRef.current.value = addr;
             const comps = results[0].address_components ?? [];
             const loc = comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("locality"))?.long_name
               ?? comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("postal_town"))?.long_name
@@ -2080,9 +2068,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                   <div className="bg-white/10 px-3 py-2.5 flex items-center gap-3 rounded-sm">
                     <MapPin className="w-4 h-4 text-primary shrink-0" />
                     <div className="flex-1 min-w-0">
-                      {(address || mapLocality) && (
+                      {mapLocality && (
                         <div className="text-sm text-white/90 font-medium truncate leading-snug">
-                          {address ? address.replace(/, Slovensko$/, "").replace(/, Slovakia$/, "") : mapLocality}
+                          {mapLocality}
                         </div>
                       )}
                       <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
@@ -2111,9 +2099,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                             <div className="flex items-start gap-2">
                               <MapPin className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
                               <div className="flex-1 min-w-0">
-                                {(address || mapLocality) && (
+                                {mapLocality && (
                                   <div className="text-sm text-white/90 font-medium leading-snug truncate">
-                                    {address ? address.replace(/, Slovensko$/, "").replace(/, Slovakia$/, "") : mapLocality}
+                                    {mapLocality}
                                   </div>
                                 )}
                                 <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
@@ -2126,7 +2114,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                                     <span className="text-white/20 text-[10px]">·</span>
                                   </>}
                                   {distance && <span className="text-[10px] text-white/60">od MS-BETON: <strong className="text-primary">{distance} km</strong></span>}
-                                  {!distance && !address && !mapLocality && <span className="text-[10px] text-white/40">Určuje sa adresa…</span>}
+                                  {!distance && !mapLocality && <span className="text-[10px] text-white/40">Určuje sa adresa…</span>}
                                 </div>
                               </div>
                             </div>
@@ -2860,7 +2848,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             const canCalc = hasQty && hasKm;
             return (
               <div className="space-y-1 mt-2">
-                <button onClick={() => { if (canCalc) { setShowResult(true); gtagEvent("calculator_complete", { tab, quantity, type: selectedType?.label }); } }} disabled={!canCalc}
+                <button onClick={() => { if (canCalc) { setShowResult(true); gtagEvent("calculator_complete", { tab, quantity, type: selectedType?.label }); setTimeout(() => { const el = resultRef.current; if (!el) return; const NAVBAR_H = 96; window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - NAVBAR_H - 8, behavior: "smooth" }); }, 50); } }} disabled={!canCalc}
                   className={cn("w-full py-4 border-2 font-bold text-base tracking-widest transition-all duration-200",
                     canCalc
                       ? "bg-transparent border-primary text-primary hover:bg-primary hover:text-white cursor-pointer"
