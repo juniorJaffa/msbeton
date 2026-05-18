@@ -55,10 +55,10 @@ export function VersionChecker() {
         <p className="text-xs text-white/60">Nepoužívate aktuálnu verziu aplikácie.</p>
       </div>
       <button
+        type="button"
         onClick={() => {
           localStorage.removeItem(VERSION_KEY);
-          // ?_v= musí byť PRED hash — inak sa stane súčasťou fragmentu a browser nereloaduje
-          window.location.replace(window.location.pathname + "?_v=" + Date.now() + window.location.hash);
+          window.location.reload();
         }}
         className="shrink-0 bg-primary text-secondary text-xs font-black px-3 py-1.5 rounded-lg hover:bg-primary/80 transition-colors cursor-pointer"
       >

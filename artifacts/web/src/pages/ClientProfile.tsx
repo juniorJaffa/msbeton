@@ -17,16 +17,20 @@ const labelCls = "block text-xs font-bold text-white/60 mb-1.5 tracking-widest u
 
 function MathCheck({ captcha, input, setInput, onRefresh }: { captcha: { a: number; b: number }; input: string; setInput: (v: string) => void; onRefresh: () => void }) {
   return (
-    <div className="bg-white/8 border border-white/15 p-3">
-      <p className="text-white/55 text-[10px] font-black uppercase tracking-widest mb-2">Overenie – nie ste robot</p>
-      <div className="flex items-center gap-2">
-        <div className="flex-1 bg-secondary/80 border border-white/15 px-3 py-2.5 text-white font-bold text-sm text-center">
-          Koľko je <span className="text-primary font-black">{captcha.a}</span> + <span className="text-primary font-black">{captcha.b}</span> ?
-        </div>
+    <div className="rounded-lg border border-white/10 bg-white/5 overflow-hidden">
+      <div className="px-3 py-2 border-b border-white/8 flex items-center justify-between">
+        <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">Nie ste robot</p>
+        <button type="button" onClick={onRefresh} className="text-white/30 hover:text-primary transition-colors cursor-pointer text-sm leading-none" title="Nová otázka">↺</button>
+      </div>
+      <div className="px-3 py-3 flex items-center gap-3">
+        <span className="text-white/70 text-sm font-medium shrink-0">Koľko je</span>
+        <span className="text-primary font-black text-xl">{captcha.a}</span>
+        <span className="text-white/40 font-bold">+</span>
+        <span className="text-primary font-black text-xl">{captcha.b}</span>
+        <span className="text-white/40 font-bold">=</span>
         <input type="number" value={input} onChange={e => setInput(e.target.value)} inputMode="numeric" autoComplete="off"
           placeholder="?"
-          className="w-16 bg-white/10 text-white border border-white/20 px-2 py-2.5 text-base font-bold text-center focus:outline-none focus:border-primary transition-colors" />
-        <button type="button" onClick={onRefresh} className="text-white/40 hover:text-primary text-base transition-colors">↺</button>
+          className="w-16 bg-secondary border border-primary/30 focus:border-primary text-primary font-black text-xl text-center py-1.5 focus:outline-none transition-colors rounded-md" />
       </div>
     </div>
   );
@@ -150,7 +154,7 @@ export default function ClientProfile() {
     <>
       <SEOHead title="Môj profil – MS-BETON" noIndex />
       <Navbar />
-      <main className="min-h-screen concrete-navy">
+      <main className="min-h-screen concrete-light">
 
         {/* Header */}
         <div className="bg-secondary border-b border-white/10 px-4 py-4">
@@ -179,106 +183,107 @@ export default function ClientProfile() {
           </div>
         </div>
 
-        {/* 2-col desktop layout */}
-        <div className="max-w-4xl mx-auto px-4 py-5">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* 2-col layout */}
+        <div className="max-w-4xl mx-auto px-4 py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
             {/* ── Zmena údajov ── */}
-            <div className="bg-secondary/80 border border-white/10 rounded-sm p-4 flex flex-col gap-3">
-              <div className="flex items-center gap-2 mb-1">
-                <User className="w-3.5 h-3.5 text-primary/60" />
-                <p className="text-xs font-black text-white/70 uppercase tracking-widest">Zmena prihlasovacích údajov</p>
+            <div className="bg-secondary rounded-xl border border-white/10 shadow-xl overflow-hidden">
+              <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-white/8 bg-white/5">
+                <User className="w-4 h-4 text-primary shrink-0" />
+                <p className="text-[11px] font-black text-white/80 uppercase tracking-widest">Zmena prihlasovacích údajov</p>
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelCls}>Prihlasovacie ID</label>
-                  <input value={loginId} onChange={e => setLoginId(e.target.value)} className={fieldCls} autoComplete="username" />
+              <div className="p-5 flex flex-col gap-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelCls}>Prihlasovacie ID</label>
+                    <input value={loginId} onChange={e => setLoginId(e.target.value)} className={fieldCls} autoComplete="off" />
+                  </div>
+                  <div>
+                    <label className={labelCls}>E-mail</label>
+                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="váš@email.sk" className={fieldCls} autoComplete="off" />
+                  </div>
                 </div>
                 <div>
-                  <label className={labelCls}>E-mail</label>
-                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="váš@email.sk" className={fieldCls} />
+                  <label className={labelCls}>Aktuálne heslo</label>
+                  <PasswordInput value={currentPassData} onChange={setCurrentPassData}
+                    show={showCurrentData} onToggle={() => setShowCurrentData(v => !v)} autoComplete="off" />
+                </div>
+                <MathCheck captcha={captchaData} input={captchaDataInput} setInput={setCaptchaDataInput}
+                  onRefresh={() => { setCaptchaData(generateCaptcha()); setCaptchaDataInput(""); }} />
+                <div>
+                  <button type="button" onClick={handleSaveData} disabled={savingData} className={btnCls + " w-full"}>
+                    {savingData ? "Ukladám..." : "Zmeniť údaje"}
+                  </button>
+                  <Msg msg={msgData} />
                 </div>
               </div>
-
-              <div>
-                <label className={labelCls}>Aktuálne heslo</label>
-                <PasswordInput value={currentPassData} onChange={setCurrentPassData}
-                  show={showCurrentData} onToggle={() => setShowCurrentData(v => !v)} autoComplete="current-password" />
-              </div>
-
-              <MathCheck captcha={captchaData} input={captchaDataInput} setInput={setCaptchaDataInput}
-                onRefresh={() => { setCaptchaData(generateCaptcha()); setCaptchaDataInput(""); }} />
-
-              <Msg msg={msgData} />
-              <button onClick={handleSaveData} disabled={savingData} className={btnCls}>
-                {savingData ? "Ukladám..." : "Zmeniť údaje"}
-              </button>
             </div>
 
             {/* ── Zmena hesla ── */}
-            <div className="bg-secondary/80 border border-white/10 rounded-sm p-4 flex flex-col gap-3">
-              <div className="flex items-center gap-2 mb-1">
-                <Lock className="w-3.5 h-3.5 text-primary/60" />
-                <p className="text-xs font-black text-white/70 uppercase tracking-widest">Zmena hesla</p>
+            <div className="bg-secondary rounded-xl border border-white/10 shadow-xl overflow-hidden">
+              <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-white/8 bg-white/5">
+                <Lock className="w-4 h-4 text-primary shrink-0" />
+                <p className="text-[11px] font-black text-white/80 uppercase tracking-widest">Zmena hesla</p>
               </div>
-
-              <div>
-                <label className={labelCls}>Aktuálne heslo</label>
-                <PasswordInput value={currentPassPwd} onChange={setCurrentPassPwd}
-                  show={showCurrentPwd} onToggle={() => setShowCurrentPwd(v => !v)} autoComplete="current-password" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
+              <div className="p-5 flex flex-col gap-4">
                 <div>
-                  <label className={labelCls}>Nové heslo</label>
-                  <PasswordInput value={newPass} onChange={setNewPass} placeholder="min. 6 znakov"
-                    show={showNewPass} onToggle={() => setShowNewPass(v => !v)} autoComplete="new-password" />
+                  <label className={labelCls}>Aktuálne heslo</label>
+                  <PasswordInput value={currentPassPwd} onChange={setCurrentPassPwd}
+                    show={showCurrentPwd} onToggle={() => setShowCurrentPwd(v => !v)} autoComplete="off" />
                 </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelCls}>Nové heslo</label>
+                    <PasswordInput value={newPass} onChange={setNewPass} placeholder="min. 6 znakov"
+                      show={showNewPass} onToggle={() => setShowNewPass(v => !v)} autoComplete="off" />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Zopakovať</label>
+                    <PasswordInput value={confirmPass} onChange={setConfirmPass}
+                      show={showConfirmPass} onToggle={() => setShowConfirmPass(v => !v)} autoComplete="off" />
+                    {newPass && confirmPass && newPass !== confirmPass && (
+                      <p className="text-red-400 text-[11px] mt-1.5 font-semibold">Heslá sa nezhodujú</p>
+                    )}
+                  </div>
+                </div>
+                <MathCheck captcha={captchaPwd} input={captchaPwdInput} setInput={setCaptchaPwdInput}
+                  onRefresh={() => { setCaptchaPwd(generateCaptcha()); setCaptchaPwdInput(""); }} />
                 <div>
-                  <label className={labelCls}>Zopakovať</label>
-                  <PasswordInput value={confirmPass} onChange={setConfirmPass}
-                    show={showConfirmPass} onToggle={() => setShowConfirmPass(v => !v)} autoComplete="new-password" />
-                  {newPass && confirmPass && newPass !== confirmPass && (
-                    <p className="text-red-400 text-xs mt-1">Heslá sa nezhodujú</p>
-                  )}
+                  <button type="button" onClick={handleChangePassword} disabled={savingPwd} className={btnCls + " w-full"}>
+                    {savingPwd ? "Mením..." : "Zmeniť heslo"}
+                  </button>
+                  <Msg msg={msgPwd} />
                 </div>
-              </div>
-
-              <MathCheck captcha={captchaPwd} input={captchaPwdInput} setInput={setCaptchaPwdInput}
-                onRefresh={() => { setCaptchaPwd(generateCaptcha()); setCaptchaPwdInput(""); }} />
-
-              <Msg msg={msgPwd} />
-
-              <div className="flex flex-wrap items-center gap-3">
-                <button onClick={handleChangePassword} disabled={savingPwd} className={btnCls}>
-                  {savingPwd ? "Mením..." : "Zmeniť heslo"}
-                </button>
+                {/* Reset hesla emailom */}
                 {client.email && (
-                  resetMsg ? (
-                    <span className={`flex items-center gap-1.5 text-xs font-bold ${resetMsg.ok ? "text-green-400" : "text-red-400"}`}>
-                      {resetMsg.ok ? <Check className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
-                      {resetMsg.text}
-                    </span>
-                  ) : (
-                    <button onClick={handleEmailReset} disabled={resetSending}
-                      className="flex items-center gap-1.5 text-white/55 hover:text-white/80 transition-colors text-xs disabled:opacity-40 cursor-pointer">
-                      <Mail className="w-3.5 h-3.5 shrink-0" />
-                      {resetSending ? "Odosiela sa…" : "Zabudnuté heslo?"}
-                    </button>
-                  )
+                  <div className="border-t border-white/8 pt-3">
+                    {resetMsg ? (
+                      <div className={`flex items-center gap-2 text-xs font-semibold rounded-lg px-3 py-2.5 ${resetMsg.ok ? "bg-green-500/10 text-green-400 border border-green-500/20" : "bg-red-500/10 text-red-400 border border-red-500/20"}`}>
+                        {resetMsg.ok ? <Check className="w-3.5 h-3.5 shrink-0" /> : <AlertCircle className="w-3.5 h-3.5 shrink-0" />}
+                        <span>{resetMsg.text}</span>
+                        {resetMsg.ok && <span className="text-white/30 font-normal ml-1">· Skontrolujte aj spam</span>}
+                      </div>
+                    ) : (
+                      <button type="button" onClick={handleEmailReset} disabled={resetSending}
+                        className="flex items-center gap-2 text-white/45 hover:text-primary/80 transition-colors text-xs disabled:opacity-40 cursor-pointer group">
+                        <Mail className="w-3.5 h-3.5 shrink-0 group-hover:text-primary/70 transition-colors" />
+                        <span>{resetSending ? "Odosiela sa…" : "Zabudnuté heslo? Poslať reset odkaz na email"}</span>
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Info row + back */}
-          <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/10">
-            <div className="flex items-center gap-2 text-white/45 text-xs">
+          {/* Footer */}
+          <div className="flex items-center justify-between mt-5 pt-4 border-t border-secondary/30">
+            <div className="flex items-center gap-2 text-secondary/60 text-xs">
               <KeyRound className="w-3.5 h-3.5" />
               <span>Zmeny vyžadujú aktuálne heslo</span>
             </div>
-            <a href="/#calculator" className="text-white/50 hover:text-white/75 text-xs transition-colors">← Kalkulačka</a>
+            <a href="/#calculator" className="text-secondary/50 hover:text-secondary/80 text-xs transition-colors font-medium">← Kalkulačka</a>
           </div>
         </div>
       </main>

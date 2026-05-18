@@ -300,7 +300,7 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
       {/* Podmienky — min/max počet vozidiel pre kalkulačku */}
       <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-5 py-2.5 border-b border-gray-100 bg-gray-50">
-          <h3 className="font-black text-secondary text-sm uppercase tracking-widest">Podmienky – počet vozidiel v Pumpa tabe</h3>
+          <h3 className="font-black text-secondary text-sm uppercase tracking-widest">Podmienky čerpania – počet vozidiel</h3>
           <p className="text-[10px] text-gray-400 mt-0.5 leading-snug">
             Zákazník si pri kalkulácii (tab Pumpa) nastavuje počet vozidiel. Tu nastavíš povolený rozsah.
             Pumpa = betonárska pumpa; Mixer = domiešavač dodávajúci betón za pumpou.

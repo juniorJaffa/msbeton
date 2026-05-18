@@ -291,6 +291,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [pumpStopTime, setPumpStopTime] = useState<string | null>(null);
   const [pumpTimerActive, setPumpTimerActive] = useState(false);
   const [pumpLiveMs, setPumpLiveMs] = useState(0);
+  const [pumpFinalMs, setPumpFinalMs] = useState(0);
   const [editStartTime, setEditStartTime] = useState<string | null>(null);
   const [editStopTime, setEditStopTime] = useState<string | null>(null);
   const pumpTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -538,6 +539,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
           } else {
             const addr = results[0].formatted_address.replace(/, Slovensko$/, "").replace(/, Slovakia$/, "");
             setMapGeocodedAddress(addr);
+            setAddress(addr);
+            if (addressInputRef.current) addressInputRef.current.value = addr;
             const comps = results[0].address_components ?? [];
             const loc = comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("locality"))?.long_name
               ?? comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("postal_town"))?.long_name
@@ -965,6 +968,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         const [eh, em] = pumpStopTime.split(":").map(Number);
         _pumpDurMins = (eh * 60 + em) - (sh * 60 + sm);
         if (_pumpDurMins < 0) _pumpDurMins += 24 * 60;
+        // same-minute start+stop → use actual elapsed as fallback (min 1 min)
+        if (_pumpDurMins === 0 && pumpFinalMs > 0) _pumpDurMins = Math.max(1, Math.ceil(pumpFinalMs / 60000));
       } else if (pumpMode === "edit" && editStartTime && editStopTime) {
         const [sh, sm] = editStartTime.split(":").map(Number);
         const [eh, em] = editStopTime.split(":").map(Number);
@@ -1089,7 +1094,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       transportIsMin: transportCalc.isMin, fillupM3, fillupTarget,
       fTransport, fFillup,
     };
-  }, [tab, pumpMode, pumpHour, pumpMin, quantity, distance, selectedType, pumpStartTime, pumpStopTime, editStartTime, editStopTime, waitTotalMins, waitPiecesPumpa, waitPiecesMix, hoseMeters, washing, zimneOpatrenia, betonFactor, dopravaFactor, sluzbyFactor, fPump, fChem, fWash, fHose, fWaitP, fWaitM, pumpServicePrice, chemServicePrice, washServicePrice, waitServicePricePumpa, waitServicePriceMix, hoseServicePrice, zimneServicePrice, tzones, tsettings, extraItems, allCategories, clientDeliveryZone, pumpCap, mixCap, VAT, VAT_HOTOVOST, loggedClient, podmienkyEnabled, podmienkyTrucks, podmienkyPumpa, podmienkyMixC]);
+  }, [tab, pumpMode, pumpHour, pumpMin, quantity, distance, selectedType, pumpStartTime, pumpStopTime, pumpFinalMs, editStartTime, editStopTime, waitTotalMins, waitPiecesPumpa, waitPiecesMix, hoseMeters, washing, zimneOpatrenia, betonFactor, dopravaFactor, sluzbyFactor, fPump, fChem, fWash, fHose, fWaitP, fWaitM, pumpServicePrice, chemServicePrice, washServicePrice, waitServicePricePumpa, waitServicePriceMix, hoseServicePrice, zimneServicePrice, tzones, tsettings, extraItems, allCategories, clientDeliveryZone, pumpCap, mixCap, VAT, VAT_HOTOVOST, loggedClient, podmienkyEnabled, podmienkyTrucks, podmienkyPumpa, podmienkyMixC]);
 
   async function handleLogin() {
     if (!loginId || !loginPwd) return;
@@ -2157,7 +2162,17 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                               </div>
                             </div>
                           </div>
-                          <button onClick={() => setMapKmConfirmed(true)}
+                          <button onClick={() => {
+                            // ensure address field is never empty after confirm
+                            if (!address && mapPin) {
+                              const fallback = mapGeocodedAddress || mapLocality
+                                || (mapPlusCode ? `${mapPlusCode}${mapLocality ? ` ${mapLocality}` : ""}` : "")
+                                || `${mapPin.lat.toFixed(5)}, ${mapPin.lng.toFixed(5)}`;
+                              setAddress(fallback);
+                              if (addressInputRef.current) addressInputRef.current.value = fallback;
+                            }
+                            setMapKmConfirmed(true);
+                          }}
                             className="w-full bg-primary text-secondary font-black text-xs uppercase tracking-widest py-2.5 hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
                             <MapPin className="w-3.5 h-3.5" /> Potvrdiť polohu
                           </button>
@@ -2557,10 +2572,22 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
               {/* ── Čerpanie PUMPA — 3 módy ── */}
               {(() => {
                 // shared helpers
-                const adjBtnCls = "flex-1 py-1 border border-white/10 text-white/50 hover:border-amber-500/40 hover:text-amber-300 transition-colors rounded-sm font-black text-[10px]";
-                const adjHrCls  = "flex-1 py-1 border border-white/10 text-white/35 hover:border-blue-500/40 hover:text-blue-300 transition-colors rounded-sm font-black text-[10px]";
+                const adjBtnCls = "flex-1 py-1.5 border border-white/10 text-white/50 hover:border-amber-500/40 hover:text-amber-300 transition-colors rounded-sm font-black text-[9px] cursor-pointer";
+                const adjHrCls  = "flex-1 py-1.5 border border-blue-500/20 text-white/35 hover:border-blue-500/40 hover:text-blue-300 transition-colors rounded-sm font-black text-[9px] cursor-pointer";
+                // single full-width row: −1h −15 −1 +1 +15 +1h
+                const AdjRow = ({ onAdj }: { onAdj: (d: number) => void }) => (
+                  <div className="flex gap-1">
+                    <button type="button" onClick={() => onAdj(-60)} className={adjHrCls}>−1h</button>
+                    <button type="button" onClick={() => onAdj(-15)} className={adjBtnCls}>−15</button>
+                    <button type="button" onClick={() => onAdj(-1)}  className={adjBtnCls}>−1</button>
+                    <button type="button" onClick={() => onAdj(+1)}  className={adjBtnCls}>+1</button>
+                    <button type="button" onClick={() => onAdj(+15)} className={adjBtnCls}>+15</button>
+                    <button type="button" onClick={() => onAdj(+60)} className={adjHrCls}>+1h</button>
+                  </div>
+                );
+                // 2-row for narrow half-column in ČAS mode
                 const AdjCols = ({ onAdj }: { onAdj: (d: number) => void }) => (
-                  <div className="space-y-1 mt-2">
+                  <div className="space-y-1 mt-1.5">
                     <div className="flex gap-1">
                       <button type="button" onClick={() => onAdj(-60)} className={adjHrCls}>−1h</button>
                       <button type="button" onClick={() => onAdj(+60)} className={adjHrCls}>+1h</button>
@@ -2614,8 +2641,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 };
                 const handleStop = () => {
                   setPumpStopTime(nowHHMM()); setPumpTimerActive(false);
+                  setPumpFinalMs(pumpLiveMs);
                   if (pumpTimerRef.current) { clearInterval(pumpTimerRef.current); pumpTimerRef.current = null; }
-                  setShowResult(false);
+                  setShowResult(true);
                 };
                 const adjStart = (d: number) => {
                   setPumpStartTime(adjustHHMM(pumpStartTime || nowHHMM(), d));
@@ -2624,7 +2652,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 };
                 const adjStop = (d: number) => { setPumpStopTime(adjustHHMM(pumpStopTime || nowHHMM(), d)); setShowResult(false); };
                 const resetTimer = () => {
-                  setPumpStartTime(null); setPumpStopTime(null); setPumpTimerActive(false); setPumpLiveMs(0);
+                  setPumpStartTime(null); setPumpStopTime(null); setPumpTimerActive(false); setPumpLiveMs(0); setPumpFinalMs(0);
                   if (pumpTimerRef.current) { clearInterval(pumpTimerRef.current); pumpTimerRef.current = null; }
                   setShowResult(false);
                 };
@@ -2649,12 +2677,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                       {modes.map(m => (
                         <button key={m.id} type="button"
                           onClick={() => { setPumpMode(m.id); setShowResult(false); }}
-                          className={cn("flex flex-col items-center py-2 px-1 transition-all text-center",
+                          className={cn("flex flex-col items-center py-3 px-1 transition-all text-center cursor-pointer",
                             pumpMode === m.id
                               ? "bg-primary/15 border-b-2 border-primary"
                               : "border-b-2 border-transparent text-white/40 hover:bg-white/5 hover:text-white/60"
                           )}>
-                          <span className={cn("text-[10px] font-black uppercase tracking-widest", pumpMode === m.id ? "text-primary" : "")}>{m.label}</span>
+                          <span className={cn("text-[11px] font-black uppercase tracking-widest", pumpMode === m.id ? "text-primary" : "")}>{m.label}</span>
                           <span className={cn("text-[9px] font-medium", pumpMode === m.id ? "text-white/50" : "text-white/25")}>{m.hint}</span>
                         </button>
                       ))}
@@ -2662,20 +2690,20 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
                     {/* ── MODE: VÝBER (select) ── */}
                     {pumpMode === "select" && (
-                      <div className="px-3 py-3 h-[320px] flex flex-col gap-2.5">
-                        <div className="shrink-0">
+                      <div className="px-3 py-3 flex flex-col gap-2.5">
+                        <div>
                           <div className="flex items-center justify-between mb-1.5">
                             <div className="text-[9px] text-white/35 uppercase tracking-widest">Hodiny</div>
                             {(pumpHour !== "0 h" || pumpMin !== "0 min") && (
                               <button type="button" onClick={() => { setPumpHour("0 h"); setPumpMin("0 min"); setShowResult(false); }}
-                                className="text-[9px] text-white/25 hover:text-primary transition-colors">× reset</button>
+                                className="text-[9px] text-white/25 hover:text-primary transition-colors cursor-pointer">× reset</button>
                             )}
                           </div>
                           <div className="flex flex-wrap gap-1.5">
                             {PUMP_HOURS.map(h => (
                               <button key={h} type="button"
                                 onClick={() => { setPumpHour(h); setShowResult(false); }}
-                                className={cn("px-3 py-1.5 rounded-sm text-xs font-black border transition-colors",
+                                className={cn("px-3 py-2 rounded-sm text-xs font-black border transition-colors cursor-pointer",
                                   pumpHour === h
                                     ? "bg-primary/20 border-primary/60 text-primary"
                                     : "border-white/10 text-white/40 hover:border-white/25 hover:text-white/70"
@@ -2685,13 +2713,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                             ))}
                           </div>
                         </div>
-                        <div className="shrink-0">
+                        <div>
                           <div className="text-[9px] text-white/35 uppercase tracking-widest mb-1.5">Minúty</div>
                           <div className="flex gap-1.5">
                             {PUMP_MINS.map(m => (
                               <button key={m} type="button"
                                 onClick={() => { setPumpMin(m); setShowResult(false); }}
-                                className={cn("flex-1 py-1.5 rounded-sm text-xs font-black border transition-colors",
+                                className={cn("flex-1 py-2 rounded-sm text-xs font-black border transition-colors cursor-pointer",
                                   pumpMin === m
                                     ? "bg-primary/20 border-primary/60 text-primary"
                                     : "border-white/10 text-white/40 hover:border-white/25 hover:text-white/70"
@@ -2701,58 +2729,61 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                             ))}
                           </div>
                         </div>
-                        <div className="flex-1 overflow-y-auto"><BillingSummary /></div>
+                        <BillingSummary />
                       </div>
                     )}
 
                     {/* ── MODE: STOPKY (live timer) ── */}
                     {pumpMode === "timer" && (
-                      <div className="px-3 py-3 h-[320px] flex flex-col">
+                      <div className="px-3 py-4">
                         {pumpTimerActive ? (
-                          <>
-                            {/* Compact start row */}
-                            <div className="shrink-0 flex items-center gap-2 px-0.5 mb-2">
-                              <span className="text-[8px] text-green-400/50 uppercase tracking-widest shrink-0">Štart</span>
-                              <input type="time" value={pumpStartTime || ""}
-                                onChange={(e) => { if (e.target.value) { setPumpStartTime(e.target.value); setShowResult(false); } }}
-                                className="font-mono text-sm font-black text-green-300 bg-transparent border-b border-green-400/20 focus:border-green-400 focus:outline-none cursor-pointer w-20 shrink-0" />
-                              <AdjCols onAdj={adjStart} />
-                            </div>
-                            {/* Timer center */}
-                            <div className="flex-1 flex flex-col items-center justify-center text-center">
-                              <div className="flex items-center justify-center gap-1.5 mb-2">
-                                <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                                <span className="text-[8px] font-black text-green-400 uppercase tracking-widest">Čerpanie beží</span>
+                          <div className="flex flex-col gap-3">
+                            {/* Status + live timer in one row */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse shrink-0" />
+                                <span className="text-[9px] font-black text-green-400 uppercase tracking-widest">Čerpanie beží</span>
                               </div>
-                              <div className="font-mono text-4xl font-black text-green-400 tracking-widest leading-none tabular-nums">{liveStr}</div>
-                              <div className="text-[9px] text-green-400/40 mt-1 uppercase tracking-widest">
-                                {Math.ceil((liveSecs / 60) / 15) || 1} blok{Math.ceil((liveSecs / 60) / 15) > 1 ? "y" : ""}
+                              <div className="text-right">
+                                <div className="font-mono text-xl font-black text-green-400 tracking-widest tabular-nums leading-none">{liveStr}</div>
+                                <div className="text-[8px] text-green-400/40 uppercase tracking-wide mt-0.5">
+                                  {Math.ceil((liveSecs / 60) / 15) || 1} blok{Math.ceil((liveSecs / 60) / 15) > 1 ? "y" : ""}
+                                </div>
                               </div>
                             </div>
-                            {/* Round STOP button */}
-                            <div className="shrink-0 flex justify-center pb-1">
+                            {/* Start time + single-row adj strip */}
+                            <div>
+                              <div className="flex items-center gap-2 mb-1.5">
+                                <span className="text-[8px] text-white/30 uppercase tracking-widest shrink-0">Štart</span>
+                                <input type="time" value={pumpStartTime || ""}
+                                  onChange={(e) => { if (e.target.value) { setPumpStartTime(e.target.value); setShowResult(false); } }}
+                                  className="font-mono text-sm font-black text-green-300 bg-transparent border-b border-green-400/20 focus:border-green-400 focus:outline-none cursor-pointer" />
+                              </div>
+                              <AdjRow onAdj={adjStart} />
+                            </div>
+                            {/* STOP button */}
+                            <div className="flex justify-center pt-1">
                               <button type="button" onClick={handleStop}
                                 className="w-20 h-20 rounded-full bg-red-700 hover:bg-red-600 active:scale-95 text-white font-black transition-all flex flex-col items-center justify-center gap-0.5 shadow-[0_0_22px_rgba(185,28,28,0.45)] hover:shadow-[0_0_32px_rgba(220,38,38,0.65)] border-4 border-red-500/30 cursor-pointer select-none">
                                 <span className="text-base leading-none">■</span>
                                 <span className="text-[8px] font-black tracking-widest">STOP</span>
                               </button>
                             </div>
-                          </>
+                          </div>
                         ) : pumpStartTime && pumpStopTime ? (
-                          <>
-                            <div className="shrink-0 flex items-center justify-between mb-2">
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between">
                               <div className="flex items-center gap-1.5">
                                 <Check className="w-3.5 h-3.5 text-amber-400" />
                                 <span className="text-xs font-black text-amber-400 uppercase tracking-wider">Čerpanie hotové</span>
                               </div>
-                              <button type="button" onClick={resetTimer} className="text-[10px] text-white/25 hover:text-white/55 transition-colors">× znova</button>
+                              <button type="button" onClick={resetTimer} className="text-[10px] text-white/25 hover:text-white/55 transition-colors cursor-pointer">× znova</button>
                             </div>
-                            <div className="flex-1 overflow-y-auto"><BillingSummary /></div>
-                          </>
+                            <BillingSummary />
+                          </div>
                         ) : (
-                          /* IDLE — big round START button */
-                          <div className="flex-1 flex flex-col items-center justify-center gap-3">
-                            <div className="font-mono text-2xl font-black text-white/10 tracking-widest tabular-nums">00:00:00</div>
+                          /* IDLE — round START button */
+                          <div className="flex flex-col items-center gap-3 py-2">
                             <button type="button" onClick={handleStart}
                               className="w-24 h-24 rounded-full bg-green-900 hover:bg-green-800 active:scale-95 text-white font-black transition-all flex flex-col items-center justify-center gap-1 shadow-[0_0_28px_rgba(22,163,74,0.30)] hover:shadow-[0_0_40px_rgba(22,163,74,0.55)] border-4 border-green-600/35 cursor-pointer select-none">
                               <svg viewBox="0 0 24 24" className="w-8 h-8" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
@@ -2766,8 +2797,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
                     {/* ── MODE: ČAS (manual start–end) ── */}
                     {pumpMode === "edit" && (
-                      <div className="px-3 py-3 h-[320px] flex flex-col gap-2.5">
-                        <div className="shrink-0 grid grid-cols-2 gap-3">
+                      <div className="px-3 py-3 flex flex-col gap-2.5">
+                        <div className="grid grid-cols-2 gap-3">
                           <div>
                             <div className="text-[9px] text-white/35 uppercase tracking-widest mb-1">Začiatok</div>
                             <input type="time" value={editStartTime || ""}
@@ -2786,14 +2817,14 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                           </div>
                         </div>
                         {(editStartTime || editStopTime) && (
-                          <div className="shrink-0 flex justify-end">
+                          <div className="flex justify-end">
                             <button type="button" onClick={() => { setEditStartTime(null); setEditStopTime(null); setShowResult(false); }}
-                              className="text-[9px] text-white/25 hover:text-primary transition-colors">× reset</button>
+                              className="text-[9px] text-white/25 hover:text-primary transition-colors cursor-pointer">× reset</button>
                           </div>
                         )}
-                        <div className="flex-1 overflow-y-auto"><BillingSummary /></div>
+                        <BillingSummary />
                         {(!editStartTime || !editStopTime) && (
-                          <p className="shrink-0 text-[10px] text-white/25 text-center">Zadaj čas začiatku a konca čerpania</p>
+                          <p className="text-[10px] text-white/25 text-center">Zadaj čas začiatku a konca čerpania</p>
                         )}
                       </div>
                     )}

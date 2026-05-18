@@ -263,7 +263,7 @@ export default function AdminLogin() {
           <div className="relative">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
             <input type="text" value={username} onChange={e => setUsername(e.target.value)}
-              autoComplete="username" disabled={lockInfo.locked || loading}
+              autoComplete="off" disabled={lockInfo.locked || loading}
               className="w-full bg-[#32334a] text-white border border-white/10 pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-primary transition-colors disabled:opacity-50"
               placeholder="admin" />
           </div>
@@ -273,7 +273,7 @@ export default function AdminLogin() {
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
             <input type={showPass ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)}
-              autoComplete="current-password" disabled={lockInfo.locked || loading}
+              autoComplete="off" disabled={lockInfo.locked || loading}
               className="w-full bg-[#32334a] text-white border border-white/10 pl-10 pr-12 py-3 text-sm focus:outline-none focus:border-primary transition-colors disabled:opacity-50"
               placeholder="••••••••" />
             <button type="button" onClick={() => setShowPass(!showPass)}
