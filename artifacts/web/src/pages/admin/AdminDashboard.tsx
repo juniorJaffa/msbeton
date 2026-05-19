@@ -1921,6 +1921,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
       active: form.active,
       deliveryZoneId: form.deliveryZoneId || undefined,
       sharedLink: form.sharedLink.trim() || undefined,
+      createdAt: new Date().toISOString(),
     }]);
     if (sendRegEmail && form.email.trim()) {
       setEmailStatus("sending");
@@ -2476,6 +2477,14 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                             <EditableField value={field === "phone" ? formatPhone((c[field] as string) || "") || "—" : (c[field] as string) || "—"} type={field === "phone" ? "tel" : "text"} onSave={v => update(c.id, { [field]: field === "phone" ? formatPhone(v) : v })} />
                           </div>
                         ))}
+                        {c.createdAt && (
+                          <div className="flex gap-2 items-center pt-1 border-t border-gray-100 mt-1">
+                            <span className="text-gray-400 text-xs w-20 shrink-0">Vytvorený</span>
+                            <span className="text-gray-600 text-xs font-medium">
+                              {new Date(c.createdAt).toLocaleDateString("sk-SK", { day: "numeric", month: "long", year: "numeric" })}
+                            </span>
+                          </div>
+                        )}
                         <div className="flex gap-2 items-center">
                           <span className="text-gray-400 text-xs w-20 shrink-0">Odkaz</span>
                           {editingLinkFor === c.id ? (

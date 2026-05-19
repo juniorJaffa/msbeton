@@ -69,6 +69,7 @@ export interface Client {
   manualPrices?: Record<string, number>; // manuálne ceny per položka (ID → €), override zľavovej ceny
   isOwner?: boolean; // vlastník / hlavný účet — nedá sa vymazať
   sharedLink?: string; // zdieľaný odkaz (Google Sheet, PDF, prezentácia...)
+  createdAt?: string; // ISO timestamp vytvorenia klienta
 }
 
 export interface Order {

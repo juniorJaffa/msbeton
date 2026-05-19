@@ -262,7 +262,7 @@ export default function Home() {
               </div>
               <a
                 href="/vozovy-park"
-                className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-secondary text-white text-sm font-bold rounded-none hover:bg-primary hover:text-secondary transition-colors duration-150 shadow-md shadow-secondary/20"
+                className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-secondary text-white text-sm font-bold rounded-lg hover:bg-primary hover:text-secondary transition-colors duration-150 shadow-md shadow-secondary/20"
               >
                 Zobraziť vozový park <ArrowRight className="w-4 h-4" />
               </a>
