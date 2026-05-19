@@ -2636,7 +2636,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                       </div>
                     </div>
                     <div className="px-3 py-1.5 border-t border-amber-500/15 bg-amber-500/5">
-                      <p className="text-[9px] text-amber-400/40 text-center">Sadzba: {pumpServicePrice.toFixed(2)} €/h · Iba čerpanie (bez betónu a dopravy)</p>
+                      <p className="text-[9px] text-white/35 text-center">Sadzba: {pumpServicePrice.toFixed(2)} €/h · iba čerpanie (bez betónu a dopravy)</p>
                     </div>
                   </div>
                 ) : null;
@@ -2655,11 +2655,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                   setPumpStopTime(nowHHMM()); setPumpTimerActive(false);
                   setPumpFinalMs(pumpLiveMs);
                   if (pumpTimerRef.current) { clearInterval(pumpTimerRef.current); pumpTimerRef.current = null; }
-                  setShowResult(true);
+                  // Nenastavuj showResult=true — operator ešte musí vyplniť betón/množstvo/adresu
                 };
                 const adjStart = (d: number) => {
                   setPumpStartTime(adjustHHMM(pumpStartTime || nowHHMM(), d));
-                  if (pumpTimerActive) { setPumpTimerActive(false); if (pumpTimerRef.current) { clearInterval(pumpTimerRef.current); pumpTimerRef.current = null; } }
+                  // Nezastavuj timer — iba adjustuj štartový čas
                   setShowResult(false);
                 };
                 const adjStop = (d: number) => { setPumpStopTime(adjustHHMM(pumpStopTime || nowHHMM(), d)); setShowResult(false); };
@@ -2790,7 +2790,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                             <motion.div key="done"
                               initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
                               transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
-                              className="flex flex-col gap-2">
+                              className="flex flex-col gap-3">
+                              {/* Header */}
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-1.5">
                                   <Check className="w-3.5 h-3.5 text-amber-400" />
@@ -2798,7 +2799,30 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                                 </div>
                                 <button type="button" onClick={resetTimer} className="text-[10px] text-white/25 hover:text-white/55 transition-colors cursor-pointer">× znova</button>
                               </div>
+                              {/* Štart / Koniec s adj tlačidlami */}
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <div className="text-[9px] text-white/30 uppercase tracking-widest mb-1">Štart</div>
+                                  <input type="time" value={pumpStartTime || ""}
+                                    onChange={(e) => { if (e.target.value) { setPumpStartTime(e.target.value); setShowResult(false); } }}
+                                    className="font-mono text-xl font-black text-white/70 bg-transparent border-b border-white/15 focus:border-white/40 focus:outline-none cursor-pointer w-full mb-1.5" />
+                                  <AdjCols onAdj={adjStart} />
+                                </div>
+                                <div>
+                                  <div className="text-[9px] text-primary/70 uppercase tracking-widest mb-1">Koniec</div>
+                                  <input type="time" value={pumpStopTime || ""}
+                                    onChange={(e) => { if (e.target.value) { setPumpStopTime(e.target.value); setShowResult(false); } }}
+                                    className="font-mono text-xl font-black text-primary bg-transparent border-b border-primary/25 focus:border-primary focus:outline-none cursor-pointer w-full mb-1.5" />
+                                  <AdjCols onAdj={adjStop} />
+                                </div>
+                              </div>
                               <BillingSummary />
+                              {/* Guidance — ďalší krok */}
+                              <div className="border border-white/8 bg-white/3 rounded-sm px-3 py-2 text-center">
+                                <p className="text-[10px] text-white/40 leading-relaxed">
+                                  ↓ Zadaj <span className="text-white/60 font-semibold">betón</span>, <span className="text-white/60 font-semibold">množstvo</span> a <span className="text-white/60 font-semibold">adresu</span><br/>potom klikni <span className="text-primary font-black">VYPOČÍTAŤ CENU</span>
+                                </p>
+                              </div>
                             </motion.div>
                           ) : (
                             /* IDLE — round START button */
@@ -2806,17 +2830,20 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                               initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
                               transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
                               className="flex flex-col items-center gap-3 py-2">
-                              <div className="flex items-center gap-3 text-[9px] text-white/20 uppercase tracking-widest w-full justify-center">
-                                <span className="flex-1 h-px bg-white/8" />
-                                {pumpServicePrice > 0 && <span>{pumpServicePrice.toFixed(2)} €/h</span>}
-                                <span className="flex-1 h-px bg-white/8" />
+                              {/* Mini info badge */}
+                              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/4 border border-white/8 rounded-sm self-stretch">
+                                <span className="w-1.5 h-1.5 bg-green-500/60 rounded-full flex-shrink-0" />
+                                <span className="text-[9px] text-white/35 leading-snug">
+                                  Iba na stavbe · live časovač · faktúra zaokrúhlí nahor na 15 min
+                                </span>
+                                {pumpServicePrice > 0 && <span className="ml-auto text-[9px] text-white/25 font-mono flex-shrink-0">{pumpServicePrice.toFixed(2)} €/h</span>}
                               </div>
                               <button type="button" onClick={handleStart}
                                 className="w-24 h-24 rounded-full bg-green-900 hover:bg-green-800 active:scale-[0.97] text-white font-black transition-[transform,box-shadow] duration-150 flex flex-col items-center justify-center gap-1 shadow-[0_0_28px_rgba(22,163,74,0.30)] hover:shadow-[0_0_40px_rgba(22,163,74,0.55)] border-4 border-green-600/35 cursor-pointer select-none">
                                 <svg viewBox="0 0 24 24" className="w-8 h-8" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
                                 <span className="text-[9px] font-black tracking-widest text-green-200">START</span>
                               </button>
-                              <p className="text-[9px] text-white/25 text-center leading-relaxed">Stlač pri príjazde pumpy na stavbu.<br/>Faktúra = zaokrúhlenie nahor na 15 min.</p>
+                              <p className="text-[9px] text-white/25 text-center leading-relaxed">Stlač pri príjazde pumpy na stavbu</p>
                             </motion.div>
                           )}
                         </AnimatePresence>
