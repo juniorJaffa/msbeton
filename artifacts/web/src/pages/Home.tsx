@@ -20,15 +20,12 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { PhoneInput } from "@/components/PhoneInput";
 const ConcreteCalculator = lazy(() => import("@/components/Calculator").then(m => ({ default: m.ConcreteCalculator })));
-// Spoločnosti, s ktorými spolupracujeme (partnerský zoznam – oddelené od klientov kalkulačky)
 const PARTNERS = [
-  { id: "p1", name: "ZAPA Beton SK", logo: "" },
-  { id: "p2", name: "2BH s.r.o.", logo: "" },
-  { id: "p3", name: "STRABAG s.r.o.", logo: "" },
-  { id: "p4", name: "VÁHOSTAV – SK a.s.", logo: "" },
-  { id: "p5", name: "Eurovia SK a.s.", logo: "" },
-  { id: "p6", name: "SKANSKA SK a.s.", logo: "" },
+  "ZAPA Beton SK", "2BH s.r.o.", "STRABAG s.r.o.", "VÁHOSTAV – SK a.s.", "Eurovia SK a.s.",
+  "SKANSKA SK a.s.", "RENOME REAL s.r.o.", "AUSTAV", "Benneb s.r.o.", "MELO-SK s.r.o.",
+  "VDL", "ERPOS", "Pro×Bet", "PROMA", "ALPESTAV", "PB COMPANY", "P&P STAVBY",
 ];
+const P_COLORS = ["#3b82f6","#10b981","#ef4444","#8b5cf6","#f59e0b","#06b6d4","#ec4899","#84cc16","#f97316","#14b8a6","#6366f1","#e11d48","#0ea5e9","#22c55e","#a855f7","#f43f5e","#fb923c"];
 
 // Animation variants
 const fadeInUp = {
@@ -189,10 +186,10 @@ export default function Home() {
               variants={staggerContainer}
             >
               <motion.h2 variants={fadeInUp} className="text-sm font-bold text-primary tracking-widest mb-2 [text-shadow:0_1px_3px_rgba(0,0,0,0.35)]">O SPOLOČNOSTI</motion.h2>
-              <motion.h3 variants={fadeInUp} className="text-4xl md:text-5xl font-bold text-secondary mb-6">
+              <motion.h3 variants={fadeInUp} className="text-4xl md:text-5xl font-bold text-gray-900 mb-6" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.12)" }}>
                 KVALITA, NA KTORÚ SA MÔŽETE <span className="text-gradient">SPOĽAHNÚŤ</span>
               </motion.h3>
-              <motion.p variants={fadeInUp} className="text-muted-foreground text-lg mb-6 leading-relaxed">
+              <motion.p variants={fadeInUp} className="text-gray-700 text-lg mb-6 leading-relaxed">
                 Spoločnosť MS-BETON s.r.o. patrí medzi popredných poskytovateľov riešení pre dovoz betónu v Žiline. Vďaka modernému vozovému parku – od betónových mixérov až po pumpy – zvládame projekty všetkých veľkostí. Zabezpečujeme kvalitný betón presne tam, kde a kedy ho potrebujete.
               </motion.p>
               <motion.ul variants={staggerContainer} className="space-y-4 mb-8">
@@ -204,7 +201,7 @@ export default function Home() {
                 ].map((item, i) => (
                   <motion.li key={i} variants={fadeInUp} className="flex items-center gap-3">
                     <CheckCircle2 className="text-primary w-6 h-6 shrink-0 [filter:drop-shadow(0_1px_4px_rgba(0,0,0,0.65))]" />
-                    <span className="text-secondary font-medium text-lg">{item}</span>
+                    <span className="text-gray-800 font-medium text-lg">{item}</span>
                   </motion.li>
                 ))}
               </motion.ul>
@@ -260,30 +257,34 @@ export default function Home() {
         </div>
       </section>
 
-      {/* TRUST SIGNALS */}
-      <section className="py-10 concrete-navy text-white">
+      {/* TRUST SIGNALS — compact 1-row strip */}
+      <div className="concrete-navy border-y border-white/8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-white/8">
             {[
-              { icon: Truck, count: "10 000+", mobileCount: "10K+", label: "Doručených zásielok" },
-              { icon: Calculator, count: "30 000+", mobileCount: "30K+", label: "Kubíkov betónu" },
-              { icon: ShieldCheck, count: "100%", mobileCount: "100%", label: "Certifikovaná kvalita" },
-              { icon: Hammer, count: "2 000+", mobileCount: "2K+", label: "Spokojných klientov" }
-            ].map((stat, i) => (
-              <div key={i} className="flex flex-col items-center p-4">
-                <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-4 text-primary">
-                  <stat.icon className="w-8 h-8" />
+              { icon: Truck,       count: "10K+", label: "Doručených zásielok" },
+              { icon: Calculator,  count: "30K+", label: "Kubíkov betónu" },
+              { icon: ShieldCheck, count: "100%", label: "Certifikovaná kvalita" },
+              { icon: Hammer,      count: "2K+",  label: "Spokojných klientov" },
+            ].map((s, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.38, ease: [0.23, 1, 0.32, 1], delay: i * 0.06 }}
+                className="flex flex-col items-center justify-center gap-1 py-5 px-3 text-center"
+              >
+                <div className="flex items-center gap-1.5">
+                  <s.icon className="w-4 h-4 text-primary/75 shrink-0" />
+                  <span className="font-black text-2xl text-white leading-none tracking-tight" style={{ fontFamily: "Montserrat, sans-serif" }}>{s.count}</span>
                 </div>
-                <div className="text-4xl font-display font-bold mb-2">
-                  <span className="sm:hidden">{stat.mobileCount}</span>
-                  <span className="hidden sm:inline">{stat.count}</span>
-                </div>
-                <div className="text-white/60 font-semibold uppercase tracking-wider text-sm">{stat.label}</div>
-              </div>
+                <div className="text-white/40 text-[10px] uppercase tracking-[0.18em] font-bold leading-tight">{s.label}</div>
+              </motion.div>
             ))}
           </div>
         </div>
-      </section>
+      </div>
 
       {/* PRODUCTS SECTION — skryté pre skrátenie stránky ku kalkulačke */}
       <section id="products" className="py-24 concrete-light hidden">
@@ -487,61 +488,41 @@ export default function Home() {
       </section>
 
       {/* PARTNERS SECTION */}
-      {PARTNERS.length > 0 && (
-        <section className="py-10 bg-white border-t border-gray-100">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-80px" }}
-              variants={fadeInUp}
-              className="text-center mb-6"
+      {/* PARTNERI — farebný marquee */}
+      <section className="py-7 bg-white border-t border-gray-100 overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+          className="text-center mb-5 px-4"
+        >
+          <p className="text-[10px] font-bold text-gray-400 tracking-[0.28em] uppercase mb-1">Naši partneri</p>
+          <h2 className="text-xl font-black text-secondary uppercase tracking-tight" style={{ fontFamily: "Montserrat, sans-serif" }}>
+            Spolupracujeme s
+          </h2>
+        </motion.div>
+        <div
+          className="flex gap-2.5"
+          style={{ width: "max-content", animation: "partner-scroll 38s linear infinite" }}
+        >
+          {[...PARTNERS, ...PARTNERS].map((name, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-2 px-3.5 py-2 bg-gray-50 border border-gray-150 rounded-full shrink-0 hover:border-gray-300 transition-colors duration-150"
             >
-              <p className="text-xs font-bold text-gray-400 tracking-[0.25em] uppercase mb-1">Naši partneri</p>
-              <h2 className="text-2xl md:text-3xl font-bold text-secondary uppercase tracking-tight">
-                Spoločnosti, s ktorými spolupracujeme
-              </h2>
-              <div className="mt-3 mx-auto w-16 h-1 bg-primary rounded-full" />
-            </motion.div>
-
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-60px" }}
-              variants={staggerContainer}
-              className="flex flex-wrap justify-center items-center gap-4 md:gap-6"
-            >
-              {PARTNERS.map(client => (
-                <motion.div
-                  key={client.id}
-                  variants={fadeInUp}
-                  className="group relative flex items-center justify-center w-44 h-24 bg-gray-50 border border-gray-100 rounded-xl overflow-hidden cursor-default transition-all duration-300 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-1"
-                >
-                  {client.logo ? (
-                    <img
-                      src={client.logo}
-                      alt={client.name}
-                      className="w-full h-full object-contain p-4 filter grayscale opacity-60 transition-all duration-500 group-hover:grayscale-0 group-hover:opacity-100"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center w-full h-full p-3 transition-all duration-300">
-                      <div className="w-10 h-10 rounded-full bg-gray-200 group-hover:bg-primary/20 flex items-center justify-center mb-2 transition-colors duration-300">
-                        <span className="text-lg font-black text-gray-400 group-hover:text-primary transition-colors duration-300">
-                          {client.name.charAt(0)}
-                        </span>
-                      </div>
-                      <span className="text-xs font-bold text-gray-400 group-hover:text-secondary text-center leading-tight transition-colors duration-300 uppercase tracking-wide">
-                        {client.name}
-                      </span>
-                    </div>
-                  )}
-                  <div className="absolute inset-0 rounded-xl ring-1 ring-inset ring-transparent group-hover:ring-primary/20 transition-all duration-300 pointer-events-none" />
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        </section>
-      )}
+              <span
+                className="w-5 h-5 rounded-full text-white text-[9px] font-black flex items-center justify-center shrink-0 leading-none"
+                style={{ background: P_COLORS[i % P_COLORS.length] }}
+              >
+                {name.charAt(0)}
+              </span>
+              <span className="text-[11px] font-bold text-gray-600 uppercase tracking-wide whitespace-nowrap">{name}</span>
+            </div>
+          ))}
+        </div>
+        <style>{`@keyframes partner-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }`}</style>
+      </section>
 
       <Footer />
     </div>

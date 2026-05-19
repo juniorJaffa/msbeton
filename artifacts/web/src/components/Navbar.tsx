@@ -52,29 +52,30 @@ export function Navbar() {
       {/* ── Top info bar ── */}
       <div className="bg-secondary border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-9">
-            <span className="hidden md:block text-white/50 text-xs truncate mr-4">
-              Žilina betón, na ktorý sa môžete spoľahnúť
-            </span>
-            <div className="flex items-center gap-4 sm:gap-5 ml-auto min-w-0">
+          <div className="flex items-center justify-between h-9 w-full">
+            {/* ── Group 1: Kontakt ── */}
+            <div className="flex items-center gap-3.5 shrink-0">
               <a
                 href="mailto:info@msbeton.sk"
-                className="flex items-center gap-1.5 text-white/55 hover:text-white transition-colors text-xs shrink-0"
+                className="flex items-center gap-1.5 text-white/50 hover:text-white transition-colors text-xs"
+                title="info@msbeton.sk"
               >
                 <Mail className="w-3 h-3 shrink-0" />
-                <span className="hidden sm:inline">info@msbeton.sk</span>
+                <span className="hidden lg:inline text-[11px]">info@msbeton.sk</span>
               </a>
               <a
                 href="tel:+421909205205"
-                className="flex items-center gap-1.5 text-primary hover:text-primary/80 transition-colors text-xs font-bold tracking-wide shrink-0"
+                className="flex items-center gap-1.5 text-primary hover:text-primary/80 transition-colors text-xs font-bold tracking-wide"
               >
                 <Phone className="w-3 h-3 shrink-0" />
-                +421 909 205 205
+                <span className="hidden sm:inline">+421 909 205 205</span>
               </a>
-              <span className="text-white/20">|</span>
-              {/* ── Klient sekcia ── */}
+            </div>
+
+            {/* ── Group 2: Klient (centered) ── */}
+            <div className="flex items-center gap-2">
               {loggedClient ? (
-                <div className="flex items-center gap-2 shrink-0">
+                <>
                   {loggedClient.id !== "admin" ? (
                     <a href="/klient-profil" className="flex items-center gap-1.5 text-white/70 hover:text-white transition-colors text-xs group" title="Môj profil">
                       <UserCog className="w-3.5 h-3.5 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity" />
@@ -85,21 +86,23 @@ export function Navbar() {
                   )}
                   {(loggedClient.discountBeton > 0 || loggedClient.discountDoprava > 0 || loggedClient.discountSluzby > 0 || loggedClient.discountCelkovo > 0) && (
                     <span className="px-1.5 py-0.5 bg-primary text-secondary text-[10px] font-black rounded-sm hidden sm:inline">
-                      Zľava aktívna
+                      Zľava
                     </span>
                   )}
+                  <span className="text-white/15 hidden sm:inline">|</span>
                   <button
                     onClick={() => { clientAuth.logout(); setLoggedClient(null); }}
-                    className="flex items-center gap-1.5 px-2.5 py-1 border border-white/15 hover:border-white/35 text-white/50 hover:text-white/80 transition-colors text-xs cursor-pointer rounded-sm"
+                    className="flex items-center gap-1.5 px-2 py-0.5 text-white/40 hover:text-white/80 transition-colors text-xs cursor-pointer"
+                    title="Odhlásiť"
                   >
                     <LogOut className="w-3.5 h-3.5 shrink-0" />
                     <span className="hidden sm:block">Odhlásiť</span>
                   </button>
-                </div>
+                </>
               ) : (
                 <a
                   href="/prihlasenie"
-                  className="flex items-center gap-1.5 px-2.5 py-1 border border-primary/50 hover:border-primary bg-primary/10 hover:bg-primary/20 text-primary transition-colors text-xs font-bold rounded-sm shrink-0"
+                  className="flex items-center gap-1.5 px-3 py-1 border border-primary/40 hover:border-primary bg-primary/8 hover:bg-primary/15 text-primary transition-colors text-xs font-bold rounded-sm"
                 >
                   <span className="relative inline-flex items-center justify-center w-3.5 h-3.5">
                     <LogIn className="w-3.5 h-3.5 shrink-0" />
@@ -108,10 +111,13 @@ export function Navbar() {
                   <span>Klient</span>
                 </a>
               )}
-              {/* ── Kalkulačka ── */}
+            </div>
+
+            {/* ── Group 3: Nástroje ── */}
+            <div className="flex items-center gap-3 shrink-0">
               <a
                 href="/#calculator"
-                className="relative flex items-center gap-1.5 text-white/55 hover:text-primary transition-colors text-xs font-bold tracking-wide group shrink-0"
+                className="relative flex items-center gap-1.5 text-white/55 hover:text-primary transition-colors text-xs font-bold tracking-wide group"
                 title="Kalkulačka betónu"
               >
                 <span className="relative inline-flex">
@@ -120,13 +126,11 @@ export function Navbar() {
                 </span>
                 <span className="hidden sm:inline">Kalkulačka</span>
               </a>
-              {/* ── Oddeľovač ── */}
               <span className="text-white/15">|</span>
-              {/* ── Admin ── */}
               <a
                 href="/admin/login"
-                className="flex items-center gap-1 text-white/20 hover:text-amber-400/60 transition-colors shrink-0 py-1 px-1 relative"
-                title="Admin — administrácia"
+                className="flex items-center gap-1 text-white/20 hover:text-amber-400/60 transition-colors py-1 px-1 relative"
+                title="Admin"
               >
                 {adminBioActive ? (
                   <span className="relative inline-flex items-center justify-center w-3.5 h-3.5">
@@ -136,7 +140,6 @@ export function Navbar() {
                 ) : (
                   <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
                 )}
-                <span className="hidden sm:inline text-[10px] font-medium">Admin</span>
               </a>
             </div>
           </div>
