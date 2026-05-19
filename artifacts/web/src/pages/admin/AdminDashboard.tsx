@@ -444,10 +444,10 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                             </button>
                           )}
                         </div>
-                        {/* Pumpa — kapacita + čakačka (stacked, 1/3 šírka) */}
+                        {/* Pumpa — kapacita + čakačka */}
                         <div className="px-4 py-3 bg-yellow-50/30">
                           <div className="text-[9px] font-black text-secondary uppercase tracking-wide mb-2">Pumpa</div>
-                          <div className="space-y-2">
+                          <div className="grid grid-cols-2 gap-x-4">
                             <div>
                               <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Kapacita</div>
                               <div className="font-bold text-secondary text-sm flex items-baseline gap-0.5">
@@ -455,12 +455,12 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                               </div>
                             </div>
                             <div>
-                              <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Čakač.</div>
+                              <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Čakačka / 15 min</div>
                               <div className="font-bold text-secondary text-sm">{waitingRatePumpa != null ? `${waitingRatePumpa.toFixed(2)} €` : "—"}</div>
                             </div>
                           </div>
                         </div>
-                        {/* Mixér — kapacita + čakačka (2/3 šírka = priestor pre 2-col) */}
+                        {/* Mixér — kapacita + čakačka */}
                         <div className="col-span-2 px-4 py-3 bg-yellow-50/20">
                           <div className="text-[9px] font-black text-secondary uppercase tracking-wide mb-2">Mixér</div>
                           <div className="grid grid-cols-2 gap-x-4">
