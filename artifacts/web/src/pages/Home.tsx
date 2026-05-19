@@ -23,9 +23,9 @@ const ConcreteCalculator = lazy(() => import("@/components/Calculator").then(m =
 const PARTNERS: { name: string; logo?: string }[] = [
   { name: "ZAPA Beton SK",       logo: "/images/partners/zapa-beton.png" },
   { name: "STRABAG s.r.o.",      logo: "/images/partners/strabag.png" },
-  { name: "Eurovia SK a.s.",     logo: "/images/partners/eurovia.png" },
-  { name: "VÁHOSTAV – SK a.s.",  logo: "/images/partners/vahostav.png" },
-  { name: "SKANSKA SK a.s.",     logo: "/images/partners/skanska.png" },
+  { name: "Eurovia SK a.s.",     logo: "/images/partners/eurovia.svg" },
+  { name: "VÁHOSTAV – SK a.s.",  logo: "/images/partners/vahostav.jpg" },
+  { name: "SKANSKA SK a.s.",     logo: "/images/partners/skanska.svg" },
   { name: "2BH s.r.o.",          logo: "/images/partners/2bh.png" },
   { name: "RENOME REAL s.r.o.",  logo: "/images/partners/renome-real.png" },
   { name: "AUSTAV",              logo: "/images/partners/austav.png" },
@@ -36,8 +36,8 @@ const PARTNERS: { name: string; logo?: string }[] = [
   { name: "Pro×Bet",             logo: "/images/partners/pro-bet.png" },
   { name: "PROMA",               logo: "/images/partners/proma.png" },
   { name: "ALPESTAV",            logo: "/images/partners/alpestav.png" },
-  { name: "PB COMPANY" },
-  { name: "P&P STAVBY" },
+  { name: "PP COMPANY",          logo: "/images/partners/pb-company.png" },
+  { name: "P&P STAVBY",          logo: "/images/partners/pp-stavby.svg" },
 ];
 const P_COLORS = ["#3b82f6","#10b981","#ef4444","#8b5cf6","#f59e0b","#06b6d4","#ec4899","#84cc16","#f97316","#14b8a6","#6366f1","#e11d48","#0ea5e9","#22c55e","#a855f7","#f43f5e","#fb923c"];
 
@@ -516,19 +516,19 @@ export default function Home() {
           </h2>
         </motion.div>
         <div
-          className="flex gap-3"
-          style={{ width: "max-content", animation: "partner-scroll 44s linear infinite" }}
+          className="partner-track flex gap-3"
+          style={{ width: "max-content", animation: "partner-scroll 65s linear infinite" }}
         >
           {[...PARTNERS, ...PARTNERS].map((p, i) => (
             <div
               key={i}
-              className="flex items-center gap-2.5 px-4 py-2.5 bg-white border border-gray-200 rounded-lg shrink-0 hover:border-gray-300 hover:shadow-sm transition-all duration-150 h-[52px]"
+              className="flex items-center gap-2.5 px-4 py-2.5 bg-white border border-gray-200 rounded-lg shrink-0 hover:border-primary/40 hover:shadow-md transition-all duration-200 h-[56px] group"
             >
               {p.logo ? (
                 <img
                   src={p.logo}
                   alt={p.name}
-                  className="max-h-7 max-w-[80px] object-contain grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300"
+                  className="max-h-8 max-w-[88px] object-contain grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300"
                   loading="lazy"
                 />
               ) : (
@@ -539,11 +539,14 @@ export default function Home() {
                   {p.name.charAt(0)}
                 </span>
               )}
-              <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide whitespace-nowrap">{p.name}</span>
+              <span className="text-[11px] font-bold text-gray-400 group-hover:text-gray-600 uppercase tracking-wide whitespace-nowrap transition-colors duration-200">{p.name}</span>
             </div>
           ))}
         </div>
-        <style>{`@keyframes partner-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }`}</style>
+        <style>{`
+          @keyframes partner-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+          .partner-track:hover { animation-play-state: paused; }
+        `}</style>
       </section>
 
       <Footer />
