@@ -60,6 +60,24 @@ Služby vždy **pod dopravou**.
 - Result UI header: `Pridaná položka {idx}` kde idx pochádza z `concreteBreakdown.map((ci, idx)`, teda `idx=1` = prvá extra
 - Items s prázdnym množstvom → **vylúčené z výpočtu** (`if (t && q > 0)` v calc loop) → červená karta + badge „nie je zahrnutá" ak `showResult && !item.quantity`
 
+### Kalkulačka – transportMode "addToMain" — KRITICKÁ INVARIANTA
+
+Extra položky s `transportMode === "addToMain"` zlučujú svoje m³ do dopravy Hlavnej položky. Platia **dve podmienky súčasne** — ak sa zmení jedna, musí sa zmeniť aj druhá:
+
+1. **`extraTrucks = 0`** — extra addToMain položka nepridáva žiadne auto do celkového počtu
+2. **`mainTrucks = calcPumpTrucks(qty + addToMainQty)`** — hlavná položka počíta autá pre celkové m³ (vrátane addToMain)
+
+`addToMainQty` = `extraItems.reduce(...)` sum za všetky items kde `transportMode === "addToMain" && q > 0`.
+
+**Kapacity (default):** `PUMP_TRUCK_CAPACITY = 7 m³`, `MIX_TRUCK_CAPACITY = 9 m³`  
+Príklad: 12 + 2 addToMain = 14 m³ → `calcPumpTrucks(14)` = 1 pump + 1 mix = **2 vozidlá** (nie 3).
+
+**`trucks` v `result`** = `concreteBreakdown.reduce((s, ci) => s + ci.transportTrucks, 0)` — sčítava PER-ITEM hodnoty, preto addToMain extra MUSÍ mať `transportTrucks = 0`. Ak nie, vznikne phantomové auto.
+
+Toto isté `trucks` čerpá PDF (`result.mixTrucksCount`), SMS (`ci.transportTrucks`), aj Objednávky (`buildBreakdown` → `pdfTrucksLabel`). Chyba v jednom mieste → chyba vo všetkých troch.
+
+PDF/SMS/Objednávky musia vždy súhlasiť s UI výpočtom — pri každej zmene dopravnej logiky overiť všetky tri exporty.
+
 ### Zobrazovanie zľavových cien — pravidlo pre VŠETKY kontexty
 
 Keď je klient prihlásený (alebo je aktívny `clientOverride`) a má nejakú zľavu, **každý cenový výstup musí vždy zobraziť OBIDVE hodnoty** — pôvodnú (preškrtnutú) aj zľavnenú (tučnú). Toto platí pre každý typ zľavy nezávisle:
