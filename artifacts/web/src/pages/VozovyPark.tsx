@@ -48,6 +48,7 @@ const GALLERY_PHOTOS: GalleryPhoto[] = [
   { src: "p01.jpg", cat: "pumpa", label: "Pumpa MS-BETON v akcii", sub: "Pumpa" },
   { src: "p04.jpg", cat: "pumpa", label: "Pumpa na zákazke", sub: "Pumpa" },
   { src: "p05.jpg", cat: "pumpa", label: "Betónovanie objektu", sub: "Pumpa" },
+  { src: "p32.jpg", cat: "pumpa", label: "MS-BETON pumpa v akcii na zákazke", sub: "Pumpa v akcii" },
   { src: "mixer-krajina.jpg", cat: "mix", label: "Domiešavač betónu v krajine", sub: "Mix · IVECO MAGIRUS" },
   { src: "p12.jpg", cat: "mix", label: "Domiešavač na zákazke", sub: "Mix" },
   { src: "p16.jpg", cat: "mix", label: "Mixer v akcii", sub: "Mix" },
@@ -93,31 +94,31 @@ const catLabel: Record<GalleryCat, string> = {
 
 function GalleryGrid({ photos }: { photos: GalleryPhoto[] }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+    <div className="grid grid-cols-3 gap-1.5 md:gap-2.5">
       {photos.map((p, i) => (
         <motion.div
           key={p.src + i}
           className="relative overflow-hidden rounded group cursor-default"
-          initial={{ opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-30px" }}
-          transition={{ duration: 0.5, ease, delay: Math.min(i * 0.04, 0.32) }}
+          viewport={{ once: true, margin: "-20px" }}
+          transition={{ duration: 0.4, ease, delay: Math.min(i * 0.03, 0.24) }}
         >
-          <div className="h-48 md:h-56">
+          <div className="h-28 sm:h-36 md:h-48">
             <img
               src={`/images/vozovy-park/${p.src}`}
               alt={p.label}
               loading="lazy"
-              className="w-full h-full object-cover transition-[transform,opacity] duration-700 ease-out group-hover:scale-[1.06]"
+              className="w-full h-full object-cover transition-[transform] duration-700 ease-out group-hover:scale-[1.06]"
               style={{ filter: "brightness(0.9) contrast(1.15) saturate(1.1)" }}
             />
           </div>
-          <div className="absolute inset-0 bg-gradient-to-t from-secondary/85 via-secondary/20 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 px-3 py-2.5">
-            <div className="text-primary text-[8px] font-bold uppercase tracking-[0.28em] mb-0.5 opacity-80">
+          <div className="absolute inset-0 bg-gradient-to-t from-secondary/80 via-secondary/15 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 px-2 py-1.5 md:px-3 md:py-2.5">
+            <div className="text-primary text-[7px] md:text-[8px] font-bold uppercase tracking-[0.22em] mb-0.5 opacity-80 hidden sm:block">
               {catLabel[p.cat]}
             </div>
-            <div className="text-white font-bold text-[11px] leading-snug">{p.label}</div>
+            <div className="text-white font-bold text-[9px] md:text-[11px] leading-snug line-clamp-2">{p.label}</div>
           </div>
         </motion.div>
       ))}
@@ -160,11 +161,11 @@ function VideasSection() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
           {[
-            { src: "/images/vozovy-park/vid02.mp4", poster: "/images/vozovy-park/vid02-poster.jpg", label: "Čerpanie betónu" },
-            { type: "iframe" as const, poster: "/images/vozovy-park/vid03-poster.jpg", label: "Zákazka — hala" },
-            { src: "/images/vozovy-park/vid04.mp4", poster: "/images/vozovy-park/vid04-poster.jpg", label: "Mixer v akcii" },
-            { src: "/images/vozovy-park/vid05.mp4", poster: "/images/vozovy-park/vid05-poster.jpg", label: "Pumpa na stavbe" },
-          ].map((v, i) => (
+            { src: "/images/vozovy-park/p10.jpg", label: "Betonáž haly — čerpanie pumpa" },
+            { src: "/images/vozovy-park/p21.jpg", label: "Betonáž priemyselnej haly" },
+            { src: "/images/vozovy-park/p16.jpg", label: "Mixer v akcii" },
+            { src: "/images/vozovy-park/p32.jpg", label: "Pumpa MS-BETON na zákazke" },
+          ].map((ph, i) => (
             <motion.div
               key={i}
               className="relative overflow-hidden rounded group"
@@ -173,32 +174,17 @@ function VideasSection() {
               transition={{ duration: 0.35, ease, delay: 0.1 + i * 0.06 }}
             >
               <div className="h-36 md:h-44 relative bg-secondary/80">
-                {v.type === "iframe" ? (
-                  <iframe
-                    src="https://drive.google.com/file/d/1rdgZR0ws6a8Pc-rnIJuUcerJpScE7gKa/preview"
-                    className="w-full h-full"
-                    allowFullScreen
-                    title={v.label}
-                  />
-                ) : (
-                  <video
-                    src={v.src}
-                    poster={v.poster}
-                    muted
-                    loop
-                    playsInline
-                    className="w-full h-full object-cover transition-[transform,opacity] duration-700 ease-out group-hover:scale-[1.04]"
-                    style={{ filter: "brightness(0.88) contrast(1.1) saturate(1.0)" }}
-                    onMouseEnter={e => (e.currentTarget as HTMLVideoElement).play()}
-                    onMouseLeave={e => { const el = e.currentTarget as HTMLVideoElement; el.pause(); el.currentTime = 0; }}
-                  />
-                )}
+                <img
+                  src={ph.src}
+                  alt={ph.label}
+                  loading="lazy"
+                  className="w-full h-full object-cover transition-[transform] duration-700 ease-out group-hover:scale-[1.04]"
+                  style={{ filter: "brightness(0.88) contrast(1.1) saturate(1.0)" }}
+                />
               </div>
-              {v.type !== "iframe" && (
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-secondary/80 to-transparent px-2.5 py-2">
-                  <div className="text-white font-bold text-[10px] leading-snug">{v.label}</div>
-                </div>
-              )}
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-secondary/80 to-transparent px-2.5 py-2">
+                <div className="text-white font-bold text-[10px] leading-snug">{ph.label}</div>
+              </div>
             </motion.div>
           ))}
         </div>
@@ -371,7 +357,7 @@ export default function VozovyPark() {
                   </div>
                   <div className="w-px bg-white/10 hidden sm:block" />
                   <div>
-                    <div className="text-primary font-black text-xl leading-none">5″</div>
+                    <div className="text-primary font-black text-xl leading-none">DN 125</div>
                     <div className="text-white/40 text-[10px] uppercase tracking-wide mt-0.5">hadice</div>
                   </div>
                 </div>
