@@ -2616,15 +2616,27 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 const blocks = durMins > 0 ? Math.ceil(durMins / 15) : 0;
                 const billingMins = blocks * 15;
 
+                const estimatedCost = blocks > 0 ? (billingMins / 60) * pumpServicePrice : 0;
                 const BillingSummary = () => blocks > 0 ? (
-                  <div className="bg-amber-500/10 border border-amber-500/25 rounded-sm px-3 py-2.5 flex items-center justify-between">
-                    <div>
-                      <div className="text-[10px] text-amber-400/60 uppercase tracking-wide">Fakturuje sa</div>
-                      <div className="font-black text-amber-300 text-lg leading-tight">{blocks} × 15 min</div>
+                  <div className="bg-amber-500/10 border border-amber-500/25 rounded-sm overflow-hidden">
+                    <div className="px-3 py-2.5 grid grid-cols-3 gap-2">
+                      <div>
+                        <div className="text-[9px] text-amber-400/50 uppercase tracking-wide mb-0.5">Bloky</div>
+                        <div className="font-black text-amber-300 text-lg leading-tight">{blocks} × 15</div>
+                      </div>
+                      <div>
+                        <div className="text-[9px] text-amber-400/50 uppercase tracking-wide mb-0.5">Čas</div>
+                        <div className="text-white/60 font-mono text-sm leading-tight">{Math.floor(billingMins / 60)}h{billingMins % 60 > 0 ? `${billingMins % 60}m` : ""}</div>
+                        <div className="text-white/25 font-mono text-[10px]">({Math.floor(durMins / 60)}h{durMins % 60 > 0 ? `${durMins % 60}m` : ""} skut.)</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-[9px] text-amber-400/50 uppercase tracking-wide mb-0.5">Odhad</div>
+                        <div className="font-black text-primary text-base leading-tight">{estimatedCost.toFixed(2)} €</div>
+                        <div className="text-white/25 text-[9px]">bez DPH</div>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-[10px] text-amber-400/60 uppercase tracking-wide">Skutočný čas</div>
-                      <div className="text-white/50 font-mono text-sm">{Math.floor(durMins / 60)}h{durMins % 60 > 0 ? ` ${durMins % 60}m` : ""} = {Math.floor(billingMins / 60)}h{billingMins % 60 > 0 ? ` ${billingMins % 60}m` : ""}</div>
+                    <div className="px-3 py-1.5 border-t border-amber-500/15 bg-amber-500/5">
+                      <p className="text-[9px] text-amber-400/40 text-center">Sadzba: {pumpServicePrice.toFixed(2)} €/h · Iba čerpanie (bez betónu a dopravy)</p>
                     </div>
                   </div>
                 ) : null;
@@ -2794,12 +2806,17 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                               initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
                               transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
                               className="flex flex-col items-center gap-3 py-2">
+                              <div className="flex items-center gap-3 text-[9px] text-white/20 uppercase tracking-widest w-full justify-center">
+                                <span className="flex-1 h-px bg-white/8" />
+                                {pumpServicePrice > 0 && <span>{pumpServicePrice.toFixed(2)} €/h</span>}
+                                <span className="flex-1 h-px bg-white/8" />
+                              </div>
                               <button type="button" onClick={handleStart}
-                                className="w-24 h-24 rounded-full bg-green-900 hover:bg-green-800 active:scale-95 text-white font-black transition-[transform,box-shadow] duration-150 flex flex-col items-center justify-center gap-1 shadow-[0_0_28px_rgba(22,163,74,0.30)] hover:shadow-[0_0_40px_rgba(22,163,74,0.55)] border-4 border-green-600/35 cursor-pointer select-none">
+                                className="w-24 h-24 rounded-full bg-green-900 hover:bg-green-800 active:scale-[0.97] text-white font-black transition-[transform,box-shadow] duration-150 flex flex-col items-center justify-center gap-1 shadow-[0_0_28px_rgba(22,163,74,0.30)] hover:shadow-[0_0_40px_rgba(22,163,74,0.55)] border-4 border-green-600/35 cursor-pointer select-none">
                                 <svg viewBox="0 0 24 24" className="w-8 h-8" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
                                 <span className="text-[9px] font-black tracking-widest text-green-200">START</span>
                               </button>
-                              <p className="text-[9px] text-white/20 text-center">Stlač pri začatí čerpania</p>
+                              <p className="text-[9px] text-white/25 text-center leading-relaxed">Stlač pri príjazde pumpy na stavbu.<br/>Faktúra = zaokrúhlenie nahor na 15 min.</p>
                             </motion.div>
                           )}
                         </AnimatePresence>

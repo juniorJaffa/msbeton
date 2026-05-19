@@ -21,25 +21,44 @@ interface PhotoCardProps {
   pos?: string;
   className?: string;
   imgFilter?: string;
+  delay?: number;
 }
 
-function PhotoCard({ src, alt, label, sub, pos = "center 50%", className = "", imgFilter = PF }: PhotoCardProps) {
+function PhotoCard({ src, alt, label, sub, pos = "center 50%", className = "", imgFilter = PF, delay = 0 }: PhotoCardProps) {
   return (
-    <div className={`relative overflow-hidden group cursor-default ${className}`}>
+    <motion.div
+      className={`relative overflow-hidden group cursor-default ${className}`}
+      initial={{ opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.6, ease, delay }}
+    >
       <img
         src={src}
         alt={alt}
-        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.05]"
+        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]"
         style={{ objectPosition: pos, filter: imgFilter }}
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-secondary/88 via-secondary/20 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-secondary/90 via-secondary/22 to-transparent" />
       <div className="absolute bottom-0 left-0 right-0 p-4 md:p-5">
         <div className="text-primary text-[9px] font-bold uppercase tracking-[0.3em] mb-1 opacity-75">{sub}</div>
         <div className="text-white font-black text-sm leading-snug">{label}</div>
       </div>
-    </div>
+    </motion.div>
   );
 }
+
+// Marquee strip: duplicated images for seamless loop
+const MARQUEE_PHOTOS = [
+  { src: "/images/vozovy-park/pumpa-hero.jpg",      pos: "center 30%" },
+  { src: "/images/vozovy-park/pumpa-scania.jpg",     pos: "center 45%" },
+  { src: "/images/vozovy-park/pumpa-site.jpg",       pos: "center 35%" },
+  { src: "/images/vozovy-park/akcia-podlaha-1.jpg",  pos: "center 35%" },
+  { src: "/images/vozovy-park/pumpa-krajina.jpg",    pos: "center 40%" },
+  { src: "/images/vozovy-park/pumpa-mixer-site.jpg", pos: "center 40%" },
+  { src: "/images/vozovy-park/mixer-krajina.jpg",    pos: "center 40%" },
+  { src: "/images/vozovy-park/akcia-podlaha-2.jpg",  pos: "center 60%" },
+];
 
 export default function VozovyPark() {
   return (
@@ -51,7 +70,7 @@ export default function VozovyPark() {
       />
       <Navbar />
 
-      {/* ── HERO (65 vh, kratší) ── */}
+      {/* ── HERO (65 vh) ── */}
       <section className="relative h-[65vh] min-h-[460px] flex items-end overflow-hidden">
         <div
           className="absolute inset-0 bg-cover scale-[1.05]"
@@ -100,7 +119,7 @@ export default function VozovyPark() {
           </motion.div>
         </div>
 
-        {/* Funkčná scroll šípka */}
+        {/* Scroll šípka */}
         <button
           type="button"
           onClick={() => document.getElementById("fleet")?.scrollIntoView({ behavior: "smooth" })}
@@ -117,9 +136,10 @@ export default function VozovyPark() {
       {/* ── STATS STRIP ── */}
       <div className="border-y border-primary/12" style={{ background: "rgba(237,197,49,0.05)" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-4 divide-x divide-primary/10">
+          <div className="grid grid-cols-5 divide-x divide-primary/10">
             {[
-              { n: "4", u: "×", l: "Pumpy a Mixy" },
+              { n: "2", u: "×", l: "PUMPA" },
+              { n: "2", u: "×", l: "MIXER" },
               { n: "28", u: "m", l: "Dosah pumpy" },
               { n: "9", u: "m³", l: "Objem mixeru" },
               { n: "30", u: "min", l: "Čakanie zdarma" },
@@ -144,14 +164,34 @@ export default function VozovyPark() {
             whileInView="show"
             viewport={{ once: true, margin: "-60px" }}
             variants={stagger}
-            className="grid md:grid-cols-2 gap-4"
+            className="mb-8"
           >
+            <motion.div variants={fadeUp} className="flex items-center gap-3 mb-3">
+              <span className="block w-6 h-[2px] bg-primary" />
+              <span className="text-primary text-[10px] font-bold uppercase tracking-[0.3em]">Technika</span>
+            </motion.div>
+            <motion.h2
+              variants={fadeUp}
+              className="font-black text-3xl md:text-4xl text-white tracking-tight"
+              style={{ fontFamily: "Montserrat, sans-serif" }}
+            >
+              NÁŠ VOZOVÝ PARK
+            </motion.h2>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 gap-4">
             {/* PUMPA */}
-            <motion.div variants={fadeUp} className="relative overflow-hidden group h-[420px] md:h-[480px] cursor-default">
+            <motion.div
+              className="relative overflow-hidden group h-[420px] md:h-[480px] cursor-default"
+              initial={{ opacity: 0, y: 32 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.65, ease }}
+            >
               <img
                 src="/images/vozovy-park/pumpa-site.jpg"
                 alt="MS-BETON betónová pumpa MAN TGA"
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
                 style={{ objectPosition: "center 35%", filter: PF }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-secondary via-secondary/55 to-transparent" />
@@ -189,11 +229,17 @@ export default function VozovyPark() {
             </motion.div>
 
             {/* MIXER */}
-            <motion.div variants={fadeUp} className="relative overflow-hidden group h-[420px] md:h-[480px] cursor-default">
+            <motion.div
+              className="relative overflow-hidden group h-[420px] md:h-[480px] cursor-default"
+              initial={{ opacity: 0, y: 32 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.65, ease, delay: 0.12 }}
+            >
               <img
                 src="/images/vozovy-park/mixer-krajina.jpg"
                 alt="MS-BETON domiešavač betónu"
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
                 style={{ objectPosition: "center 40%", filter: PF }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-secondary via-secondary/55 to-transparent" />
@@ -229,104 +275,149 @@ export default function VozovyPark() {
                 </p>
               </div>
             </motion.div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
+      {/* ── FOTO MARQUEE STRIP ── */}
+      <div className="overflow-hidden border-y border-white/6 py-2.5" aria-hidden="true" style={{ background: "rgba(0,29,61,0.6)" }}>
+        <div
+          className="flex gap-2.5"
+          style={{
+            width: "max-content",
+            animation: "marquee-scroll 40s linear infinite",
+          }}
+        >
+          {[...MARQUEE_PHOTOS, ...MARQUEE_PHOTOS].map((p, i) => (
+            <div
+              key={i}
+              className="relative overflow-hidden flex-shrink-0"
+              style={{ width: 220, height: 140 }}
+            >
+              <img
+                src={p.src}
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{ objectPosition: p.pos, filter: "brightness(0.75) contrast(1.1) saturate(0.9)" }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-secondary/60 to-transparent" />
+            </div>
+          ))}
+        </div>
+        <style>{`
+          @keyframes marquee-scroll {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
+          }
+        `}</style>
+      </div>
+
       {/* ── V AKCII — bento photo grid ── */}
-      <section className="pb-14 md:pb-20">
+      <section className="py-14 md:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, margin: "-60px" }}
             variants={stagger}
+            className="mb-6"
           >
-            <motion.div variants={fadeUp} className="flex items-center gap-3 mb-5">
+            <motion.div variants={fadeUp} className="flex items-center gap-3 mb-3">
               <span className="block w-6 h-[2px] bg-primary" />
               <span className="text-primary text-[10px] font-bold uppercase tracking-[0.3em]">Galéria</span>
             </motion.div>
             <motion.h2
               variants={fadeUp}
-              className="font-black text-3xl md:text-4xl text-white tracking-tight mb-5"
+              className="font-black text-3xl md:text-4xl text-white tracking-tight"
               style={{ fontFamily: "Montserrat, sans-serif" }}
             >
               V AKCII
             </motion.h2>
+          </motion.div>
 
-            {/* Bento row 1: large (8/12) + tall-right (4/12) */}
-            <motion.div variants={fadeUp} className="grid grid-cols-12 gap-3 mb-3">
-              <PhotoCard
-                src="/images/vozovy-park/pumpa-hero.jpg"
-                alt="MS-BETON pumpa s výložníkom 28 m nad budovou"
-                label="Dosah 28 m — čerpanie stropov a výšok"
-                sub="Pumpa v akcii"
-                pos="center 30%"
-                className="col-span-12 md:col-span-8 h-[240px] md:h-[320px]"
-              />
-              <PhotoCard
-                src="/images/vozovy-park/pumpa-scania.jpg"
-                alt="MS-BETON Scania betónová pumpa"
-                label="2 pumpy, 2 mixy — dostupní každý deň"
-                sub="Vozový park"
-                pos="center 45%"
-                className="col-span-12 md:col-span-4 h-[200px] md:h-[320px]"
-              />
-            </motion.div>
+          {/* Bento row 1: large (8/12) + tall-right (4/12) */}
+          <div className="grid grid-cols-12 gap-3 mb-3">
+            <PhotoCard
+              src="/images/vozovy-park/pumpa-hero.jpg"
+              alt="MS-BETON pumpa s výložníkom 28 m nad budovou"
+              label="Dosah 28 m — čerpanie stropov a výšok"
+              sub="Pumpa v akcii"
+              pos="center 30%"
+              className="col-span-12 md:col-span-8 h-[240px] md:h-[320px]"
+              delay={0}
+            />
+            <PhotoCard
+              src="/images/vozovy-park/pumpa-scania.jpg"
+              alt="MS-BETON Scania betónová pumpa"
+              label="2 pumpy, 2 mixy — dostupní každý deň"
+              sub="Vozový park"
+              pos="center 45%"
+              className="col-span-12 md:col-span-4 h-[200px] md:h-[320px]"
+              delay={0.1}
+            />
+          </div>
 
-            {/* Bento row 2: 3 equal */}
-            <motion.div variants={fadeUp} className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-              <PhotoCard
-                src="/images/vozovy-park/akcia-podlaha-1.jpg"
-                alt="Betonáž podlahy haly pumpa MS-BETON"
-                label="Betonáž podlahy haly — presnosť na cm"
-                sub="Pumpa v akcii"
-                pos="center 35%"
-                className="h-[200px] md:h-[230px]"
-              />
-              <PhotoCard
-                src="/images/vozovy-park/pumpa-krajina.jpg"
-                alt="MS-BETON pumpa pri rodinnom dome v horách"
-                label="Rodinné domy, chaty aj hory — dostupní pre každého"
-                sub="Žilinský kraj"
-                pos="center 40%"
-                className="h-[200px] md:h-[230px]"
-              />
-              <PhotoCard
-                src="/images/vozovy-park/pumpa-mixer-site.jpg"
-                alt="MS-BETON pumpa a mixer na jednej zákazke"
-                label="Pumpa + mixer — jedna firma, jedna zákazka"
-                sub="Kompletná zákazka"
-                pos="center 40%"
-                className="h-[200px] md:h-[230px]"
-              />
-            </motion.div>
+          {/* Bento row 2: 3 equal */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+            <PhotoCard
+              src="/images/vozovy-park/akcia-podlaha-1.jpg"
+              alt="Betonáž podlahy haly pumpa MS-BETON"
+              label="Betonáž podlahy haly — presnosť na cm"
+              sub="Pumpa v akcii"
+              pos="center 35%"
+              className="h-[200px] md:h-[230px]"
+              delay={0}
+            />
+            <PhotoCard
+              src="/images/vozovy-park/pumpa-krajina.jpg"
+              alt="MS-BETON pumpa pri rodinnom dome v horách"
+              label="Rodinné domy, chaty aj hory — dostupní pre každého"
+              sub="Žilinský kraj"
+              pos="center 40%"
+              className="h-[200px] md:h-[230px]"
+              delay={0.08}
+            />
+            <PhotoCard
+              src="/images/vozovy-park/pumpa-mixer-site.jpg"
+              alt="MS-BETON pumpa a mixer na jednej zákazke"
+              label="Pumpa + mixer — jedna firma, jedna zákazka"
+              sub="Kompletná zákazka"
+              pos="center 40%"
+              className="h-[200px] md:h-[230px]"
+              delay={0.16}
+            />
+          </div>
 
-            {/* Full-width action banner */}
-            <motion.div variants={fadeUp} className="relative overflow-hidden group h-[170px] md:h-[210px]">
-              <img
-                src="/images/vozovy-park/akcia-podlaha-2.jpg"
-                alt="Pumpa v akcii — betonáž"
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
-                style={{
-                  objectPosition: "center 60%",
-                  filter: "brightness(0.70) contrast(1.22) saturate(1.1)",
-                }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-secondary/92 via-secondary/55 to-secondary/10" />
-              <div className="absolute inset-0 flex items-center px-6 md:px-10">
-                <div>
-                  <div className="text-primary text-[9px] font-bold uppercase tracking-[0.35em] mb-2">MS-BETON s.r.o.</div>
-                  <div
-                    className="text-white font-black text-xl md:text-3xl uppercase tracking-tight leading-tight"
-                    style={{ fontFamily: "Montserrat, sans-serif" }}
-                  >
-                    Presné čerpanie.<br />
-                    <span className="text-primary">Kdekoľvek v Žilinskom kraji.</span>
-                  </div>
+          {/* Full-width action banner */}
+          <motion.div
+            className="relative overflow-hidden group h-[170px] md:h-[210px]"
+            initial={{ opacity: 0, scale: 1.02 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.7, ease }}
+          >
+            <img
+              src="/images/vozovy-park/akcia-podlaha-2.jpg"
+              alt="Pumpa v akcii — betonáž"
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+              style={{
+                objectPosition: "center 60%",
+                filter: "brightness(0.70) contrast(1.22) saturate(1.1)",
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-secondary/92 via-secondary/55 to-secondary/10" />
+            <div className="absolute inset-0 flex items-center px-6 md:px-10">
+              <div>
+                <div className="text-primary text-[9px] font-bold uppercase tracking-[0.35em] mb-2">MS-BETON s.r.o.</div>
+                <div
+                  className="text-white font-black text-xl md:text-3xl uppercase tracking-tight leading-tight"
+                  style={{ fontFamily: "Montserrat, sans-serif" }}
+                >
+                  Presné čerpanie.<br />
+                  <span className="text-primary">Kdekoľvek v Žilinskom kraji.</span>
                 </div>
               </div>
-            </motion.div>
+            </div>
           </motion.div>
         </div>
       </section>
