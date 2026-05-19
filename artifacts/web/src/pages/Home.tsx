@@ -215,26 +215,46 @@ export default function Home() {
               </motion.div>
             </motion.div>
 
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, x: 50 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
+              transition={{ duration: 0.7, ease: [0.23, 1, 0.32, 1] }}
               className="relative"
             >
-              <div className="absolute -inset-4 bg-gray-100 rounded-xl transform rotate-3"></div>
-              <div className="absolute -inset-4 bg-primary/10 rounded-xl transform -rotate-3 border border-primary/20"></div>
-              <img
-                src={`${import.meta.env.BASE_URL}images/about-mixer.jpg`}
-                alt="MS-BETON domiešavače"
-                loading="lazy"
-                className="relative rounded-xl shadow-2xl object-cover w-full h-[400px]"
-              />
-              {/* Floating badge */}
-              <div className="absolute -bottom-8 -left-8 bg-secondary text-white p-6 rounded-xl shadow-xl max-w-[200px] border-l-4 border-primary">
-                <span className="block text-4xl font-display font-bold text-primary mb-1">15+</span>
-                <span className="text-sm font-semibold uppercase tracking-wider">Rokov Skúseností v obore</span>
+              <div className="grid grid-cols-2 gap-2 relative">
+                <div className="absolute -inset-3 bg-primary/6 rounded-xl -rotate-1 pointer-events-none" />
+                {[
+                  { src: "/images/vozovy-park/p03.jpg", label: "Betónová pumpa", pos: "center 50%" },
+                  { src: "/images/vozovy-park/pumpa-site.jpg", label: "Pumpa na stavbe", pos: "center 35%" },
+                  { src: "/images/vozovy-park/mixer-krajina.jpg", label: "Domiešavač", pos: "center 40%" },
+                  { src: "/images/vozovy-park/p27.jpg", label: "2 pumpy + 1 mixer", pos: "center 50%" },
+                ].map((p, i) => (
+                  <div key={i} className="relative overflow-hidden rounded-lg h-[180px] md:h-[200px] group">
+                    <img
+                      src={p.src}
+                      alt={p.label}
+                      loading="lazy"
+                      className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]"
+                      style={{ objectPosition: p.pos, filter: "brightness(0.88) contrast(1.18) saturate(1.12)" }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-secondary/70 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 px-3 py-2">
+                      <span className="text-[10px] font-bold text-white/70">{p.label}</span>
+                    </div>
+                  </div>
+                ))}
+                <div className="absolute -bottom-5 -left-5 bg-secondary text-white p-4 rounded-lg shadow-xl border-l-4 border-primary z-10">
+                  <span className="block text-3xl font-bold text-primary mb-0.5">15+</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider">Rokov skúseností</span>
+                </div>
               </div>
+              <a
+                href="/vozovy-park"
+                className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-secondary/60 hover:text-primary transition-colors duration-150"
+              >
+                Zobraziť vozový park →
+              </a>
             </motion.div>
           </div>
         </div>

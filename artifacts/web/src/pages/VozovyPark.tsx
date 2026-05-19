@@ -1,4 +1,5 @@
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Phone, ArrowRight, ChevronDown } from "lucide-react";
 import { SEOHead } from "@/components/SEOHead";
 import { Navbar } from "@/components/Navbar";
@@ -13,42 +14,6 @@ const stagger = { show: { transition: { staggerChildren: 0.07 } } };
 
 const PF = "brightness(0.88) contrast(1.18) saturate(1.12)";
 
-interface PhotoCardProps {
-  src: string;
-  alt: string;
-  label: string;
-  sub: string;
-  pos?: string;
-  className?: string;
-  imgFilter?: string;
-  delay?: number;
-}
-
-function PhotoCard({ src, alt, label, sub, pos = "center 50%", className = "", imgFilter = PF, delay = 0 }: PhotoCardProps) {
-  return (
-    <motion.div
-      className={`relative overflow-hidden group cursor-default ${className}`}
-      initial={{ opacity: 0, y: 28 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-50px" }}
-      transition={{ duration: 0.6, ease, delay }}
-    >
-      <img
-        src={src}
-        alt={alt}
-        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]"
-        style={{ objectPosition: pos, filter: imgFilter }}
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-secondary/90 via-secondary/22 to-transparent" />
-      <div className="absolute bottom-0 left-0 right-0 p-4 md:p-5">
-        <div className="text-primary text-[9px] font-bold uppercase tracking-[0.3em] mb-1 opacity-75">{sub}</div>
-        <div className="text-white font-black text-sm leading-snug">{label}</div>
-      </div>
-    </motion.div>
-  );
-}
-
-// Marquee strip: duplicated images for seamless loop
 const MARQUEE_PHOTOS = [
   { src: "/images/vozovy-park/pumpa-hero.jpg",      pos: "center 30%" },
   { src: "/images/vozovy-park/pumpa-scania.jpg",     pos: "center 45%" },
@@ -60,7 +25,196 @@ const MARQUEE_PHOTOS = [
   { src: "/images/vozovy-park/akcia-podlaha-2.jpg",  pos: "center 60%" },
 ];
 
+type GalleryCat = "vsetko" | "pumpa" | "mix" | "spolu" | "hadice";
+
+interface GalleryPhoto {
+  src: string;
+  cat: GalleryCat;
+  label: string;
+  sub: string;
+}
+
+const GALLERY_PHOTOS: GalleryPhoto[] = [
+  { src: "p03.jpg", cat: "pumpa", label: "Reprezentatívna pumpa MS-BETON", sub: "Pumpa · MAN TGA" },
+  { src: "pumpa-hero.jpg", cat: "pumpa", label: "Dosah 28 m — čerpanie výšok", sub: "Pumpa v akcii" },
+  { src: "p09.jpg", cat: "pumpa", label: "Rameno pumpuje do ďalšej pumpy", sub: "Špeciálna zákazka" },
+  { src: "p08.jpg", cat: "pumpa", label: "Vozový park — pohľad zhora", sub: "Pumpa" },
+  { src: "p10.jpg", cat: "pumpa", label: "Betonáž haly — čerpanie pumpa", sub: "Hala" },
+  { src: "p21.jpg", cat: "pumpa", label: "Betonáž priemyselnej haly", sub: "Hala" },
+  { src: "p26.jpg", cat: "pumpa", label: "Pohľad z výšky na vozový park", sub: "Pumpa" },
+  { src: "pumpa-scania.jpg", cat: "pumpa", label: "Scania betónová pumpa", sub: "Pumpa" },
+  { src: "pumpa-site.jpg", cat: "pumpa", label: "Betónová pumpa MAN TGA na stavbe", sub: "Stavba" },
+  { src: "pumpa-krajina.jpg", cat: "pumpa", label: "Pumpa v krajine Žilinského kraja", sub: "Žilinský kraj" },
+  { src: "p01.jpg", cat: "pumpa", label: "Pumpa MS-BETON v akcii", sub: "Pumpa" },
+  { src: "p04.jpg", cat: "pumpa", label: "Pumpa na zákazke", sub: "Pumpa" },
+  { src: "p05.jpg", cat: "pumpa", label: "Betónovanie objektu", sub: "Pumpa" },
+  { src: "mixer-krajina.jpg", cat: "mix", label: "Domiešavač betónu v krajine", sub: "Mix · IVECO MAGIRUS" },
+  { src: "p12.jpg", cat: "mix", label: "Domiešavač na zákazke", sub: "Mix" },
+  { src: "p16.jpg", cat: "mix", label: "Mixer v akcii", sub: "Mix" },
+  { src: "p17.jpg", cat: "mix", label: "Domiešavač betónu", sub: "Mix" },
+  { src: "p19.jpg", cat: "mix", label: "Mixer na stavbe", sub: "Mix" },
+  { src: "p20.jpg", cat: "mix", label: "Domiešavač v plnej zákazke", sub: "Mix" },
+  { src: "p27.jpg", cat: "spolu", label: "2 pumpy + 1 mixer — kompletná zákazka", sub: "Pumpa + Mix" },
+  { src: "pumpa-mixer-site.jpg", cat: "spolu", label: "Pumpa + mixer na jednej zákazke", sub: "Kompletná zákazka" },
+  { src: "p02.jpg", cat: "spolu", label: "Vozidlá MS-BETON — vozový park", sub: "Fleet" },
+  { src: "p06.jpg", cat: "spolu", label: "Pumpa a mixer v akcii", sub: "Spolu" },
+  { src: "p07.jpg", cat: "spolu", label: "Kompletná zákazka betónu", sub: "Spolu" },
+  { src: "p11.jpg", cat: "spolu", label: "Zákazka pumpa + mixer", sub: "Spolu" },
+  { src: "akcia-podlaha-1.jpg", cat: "spolu", label: "Betonáž podlahy — presnosť na cm", sub: "Pumpa v akcii" },
+  { src: "akcia-podlaha-2.jpg", cat: "spolu", label: "Čerpanie betónu — priemyselná podlaha", sub: "Pumpa v akcii" },
+  { src: "p28.jpg", cat: "spolu", label: "MS-BETON zákazka", sub: "Spolu" },
+  { src: "p30.jpg", cat: "spolu", label: "Betónovanie s celým tímom", sub: "Spolu" },
+  { src: "p31.jpg", cat: "spolu", label: "Zákazka — pumpa a mixer", sub: "Spolu" },
+  { src: "p22.jpg", cat: "hadice", label: "Prídavné hadice — rozšírenie dosahu pumpy", sub: "Prídavné hadice" },
+  { src: "p29.jpg", cat: "hadice", label: "Hadice pre ťažko dostupné miesta", sub: "Prídavné hadice" },
+  { src: "p13.jpg", cat: "hadice", label: "Čerpanie cez prídavné hadice", sub: "Hadice" },
+  { src: "p14.jpg", cat: "hadice", label: "Prídavné hadice na zákazke", sub: "Hadice" },
+  { src: "p23.jpg", cat: "hadice", label: "Betonáž s hadicami", sub: "Hadice" },
+  { src: "p24.jpg", cat: "hadice", label: "Hadice — rozšírený dosah", sub: "Hadice" },
+  { src: "p25.jpg", cat: "hadice", label: "Prídavné hadice v akcii", sub: "Hadice" },
+];
+
+const TABS: { id: GalleryCat | "videa"; label: string }[] = [
+  { id: "vsetko", label: "VŠETKO" },
+  { id: "pumpa", label: "PUMPA" },
+  { id: "mix", label: "MIX" },
+  { id: "spolu", label: "SPOLU" },
+  { id: "hadice", label: "HADICE" },
+  { id: "videa", label: "VIDEA" },
+];
+
+const catLabel: Record<GalleryCat, string> = {
+  pumpa: "PUMPA",
+  mix: "MIX",
+  spolu: "SPOLU",
+  hadice: "HADICE",
+  vsetko: "VŠETKO",
+};
+
+function GalleryGrid({ photos }: { photos: GalleryPhoto[] }) {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+      {photos.map((p, i) => (
+        <motion.div
+          key={p.src + i}
+          className="relative overflow-hidden rounded group cursor-default"
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-30px" }}
+          transition={{ duration: 0.5, ease, delay: Math.min(i * 0.04, 0.32) }}
+        >
+          <div className="h-48 md:h-56">
+            <img
+              src={`/images/vozovy-park/${p.src}`}
+              alt={p.label}
+              loading="lazy"
+              className="w-full h-full object-cover transition-[transform,opacity] duration-700 ease-out group-hover:scale-[1.06]"
+              style={{ filter: "brightness(0.9) contrast(1.15) saturate(1.1)" }}
+            />
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-secondary/85 via-secondary/20 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 px-3 py-2.5">
+            <div className="text-primary text-[8px] font-bold uppercase tracking-[0.28em] mb-0.5 opacity-80">
+              {catLabel[p.cat]}
+            </div>
+            <div className="text-white font-bold text-[11px] leading-snug">{p.label}</div>
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+function VideasSection() {
+  return (
+    <div className="relative overflow-hidden rounded-lg">
+      <div
+        className="absolute inset-0 bg-cover bg-center pointer-events-none"
+        style={{
+          backgroundImage: "url('/images/vozovy-park/anim-bg.gif')",
+          filter: "brightness(0.08) saturate(0.3)",
+        }}
+      />
+      <div className="relative px-2 py-4 md:py-6 space-y-4">
+        <motion.div
+          className="relative overflow-hidden rounded-lg"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease }}
+        >
+          <video
+            src="/images/vozovy-park/vid01.mp4"
+            poster="/images/vozovy-park/vid01-poster.jpg"
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="w-full rounded-lg object-cover max-h-[400px]"
+            style={{ filter: "brightness(0.92) contrast(1.1) saturate(1.05)" }}
+          />
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-secondary/80 to-transparent px-4 py-3">
+            <div className="text-primary text-[9px] font-bold uppercase tracking-[0.3em] mb-0.5">MS-BETON · Hlavné video</div>
+            <div className="text-white font-bold text-sm">Betónová pumpa MS-BETON v akcii</div>
+          </div>
+        </motion.div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+          {[
+            { src: "/images/vozovy-park/vid02.mp4", poster: "/images/vozovy-park/vid02-poster.jpg", label: "Čerpanie betónu" },
+            { type: "iframe" as const, poster: "/images/vozovy-park/vid03-poster.jpg", label: "Zákazka — hala" },
+            { src: "/images/vozovy-park/vid04.mp4", poster: "/images/vozovy-park/vid04-poster.jpg", label: "Mixer v akcii" },
+            { src: "/images/vozovy-park/vid05.mp4", poster: "/images/vozovy-park/vid05-poster.jpg", label: "Pumpa na stavbe" },
+          ].map((v, i) => (
+            <motion.div
+              key={i}
+              className="relative overflow-hidden rounded group"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, ease, delay: 0.1 + i * 0.06 }}
+            >
+              <div className="h-36 md:h-44 relative bg-secondary/80">
+                {v.type === "iframe" ? (
+                  <iframe
+                    src="https://drive.google.com/file/d/1rdgZR0ws6a8Pc-rnIJuUcerJpScE7gKa/preview"
+                    className="w-full h-full"
+                    allowFullScreen
+                    title={v.label}
+                  />
+                ) : (
+                  <video
+                    src={v.src}
+                    poster={v.poster}
+                    muted
+                    loop
+                    playsInline
+                    className="w-full h-full object-cover transition-[transform,opacity] duration-700 ease-out group-hover:scale-[1.04]"
+                    style={{ filter: "brightness(0.88) contrast(1.1) saturate(1.0)" }}
+                    onMouseEnter={e => (e.currentTarget as HTMLVideoElement).play()}
+                    onMouseLeave={e => { const el = e.currentTarget as HTMLVideoElement; el.pause(); el.currentTime = 0; }}
+                  />
+                )}
+              </div>
+              {v.type !== "iframe" && (
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-secondary/80 to-transparent px-2.5 py-2">
+                  <div className="text-white font-bold text-[10px] leading-snug">{v.label}</div>
+                </div>
+              )}
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function VozovyPark() {
+  const [activeTab, setActiveTab] = useState<GalleryCat | "videa">("vsetko");
+
+  const filteredPhotos =
+    activeTab === "vsetko" || activeTab === "videa"
+      ? GALLERY_PHOTOS
+      : GALLERY_PHOTOS.filter(p => p.cat === activeTab);
+
   return (
     <div className="min-h-screen bg-secondary">
       <SEOHead
@@ -119,7 +273,6 @@ export default function VozovyPark() {
           </motion.div>
         </div>
 
-        {/* Scroll šípka */}
         <button
           type="button"
           onClick={() => document.getElementById("fleet")?.scrollIntoView({ behavior: "smooth" })}
@@ -312,7 +465,7 @@ export default function VozovyPark() {
         `}</style>
       </div>
 
-      {/* ── V AKCII — bento photo grid ── */}
+      {/* ── GALÉRIA ── */}
       <section className="py-14 md:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -320,105 +473,60 @@ export default function VozovyPark() {
             whileInView="show"
             viewport={{ once: true, margin: "-60px" }}
             variants={stagger}
-            className="mb-6"
+            className="mb-8"
           >
             <motion.div variants={fadeUp} className="flex items-center gap-3 mb-3">
               <span className="block w-6 h-[2px] bg-primary" />
-              <span className="text-primary text-[10px] font-bold uppercase tracking-[0.3em]">Galéria</span>
+              <span className="text-primary text-[10px] font-bold uppercase tracking-[0.3em]">Fotky a videá</span>
             </motion.div>
             <motion.h2
               variants={fadeUp}
               className="font-black text-3xl md:text-4xl text-white tracking-tight"
               style={{ fontFamily: "Montserrat, sans-serif" }}
             >
-              V AKCII
+              GALÉRIA
             </motion.h2>
           </motion.div>
 
-          {/* Bento row 1: large (8/12) + tall-right (4/12) */}
-          <div className="grid grid-cols-12 gap-3 mb-3">
-            <PhotoCard
-              src="/images/vozovy-park/pumpa-hero.jpg"
-              alt="MS-BETON pumpa s výložníkom 28 m nad budovou"
-              label="Dosah 28 m — čerpanie stropov a výšok"
-              sub="Pumpa v akcii"
-              pos="center 30%"
-              className="col-span-12 md:col-span-8 h-[240px] md:h-[320px]"
-              delay={0}
-            />
-            <PhotoCard
-              src="/images/vozovy-park/pumpa-scania.jpg"
-              alt="MS-BETON Scania betónová pumpa"
-              label="2 pumpy, 2 mixy — dostupní každý deň"
-              sub="Vozový park"
-              pos="center 45%"
-              className="col-span-12 md:col-span-4 h-[200px] md:h-[320px]"
-              delay={0.1}
-            />
+          {/* Tab navigation */}
+          <div className="relative flex gap-0 mb-8 border-b border-white/10 overflow-x-auto scrollbar-none">
+            {TABS.map(tab => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`relative px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.18em] whitespace-nowrap transition-[color,opacity] duration-150 active:scale-[0.97] shrink-0 ${
+                  activeTab === tab.id ? "text-primary" : "text-white/40 hover:text-white/70"
+                }`}
+              >
+                {tab.label}
+                {activeTab === tab.id && (
+                  <motion.div
+                    layoutId="gallery-tab-indicator"
+                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary"
+                    transition={{ duration: 0.22, ease }}
+                  />
+                )}
+              </button>
+            ))}
           </div>
 
-          {/* Bento row 2: 3 equal */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-            <PhotoCard
-              src="/images/vozovy-park/akcia-podlaha-1.jpg"
-              alt="Betonáž podlahy haly pumpa MS-BETON"
-              label="Betonáž podlahy haly — presnosť na cm"
-              sub="Pumpa v akcii"
-              pos="center 35%"
-              className="h-[200px] md:h-[230px]"
-              delay={0}
-            />
-            <PhotoCard
-              src="/images/vozovy-park/pumpa-krajina.jpg"
-              alt="MS-BETON pumpa pri rodinnom dome v horách"
-              label="Rodinné domy, chaty aj hory — dostupní pre každého"
-              sub="Žilinský kraj"
-              pos="center 40%"
-              className="h-[200px] md:h-[230px]"
-              delay={0.08}
-            />
-            <PhotoCard
-              src="/images/vozovy-park/pumpa-mixer-site.jpg"
-              alt="MS-BETON pumpa a mixer na jednej zákazke"
-              label="Pumpa + mixer — jedna firma, jedna zákazka"
-              sub="Kompletná zákazka"
-              pos="center 40%"
-              className="h-[200px] md:h-[230px]"
-              delay={0.16}
-            />
-          </div>
-
-          {/* Full-width action banner */}
-          <motion.div
-            className="relative overflow-hidden group h-[170px] md:h-[210px]"
-            initial={{ opacity: 0, scale: 1.02 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true, margin: "-40px" }}
-            transition={{ duration: 0.7, ease }}
-          >
-            <img
-              src="/images/vozovy-park/akcia-podlaha-2.jpg"
-              alt="Pumpa v akcii — betonáž"
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
-              style={{
-                objectPosition: "center 60%",
-                filter: "brightness(0.70) contrast(1.22) saturate(1.1)",
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-secondary/92 via-secondary/55 to-secondary/10" />
-            <div className="absolute inset-0 flex items-center px-6 md:px-10">
-              <div>
-                <div className="text-primary text-[9px] font-bold uppercase tracking-[0.35em] mb-2">MS-BETON s.r.o.</div>
-                <div
-                  className="text-white font-black text-xl md:text-3xl uppercase tracking-tight leading-tight"
-                  style={{ fontFamily: "Montserrat, sans-serif" }}
-                >
-                  Presné čerpanie.<br />
-                  <span className="text-primary">Kdekoľvek v Žilinskom kraji.</span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+          {/* Tab content */}
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
+            >
+              {activeTab === "videa" ? (
+                <VideasSection />
+              ) : (
+                <GalleryGrid photos={filteredPhotos} />
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </section>
 
