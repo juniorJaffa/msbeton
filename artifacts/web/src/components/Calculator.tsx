@@ -873,7 +873,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const totPodm = tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks;
     const effTrucksOverride = podmienkyEnabled && totPodm > 0 ? totPodm : undefined;
     const mainTC = isOwn ? zeroTC : calcTransport(km, qty + addToMainQty, tab, clientDeliveryZone, effTrucksOverride);
-    const mainTrucks = effTrucksOverride ?? (tab === "pumpa" ? calcPumpTrucks(qty) : Math.ceil(qty / mixCap));
+    const mainTrucks = effTrucksOverride ?? (tab === "pumpa" ? calcPumpTrucks(qty + addToMainQty) : Math.ceil((qty + addToMainQty) / mixCap));
     concreteBreakdown.push({
       label: `Betón ${cleanType(selectedType.label)} – ${qty} m³`,
       qty,
@@ -897,7 +897,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       if (t && q > 0) {
         const itemManual = mp[t.id];
         const extraTC = (isOwn || item.transportMode === "none" || item.transportMode === "addToMain") ? zeroTC : calcTransport(km, q, tab, clientDeliveryZone);
-        const extraTrucks = tab === "pumpa" ? calcPumpTrucks(q) : Math.ceil(q / mixCap);
+        const extraTrucks = item.transportMode === "addToMain" ? 0 : (tab === "pumpa" ? calcPumpTrucks(q) : Math.ceil(q / mixCap));
         // Per-item services
         let svcPumpHrs = 0, svcPumpMs = 0, svcPumpCost = 0;
         let svcHoseMeters = 0, svcHoseCost = 0;
@@ -1134,6 +1134,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
     const fmtH = (n: number) => n.toFixed(2).replace(".", ",") + "&nbsp;€";
     const fmtN = (n: number) => n.toFixed(2).replace(".", ",");
+    const fmtQ = (n: number) => parseFloat(n.toFixed(2)).toString();
 
     // Table row: # | Popis | Množstvo | Jedn. cena | Spolu
     let rowNum = 0;
@@ -1228,7 +1229,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         : `${fmtN(mainMinFeeDisc)}&nbsp;€/auto`)
       : transRateStr(mainTransportOrig, result.qty, result.fTransport);
     const transportRow = mainTransportOrig > 0
-      ? trow(dopravaLabel, pdfAddToMainQty > 0 ? `${result.qty}+${fmtR(pdfAddToMainQty)}&nbsp;m³` : `${result.qty}&nbsp;m³`, transportUnitStr, mainTransportOrig, mainTransportDisc)
+      ? trow(dopravaLabel, pdfAddToMainQty > 0 ? `${result.qty}+${fmtQ(pdfAddToMainQty)}&nbsp;m³` : `${result.qty}&nbsp;m³`, transportUnitStr, mainTransportOrig, mainTransportDisc)
       : "";
     const mainFillupOrig = mainCI?.transportFillup ?? 0;
     const mainFillupDisc = mainFillupOrig * result.fFillup;
@@ -3131,7 +3132,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
                   const pType = clientDeliveryZone?.pricingType ?? "standard";
                   const minFee = tsettings.minimumFee ?? 62.50;
-                  const fmtR = (n: number) => (Math.round(n * 100) / 100).toFixed(2);
+                  const fmtR = (n: number) => parseFloat((Math.round(n * 100) / 100).toFixed(2)).toString();
                   const addToMainQtyDisplay = extraItems.reduce((s, i) => {
                     const q = parseFloat(i.quantity) || 0;
                     return (q > 0 && i.transportMode === "addToMain") ? s + q : s;

@@ -57,7 +57,7 @@ export function Navbar() {
             <div className="flex items-center gap-2 sm:gap-3.5 shrink-0">
               <a
                 href="mailto:info@msbeton.sk"
-                className="hidden sm:flex items-center gap-1.5 text-white/50 hover:text-white transition-colors text-xs"
+                className="flex items-center gap-1.5 text-white/50 hover:text-white transition-colors text-xs"
                 title="info@msbeton.sk"
               >
                 <Mail className="w-3 h-3 shrink-0" />

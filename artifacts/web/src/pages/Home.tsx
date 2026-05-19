@@ -20,10 +20,24 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { PhoneInput } from "@/components/PhoneInput";
 const ConcreteCalculator = lazy(() => import("@/components/Calculator").then(m => ({ default: m.ConcreteCalculator })));
-const PARTNERS = [
-  "ZAPA Beton SK", "2BH s.r.o.", "STRABAG s.r.o.", "VÁHOSTAV – SK a.s.", "Eurovia SK a.s.",
-  "SKANSKA SK a.s.", "RENOME REAL s.r.o.", "AUSTAV", "Benneb s.r.o.", "MELO-SK s.r.o.",
-  "VDL", "ERPOS", "Pro×Bet", "PROMA", "ALPESTAV", "PB COMPANY", "P&P STAVBY",
+const PARTNERS: { name: string; logo?: string }[] = [
+  { name: "ZAPA Beton SK",       logo: "/images/partners/zapa-beton.png" },
+  { name: "STRABAG s.r.o.",      logo: "/images/partners/strabag.png" },
+  { name: "Eurovia SK a.s.",     logo: "/images/partners/eurovia.png" },
+  { name: "VÁHOSTAV – SK a.s.",  logo: "/images/partners/vahostav.png" },
+  { name: "SKANSKA SK a.s.",     logo: "/images/partners/skanska.png" },
+  { name: "2BH s.r.o.",          logo: "/images/partners/2bh.png" },
+  { name: "RENOME REAL s.r.o.",  logo: "/images/partners/renome-real.png" },
+  { name: "AUSTAV",              logo: "/images/partners/austav.png" },
+  { name: "Benneb s.r.o.",       logo: "/images/partners/benneb.png" },
+  { name: "MELO-SK s.r.o.",      logo: "/images/partners/melo.png" },
+  { name: "VDL",                 logo: "/images/partners/vdl.png" },
+  { name: "ERPOS",               logo: "/images/partners/erpos.png" },
+  { name: "Pro×Bet",             logo: "/images/partners/pro-bet.png" },
+  { name: "PROMA",               logo: "/images/partners/proma.png" },
+  { name: "ALPESTAV",            logo: "/images/partners/alpestav.png" },
+  { name: "PB COMPANY" },
+  { name: "P&P STAVBY" },
 ];
 const P_COLORS = ["#3b82f6","#10b981","#ef4444","#8b5cf6","#f59e0b","#06b6d4","#ec4899","#84cc16","#f97316","#14b8a6","#6366f1","#e11d48","#0ea5e9","#22c55e","#a855f7","#f43f5e","#fb923c"];
 
@@ -176,9 +190,9 @@ export default function Home() {
 
 
       {/* ABOUT SECTION */}
-      <section id="about" className="py-14 concrete-light">
+      <section id="about" className="py-8 lg:py-14 concrete-light">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
             <motion.div 
               initial="hidden"
               whileInView="visible"
@@ -192,7 +206,7 @@ export default function Home() {
               <motion.p variants={fadeInUp} className="text-gray-700 text-lg mb-6 leading-relaxed">
                 Spoločnosť MS-BETON s.r.o. patrí medzi popredných poskytovateľov riešení pre dovoz betónu v Žiline. Vďaka modernému vozovému parku – od betónových mixérov až po pumpy – zvládame projekty všetkých veľkostí. Zabezpečujeme kvalitný betón presne tam, kde a kedy ho potrebujete.
               </motion.p>
-              <motion.ul variants={staggerContainer} className="space-y-4 mb-8">
+              <motion.ul variants={staggerContainer} className="space-y-2.5 mb-5">
                 {[
                   "Moderná technológia riadenia výroby",
                   "Vlastný rozvoz a flotila domiešavačov",
@@ -227,7 +241,7 @@ export default function Home() {
                   { src: "/images/vozovy-park/mixer-krajina.jpg", label: "Domiešavač", pos: "center 40%" },
                   { src: "/images/vozovy-park/p27.jpg", label: "2 pumpy + 1 mixer", pos: "center 50%" },
                 ].map((p, i) => (
-                  <div key={i} className="relative overflow-hidden rounded-lg h-[180px] md:h-[200px] group">
+                  <div key={i} className="relative overflow-hidden rounded-lg h-[110px] sm:h-[150px] md:h-[190px] group">
                     <img
                       src={p.src}
                       alt={p.label}
@@ -248,9 +262,9 @@ export default function Home() {
               </div>
               <a
                 href="/vozovy-park"
-                className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-secondary/60 hover:text-primary transition-colors duration-150"
+                className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-secondary text-white text-sm font-bold rounded-none hover:bg-primary hover:text-secondary transition-colors duration-150 shadow-md shadow-secondary/20"
               >
-                Zobraziť vozový park →
+                Zobraziť vozový park <ArrowRight className="w-4 h-4" />
               </a>
             </motion.div>
           </div>
@@ -488,8 +502,7 @@ export default function Home() {
       </section>
 
       {/* PARTNERS SECTION */}
-      {/* PARTNERI — farebný marquee */}
-      <section className="py-7 bg-white border-t border-gray-100 overflow-hidden">
+      <section className="py-6 bg-white border-t border-gray-100 overflow-hidden">
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -503,21 +516,30 @@ export default function Home() {
           </h2>
         </motion.div>
         <div
-          className="flex gap-2.5"
-          style={{ width: "max-content", animation: "partner-scroll 38s linear infinite" }}
+          className="flex gap-3"
+          style={{ width: "max-content", animation: "partner-scroll 44s linear infinite" }}
         >
-          {[...PARTNERS, ...PARTNERS].map((name, i) => (
+          {[...PARTNERS, ...PARTNERS].map((p, i) => (
             <div
               key={i}
-              className="flex items-center gap-2 px-3.5 py-2 bg-gray-50 border border-gray-150 rounded-full shrink-0 hover:border-gray-300 transition-colors duration-150"
+              className="flex items-center gap-2.5 px-4 py-2.5 bg-white border border-gray-200 rounded-lg shrink-0 hover:border-gray-300 hover:shadow-sm transition-all duration-150 h-[52px]"
             >
-              <span
-                className="w-5 h-5 rounded-full text-white text-[9px] font-black flex items-center justify-center shrink-0 leading-none"
-                style={{ background: P_COLORS[i % P_COLORS.length] }}
-              >
-                {name.charAt(0)}
-              </span>
-              <span className="text-[11px] font-bold text-gray-600 uppercase tracking-wide whitespace-nowrap">{name}</span>
+              {p.logo ? (
+                <img
+                  src={p.logo}
+                  alt={p.name}
+                  className="max-h-7 max-w-[80px] object-contain grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300"
+                  loading="lazy"
+                />
+              ) : (
+                <span
+                  className="w-6 h-6 rounded-full text-white text-[9px] font-black flex items-center justify-center shrink-0 leading-none"
+                  style={{ background: P_COLORS[i % P_COLORS.length] }}
+                >
+                  {p.name.charAt(0)}
+                </span>
+              )}
+              <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide whitespace-nowrap">{p.name}</span>
             </div>
           ))}
         </div>
