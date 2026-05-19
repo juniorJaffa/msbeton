@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Phone, ArrowRight, ChevronDown } from "lucide-react";
 import { SEOHead } from "@/components/SEOHead";
@@ -13,6 +13,16 @@ const fadeUp = {
 const stagger = { show: { transition: { staggerChildren: 0.07 } } };
 
 const PF = "brightness(0.88) contrast(1.18) saturate(1.12)";
+
+const HERO_SLIDES = [
+  { src: "g01.jpg", pos: "center 40%" },
+  { src: "g05.jpg", pos: "center 50%" },
+  { src: "g03.jpg", pos: "center 45%" },
+  { src: "g09.jpg", pos: "center 35%" },
+  { src: "g15.jpg", pos: "center 42%" },
+  { src: "g11.jpg", pos: "center 45%" },
+  { src: "g02.jpg", pos: "center 48%" },
+];
 
 const MARQUEE_PHOTOS = [
   { src: "/images/vozovy-park/pumpa-hero.jpg",      pos: "center 30%" },
@@ -75,6 +85,22 @@ const GALLERY_PHOTOS: GalleryPhoto[] = [
   { src: "p23.jpg",              cat: "hadice", label: "Betonáž s hadicami",                        sub: "Hadice" },
   { src: "p24.jpg",              cat: "hadice", label: "Hadice — rozšírený dosah",                  sub: "Hadice" },
   { src: "p25.jpg",              cat: "hadice", label: "Prídavné hadice v akcii",                   sub: "Hadice" },
+  { src: "g01.jpg",  cat: "pumpa",  label: "Pumpa MS-BETON — čerpanie pri priemyselnom objekte",  sub: "Pumpa v akcii",     top: true, pos: "center 40%" },
+  { src: "g02.jpg",  cat: "spolu",  label: "Pumpa + mixer — hrubá stavba, dramatická obloha",     sub: "Pumpa + Mix",       top: true, pos: "center 48%" },
+  { src: "g03.jpg",  cat: "spolu",  label: "MS-BETON na veľkej zákazke — základová doska",        sub: "Kompletná zákazka", top: true, pos: "center 45%" },
+  { src: "g04.jpg",  cat: "pumpa",  label: "Betónová pumpa na zákazke",                           sub: "Pumpa" },
+  { src: "g05.jpg",  cat: "spolu",  label: "Pumpa + mixer — súmrak, dramatická obloha",           sub: "Pumpa + Mix",       top: true, pos: "center 50%" },
+  { src: "g06.jpg",  cat: "pumpa",  label: "Pumpa MS-BETON v mestskej zástavbe",                  sub: "Pumpa" },
+  { src: "g07.jpg",  cat: "pumpa",  label: "MAN betónová pumpa MS-BETON — detail kabíny",        sub: "Pumpa · MAN" },
+  { src: "g08.jpg",  cat: "spolu",  label: "MS-BETON pumpa a mixer — zákazka z výšky",            sub: "Mix",               top: true, pos: "center 50%" },
+  { src: "g09.jpg",  cat: "pumpa",  label: "Pumpa Scania — Žilinský kraj s pohoriami",            sub: "Pumpa · Scania",    top: true, pos: "center 35%" },
+  { src: "g10.jpg",  cat: "pumpa",  label: "Pumpa Scania — čerpanie v priemyselnej hale",        sub: "Pumpa · Scania",    top: true, pos: "center 40%" },
+  { src: "g11.jpg",  cat: "spolu",  label: "Pumpa MAN + mixer — jarné zákazky v horách",         sub: "Pumpa + Mix",       top: true, pos: "center 45%" },
+  { src: "g12.jpg",  cat: "pumpa",  label: "Zákazka s pumpou — pohľad na celé stavenisko",       sub: "Pumpa",             top: true, pos: "center 45%" },
+  { src: "g13.jpg",  cat: "hadice", label: "Čerpanie betónu cez prídavnú hadicu",                sub: "Hadice" },
+  { src: "g14.jpg",  cat: "spolu",  label: "Vozový park MS-BETON — flota 3 vozidiel",            sub: "Fleet",             top: true, pos: "center 50%" },
+  { src: "g15.jpg",  cat: "pumpa",  label: "Pumpa Scania — čerpanie pri rodinnom dome",          sub: "Pumpa · Scania",    top: true, pos: "center 42%" },
+  { src: "g16.jpg",  cat: "pumpa",  label: "MS-BETON MAN TGA — príjazd na zákazku",             sub: "Pumpa · MAN",       top: true, pos: "center 45%" },
 ];
 
 const TABS: { id: GalleryCat | "videa"; label: string }[] = [
@@ -197,6 +223,11 @@ function VideasSection() {
 
 export default function VozovyPark() {
   const [activeTab, setActiveTab] = useState<GalleryCat | "videa">("vsetko");
+  const [heroSlide, setHeroSlide] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setHeroSlide(s => (s + 1) % HERO_SLIDES.length), 5000);
+    return () => clearInterval(t);
+  }, []);
 
   const filteredPhotos =
     activeTab === "videa"
@@ -216,14 +247,18 @@ export default function VozovyPark() {
 
       {/* ── HERO (65 vh) ── */}
       <section className="relative h-[65vh] min-h-[460px] flex items-end overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover scale-[1.05]"
-          style={{
-            backgroundImage: "url('/images/vozovy-park/pumpa-hero.jpg')",
-            backgroundPosition: "center 30%",
-            filter: "brightness(0.36) contrast(1.15) saturate(0.88)",
-          }}
-        />
+        {HERO_SLIDES.map((sl, i) => (
+          <div
+            key={sl.src}
+            className="absolute inset-0 bg-cover scale-[1.05] transition-opacity duration-[1400ms] ease-in-out"
+            style={{
+              backgroundImage: `url('/images/vozovy-park/${sl.src}')`,
+              backgroundPosition: sl.pos,
+              filter: "brightness(0.36) contrast(1.15) saturate(0.88)",
+              opacity: i === heroSlide ? 1 : 0,
+            }}
+          />
+        ))}
         <div className="absolute inset-0 bg-gradient-to-t from-secondary via-secondary/50 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-secondary/65 to-transparent" />
 
