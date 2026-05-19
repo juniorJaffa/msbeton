@@ -54,10 +54,10 @@ export function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-9 w-full">
             {/* ── Group 1: Kontakt ── */}
-            <div className="flex items-center gap-3.5 shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3.5 shrink-0">
               <a
                 href="mailto:info@msbeton.sk"
-                className="flex items-center gap-1.5 text-white/50 hover:text-white transition-colors text-xs"
+                className="hidden sm:flex items-center gap-1.5 text-white/50 hover:text-white transition-colors text-xs"
                 title="info@msbeton.sk"
               >
                 <Mail className="w-3 h-3 shrink-0" />
@@ -68,7 +68,7 @@ export function Navbar() {
                 className="flex items-center gap-1.5 text-primary hover:text-primary/80 transition-colors text-xs font-bold tracking-wide"
               >
                 <Phone className="w-3 h-3 shrink-0" />
-                <span className="hidden sm:inline">+421 909 205 205</span>
+                <span>+421 909 205 205</span>
               </a>
             </div>
 
