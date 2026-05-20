@@ -502,7 +502,7 @@ export default function Home() {
       </section>
 
       {/* PARTNERS SECTION */}
-      <section className="py-6 bg-white border-t border-gray-100 overflow-hidden">
+      <section className="py-6 bg-white border-t border-gray-100 overflow-hidden" style={{ WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%)", maskImage: "linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%)" }}>
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -528,7 +528,7 @@ export default function Home() {
                 <img
                   src={p.logo}
                   alt={p.name}
-                  className="max-h-8 max-w-[88px] object-contain grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300"
+                  className="max-h-8 max-w-[88px] object-contain opacity-85 group-hover:opacity-100 transition-all duration-300"
                   loading="lazy"
                 />
               ) : (
