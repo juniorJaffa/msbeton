@@ -475,6 +475,7 @@ export default function VozovyPark() {
               <img
                 src={p.src}
                 alt=""
+                loading="lazy"
                 className="absolute inset-0 w-full h-full object-cover"
                 style={{ objectPosition: p.pos, filter: "brightness(0.75) contrast(1.1) saturate(0.9)" }}
               />

@@ -92,6 +92,7 @@ export default function Home() {
   // Contact Form State
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [mobileFormOpen, setMobileFormOpen] = useState(false);
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [contactEmail, setContactEmail] = useState("");
@@ -255,7 +256,7 @@ export default function Home() {
                     </div>
                   </div>
                 ))}
-                <div className="absolute bottom-3 left-3 sm:-bottom-5 sm:-left-5 bg-secondary text-white p-4 rounded-lg shadow-xl border-l-4 border-primary z-10">
+                <div className="hidden sm:block sm:absolute sm:-bottom-5 sm:-left-5 bg-secondary text-white p-4 rounded-lg shadow-xl border-l-4 border-primary z-10">
                   <span className="block text-3xl font-bold text-primary mb-0.5">15+</span>
                   <span className="text-xs font-semibold uppercase tracking-wider">Rokov skúseností</span>
                 </div>
@@ -375,9 +376,9 @@ export default function Home() {
                 
                 <div className="space-y-8">
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                    <a href="https://maps.google.com/?q=Kamenná+3,+010+01+Žilina" target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center shrink-0 hover:bg-white/20 transition-colors">
                       <MapPin className="w-6 h-6 text-primary" />
-                    </div>
+                    </a>
                     <div>
                       <h5 className="font-bold text-lg mb-1">Prevádzka spoločnosti</h5>
                       <p className="text-white/70 leading-relaxed">
@@ -393,9 +394,9 @@ export default function Home() {
                   </div>
 
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                    <a href="tel:+421909205205" className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center shrink-0 hover:bg-white/20 transition-colors">
                       <Phone className="w-6 h-6 text-primary" />
-                    </div>
+                    </a>
                     <div>
                       <h5 className="font-bold text-lg mb-1">Telefón (Dispečing)</h5>
                       <a href="tel:+421909205205" className="text-primary font-bold text-xl hover:underline">
@@ -405,14 +406,14 @@ export default function Home() {
                   </div>
 
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                    <a href="mailto:info@msbeton.sk" className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center shrink-0 hover:bg-white/20 transition-colors">
                       <Mail className="w-6 h-6 text-primary" />
-                    </div>
+                    </a>
                     <div>
                       <h5 className="font-bold text-lg mb-1">Email</h5>
                       <p className="text-white/70 leading-relaxed">
-                        info@msbeton.sk<br />
-                        <span className="text-primary font-semibold">www.msbeton.sk</span>
+                        <a href="mailto:info@msbeton.sk" className="hover:text-white transition-colors">info@msbeton.sk</a><br />
+                        <a href="https://msbeton.sk" target="_blank" rel="noopener noreferrer" className="text-primary font-semibold hover:underline">www.msbeton.sk</a>
                       </p>
                     </div>
                   </div>
@@ -421,8 +422,17 @@ export default function Home() {
             </div>
 
             {/* Form */}
-            <div className="lg:col-span-3 p-10 lg:p-16">
-              <h4 className="text-2xl font-bold text-secondary mb-8">Rýchly formulár</h4>
+            <div className="lg:col-span-3 p-6 sm:p-10 lg:p-16">
+              {/* Mobile toggle */}
+              <button
+                className="sm:hidden w-full flex items-center justify-between px-5 py-4 bg-secondary text-white font-bold rounded-xl mb-2 active:scale-[0.98] transition-transform"
+                onClick={() => setMobileFormOpen(v => !v)}
+              >
+                <span>Napísať správu</span>
+                <ChevronDown className={`w-5 h-5 transition-transform duration-200 ${mobileFormOpen ? "rotate-180" : ""}`} />
+              </button>
+              <h4 className="hidden sm:block text-2xl font-bold text-secondary mb-8">Rýchly formulár</h4>
+              <div className={`${mobileFormOpen ? "block" : "hidden"} sm:block`}>
               
               {submitted ? (
                 <motion.div 
@@ -495,6 +505,7 @@ export default function Home() {
                   </button>
                 </form>
               )}
+              </div>
             </div>
 
           </div>
