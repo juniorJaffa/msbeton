@@ -546,14 +546,16 @@ export default function Home() {
                   loading="lazy"
                 />
               ) : (
-                <span
-                  className="w-6 h-6 rounded-full text-white text-[9px] font-black flex items-center justify-center shrink-0 leading-none"
-                  style={{ background: P_COLORS[i % P_COLORS.length] }}
-                >
-                  {p.name.charAt(0)}
-                </span>
+                <>
+                  <span
+                    className="w-6 h-6 rounded-full text-white text-[9px] font-black flex items-center justify-center shrink-0 leading-none"
+                    style={{ background: P_COLORS[i % P_COLORS.length] }}
+                  >
+                    {p.name.charAt(0)}
+                  </span>
+                  <span className="text-[11px] font-bold text-gray-400 group-hover:text-gray-600 uppercase tracking-wide whitespace-nowrap transition-colors duration-200">{p.name}</span>
+                </>
               )}
-              <span className="text-[11px] font-bold text-gray-400 group-hover:text-gray-600 uppercase tracking-wide whitespace-nowrap transition-colors duration-200">{p.name}</span>
             </div>
           ))}
         </div>

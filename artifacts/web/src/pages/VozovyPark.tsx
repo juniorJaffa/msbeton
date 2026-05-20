@@ -120,15 +120,15 @@ const catLabel: Record<GalleryCat, string> = {
 
 function GalleryGrid({ photos }: { photos: GalleryPhoto[] }) {
   return (
-    <div className="grid grid-cols-3 gap-1.5 md:gap-2.5">
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 md:gap-2.5">
       {photos.map((p, i) => (
         <motion.div
           key={p.src + i}
           className="relative overflow-hidden rounded group cursor-default"
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 28 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-20px" }}
-          transition={{ duration: 0.4, ease, delay: Math.min(i * 0.03, 0.24) }}
+          transition={{ duration: 0.7, ease, delay: Math.min(i * 0.06, 0.42) }}
         >
           <div className="h-28 sm:h-36 md:h-48">
             <img
