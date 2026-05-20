@@ -25,14 +25,14 @@ const HERO_SLIDES = [
 ];
 
 const MARQUEE_PHOTOS = [
-  { src: "/images/vozovy-park/pumpa-hero.jpg",      pos: "center 30%" },
-  { src: "/images/vozovy-park/pumpa-scania.jpg",     pos: "center 45%" },
-  { src: "/images/vozovy-park/pumpa-krajina.jpg",    pos: "center 40%" },
-  { src: "/images/vozovy-park/mixer-krajina.jpg",    pos: "center 40%" },
-  { src: "/images/vozovy-park/g02.jpg",              pos: "center 48%" },
-  { src: "/images/vozovy-park/g08.jpg",              pos: "center 45%" },
-  { src: "/images/vozovy-park/g14.jpg",              pos: "center 52%" },
-  { src: "/images/vozovy-park/g09.jpg",              pos: "center 35%" },
+  { src: "/images/vozovy-park/p03.jpg",          pos: "center 55%" },
+  { src: "/images/vozovy-park/mixer-krajina.jpg", pos: "center 55%" },
+  { src: "/images/vozovy-park/g14.jpg",           pos: "center 58%" },
+  { src: "/images/vozovy-park/g16.jpg",           pos: "center 55%" },
+  { src: "/images/vozovy-park/g02.jpg",           pos: "center 62%" },
+  { src: "/images/vozovy-park/g08.jpg",           pos: "center 58%" },
+  { src: "/images/vozovy-park/g15.jpg",           pos: "center 60%" },
+  { src: "/images/vozovy-park/p27.jpg",           pos: "center 55%" },
 ];
 
 type GalleryCat = "vsetko" | "pumpa" | "mix" | "spolu" | "hadice";
