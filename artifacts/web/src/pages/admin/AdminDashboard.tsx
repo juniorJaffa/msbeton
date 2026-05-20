@@ -802,10 +802,12 @@ function SluzbyTab({ onGoToDoprava, scrollToPumpa, onScrollDone }: { onGoToDopra
               {(s.activePeriodFrom || s.activePeriodTo) && (
                 <span className="text-[10px] text-gray-300">{s.activePeriodFrom ? `${s.activePeriodFrom.split("-")[1]}.${s.activePeriodFrom.split("-")[0]}` : ""}–{s.activePeriodTo ? `${s.activePeriodTo.split("-")[1]}.${s.activePeriodTo.split("-")[0]}` : ""}</span>
               )}
-              <span className="ml-auto font-bold text-secondary text-sm">
-                <EditableField value={(s.price ?? 0).toFixed(2)} type="number" onSave={v => update(s.id, "price", v)} /> €
-              </span>
-              {s.unit && <span className="text-xs text-gray-400">/ {s.unit}</span>}
+              <div className="ml-auto flex items-center gap-1.5 whitespace-nowrap">
+                <span className="font-bold text-secondary text-sm whitespace-nowrap">
+                  <EditableField value={(s.price ?? 0).toFixed(2)} type="number" onSave={v => update(s.id, "price", v)} /> €
+                </span>
+                {s.unit && <span className="text-xs text-gray-400">/ {s.unit}</span>}
+              </div>
             </div>
           </div>
         ))}
