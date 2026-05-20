@@ -254,13 +254,13 @@ export default function VozovyPark() {
             style={{
               backgroundImage: `url('/images/vozovy-park/${sl.src}')`,
               backgroundPosition: sl.pos,
-              filter: "brightness(0.46) contrast(1.12) saturate(0.90)",
+              filter: "brightness(0.60) contrast(1.10) saturate(0.92)",
               opacity: i === heroSlide ? 1 : 0,
             }}
           />
         ))}
-        <div className="absolute inset-0 bg-gradient-to-t from-secondary via-secondary/50 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-secondary/65 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-secondary via-secondary/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-secondary/50 to-transparent" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-14 md:pb-20 w-full">
           <motion.div initial="hidden" animate="show" variants={stagger} className="max-w-xl">
