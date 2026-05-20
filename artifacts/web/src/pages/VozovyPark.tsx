@@ -25,14 +25,14 @@ const HERO_SLIDES = [
 ];
 
 const MARQUEE_PHOTOS = [
-  { src: "/images/vozovy-park/p03.jpg",          pos: "center 55%" },
-  { src: "/images/vozovy-park/mixer-krajina.jpg", pos: "center 55%" },
-  { src: "/images/vozovy-park/g14.jpg",           pos: "center 58%" },
-  { src: "/images/vozovy-park/g16.jpg",           pos: "center 55%" },
-  { src: "/images/vozovy-park/g02.jpg",           pos: "center 62%" },
-  { src: "/images/vozovy-park/g08.jpg",           pos: "center 58%" },
-  { src: "/images/vozovy-park/g15.jpg",           pos: "center 60%" },
-  { src: "/images/vozovy-park/p27.jpg",           pos: "center 55%" },
+  { src: "/images/vozovy-park/p03.jpg",          pos: "center 40%" },
+  { src: "/images/vozovy-park/mixer-krajina.jpg", pos: "center 32%" },
+  { src: "/images/vozovy-park/g14.jpg",           pos: "center 40%" },
+  { src: "/images/vozovy-park/g16.jpg",           pos: "center 35%" },
+  { src: "/images/vozovy-park/g02.jpg",           pos: "center 40%" },
+  { src: "/images/vozovy-park/g08.jpg",           pos: "center 38%" },
+  { src: "/images/vozovy-park/g15.jpg",           pos: "center 36%" },
+  { src: "/images/vozovy-park/p27.jpg",           pos: "center 30%" },
 ];
 
 type GalleryCat = "vsetko" | "pumpa" | "mix" | "spolu" | "hadice";
@@ -77,11 +77,9 @@ const GALLERY_PHOTOS: GalleryPhoto[] = [
   { src: "p11.jpg",              cat: "spolu",  label: "Zákazka pumpa + mixer",                     sub: "Pumpa + Mix" },
   { src: "p28.jpg",              cat: "spolu",  label: "MS-BETON zákazka",                          sub: "Pumpa + Mix" },
   { src: "p30.jpg",              cat: "spolu",  label: "Betónovanie s celým tímom",                 sub: "Pumpa + Mix" },
-  { src: "p31.jpg",              cat: "spolu",  label: "Zákazka — pumpa a mixer",                   sub: "Pumpa + Mix" },
   { src: "p22.jpg",              cat: "hadice", label: "Prídavné hadice — rozšírenie dosahu pumpy", sub: "Prídavné hadice",      top: true, pos: "center 50%" },
   { src: "p29.jpg",              cat: "hadice", label: "Hadice pre ťažko dostupné miesta",          sub: "Prídavné hadice" },
   { src: "p13.jpg",              cat: "hadice", label: "Čerpanie cez prídavné hadice",              sub: "Hadice" },
-  { src: "p14.jpg",              cat: "hadice", label: "Prídavné hadice na zákazke",                sub: "Hadice" },
   { src: "p23.jpg",              cat: "hadice", label: "Betonáž s hadicami",                        sub: "Hadice" },
   { src: "p24.jpg",              cat: "hadice", label: "Hadice — rozšírený dosah",                  sub: "Hadice" },
   { src: "p25.jpg",              cat: "hadice", label: "Prídavné hadice v akcii",                   sub: "Hadice" },
