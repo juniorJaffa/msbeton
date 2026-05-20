@@ -15,24 +15,24 @@ const stagger = { show: { transition: { staggerChildren: 0.07 } } };
 const PF = "brightness(0.88) contrast(1.18) saturate(1.12)";
 
 const HERO_SLIDES = [
-  { src: "g01.jpg", pos: "68% 42%" },
-  { src: "g05.jpg", pos: "62% 52%" },
-  { src: "g03.jpg", pos: "60% 45%" },
-  { src: "g09.jpg", pos: "68% 38%", flip: true },
-  { src: "g15.jpg", pos: "72% 42%" },
-  { src: "g11.jpg", pos: "30% 46%", flip: true },
-  { src: "g02.jpg", pos: "66% 50%" },
+  { src: "g01.jpg", pos: "68% 22%" },
+  { src: "g05.jpg", pos: "62% 18%" },
+  { src: "g09.jpg", pos: "68% 20%", flip: true },
+  { src: "g15.jpg", pos: "72% 20%" },
+  { src: "g11.jpg", pos: "30% 22%", flip: true },
+  { src: "g02.jpg", pos: "66% 24%" },
+  { src: "g14.jpg", pos: "55% 18%" },
 ];
 
 const MARQUEE_PHOTOS = [
   { src: "/images/vozovy-park/pumpa-hero.jpg",      pos: "center 30%" },
   { src: "/images/vozovy-park/pumpa-scania.jpg",     pos: "center 45%" },
-  { src: "/images/vozovy-park/pumpa-site.jpg",       pos: "center 35%" },
-  { src: "/images/vozovy-park/akcia-podlaha-1.jpg",  pos: "center 35%" },
   { src: "/images/vozovy-park/pumpa-krajina.jpg",    pos: "center 40%" },
-  { src: "/images/vozovy-park/pumpa-mixer-site.jpg", pos: "center 40%" },
   { src: "/images/vozovy-park/mixer-krajina.jpg",    pos: "center 40%" },
-  { src: "/images/vozovy-park/akcia-podlaha-2.jpg",  pos: "center 60%" },
+  { src: "/images/vozovy-park/g02.jpg",              pos: "center 48%" },
+  { src: "/images/vozovy-park/g08.jpg",              pos: "center 45%" },
+  { src: "/images/vozovy-park/g14.jpg",              pos: "center 52%" },
+  { src: "/images/vozovy-park/g09.jpg",              pos: "center 35%" },
 ];
 
 type GalleryCat = "vsetko" | "pumpa" | "mix" | "spolu" | "hadice";
@@ -89,7 +89,7 @@ const GALLERY_PHOTOS: GalleryPhoto[] = [
   { src: "g02.jpg",  cat: "spolu",  label: "Pumpa + mixer — hrubá stavba, dramatická obloha",     sub: "Pumpa + Mix",       top: true, pos: "center 48%" },
   { src: "g03.jpg",  cat: "spolu",  label: "MS-BETON na veľkej zákazke — základová doska",        sub: "Kompletná zákazka", pos: "center 45%" },
   { src: "g04.jpg",  cat: "pumpa",  label: "Betónová pumpa na zákazke",                           sub: "Pumpa" },
-  { src: "g05.jpg",  cat: "spolu",  label: "Pumpa + mixer — súmrak, dramatická obloha",           sub: "Pumpa + Mix",       top: true, pos: "center 58%" },
+  { src: "g05.jpg",  cat: "spolu",  label: "Pumpa + mixer — súmrak, dramatická obloha",           sub: "Pumpa + Mix",       pos: "center 58%" },
   { src: "g06.jpg",  cat: "pumpa",  label: "Pumpa MS-BETON v mestskej zástavbe",                  sub: "Pumpa" },
   { src: "g07.jpg",  cat: "pumpa",  label: "MAN betónová pumpa MS-BETON — detail kabíny",        sub: "Pumpa · MAN" },
   { src: "g08.jpg",  cat: "spolu",  label: "MS-BETON pumpa a mixer — zákazka z výšky",            sub: "Mix",               top: true, pos: "center 45%" },
@@ -255,7 +255,7 @@ export default function VozovyPark() {
               backgroundImage: `url('/images/vozovy-park/${sl.src}')`,
               backgroundPosition: sl.pos,
               filter: "brightness(0.68) contrast(1.08) saturate(0.92)",
-              transform: sl.flip ? "scale(1.05) scaleX(-1)" : "scale(1.05)",
+              transform: sl.flip ? "scaleX(-1)" : "none",
               opacity: i === heroSlide ? 1 : 0,
             }}
           />
