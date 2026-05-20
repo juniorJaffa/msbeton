@@ -463,7 +463,7 @@ export default function VozovyPark() {
           className="flex gap-2.5"
           style={{
             width: "max-content",
-            animation: "marquee-scroll 40s linear infinite",
+            animation: "marquee-scroll 80s linear infinite",
           }}
         >
           {[...MARQUEE_PHOTOS, ...MARQUEE_PHOTOS].map((p, i) => (
