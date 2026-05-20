@@ -18,9 +18,9 @@ const HERO_SLIDES = [
   { src: "g01.jpg", pos: "68% 42%" },
   { src: "g05.jpg", pos: "62% 52%" },
   { src: "g03.jpg", pos: "72% 45%" },
-  { src: "g09.jpg", pos: "32% 38%" },
+  { src: "g09.jpg", pos: "68% 38%", flip: true },
   { src: "g15.jpg", pos: "72% 42%" },
-  { src: "g11.jpg", pos: "70% 46%" },
+  { src: "g11.jpg", pos: "30% 46%", flip: true },
   { src: "g02.jpg", pos: "66% 50%" },
 ];
 
@@ -250,17 +250,18 @@ export default function VozovyPark() {
         {HERO_SLIDES.map((sl, i) => (
           <div
             key={sl.src}
-            className="absolute inset-0 bg-cover scale-[1.05] transition-opacity duration-[1400ms] ease-in-out"
+            className="absolute inset-0 bg-cover transition-opacity duration-[1400ms] ease-in-out"
             style={{
               backgroundImage: `url('/images/vozovy-park/${sl.src}')`,
               backgroundPosition: sl.pos,
-              filter: "brightness(0.60) contrast(1.10) saturate(0.92)",
+              filter: "brightness(0.68) contrast(1.08) saturate(0.92)",
+              transform: sl.flip ? "scale(1.05) scaleX(-1)" : "scale(1.05)",
               opacity: i === heroSlide ? 1 : 0,
             }}
           />
         ))}
-        <div className="absolute inset-0 bg-gradient-to-t from-secondary via-secondary/30 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-secondary/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-secondary via-secondary/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-secondary/40 to-transparent" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-14 md:pb-20 w-full">
           <motion.div initial="hidden" animate="show" variants={stagger} className="max-w-xl">

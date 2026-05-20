@@ -229,7 +229,7 @@ export default function Cennik() {
 
       {/* ── HERO (compact) ── */}
       <section className="concrete-bg relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-secondary/82 via-secondary/62 to-secondary/15 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-secondary/68 via-secondary/45 to-secondary/5 pointer-events-none" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-18">
           <motion.div initial="hidden" animate="show" variants={stagger} className="max-w-xl">
             <motion.div variants={fadeUp} className="flex items-center gap-3 mb-4">
