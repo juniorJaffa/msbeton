@@ -15,13 +15,13 @@ const stagger = { show: { transition: { staggerChildren: 0.07 } } };
 const PF = "brightness(0.88) contrast(1.18) saturate(1.12)";
 
 const HERO_SLIDES = [
-  { src: "g01.jpg", pos: "68% 22%" },
-  { src: "g05.jpg", pos: "62% 18%" },
-  { src: "g09.jpg", pos: "68% 20%", flip: true },
-  { src: "g15.jpg", pos: "72% 20%" },
-  { src: "g11.jpg", pos: "30% 22%", flip: true },
-  { src: "g02.jpg", pos: "66% 24%" },
-  { src: "g14.jpg", pos: "55% 18%" },
+  { src: "g01.jpg", pos: "78% 30%" },
+  { src: "g05.jpg", pos: "80% 26%" },
+  { src: "g09.jpg", pos: "28% 26%", flip: true },
+  { src: "g15.jpg", pos: "80% 28%" },
+  { src: "g11.jpg", pos: "28% 28%", flip: true },
+  { src: "g02.jpg", pos: "78% 32%" },
+  { src: "g14.jpg", pos: "72% 24%" },
 ];
 
 const MARQUEE_PHOTOS = [
@@ -50,7 +50,7 @@ const GALLERY_PHOTOS: GalleryPhoto[] = [
   { src: "p03.jpg",              cat: "pumpa",  label: "Reprezentatívna pumpa MS-BETON",          sub: "Pumpa · MAN TGA",      top: true, pos: "center 40%" },
   { src: "pumpa-hero.jpg",       cat: "pumpa",  label: "Dosah 28 m — čerpanie výšok",              sub: "Pumpa v akcii",        pos: "center 35%" },
   { src: "p09.jpg",              cat: "pumpa",  label: "Rameno pumpuje do ďalšej pumpy",            sub: "Špeciálna zákazka",    top: true, pos: "center 40%" },
-  { src: "p10.jpg",              cat: "pumpa",  label: "Betonáž haly — čerpanie pumpa",             sub: "Hala",                 top: true, pos: "center 50%" },
+  { src: "p10.jpg",              cat: "spolu",  label: "Rameno pumpuje do ďalšej pumpy — zákazka", sub: "Pumpa v akcii",        top: true, pos: "center 42%" },
   { src: "p21.jpg",              cat: "pumpa",  label: "Betonáž priemyselnej haly",                 sub: "Hala",                 pos: "center 45%" },
   { src: "pumpa-scania.jpg",     cat: "pumpa",  label: "Scania betónová pumpa",                     sub: "Pumpa",                            pos: "center 45%" },
   { src: "pumpa-site.jpg",       cat: "pumpa",  label: "Betónová pumpa MAN TGA na stavbe",          sub: "Stavba",                           pos: "center 35%" },
@@ -187,10 +187,10 @@ function VideasSection() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
           {[
-            { src: "/images/vozovy-park/p10.jpg", label: "Betonáž haly — čerpanie pumpa" },
-            { src: "/images/vozovy-park/p21.jpg", label: "Betonáž priemyselnej haly" },
-            { src: "/images/vozovy-park/p16.jpg", label: "Mixer v akcii" },
-            { src: "/images/vozovy-park/p32.jpg", label: "Pumpa MS-BETON na zákazke" },
+            { src: "/images/vozovy-park/p10.jpg", label: "Rameno pumpuje do ďalšej pumpy", pos: "70% 38%" },
+            { src: "/images/vozovy-park/p21.jpg", label: "Betonáž priemyselnej haly",       pos: "center 42%" },
+            { src: "/images/vozovy-park/p16.jpg", label: "Mixer v akcii",                   pos: "center 40%" },
+            { src: "/images/vozovy-park/p32.jpg", label: "Pumpa MS-BETON na zákazke",        pos: "68% 38%" },
           ].map((ph, i) => (
             <motion.div
               key={i}
@@ -205,7 +205,7 @@ function VideasSection() {
                   alt={ph.label}
                   loading="lazy"
                   className="w-full h-full object-cover transition-[transform] duration-700 ease-out group-hover:scale-[1.04]"
-                  style={{ filter: "brightness(0.88) contrast(1.1) saturate(1.0)" }}
+                  style={{ filter: "brightness(0.88) contrast(1.1) saturate(1.0)", objectPosition: ph.pos }}
                 />
               </div>
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-secondary/80 to-transparent px-2.5 py-2">
