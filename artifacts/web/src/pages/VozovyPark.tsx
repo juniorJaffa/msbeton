@@ -15,13 +15,13 @@ const stagger = { show: { transition: { staggerChildren: 0.07 } } };
 const PF = "brightness(0.88) contrast(1.18) saturate(1.12)";
 
 const HERO_SLIDES = [
-  { src: "g01.jpg", pos: "80% 52%" },
-  { src: "g05.jpg", pos: "80% 42%" },
-  { src: "g09.jpg", pos: "25% 48%", flip: true },
-  { src: "g15.jpg", pos: "82% 55%" },
-  { src: "g11.jpg", pos: "25% 46%", flip: true },
-  { src: "g02.jpg", pos: "80% 46%" },
-  { src: "g14.jpg", pos: "72% 42%" },
+  { src: "g01.jpg", pos: "80% 40%" },
+  { src: "g05.jpg", pos: "80% 32%" },
+  { src: "g09.jpg", pos: "25% 38%", flip: true },
+  { src: "g15.jpg", pos: "82% 44%" },
+  { src: "g11.jpg", pos: "25% 36%", flip: true },
+  { src: "g02.jpg", pos: "80% 37%" },
+  { src: "g14.jpg", pos: "72% 33%" },
 ];
 
 const MARQUEE_PHOTOS = [
