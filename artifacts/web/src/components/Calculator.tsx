@@ -2619,7 +2619,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 const blocks = durMins > 0 ? Math.ceil(durMins / 15) : 0;
                 const billingMins = blocks * 15;
 
-                const estimatedCost = blocks > 0 ? (billingMins / 60) * pumpServicePrice * fPump : 0;
+                const estimatedCostBase = blocks > 0 ? (billingMins / 60) * pumpServicePrice * fPump : 0;
+                const estimatedCost = loggedClient ? estimatedCostBase : estimatedCostBase * (1 + VAT);
                 const BillingSummary = () => blocks > 0 ? (
                   <div className="bg-amber-500/10 border border-amber-500/25 rounded-sm overflow-hidden">
                     <div className="px-3 py-2.5 grid grid-cols-3 gap-2">
@@ -2635,7 +2636,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                       <div className="text-right">
                         <div className="text-[9px] text-amber-400/50 uppercase tracking-wide mb-0.5">Odhad</div>
                         <div className="font-black text-primary text-base leading-tight">{estimatedCost.toFixed(2)} €</div>
-                        <div className="text-white/25 text-[9px]">bez DPH</div>
+                        {loggedClient && <div className="text-white/25 text-[9px]">bez DPH</div>}
                       </div>
                     </div>
                     <div className="px-3 py-1.5 border-t border-amber-500/15 bg-amber-500/5">
