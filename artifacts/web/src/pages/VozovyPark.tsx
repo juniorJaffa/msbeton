@@ -52,7 +52,6 @@ const GALLERY_PHOTOS: GalleryPhoto[] = [
   { src: "p09.jpg",              cat: "pumpa",  label: "Rameno pumpuje do ďalšej pumpy",            sub: "Špeciálna zákazka",    top: true, pos: "center 40%" },
   { src: "p10.jpg",              cat: "spolu",  label: "Rameno pumpuje do ďalšej pumpy — zákazka", sub: "Pumpa v akcii",        top: true, pos: "center 42%" },
   { src: "p21.jpg",              cat: "pumpa",  label: "Betonáž priemyselnej haly",                 sub: "Hala",                 pos: "center 45%" },
-  { src: "pumpa-scania.jpg",     cat: "pumpa",  label: "Scania betónová pumpa",                     sub: "Pumpa",                            pos: "center 45%" },
   { src: "pumpa-site.jpg",       cat: "pumpa",  label: "Betónová pumpa MAN TGA na stavbe",          sub: "Stavba",                           pos: "center 35%" },
   { src: "pumpa-krajina.jpg",    cat: "pumpa",  label: "Pumpa v krajine Žilinského kraja",          sub: "Žilinský kraj",                    pos: "center 40%" },
   { src: "p32.jpg",              cat: "pumpa",  label: "MS-BETON pumpa v akcii na zákazke",         sub: "Pumpa v akcii",                    pos: "center 45%" },
