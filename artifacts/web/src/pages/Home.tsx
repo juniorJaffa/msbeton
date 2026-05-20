@@ -536,26 +536,24 @@ export default function Home() {
           {[...PARTNERS, ...PARTNERS].map((p, i) => (
             <div
               key={i}
-              className="flex items-center gap-2.5 px-4 py-2.5 bg-white border border-gray-200 rounded-lg shrink-0 hover:border-primary/40 hover:shadow-md transition-all duration-200 h-[56px] group"
+              className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg shrink-0 hover:border-primary/40 hover:shadow-md transition-all duration-200 h-[52px] min-w-[110px] group"
             >
               {p.logo ? (
                 <img
                   src={p.logo}
                   alt={p.name}
-                  className="max-h-8 max-w-[88px] object-contain opacity-85 group-hover:opacity-100 transition-all duration-300"
-                  loading="lazy"
+                  className="max-h-7 max-w-[72px] object-contain opacity-80 group-hover:opacity-100 transition-opacity duration-300 shrink-0"
+                  onError={(e) => { e.currentTarget.style.display = "none"; }}
                 />
               ) : (
-                <>
-                  <span
-                    className="w-6 h-6 rounded-full text-white text-[9px] font-black flex items-center justify-center shrink-0 leading-none"
-                    style={{ background: P_COLORS[i % P_COLORS.length] }}
-                  >
-                    {p.name.charAt(0)}
-                  </span>
-                  <span className="text-[11px] font-bold text-gray-400 group-hover:text-gray-600 uppercase tracking-wide whitespace-nowrap transition-colors duration-200">{p.name}</span>
-                </>
+                <span
+                  className="w-5 h-5 rounded-full text-white text-[9px] font-black flex items-center justify-center shrink-0 leading-none"
+                  style={{ background: P_COLORS[i % P_COLORS.length] }}
+                >
+                  {p.name.charAt(0)}
+                </span>
               )}
+              <span className="text-[10px] font-semibold text-gray-500 group-hover:text-gray-700 uppercase tracking-wide whitespace-nowrap transition-colors duration-200 leading-tight">{p.name}</span>
             </div>
           ))}
         </div>
