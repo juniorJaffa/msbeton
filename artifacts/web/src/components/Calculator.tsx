@@ -2619,7 +2619,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 const blocks = durMins > 0 ? Math.ceil(durMins / 15) : 0;
                 const billingMins = blocks * 15;
 
-                const estimatedCost = blocks > 0 ? (billingMins / 60) * pumpServicePrice : 0;
+                const estimatedCost = blocks > 0 ? (billingMins / 60) * pumpServicePrice * fPump : 0;
                 const BillingSummary = () => blocks > 0 ? (
                   <div className="bg-amber-500/10 border border-amber-500/25 rounded-sm overflow-hidden">
                     <div className="px-3 py-2.5 grid grid-cols-3 gap-2">
@@ -2639,7 +2639,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                       </div>
                     </div>
                     <div className="px-3 py-1.5 border-t border-amber-500/15 bg-amber-500/5">
-                      <p className="text-[9px] text-white/35 text-center">Sadzba: {pumpServicePrice.toFixed(2)} €/h · iba čerpanie (bez betónu a dopravy)</p>
+                      <p className="text-[9px] text-white/35 text-center">Sadzba: {(pumpServicePrice * fPump).toFixed(2)} €/h · iba čerpanie (bez betónu a dopravy)</p>
                     </div>
                   </div>
                 ) : null;
@@ -2684,7 +2684,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <label className="text-sm font-semibold text-white/80">Čerpanie betónu</label>
-                      <span className="text-[10px] text-white/35 font-mono">{pumpServicePrice > 0 ? `${pumpServicePrice.toFixed(2)} €/h` : ""}</span>
+                      <span className="text-[10px] text-white/35 font-mono">{pumpServicePrice > 0 ? `${(pumpServicePrice * fPump).toFixed(2)} €/h` : ""}</span>
                     </div>
                   <div className="border border-white/10 rounded-sm overflow-hidden">
                     {/* Mode switcher */}
@@ -2839,7 +2839,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                                 <span className="text-[9px] text-white/35 leading-snug">
                                   Iba na stavbe · live časovač · faktúra zaokrúhlí nahor na 15 min
                                 </span>
-                                {pumpServicePrice > 0 && <span className="ml-auto text-[9px] text-white/25 font-mono flex-shrink-0">{pumpServicePrice.toFixed(2)} €/h</span>}
+                                {pumpServicePrice > 0 && <span className="ml-auto text-[9px] text-white/25 font-mono flex-shrink-0">{(pumpServicePrice * fPump).toFixed(2)} €/h</span>}
                               </div>
                               <button type="button" onClick={handleStart}
                                 className="w-24 h-24 rounded-full bg-green-900 hover:bg-green-800 active:scale-[0.97] text-white font-black transition-[transform,box-shadow] duration-150 flex flex-col items-center justify-center gap-1 shadow-[0_0_28px_rgba(22,163,74,0.30)] hover:shadow-[0_0_40px_rgba(22,163,74,0.55)] border-4 border-green-600/35 cursor-pointer select-none">
