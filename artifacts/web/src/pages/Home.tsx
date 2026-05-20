@@ -255,7 +255,7 @@ export default function Home() {
                     </div>
                   </div>
                 ))}
-                <div className="absolute -bottom-5 -left-5 bg-secondary text-white p-4 rounded-lg shadow-xl border-l-4 border-primary z-10">
+                <div className="absolute bottom-3 left-3 sm:-bottom-5 sm:-left-5 bg-secondary text-white p-4 rounded-lg shadow-xl border-l-4 border-primary z-10">
                   <span className="block text-3xl font-bold text-primary mb-0.5">15+</span>
                   <span className="text-xs font-semibold uppercase tracking-wider">Rokov skúseností</span>
                 </div>
