@@ -17,7 +17,7 @@ const PF = "brightness(0.88) contrast(1.18) saturate(1.12)";
 const HERO_SLIDES = [
   { src: "g01.jpg", pos: "68% 42%" },
   { src: "g05.jpg", pos: "62% 52%" },
-  { src: "g03.jpg", pos: "72% 45%" },
+  { src: "g03.jpg", pos: "60% 45%" },
   { src: "g09.jpg", pos: "68% 38%", flip: true },
   { src: "g15.jpg", pos: "72% 42%" },
   { src: "g11.jpg", pos: "30% 46%", flip: true },
@@ -260,8 +260,9 @@ export default function VozovyPark() {
             }}
           />
         ))}
-        <div className="absolute inset-0 bg-gradient-to-t from-secondary via-secondary/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-secondary/75 via-secondary/10 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-secondary/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-l from-secondary/30 to-[60%] to-transparent" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-14 md:pb-20 w-full">
           <motion.div initial="hidden" animate="show" variants={stagger} className="max-w-xl">
