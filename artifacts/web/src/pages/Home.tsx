@@ -513,7 +513,7 @@ export default function Home() {
       </section>
 
       {/* PARTNERS SECTION */}
-      <section className="py-6 bg-white border-t border-gray-100 overflow-hidden" style={{ WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%)", maskImage: "linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%)" }}>
+      <section className="py-6 bg-white border-t border-gray-100 overflow-hidden">
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -526,6 +526,9 @@ export default function Home() {
             Spolupracujeme s
           </h2>
         </motion.div>
+        <div
+          style={{ WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%)", maskImage: "linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%)", overflow: "hidden" }}
+        >
         <div
           className="partner-track flex gap-3"
           style={{ width: "max-content", animation: "partner-scroll 65s linear infinite" }}
@@ -553,6 +556,7 @@ export default function Home() {
               <span className="text-[11px] font-bold text-gray-400 group-hover:text-gray-600 uppercase tracking-wide whitespace-nowrap transition-colors duration-200">{p.name}</span>
             </div>
           ))}
+        </div>
         </div>
         <style>{`
           @keyframes partner-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
