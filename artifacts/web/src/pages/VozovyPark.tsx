@@ -15,13 +15,13 @@ const stagger = { show: { transition: { staggerChildren: 0.07 } } };
 const PF = "brightness(0.88) contrast(1.18) saturate(1.12)";
 
 const HERO_SLIDES = [
-  { src: "g01.jpg", pos: "center 40%" },
-  { src: "g05.jpg", pos: "center 50%" },
-  { src: "g03.jpg", pos: "center 45%" },
-  { src: "g09.jpg", pos: "center 35%" },
-  { src: "g15.jpg", pos: "center 42%" },
-  { src: "g11.jpg", pos: "center 45%" },
-  { src: "g02.jpg", pos: "center 48%" },
+  { src: "g01.jpg", pos: "68% 42%" },
+  { src: "g05.jpg", pos: "62% 52%" },
+  { src: "g03.jpg", pos: "72% 45%" },
+  { src: "g09.jpg", pos: "32% 38%" },
+  { src: "g15.jpg", pos: "72% 42%" },
+  { src: "g11.jpg", pos: "70% 46%" },
+  { src: "g02.jpg", pos: "66% 50%" },
 ];
 
 const MARQUEE_PHOTOS = [
@@ -48,10 +48,10 @@ interface GalleryPhoto {
 
 const GALLERY_PHOTOS: GalleryPhoto[] = [
   { src: "p03.jpg",              cat: "pumpa",  label: "Reprezentatívna pumpa MS-BETON",          sub: "Pumpa · MAN TGA",      top: true, pos: "center 40%" },
-  { src: "pumpa-hero.jpg",       cat: "pumpa",  label: "Dosah 28 m — čerpanie výšok",              sub: "Pumpa v akcii",        top: true, pos: "center 35%" },
+  { src: "pumpa-hero.jpg",       cat: "pumpa",  label: "Dosah 28 m — čerpanie výšok",              sub: "Pumpa v akcii",        pos: "center 35%" },
   { src: "p09.jpg",              cat: "pumpa",  label: "Rameno pumpuje do ďalšej pumpy",            sub: "Špeciálna zákazka",    top: true, pos: "center 40%" },
   { src: "p10.jpg",              cat: "pumpa",  label: "Betonáž haly — čerpanie pumpa",             sub: "Hala",                 top: true, pos: "center 50%" },
-  { src: "p21.jpg",              cat: "pumpa",  label: "Betonáž priemyselnej haly",                 sub: "Hala",                 top: true, pos: "center 45%" },
+  { src: "p21.jpg",              cat: "pumpa",  label: "Betonáž priemyselnej haly",                 sub: "Hala",                 pos: "center 45%" },
   { src: "pumpa-scania.jpg",     cat: "pumpa",  label: "Scania betónová pumpa",                     sub: "Pumpa",                            pos: "center 45%" },
   { src: "pumpa-site.jpg",       cat: "pumpa",  label: "Betónová pumpa MAN TGA na stavbe",          sub: "Stavba",                           pos: "center 35%" },
   { src: "pumpa-krajina.jpg",    cat: "pumpa",  label: "Pumpa v krajine Žilinského kraja",          sub: "Žilinský kraj",                    pos: "center 40%" },
@@ -62,15 +62,15 @@ const GALLERY_PHOTOS: GalleryPhoto[] = [
   { src: "p08.jpg",              cat: "pumpa",  label: "Vozový park — pohľad zhora",                sub: "Pumpa",                            pos: "center 50%" },
   { src: "p26.jpg",              cat: "pumpa",  label: "Pohľad z výšky na vozový park",             sub: "Pumpa",                            pos: "center 50%" },
   { src: "mixer-krajina.jpg",    cat: "mix",    label: "Domiešavač betónu v krajine",               sub: "Mix · IVECO MAGIRUS",  top: true, pos: "center 30%" },
-  { src: "p16.jpg",              cat: "mix",    label: "Mixer v akcii",                             sub: "Mix",                  top: true, pos: "center 40%" },
+  { src: "p16.jpg",              cat: "mix",    label: "Mixer v akcii",                             sub: "Mix",                  pos: "center 40%" },
   { src: "p12.jpg",              cat: "mix",    label: "Domiešavač na zákazke",                     sub: "Mix",                              pos: "center 60%" },
   { src: "p17.jpg",              cat: "mix",    label: "Domiešavač betónu",                         sub: "Mix",                              pos: "center 45%" },
   { src: "p19.jpg",              cat: "mix",    label: "Mixer na stavbe",                           sub: "Mix",                              pos: "center 50%" },
   { src: "p20.jpg",              cat: "mix",    label: "Domiešavač v plnej zákazke",                sub: "Mix",                              pos: "center 40%" },
-  { src: "p27.jpg",              cat: "spolu",  label: "2 pumpy + 1 mixer — kompletná zákazka",    sub: "Pumpa + Mix",          top: true },
-  { src: "pumpa-mixer-site.jpg", cat: "spolu",  label: "Pumpa + mixer na jednej zákazke",           sub: "Kompletná zákazka",    top: true },
-  { src: "akcia-podlaha-1.jpg",  cat: "spolu",  label: "Betonáž podlahy — presnosť na cm",         sub: "Pumpa v akcii",        top: true },
-  { src: "akcia-podlaha-2.jpg",  cat: "spolu",  label: "Čerpanie betónu — priemyselná podlaha",    sub: "Pumpa v akcii",        top: true },
+  { src: "p27.jpg",              cat: "spolu",  label: "2 pumpy + 1 mixer — kompletná zákazka",    sub: "Pumpa + Mix",          top: true, pos: "center 50%" },
+  { src: "pumpa-mixer-site.jpg", cat: "spolu",  label: "Pumpa + mixer na jednej zákazke",           sub: "Kompletná zákazka" },
+  { src: "akcia-podlaha-1.jpg",  cat: "spolu",  label: "Betonáž podlahy — presnosť na cm",         sub: "Pumpa v akcii",        top: true, pos: "center 55%" },
+  { src: "akcia-podlaha-2.jpg",  cat: "spolu",  label: "Čerpanie betónu — priemyselná podlaha",    sub: "Pumpa v akcii" },
   { src: "p02.jpg",              cat: "spolu",  label: "Vozidlá MS-BETON — vozový park",            sub: "Fleet" },
   { src: "p06.jpg",              cat: "spolu",  label: "Pumpa a mixer v akcii",                     sub: "Pumpa + Mix" },
   { src: "p07.jpg",              cat: "spolu",  label: "Kompletná zákazka betónu",                  sub: "Pumpa + Mix" },
@@ -78,29 +78,29 @@ const GALLERY_PHOTOS: GalleryPhoto[] = [
   { src: "p28.jpg",              cat: "spolu",  label: "MS-BETON zákazka",                          sub: "Pumpa + Mix" },
   { src: "p30.jpg",              cat: "spolu",  label: "Betónovanie s celým tímom",                 sub: "Pumpa + Mix" },
   { src: "p31.jpg",              cat: "spolu",  label: "Zákazka — pumpa a mixer",                   sub: "Pumpa + Mix" },
-  { src: "p22.jpg",              cat: "hadice", label: "Prídavné hadice — rozšírenie dosahu pumpy", sub: "Prídavné hadice",      top: true },
+  { src: "p22.jpg",              cat: "hadice", label: "Prídavné hadice — rozšírenie dosahu pumpy", sub: "Prídavné hadice",      top: true, pos: "center 50%" },
   { src: "p29.jpg",              cat: "hadice", label: "Hadice pre ťažko dostupné miesta",          sub: "Prídavné hadice" },
   { src: "p13.jpg",              cat: "hadice", label: "Čerpanie cez prídavné hadice",              sub: "Hadice" },
   { src: "p14.jpg",              cat: "hadice", label: "Prídavné hadice na zákazke",                sub: "Hadice" },
   { src: "p23.jpg",              cat: "hadice", label: "Betonáž s hadicami",                        sub: "Hadice" },
   { src: "p24.jpg",              cat: "hadice", label: "Hadice — rozšírený dosah",                  sub: "Hadice" },
   { src: "p25.jpg",              cat: "hadice", label: "Prídavné hadice v akcii",                   sub: "Hadice" },
-  { src: "g01.jpg",  cat: "pumpa",  label: "Pumpa MS-BETON — čerpanie pri priemyselnom objekte",  sub: "Pumpa v akcii",     top: true, pos: "center 40%" },
+  { src: "g01.jpg",  cat: "pumpa",  label: "Pumpa MS-BETON — čerpanie pri priemyselnom objekte",  sub: "Pumpa v akcii",     pos: "center 40%" },
   { src: "g02.jpg",  cat: "spolu",  label: "Pumpa + mixer — hrubá stavba, dramatická obloha",     sub: "Pumpa + Mix",       top: true, pos: "center 48%" },
-  { src: "g03.jpg",  cat: "spolu",  label: "MS-BETON na veľkej zákazke — základová doska",        sub: "Kompletná zákazka", top: true, pos: "center 45%" },
+  { src: "g03.jpg",  cat: "spolu",  label: "MS-BETON na veľkej zákazke — základová doska",        sub: "Kompletná zákazka", pos: "center 45%" },
   { src: "g04.jpg",  cat: "pumpa",  label: "Betónová pumpa na zákazke",                           sub: "Pumpa" },
-  { src: "g05.jpg",  cat: "spolu",  label: "Pumpa + mixer — súmrak, dramatická obloha",           sub: "Pumpa + Mix",       top: true, pos: "center 50%" },
+  { src: "g05.jpg",  cat: "spolu",  label: "Pumpa + mixer — súmrak, dramatická obloha",           sub: "Pumpa + Mix",       top: true, pos: "center 58%" },
   { src: "g06.jpg",  cat: "pumpa",  label: "Pumpa MS-BETON v mestskej zástavbe",                  sub: "Pumpa" },
   { src: "g07.jpg",  cat: "pumpa",  label: "MAN betónová pumpa MS-BETON — detail kabíny",        sub: "Pumpa · MAN" },
-  { src: "g08.jpg",  cat: "spolu",  label: "MS-BETON pumpa a mixer — zákazka z výšky",            sub: "Mix",               top: true, pos: "center 50%" },
+  { src: "g08.jpg",  cat: "spolu",  label: "MS-BETON pumpa a mixer — zákazka z výšky",            sub: "Mix",               top: true, pos: "center 45%" },
   { src: "g09.jpg",  cat: "pumpa",  label: "Pumpa Scania — Žilinský kraj s pohoriami",            sub: "Pumpa · Scania",    top: true, pos: "center 35%" },
-  { src: "g10.jpg",  cat: "pumpa",  label: "Pumpa Scania — čerpanie v priemyselnej hale",        sub: "Pumpa · Scania",    top: true, pos: "center 40%" },
-  { src: "g11.jpg",  cat: "spolu",  label: "Pumpa MAN + mixer — jarné zákazky v horách",         sub: "Pumpa + Mix",       top: true, pos: "center 45%" },
-  { src: "g12.jpg",  cat: "pumpa",  label: "Zákazka s pumpou — pohľad na celé stavenisko",       sub: "Pumpa",             top: true, pos: "center 45%" },
+  { src: "g10.jpg",  cat: "pumpa",  label: "Pumpa Scania — čerpanie v priemyselnej hale",        sub: "Pumpa · Scania",    pos: "center 40%" },
+  { src: "g11.jpg",  cat: "spolu",  label: "Pumpa MAN + mixer — jarné zákazky v horách",         sub: "Pumpa + Mix",       pos: "center 45%" },
+  { src: "g12.jpg",  cat: "pumpa",  label: "Zákazka s pumpou — pohľad na celé stavenisko",       sub: "Pumpa",             pos: "center 45%" },
   { src: "g13.jpg",  cat: "hadice", label: "Čerpanie betónu cez prídavnú hadicu",                sub: "Hadice" },
-  { src: "g14.jpg",  cat: "spolu",  label: "Vozový park MS-BETON — flota 3 vozidiel",            sub: "Fleet",             top: true, pos: "center 50%" },
-  { src: "g15.jpg",  cat: "pumpa",  label: "Pumpa Scania — čerpanie pri rodinnom dome",          sub: "Pumpa · Scania",    top: true, pos: "center 42%" },
-  { src: "g16.jpg",  cat: "pumpa",  label: "MS-BETON MAN TGA — príjazd na zákazku",             sub: "Pumpa · MAN",       top: true, pos: "center 45%" },
+  { src: "g14.jpg",  cat: "spolu",  label: "Vozový park MS-BETON — flota 3 vozidiel",            sub: "Fleet",             top: true, pos: "center 52%" },
+  { src: "g15.jpg",  cat: "pumpa",  label: "Pumpa Scania — čerpanie pri rodinnom dome",          sub: "Pumpa · Scania",    top: true, pos: "center 48%" },
+  { src: "g16.jpg",  cat: "pumpa",  label: "MS-BETON MAN TGA — príjazd na zákazku",             sub: "Pumpa · MAN",       pos: "center 45%" },
 ];
 
 const TABS: { id: GalleryCat | "videa"; label: string }[] = [
@@ -254,7 +254,7 @@ export default function VozovyPark() {
             style={{
               backgroundImage: `url('/images/vozovy-park/${sl.src}')`,
               backgroundPosition: sl.pos,
-              filter: "brightness(0.36) contrast(1.15) saturate(0.88)",
+              filter: "brightness(0.46) contrast(1.12) saturate(0.90)",
               opacity: i === heroSlide ? 1 : 0,
             }}
           />
@@ -370,7 +370,7 @@ export default function VozovyPark() {
                 src="/images/vozovy-park/pumpa-site.jpg"
                 alt="MS-BETON betónová pumpa MAN TGA"
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
-                style={{ objectPosition: "center 35%", filter: PF }}
+                style={{ objectPosition: "center 62%", filter: PF }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-secondary via-secondary/55 to-transparent" />
               <div className="absolute top-4 left-4 px-2.5 py-1 bg-primary text-secondary text-[10px] font-black uppercase tracking-widest">
