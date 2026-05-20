@@ -15,13 +15,13 @@ const stagger = { show: { transition: { staggerChildren: 0.07 } } };
 const PF = "brightness(0.88) contrast(1.18) saturate(1.12)";
 
 const HERO_SLIDES = [
-  { src: "g01.jpg", pos: "78% 30%" },
-  { src: "g05.jpg", pos: "80% 26%" },
-  { src: "g09.jpg", pos: "28% 26%", flip: true },
-  { src: "g15.jpg", pos: "80% 28%" },
-  { src: "g11.jpg", pos: "28% 28%", flip: true },
-  { src: "g02.jpg", pos: "78% 32%" },
-  { src: "g14.jpg", pos: "72% 24%" },
+  { src: "g01.jpg", pos: "80% 52%" },
+  { src: "g05.jpg", pos: "80% 42%" },
+  { src: "g09.jpg", pos: "25% 48%", flip: true },
+  { src: "g15.jpg", pos: "82% 55%" },
+  { src: "g11.jpg", pos: "25% 46%", flip: true },
+  { src: "g02.jpg", pos: "80% 46%" },
+  { src: "g14.jpg", pos: "72% 42%" },
 ];
 
 const MARQUEE_PHOTOS = [
@@ -258,7 +258,7 @@ export default function VozovyPark() {
             }}
           />
         ))}
-        <div className="absolute inset-0 bg-gradient-to-t from-secondary/75 via-secondary/10 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-secondary/58 via-secondary/18 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-secondary/40 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-l from-secondary/30 to-[60%] to-transparent" />
 
