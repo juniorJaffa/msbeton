@@ -80,7 +80,6 @@ const GALLERY_PHOTOS: GalleryPhoto[] = [
   { src: "p13.jpg",              cat: "hadice", label: "Čerpanie cez prídavné hadice",              sub: "Hadice" },
   { src: "p23.jpg",              cat: "hadice", label: "Betonáž s hadicami",                        sub: "Hadice" },
   { src: "p24.jpg",              cat: "hadice", label: "Hadice — rozšírený dosah",                  sub: "Hadice" },
-  { src: "g01.jpg",  cat: "pumpa",  label: "Pumpa MS-BETON — čerpanie pri priemyselnom objekte",  sub: "Pumpa v akcii",     pos: "center 40%" },
   { src: "g02.jpg",  cat: "spolu",  label: "Pumpa + mixer — hrubá stavba",                        sub: "Pumpa + Mix",       top: true, pos: "center 48%" },
   { src: "g03.jpg",  cat: "spolu",  label: "MS-BETON na veľkej zákazke — základová doska",        sub: "Kompletná zákazka", pos: "center 45%" },
   { src: "g04.jpg",  cat: "pumpa",  label: "Betónová pumpa na zákazke",                           sub: "Pumpa" },
