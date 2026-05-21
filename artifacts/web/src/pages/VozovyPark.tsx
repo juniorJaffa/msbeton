@@ -15,13 +15,14 @@ const stagger = { show: { transition: { staggerChildren: 0.07 } } };
 const PF = "brightness(0.88) contrast(1.18) saturate(1.12)";
 
 const HERO_SLIDES = [
-  { src: "g01.jpg", pos: "28% 48%" },
-  { src: "g05.jpg", pos: "46% 43%" },
-  { src: "g09.jpg", pos: "25% 45%", flip: true },
-  { src: "g15.jpg", pos: "50% 52%" },
-  { src: "g11.jpg", pos: "25% 44%", flip: true },
-  { src: "g02.jpg", pos: "42% 48%" },
-  { src: "g14.jpg", pos: "50% 44%" },
+  { src: "g01.jpg",                pos: "28% 48%" },
+  { src: "landing-car-road.jpg",   pos: "60% 48%" },
+  { src: "g05.jpg",                pos: "46% 43%" },
+  { src: "g09.jpg",                pos: "25% 45%", flip: true },
+  { src: "g15.jpg",                pos: "50% 52%" },
+  { src: "g11.jpg",                pos: "25% 44%", flip: true },
+  { src: "g02.jpg",                pos: "42% 48%" },
+  { src: "landing-pump-station.jpg", pos: "55% 42%" },
 ];
 
 const MARQUEE_PHOTOS = [
