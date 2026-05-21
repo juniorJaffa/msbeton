@@ -2634,13 +2634,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                         <div className="text-white/25 font-mono text-[10px]">({Math.floor(durMins / 60)}h{durMins % 60 > 0 ? `${durMins % 60}m` : ""} skut.)</div>
                       </div>
                       <div className="text-right">
-                        <div className="text-[9px] text-amber-400/50 uppercase tracking-wide mb-0.5">Odhad</div>
                         <div className="font-black text-primary text-base leading-tight">{estimatedCost.toFixed(2)} €</div>
                         {loggedClient && <div className="text-white/25 text-[9px]">bez DPH</div>}
                       </div>
                     </div>
                     <div className="px-3 py-1.5 border-t border-amber-500/15 bg-amber-500/5">
-                      <p className="text-[9px] text-white/35 text-center">Sadzba: {(pumpServicePrice * fPump).toFixed(2)} €/h · iba čerpanie (bez betónu a dopravy)</p>
+                      <p className="text-[11px] text-white/50 text-center">{(pumpServicePrice * fPump).toFixed(2)} €/h · iba čerpanie, bez betónu a dopravy</p>
                     </div>
                   </div>
                 ) : null;
