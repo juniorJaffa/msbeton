@@ -15,19 +15,17 @@ const stagger = { show: { transition: { staggerChildren: 0.07 } } };
 const PF = "brightness(0.88) contrast(1.18) saturate(1.12)";
 
 const HERO_SLIDES = [
-  { src: "g01.jpg", pos: "28% 48%" },
-  { src: "g05.jpg", pos: "46% 43%" },
-  { src: "g09.jpg", pos: "25% 45%", flip: true },
-  { src: "g15.jpg", pos: "50% 52%" },
-  { src: "g11.jpg", pos: "25% 44%", flip: true },
-  { src: "g02.jpg", pos: "42% 48%" },
-  { src: "g14.jpg", pos: "50% 44%" },
+  { src: "g01.jpg", pos: "28% 36%" },
+  { src: "g05.jpg", pos: "46% 32%" },
+  { src: "g09.jpg", pos: "25% 34%", flip: true },
+  { src: "g15.jpg", pos: "50% 40%" },
+  { src: "g11.jpg", pos: "25% 33%", flip: true },
+  { src: "g02.jpg", pos: "42% 37%" },
 ];
 
 const MARQUEE_PHOTOS = [
   { src: "/images/vozovy-park/p03.jpg",          pos: "center 40%" },
   { src: "/images/vozovy-park/mixer-krajina.jpg", pos: "center 32%" },
-  { src: "/images/vozovy-park/g14.jpg",           pos: "center 40%" },
   { src: "/images/vozovy-park/g16.jpg",           pos: "center 35%" },
   { src: "/images/vozovy-park/g02.jpg",           pos: "center 40%" },
   { src: "/images/vozovy-park/g08.jpg",           pos: "center 38%" },
@@ -90,7 +88,6 @@ const GALLERY_PHOTOS: GalleryPhoto[] = [
   { src: "g10.jpg",  cat: "pumpa",  label: "Pumpa Scania — čerpanie v priemyselnej hale",        sub: "Pumpa · Scania",    pos: "center 40%" },
   { src: "g11.jpg",  cat: "spolu",  label: "Pumpa MAN + mixer — jarné zákazky v horách",         sub: "Pumpa + Mix",       pos: "center 45%" },
   { src: "g12.jpg",  cat: "pumpa",  label: "Zákazka s pumpou — pohľad na celé stavenisko",       sub: "Pumpa",             pos: "center 45%" },
-  { src: "g14.jpg",  cat: "spolu",  label: "Vozový park MS-BETON — flota 3 vozidiel",            sub: "Fleet",             top: true, pos: "center 52%" },
   { src: "g15.jpg",  cat: "pumpa",  label: "Pumpa Scania — čerpanie pri rodinnom dome",          sub: "Pumpa · Scania",    top: true, pos: "center 48%" },
   { src: "g16.jpg",  cat: "pumpa",  label: "MS-BETON MAN TGA — príjazd na zákazku",             sub: "Pumpa · MAN",       pos: "center 45%" },
 ];
