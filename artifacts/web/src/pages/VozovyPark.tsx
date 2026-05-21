@@ -180,9 +180,11 @@ function VideasSection() {
           </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 gap-2.5">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
           {[
             { src: "/images/vozovy-park/zrubovy-dom.jpg", label: "Betonáž zrubového domu", pos: "center 45%" },
+            { src: "/images/vozovy-park/zrub1.jpg",       label: "Zrubový dom — čerpanie betónu", pos: "center 50%" },
+            { src: "/images/vozovy-park/zrub2.jpg",       label: "Zrubový dom — zákazka MS-BETON", pos: "center 45%" },
           ].map((ph, i) => (
             <motion.div
               key={i}
@@ -191,7 +193,7 @@ function VideasSection() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35, ease, delay: 0.1 + i * 0.06 }}
             >
-              <div className="h-52 md:h-72 relative bg-secondary/80">
+              <div className="h-44 md:h-56 relative bg-secondary/80">
                 <img
                   src={ph.src}
                   alt={ph.label}
