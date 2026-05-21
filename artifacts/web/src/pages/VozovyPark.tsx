@@ -15,13 +15,14 @@ const stagger = { show: { transition: { staggerChildren: 0.07 } } };
 const PF = "brightness(0.88) contrast(1.18) saturate(1.12)";
 
 const HERO_SLIDES = [
-  { src: "landing-car-road.jpg",   pos: "60% 48%" },
-  { src: "landing-pump2.jpg",      pos: "50% 45%" },
-  { src: "g05.jpg",                pos: "46% 43%" },
-  { src: "g09.jpg",                pos: "25% 45%", flip: true },
-  { src: "g15.jpg",                pos: "50% 52%" },
-  { src: "g11.jpg",                pos: "25% 44%", flip: true },
-  { src: "g02.jpg",                pos: "42% 48%" },
+  { src: "landing-car-road.jpg",    pos: "60% 48%" },
+  { src: "landing-pump2.jpg",       pos: "50% 45%" },
+  { src: "g05.jpg",                 pos: "46% 43%" },
+  { src: "g09.jpg",                 pos: "25% 45%", flip: true },
+  { src: "g14.jpg",                 pos: "50% 44%" },
+  { src: "g15.jpg",                 pos: "50% 52%" },
+  { src: "g11.jpg",                 pos: "25% 44%", flip: true },
+  { src: "g02.jpg",                 pos: "42% 48%" },
   { src: "landing-pump-station.jpg", pos: "55% 42%" },
 ];
 
@@ -180,14 +181,9 @@ function VideasSection() {
           </div>
         </motion.div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-1 gap-2.5">
           {[
-            { src: "/images/vozovy-park/p10.jpg",        label: "Rameno pumpuje do ďalšej pumpy", pos: "70% 38%" },
-            { src: "/images/vozovy-park/p21.jpg",        label: "Betonáž priemyselnej haly",       pos: "center 42%" },
-            { src: "/images/vozovy-park/p16.jpg",        label: "Mixer v akcii",                   pos: "center 40%" },
-            { src: "/images/vozovy-park/p32.jpg",        label: "Pumpa MS-BETON na zákazke",       pos: "68% 38%" },
-            { src: "/images/vozovy-park/zrubovy-dom.jpg", label: "Betonáž zrubového domu",         pos: "center 45%" },
-            { src: "/images/vozovy-park/akcia-podlaha-1.jpg", label: "Betonáž podlahy — presnosť na cm", pos: "center 55%" },
+            { src: "/images/vozovy-park/zrubovy-dom.jpg", label: "Betonáž zrubového domu", pos: "center 45%" },
           ].map((ph, i) => (
             <motion.div
               key={i}
@@ -196,7 +192,7 @@ function VideasSection() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35, ease, delay: 0.1 + i * 0.06 }}
             >
-              <div className="h-36 md:h-44 relative bg-secondary/80">
+              <div className="h-52 md:h-72 relative bg-secondary/80">
                 <img
                   src={ph.src}
                   alt={ph.label}
