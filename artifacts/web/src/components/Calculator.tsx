@@ -1239,11 +1239,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       : pdfAddToMainQty > 0
         ? `${result.qty}+${fmtQ(pdfAddToMainQty)}&nbsp;m³`
         : `${result.qty}&nbsp;m³`;
-    const transportRowLabel = pdfAddToMainQty > 0
-      ? `<span style="background:#dbeafe;color:#1d4ed8;font-size:6.5pt;font-weight:900;padding:1px 4px;border-radius:2px;margin-right:4px;letter-spacing:0.05em">HLAVNÁ DOPRAVA</span>${dopravaLabel}`
-      : dopravaLabel;
     const transportRow = mainTransportOrig > 0
-      ? trow(transportRowLabel, mainTransportMnozstvo, transportUnitStr, mainTransportOrig, mainTransportDisc)
+      ? trow(dopravaLabel, mainTransportMnozstvo, transportUnitStr, mainTransportOrig, mainTransportDisc)
       : "";
     const mainFillupOrig = mainCI?.transportFillup ?? 0;
     const mainFillupDisc = mainFillupOrig * result.fFillup;
@@ -1312,7 +1309,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       rows += trow(dopravaExtraLabel, `${ci.qty}&nbsp;m³`, extraTransportUnitStr, transOrig, transDisc);
       if (isAddToMainExtra && transOrig === 0) {
         const mainLabel = (result.concreteBreakdown[0]?.label ?? "").split("–")[0].trim() || "Hlavný produkt";
-        rows += `<tr><td colspan="5" style="padding:2px 8px 4px 24px;font-size:7.5pt;color:#999;font-style:italic">↑ +${ci.qty}&nbsp;m³ zarátané do dopravy Produktu – <b style="color:#888">${mainLabel}</b></td></tr>`;
+        rows += `<tr><td colspan="5" style="padding:3px 8px 5px 20px">
+          <div style="border-left:3px solid #93c5fd;background:#eff6ff;padding:3px 10px;display:inline-block;font-size:7.5pt;border-radius:0 3px 3px 0">
+            <span style="color:#1d4ed8;font-weight:900">&#8593; +${ci.qty}&nbsp;m³</span>
+            <span style="color:#555"> zarátané do Hlavnej dopravy – </span>
+            <span style="color:#1e40af;font-weight:700">${mainLabel}</span>
+          </div>
+        </td></tr>`;
       }
       rows += trow(`Doťaženie do&nbsp;${ci.transportFillupTarget}&nbsp;m³`, `${ci.transportFillupM3}&nbsp;m³`, transRateStr(fillupOrig, ci.transportFillupM3, result.fFillup), fillupOrig, fillupDisc);
       const hasExtraSvc = ci.svcPumpCost > 0 || ci.svcHoseCost > 0 || ci.svcWashCost > 0 || ci.svcWaitCost > 0;
@@ -3242,8 +3245,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                                   label={
                                     <span>
                                       {idx === 0 && addToMainQtyDisplay > 0 && (
-                                        <span className="inline-flex items-center gap-0.5 bg-blue-500/20 text-blue-300 text-[9px] font-black px-1 py-0.5 rounded-sm mr-1 align-middle">
-                                          HLAVNÁ DOPRAVA
+                                        <span className="inline-flex items-center justify-center w-4 h-4 bg-blue-500/25 rounded-sm mr-1 align-middle shrink-0" title="Hlavná doprava – zahŕňa m³ z pridaných položiek">
+                                          {/* merge/funnel icon — dve čiary konvergujú do jednej */}
+                                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#60a5fa" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M2 1 L5 5 L8 1"/>
+                                            <line x1="5" y1="5" x2="5" y2="9"/>
+                                          </svg>
                                         </span>
                                       )}
                                       {ci.transportIsMin
