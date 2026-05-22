@@ -536,10 +536,6 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             if (marker) { marker.setMap(null); marker = null; mapMarkerRef.current = null; }
             setMapPin(null); setMapPlusCode(""); setMapLocality(""); setMapGeocodedAddress(""); setDistance("");
           } else {
-            const addr = results[0].formatted_address.replace(/, Slovensko$/, "").replace(/, Slovakia$/, "");
-            setMapGeocodedAddress(addr);
-            setAddress(addr);
-            if (addressInputRef.current) addressInputRef.current.value = addr;
             const comps = results[0].address_components ?? [];
             const loc = comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("locality"))?.long_name
               ?? comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("postal_town"))?.long_name
@@ -550,6 +546,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
               ?? "";
             const district = comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("administrative_area_level_2"))?.long_name ?? "";
             setMapLocality([loc, district].filter(Boolean).join(", "));
+            const rawAddr = results[0].formatted_address.replace(/, Slovensko$/, "").replace(/, Slovakia$/, "");
+            // PlusCode ako formatted_address = žiadna ulica → použi locality fallback
+            const addr = /^[A-Z0-9]{4,8}\+[A-Z0-9]{2,3}/.test(rawAddr) ? [loc, district].filter(Boolean).join(", ") : rawAddr;
+            setMapGeocodedAddress(addr);
+            setAddress(addr);
+            if (addressInputRef.current) addressInputRef.current.value = addr;
           }
         });
       };
