@@ -3592,9 +3592,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                       };
                       const pType = clientDeliveryZone?.pricingType ?? "standard";
                       const mpInfo = loggedClient?.manualPrices ?? {};
-                      const fT = result?.fTransport ?? 1;
+                      const fT = dopravaFactor;
                       let transLabel1 = "Min. doprava", transVal1: React.ReactNode = "—";
-                      let transLabel2 = "Pásiem", transVal2: React.ReactNode = tzones.length > 0 ? `${tzones.length}` : "—";
+                      let transLabel2 = "Doprava od", transVal2: React.ReactNode = "—";
                       if (pType === "km") {
                         const baseKmRate = clientDeliveryZone?.ratePerKm ?? 1.8;
                         const kmRate = mpInfo[`km_rate_${clientDeliveryZone?.id}`] ?? baseKmRate;
@@ -3614,6 +3614,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                       } else {
                         const minFeeStd = mpInfo["min_fee"] !== undefined ? mpInfo["min_fee"] : (tsettings.minimumFee ?? 62.50);
                         transLabel1 = "Min. doprava"; transVal1 = svcCell(minFeeStd, "/auto", fT);
+                        if (tzones.length > 0) {
+                          const z0 = tzones[0];
+                          const z0Rate = mpInfo[z0.id] !== undefined ? mpInfo[z0.id] : z0.ratePerM3;
+                          transVal2 = svcCell(z0Rate, "/m³", fT);
+                        }
                       }
                       return ([
                         { label: transLabel1, value: transVal1 },
@@ -3656,9 +3661,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                       };
                       const pType = clientDeliveryZone?.pricingType ?? "standard";
                       const mpInfo = loggedClient?.manualPrices ?? {};
-                      const fT = result?.fTransport ?? 1;
+                      const fT = dopravaFactor;
                       let transLabel1 = "Min. doprava", transVal1: React.ReactNode = "—";
-                      let transLabel2 = "Pásiem", transVal2: React.ReactNode = tzones.length > 0 ? `${tzones.length}` : "—";
+                      let transLabel2 = "Doprava od", transVal2: React.ReactNode = "—";
                       if (pType === "km") {
                         const baseKmRate = clientDeliveryZone?.ratePerKm ?? 1.8;
                         const kmRate = mpInfo[`km_rate_${clientDeliveryZone?.id}`] ?? baseKmRate;
@@ -3675,6 +3680,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                       } else {
                         const minFeeStd = mpInfo["min_fee"] !== undefined ? mpInfo["min_fee"] : (tsettings.minimumFee ?? 62.50);
                         transLabel1 = "Min. doprava"; transVal1 = svcCell(minFeeStd, "/auto", fT);
+                        if (tzones.length > 0) {
+                          const z0 = tzones[0];
+                          const z0Rate = mpInfo[z0.id] !== undefined ? mpInfo[z0.id] : z0.ratePerM3;
+                          transVal2 = svcCell(z0Rate, "/m³", fT);
+                        }
                       }
                       return ([
                         { label: transLabel1, value: transVal1 },
