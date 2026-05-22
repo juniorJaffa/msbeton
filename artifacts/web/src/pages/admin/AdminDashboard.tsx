@@ -307,7 +307,7 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
           <div className="text-left">
             <h3 className="font-black text-secondary text-sm uppercase tracking-widest">Podmienky m³ → počet vozidiel</h3>
             <p className="text-xs text-gray-500 mt-0.5">
-              Admin mení počet vozidiel podľa objemu — zákazník nemá prístup
+              Admin mení počet vozidiel podľa terénu a počasia — upravuje m³/auto — zákazník nemá prístup
             </p>
           </div>
           <svg className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${podmienkyOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
