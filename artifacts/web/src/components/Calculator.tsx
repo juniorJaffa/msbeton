@@ -3590,9 +3590,34 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                           </div>
                         ) : `${disc.toFixed(2)} €${suffix}`;
                       };
+                      const pType = clientDeliveryZone?.pricingType ?? "standard";
+                      const mpInfo = loggedClient?.manualPrices ?? {};
+                      const fT = result?.fTransport ?? 1;
+                      let transLabel1 = "Min. doprava", transVal1: React.ReactNode = "—";
+                      let transLabel2 = "Pásiem", transVal2: React.ReactNode = tzones.length > 0 ? `${tzones.length}` : "—";
+                      if (pType === "km") {
+                        const baseKmRate = clientDeliveryZone?.ratePerKm ?? 1.8;
+                        const kmRate = mpInfo[`km_rate_${clientDeliveryZone?.id}`] ?? baseKmRate;
+                        const minFeeKey = tab === "pumpa" ? `km_min_pumpa_${clientDeliveryZone?.id}` : `km_min_mix_${clientDeliveryZone?.id}`;
+                        const minFeeBase = tab === "pumpa"
+                          ? (clientDeliveryZone?.minimumFeeKmPumpa ?? clientDeliveryZone?.minimumFeeKm)
+                          : (clientDeliveryZone?.minimumFeeKmMix ?? clientDeliveryZone?.minimumFeeKm);
+                        const minFee = mpInfo[minFeeKey] !== undefined ? mpInfo[minFeeKey] : minFeeBase;
+                        transLabel1 = "Sadzba/km"; transVal1 = svcCell(kmRate, "/km", fT);
+                        transLabel2 = "Min. doprava"; transVal2 = minFee != null ? svcCell(minFee, "/auto", fT) : "—";
+                      } else if (pType === "auto") {
+                        const baseAutoRate = clientDeliveryZone?.ratePerTruck ?? 0;
+                        const autoRate = mpInfo[`auto_rate_${clientDeliveryZone?.id}`] ?? baseAutoRate;
+                        const minFee = clientDeliveryZone?.minimumFeeAuto;
+                        transLabel1 = "Paušál/auto"; transVal1 = svcCell(autoRate, "/auto", fT);
+                        transLabel2 = "Min. doprava"; transVal2 = minFee != null ? svcCell(minFee, "/auto", fT) : "—";
+                      } else {
+                        const minFeeStd = mpInfo["min_fee"] !== undefined ? mpInfo["min_fee"] : (tsettings.minimumFee ?? 62.50);
+                        transLabel1 = "Min. doprava"; transVal1 = svcCell(minFeeStd, "/auto", fT);
+                      }
                       return ([
-                        { label: "Kapacita", value: `${pumpCap} m³` },
-                        { label: "Výložník", value: "28 m" },
+                        { label: transLabel1, value: transVal1 },
+                        { label: transLabel2, value: transVal2 },
                         { label: "Čerpanie", value: svcCell(pumpServicePrice, "/hod", fPump) },
                         { label: "Rozbeh. chémia", value: svcCell(chemServicePrice, " (v cene)", fChem) },
                       ] as { label: string; value: React.ReactNode }[]).map(({ label, value }) => (
@@ -3620,8 +3645,40 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     {(() => {
                       const mixDisc = waitServicePriceMix * fWaitM;
                       const mixShowStrike = fWaitM < 1 && Math.abs(waitServicePriceMix - mixDisc) > 0.001;
+                      const svcCell = (orig: number, suffix: string, factor: number) => {
+                        const disc = orig * factor;
+                        return factor < 1 && Math.abs(orig - disc) > 0.001 ? (
+                          <div>
+                            <span className="line-through text-primary/40 text-xs mr-1">{orig.toFixed(2)} €{suffix}</span>
+                            <span className="block">{disc.toFixed(2)} €{suffix}</span>
+                          </div>
+                        ) : `${disc.toFixed(2)} €${suffix}`;
+                      };
+                      const pType = clientDeliveryZone?.pricingType ?? "standard";
+                      const mpInfo = loggedClient?.manualPrices ?? {};
+                      const fT = result?.fTransport ?? 1;
+                      let transLabel1 = "Min. doprava", transVal1: React.ReactNode = "—";
+                      let transLabel2 = "Pásiem", transVal2: React.ReactNode = tzones.length > 0 ? `${tzones.length}` : "—";
+                      if (pType === "km") {
+                        const baseKmRate = clientDeliveryZone?.ratePerKm ?? 1.8;
+                        const kmRate = mpInfo[`km_rate_${clientDeliveryZone?.id}`] ?? baseKmRate;
+                        const minFeeBase = clientDeliveryZone?.minimumFeeKmMix ?? clientDeliveryZone?.minimumFeeKm;
+                        const minFee = mpInfo[`km_min_mix_${clientDeliveryZone?.id}`] !== undefined ? mpInfo[`km_min_mix_${clientDeliveryZone?.id}`] : minFeeBase;
+                        transLabel1 = "Sadzba/km"; transVal1 = svcCell(kmRate, "/km", fT);
+                        transLabel2 = "Min. doprava"; transVal2 = minFee != null ? svcCell(minFee, "/auto", fT) : "—";
+                      } else if (pType === "auto") {
+                        const baseAutoRate = clientDeliveryZone?.ratePerTruck ?? 0;
+                        const autoRate = mpInfo[`auto_rate_${clientDeliveryZone?.id}`] ?? baseAutoRate;
+                        const minFee = clientDeliveryZone?.minimumFeeAuto;
+                        transLabel1 = "Paušál/auto"; transVal1 = svcCell(autoRate, "/auto", fT);
+                        transLabel2 = "Min. doprava"; transVal2 = minFee != null ? svcCell(minFee, "/auto", fT) : "—";
+                      } else {
+                        const minFeeStd = mpInfo["min_fee"] !== undefined ? mpInfo["min_fee"] : (tsettings.minimumFee ?? 62.50);
+                        transLabel1 = "Min. doprava"; transVal1 = svcCell(minFeeStd, "/auto", fT);
+                      }
                       return ([
-                        { label: "Kapacita", value: `${mixCap} m³` },
+                        { label: transLabel1, value: transVal1 },
+                        { label: transLabel2, value: transVal2 },
                         {
                           label: "Čakačka / 15 min",
                           value: mixShowStrike ? (
