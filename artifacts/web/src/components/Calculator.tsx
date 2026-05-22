@@ -326,10 +326,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   useEffect(() => {
     if (!showResult) return;
     requestAnimationFrame(() => {
-      const el = resultRef.current;
-      if (!el) return;
-      const NAVBAR_H = 96;
-      window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - NAVBAR_H - 8, behavior: "smooth" });
+      resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   }, [showResult]);
 
@@ -2498,7 +2495,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                       setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, svc: defaults, showSvc: true } : i));
                       setShowResult(false);
                     }}
-                    className="w-full py-2 border border-dashed border-primary/30 text-primary/50 hover:border-primary hover:text-primary transition-all text-xs font-semibold cursor-pointer rounded-sm">
+                    className="w-full py-1.5 text-primary/40 hover:text-primary transition-colors text-xs font-semibold cursor-pointer text-center">
                     + Pridať Služby ({tab === "pumpa" ? "čerpanie, hadice, čakačky" : "čakačky"})
                   </button>
                 )}
@@ -2570,7 +2567,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 setExtraItems([...extraItems, { id: Date.now().toString(), categoryName: null, typeLabel: null, quantity: "" }]);
                 setShowResult(false);
               }}
-              className="w-full py-3 mt-1 border border-dashed border-blue-400/40 text-blue-400/70 hover:border-blue-400 hover:text-blue-300 transition-all text-sm font-semibold tracking-wide cursor-pointer rounded-sm"
+              className="w-full py-2.5 mt-4 border border-dashed border-white/20 text-white/40 hover:border-white/40 hover:text-white/65 transition-all text-sm font-semibold tracking-wide cursor-pointer rounded-sm"
             >
               + Pridať položku
             </button>
@@ -3065,7 +3062,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             const canCalc = hasQty && hasKm;
             return (
               <div className="space-y-1 mt-2">
-                <button onClick={() => { if (canCalc) { setShowResult(true); gtagEvent("calculator_complete", { tab, quantity, type: selectedType?.label }); requestAnimationFrame(() => { const el = resultRef.current; if (!el) return; const NAVBAR_H = 96; window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - NAVBAR_H - 8, behavior: "smooth" }); }); } }} disabled={!canCalc}
+                <button onClick={() => { if (canCalc) { setShowResult(true); gtagEvent("calculator_complete", { tab, quantity, type: selectedType?.label }); requestAnimationFrame(() => { resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }); } }} disabled={!canCalc}
                   className={cn("w-full py-4 border-2 font-bold text-base tracking-widest transition-all duration-200",
                     canCalc
                       ? "bg-transparent border-primary text-primary hover:bg-primary hover:text-white cursor-pointer"
@@ -3085,7 +3082,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         </div>
 
         {/* RIGHT: Result */}
-        <div ref={resultRef} className={cn("p-6", !showResult && "hidden md:flex md:items-center md:justify-center")}>
+        <div ref={resultRef} className={cn("p-6 scroll-mt-24", !showResult && "hidden md:flex md:items-center md:justify-center")}>
           {showResult && result && displayItems && origDisplayItems ? (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
               className="rounded-xl border border-primary/30 overflow-hidden md:rounded-xl">
