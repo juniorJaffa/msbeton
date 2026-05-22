@@ -258,6 +258,7 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
   const [pzForm, setPzForm] = useState({ fromKm: "", toKm: "", ratePerM3: "" });
   const [stdZonesOpen, setStdZonesOpen] = useState(false);
   const [stdDotazenieOpen, setStdDotazenieOpen] = useState(false);
+  const [podmienkyOpen, setPodmienkyOpen] = useState(false);
   const [expandedTypes, setExpandedTypes] = useState<Record<string, boolean>>({ standard: true, km: true, auto: true });
 
   const savePZ = (data: TransportPricingZone[]) => { setPZones(data); adminData.saveTransportZones(data); };
@@ -296,17 +297,24 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
 
   return (
     <div className="space-y-3">
-      {/* ── Typy dopravy ── */}
-      {/* Admin úprava vozidiel — min/max rozsah pre ručný override v kalkulačke */}
+      {/* ── Podmienky m³ – rozsah vozidiel ── */}
       <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-2.5 border-b border-gray-100 bg-gray-50">
-          <h3 className="font-black text-secondary text-sm uppercase tracking-widest">Admin – úprava počtu vozidiel</h3>
-          <p className="text-[10px] text-gray-400 mt-0.5 leading-snug">
-            Admin môže v kalkulačke manuálne upraviť počet vozidiel podľa podmienok terénu, počasia alebo objemu betónu. Zákazník túto možnosť nemá. Tu nastavíš povolený rozsah tejto úpravy.
-            Pumpa = betonárska pumpa; Mixer = domiešavač dodávajúci betón za pumpou.
-          </p>
-        </div>
-        <div className="grid grid-cols-2 divide-y divide-gray-100">
+        <button
+          type="button"
+          onClick={() => setPodmienkyOpen(o => !o)}
+          className="w-full px-5 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between cursor-pointer hover:bg-gray-100 transition-colors"
+        >
+          <div className="text-left">
+            <h3 className="font-black text-secondary text-sm uppercase tracking-widest">Podmienky m³ → počet vozidiel</h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Admin mení počet vozidiel podľa objemu — zákazník nemá prístup
+            </p>
+          </div>
+          <svg className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${podmienkyOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="m19 9-7 7-7-7" />
+          </svg>
+        </button>
+        {podmienkyOpen && <div className="grid grid-cols-2 divide-y divide-gray-100">
           {/* PUMPA row */}
           <div className="col-span-2 grid grid-cols-2 divide-x divide-gray-100 border-b border-gray-100">
             <div className="px-4 py-3 bg-blue-50/40">
@@ -357,7 +365,7 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
               </div>
             </div>
           </div>
-        </div>
+        </div>}
       </div>
 
       <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
@@ -943,7 +951,7 @@ function OrderStatusBadge({ status, onChange }: { status: Order["status"]; onCha
     <div className="relative">
       <button onClick={() => setOpen(o => !o)} className={`px-2 py-1 text-xs font-bold rounded-sm cursor-pointer ${cur.color}`}>{cur.label} ▾</button>
       {open && (
-        <div className="absolute z-10 bg-white border border-gray-200 shadow-lg rounded-sm min-w-[110px] left-0 top-full mt-0.5">
+        <div className="absolute z-50 bg-white border border-gray-200 shadow-lg rounded-sm min-w-[110px] left-0 top-full mt-0.5">
           {ORDER_STATUSES.map(s => (
             <button key={s.key} onClick={() => { onChange(s.key); setOpen(false); }}
               className={`block w-full text-left px-3 py-1.5 text-xs font-bold hover:bg-gray-50 ${s.color}`}>{s.label}</button>
@@ -1370,7 +1378,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
           {sorted.map(o => {
             const isExp = expanded === o.id;
             return (
-              <div key={o.id} id={`order-card-${o.id}`} className={`border shadow-sm overflow-hidden ${o.createdAt.slice(0,10) === todayStr ? "bg-gray-50 border-gray-300" : "bg-white border-gray-200"}`}>
+              <div key={o.id} id={`order-card-${o.id}`} className={`border shadow-sm ${o.createdAt.slice(0,10) === todayStr ? "bg-gray-50 border-gray-300" : "bg-white border-gray-200"}`}>
                 <div className={`flex gap-3 py-3.5 cursor-pointer transition-colors ${o.createdAt.slice(0,10) === todayStr ? "hover:bg-gray-100" : "hover:bg-gray-50"} ${o.status === "nova" ? "pl-3 pr-4" : "px-4"}`}
                   style={o.status === "nova" ? { borderLeft: "4px solid #3b82f6" } : undefined}
                   onClick={() => {
@@ -1404,7 +1412,11 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                         <button onClick={e => { e.stopPropagation(); setMapModalOrder(o); }}
                           className="inline-flex items-center gap-0.5 text-primary/50 hover:text-primary transition-colors shrink-0" title="Zobraziť na mape">
                           <MapPin className="w-3 h-3 shrink-0" />
-                          {o.address && <span className="text-gray-400 hover:text-gray-600 truncate max-w-[80px] sm:max-w-[150px]">{o.address}</span>}
+                          {o.address
+                            ? <span className="text-gray-500 hover:text-gray-700 truncate max-w-[80px] sm:max-w-[160px]">{o.address}</span>
+                            : o.mapLocality
+                              ? <span className="text-gray-500 hover:text-gray-700 truncate max-w-[80px] sm:max-w-[160px]">{o.mapLocality.split(",")[0]}</span>
+                              : <span className="text-gray-400 font-mono text-[10px]">{o.mapPlusCode}</span>}
                         </button>
                       ) : null}
                     </div>
