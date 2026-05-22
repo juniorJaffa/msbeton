@@ -1311,11 +1311,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       rows += trow(dopravaExtraLabel, `${ci.qty}&nbsp;m³`, extraTransportUnitStr, transOrig, transDisc);
       if (isAddToMainExtra && transOrig === 0) {
         const mainLabel = (result.concreteBreakdown[0]?.label ?? "").split("–")[0].trim() || "Hlavný produkt";
-        rows += `<tr><td colspan="5" style="padding:3px 8px 5px 20px">
-          <div style="border-left:3px solid #93c5fd;background:#eff6ff;padding:3px 10px;display:inline-block;font-size:7.5pt;border-radius:0 3px 3px 0">
-            <span style="color:#1d4ed8;font-weight:900">&#8593; +${ci.qty}&nbsp;m³</span>
-            <span style="color:#555"> zarátané do Hlavnej dopravy – </span>
-            <span style="color:#1e40af;font-weight:700">${mainLabel}</span>
+        rows += `<tr><td colspan="5" style="padding:2px 8px 6px 16px">
+          <div style="border-left:4px solid #2563eb;background:#dbeafe;padding:4px 12px;display:block;font-size:8pt;border-radius:0 4px 4px 0">
+            <span style="color:#1d4ed8;font-weight:900;font-size:9pt">&#8593; +${ci.qty}&nbsp;m³</span>
+            <span style="color:#1e40af"> zarátané do dopravy </span>
+            <span style="display:inline-block;background:#2563eb;color:#fff;font-weight:900;font-size:7pt;padding:1px 5px;border-radius:3px;vertical-align:middle;letter-spacing:0.03em">&#9673; HLAVNÁ</span>
+            <span style="color:#1e40af;font-weight:700"> – ${mainLabel}</span>
           </div>
         </td></tr>`;
       }
@@ -3247,9 +3248,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                                   label={
                                     <span>
                                       {idx === 0 && addToMainQtyDisplay > 0 && (
-                                        <span className="inline-flex items-center justify-center w-4 h-4 bg-blue-500/25 rounded-sm mr-1 align-middle shrink-0" title="Hlavná doprava – zahŕňa m³ z pridaných položiek">
+                                        <span className="inline-flex items-center justify-center w-5 h-5 bg-blue-500/25 rounded-sm mr-1.5 align-middle shrink-0" title="Hlavná doprava – zahŕňa m³ z pridaných položiek">
                                           {/* wheel icon — koleso = hlavná doprava */}
-                                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#60a5fa" strokeWidth="1.4" strokeLinecap="round">
+                                          <svg width="13" height="13" viewBox="0 0 10 10" fill="none" stroke="#60a5fa" strokeWidth="1.5" strokeLinecap="round">
                                             <circle cx="5" cy="5" r="4"/>
                                             <circle cx="5" cy="5" r="1.5"/>
                                             <line x1="5" y1="1" x2="5" y2="3.5"/>
@@ -3277,12 +3278,22 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                               </div>
                             )}
                             {isAddToMain && (
-                              <div className="flex items-start gap-1 ml-1 mt-0.5">
+                              <div className="flex items-center gap-1 ml-1 mt-0.5">
                                 <span className="text-blue-400/60 text-[10px] leading-tight shrink-0">↑</span>
-                                <span className="text-[10px] text-blue-400/70 leading-tight">
-                                  +{ci.qty}&thinsp;m³ zarátané do dopravy{" "}
+                                <span className="text-[10px] text-blue-400/70 leading-tight flex items-center gap-1">
+                                  +{ci.qty}&thinsp;m³ zarátané do dopravy
+                                  <span className="inline-flex items-center justify-center w-3.5 h-3.5 bg-blue-500/25 rounded-sm shrink-0">
+                                    <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="#60a5fa" strokeWidth="1.6" strokeLinecap="round">
+                                      <circle cx="5" cy="5" r="4"/>
+                                      <circle cx="5" cy="5" r="1.5"/>
+                                      <line x1="5" y1="1" x2="5" y2="3.5"/>
+                                      <line x1="5" y1="6.5" x2="5" y2="9"/>
+                                      <line x1="1" y1="5" x2="3.5" y2="5"/>
+                                      <line x1="6.5" y1="5" x2="9" y2="5"/>
+                                    </svg>
+                                  </span>
                                   <span className="font-black text-blue-400/90">
-                                    Produktu – {result.concreteBreakdown[0]?.label.split("–")[0].trim() ?? "Hlavná položka"}
+                                    – {result.concreteBreakdown[0]?.label.split("–")[0].trim() ?? "Hlavná položka"}
                                   </span>
                                 </span>
                               </div>
