@@ -1308,7 +1308,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       rows += trow(ci.label, `${ci.qty}&nbsp;m³`, unitStr, betonOrig, betonDisc, undefined, true);
       rows += trow(dopravaExtraLabel, `${ci.qty}&nbsp;m³`, extraTransportUnitStr, transOrig, transDisc);
       if (isAddToMainExtra && transOrig === 0) {
-        rows += `<tr><td colspan="5" style="padding:2px 8px 4px 24px;font-size:7.5pt;color:#999;font-style:italic">+${ci.qty}&nbsp;m³ zarátané do dopravy Hlavnej položky</td></tr>`;
+        const mainLabel = (result.concreteBreakdown[0]?.label ?? "").split("–")[0].trim() || "Hlavný produkt";
+        rows += `<tr><td colspan="5" style="padding:2px 8px 4px 24px;font-size:7.5pt;color:#999;font-style:italic">↑ +${ci.qty}&nbsp;m³ zarátané do dopravy Produktu – <b style="color:#888">${mainLabel}</b></td></tr>`;
       }
       rows += trow(`Doťaženie do&nbsp;${ci.transportFillupTarget}&nbsp;m³`, `${ci.transportFillupM3}&nbsp;m³`, transRateStr(fillupOrig, ci.transportFillupM3, result.fFillup), fillupOrig, fillupDisc);
       const hasExtraSvc = ci.svcPumpCost > 0 || ci.svcHoseCost > 0 || ci.svcWashCost > 0 || ci.svcWaitCost > 0;
@@ -2470,7 +2471,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                       <p className="text-[10px] text-white/35 mt-1">Vlastná doprava — táto položka má vlastný výpočet km/vzdialenosti.</p>
                     )}
                     {item.transportMode === "addToMain" && item.quantity && (
-                      <p className="text-[10px] text-blue-400/80 mt-1">+{item.quantity} m³ bude zarátané do dopravy Hlavnej položky.</p>
+                      <p className="text-[10px] text-blue-400/80 mt-1">
+                        +{item.quantity} m³ bude zarátané do dopravy
+                        {selectedType ? <> <span className="font-black text-blue-300">Produktu – Betón {cleanType(selectedType.label)}</span></> : " Hlavného produktu"}.
+                      </p>
                     )}
                     {item.transportMode === "none" && (
                       <p className="text-[10px] text-white/35 mt-1">Bez dopravy — táto položka nebude mať dopravu.</p>
@@ -3250,7 +3254,15 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                                 original={ci.transport} discounted={ci.transport * result.fTransport} hasDiscount={hasDiscount} />
                             )}
                             {isAddToMain && (
-                              <div className="text-[10px] text-blue-400/70 ml-1 mt-0.5">↑ +{ci.qty}&thinsp;m³ zarátané do dopravy Hlavnej položky</div>
+                              <div className="flex items-start gap-1 ml-1 mt-0.5">
+                                <span className="text-blue-400/60 text-[10px] leading-tight shrink-0">↑</span>
+                                <span className="text-[10px] text-blue-400/70 leading-tight">
+                                  +{ci.qty}&thinsp;m³ zarátané do dopravy{" "}
+                                  <span className="font-black text-blue-400/90">
+                                    Produktu – {result.concreteBreakdown[0]?.label.split("–")[0].trim() ?? "Hlavná položka"}
+                                  </span>
+                                </span>
+                              </div>
                             )}
                             {!result.isOwn && idx === 0 && (pType === "km" || pType === "auto") && (() => {
                               const distKm = parseFloat(distance) || 0;
