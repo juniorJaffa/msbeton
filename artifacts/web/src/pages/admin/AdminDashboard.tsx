@@ -1518,9 +1518,9 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                           className="inline-flex items-center gap-0.5 text-primary/50 hover:text-primary transition-colors shrink-0" title="Zobraziť na mape">
                           <MapPin className="w-3 h-3 shrink-0" />
                           {o.address
-                            ? <span className="text-gray-500 hover:text-gray-700 truncate max-w-[80px] sm:max-w-[160px]">{o.address}</span>
+                            ? <span className="text-gray-500 hover:text-gray-700 truncate max-w-[80px] sm:max-w-none sm:whitespace-normal sm:overflow-visible">{o.address}</span>
                             : o.mapLocality
-                              ? <span className="text-gray-500 hover:text-gray-700 truncate max-w-[80px] sm:max-w-[160px]">{o.mapLocality.split(",")[0]}</span>
+                              ? <span className="text-gray-500 hover:text-gray-700 truncate max-w-[80px] sm:max-w-none sm:whitespace-normal sm:overflow-visible">{o.mapLocality.split(",")[0]}</span>
                               : <span className="text-gray-400 font-mono text-[10px]">{o.mapPlusCode}</span>}
                         </button>
                       ) : null}

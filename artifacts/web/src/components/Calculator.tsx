@@ -1239,8 +1239,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       : pdfAddToMainQty > 0
         ? `${result.qty}+${fmtQ(pdfAddToMainQty)}&nbsp;m³`
         : `${result.qty}&nbsp;m³`;
+    const transportRowLabel = pdfAddToMainQty > 0
+      ? `<span style="background:#dbeafe;color:#1d4ed8;font-size:6.5pt;font-weight:900;padding:1px 4px;border-radius:2px;margin-right:4px;letter-spacing:0.05em">HLAVNÁ DOPRAVA</span>${dopravaLabel}`
+      : dopravaLabel;
     const transportRow = mainTransportOrig > 0
-      ? trow(dopravaLabel, mainTransportMnozstvo, transportUnitStr, mainTransportOrig, mainTransportDisc)
+      ? trow(transportRowLabel, mainTransportMnozstvo, transportUnitStr, mainTransportOrig, mainTransportDisc)
       : "";
     const mainFillupOrig = mainCI?.transportFillup ?? 0;
     const mainFillupDisc = mainFillupOrig * result.fFillup;
@@ -3234,24 +3237,31 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
                             {/* Doprava pre tento item */}
                             {!result.isOwn && ci.transport > 0 && (
-                              <PriceRow
-                                label={
-                                  <span>
-                                    {ci.transportIsMin
-                                      ? <span>Min. doprava – <strong>{ci.transportTrucks}x auto</strong></span>
-                                      : idx === 0
-                                        ? <span>{prefix}{zoneStr ? ` ${zoneStr}` : ""} · <strong>{trucksLabel}</strong>
-                                            {addToMainQtyDisplay > 0
-                                              ? <> · {ci.qty}+{fmtR(addToMainQtyDisplay)}&thinsp;m³</>
-                                              : <> · {ci.qty}&thinsp;m³</>}
-                                          </span>
-                                        : <span>Doprava · {ci.qty}&thinsp;m³</span>}
-                                    {transportFormula(ci, idx === 0 ? addToMainQtyDisplay : 0) && (
-                                      <span className="text-[10px] text-white/35 block mt-0.5">{transportFormula(ci, idx === 0 ? addToMainQtyDisplay : 0)}</span>
-                                    )}
-                                  </span>
-                                }
-                                original={ci.transport} discounted={ci.transport * result.fTransport} hasDiscount={hasDiscount} />
+                              <div className={idx === 0 && addToMainQtyDisplay > 0 ? "border-l-2 border-blue-400/40 pl-1.5 -ml-1" : ""}>
+                                <PriceRow
+                                  label={
+                                    <span>
+                                      {idx === 0 && addToMainQtyDisplay > 0 && (
+                                        <span className="inline-flex items-center gap-0.5 bg-blue-500/20 text-blue-300 text-[9px] font-black px-1 py-0.5 rounded-sm mr-1 align-middle">
+                                          HLAVNÁ DOPRAVA
+                                        </span>
+                                      )}
+                                      {ci.transportIsMin
+                                        ? <span>Min. doprava – <strong>{ci.transportTrucks}x auto</strong></span>
+                                        : idx === 0
+                                          ? <span>{prefix}{zoneStr ? ` ${zoneStr}` : ""} · <strong>{trucksLabel}</strong>
+                                              {addToMainQtyDisplay > 0
+                                                ? <> · {ci.qty}+{fmtR(addToMainQtyDisplay)}&thinsp;m³</>
+                                                : <> · {ci.qty}&thinsp;m³</>}
+                                            </span>
+                                          : <span>Doprava · {ci.qty}&thinsp;m³</span>}
+                                      {transportFormula(ci, idx === 0 ? addToMainQtyDisplay : 0) && (
+                                        <span className="text-[10px] text-white/35 block mt-0.5">{transportFormula(ci, idx === 0 ? addToMainQtyDisplay : 0)}</span>
+                                      )}
+                                    </span>
+                                  }
+                                  original={ci.transport} discounted={ci.transport * result.fTransport} hasDiscount={hasDiscount} />
+                              </div>
                             )}
                             {isAddToMain && (
                               <div className="flex items-start gap-1 ml-1 mt-0.5">
