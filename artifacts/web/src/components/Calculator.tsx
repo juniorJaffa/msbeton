@@ -547,8 +547,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             const district = comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("administrative_area_level_2"))?.long_name ?? "";
             setMapLocality([loc, district].filter(Boolean).join(", "));
             const rawAddr = results[0].formatted_address.replace(/, Slovensko$/, "").replace(/, Slovakia$/, "");
-            // PlusCode ako formatted_address = žiadna ulica → použi locality fallback
-            const addr = /^[A-Z0-9]{4,8}\+[A-Z0-9]{2,3}/.test(rawAddr) ? [loc, district].filter(Boolean).join(", ") : rawAddr;
+            // Ak formatted_address je len PlusCode (žiadna ulica) → použi locality fallback alebo koordináty
+            const localityStr = [loc, district].filter(Boolean).join(", ");
+            const hasPlusCodePrefix = /^[A-Z0-9+]{6,}/i.test(rawAddr) && rawAddr.includes("+");
+            const addr = hasPlusCodePrefix
+              ? (localityStr || `${lat.toFixed(5)}, ${lng.toFixed(5)}`)
+              : rawAddr;
             setMapGeocodedAddress(addr);
             setAddress(addr);
             if (addressInputRef.current) addressInputRef.current.value = addr;
@@ -2201,10 +2205,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                             </div>
                           </div>
                           <button onClick={() => {
-                            // ensure address field is never empty after confirm
+                            // ensure address field is never empty after confirm — nikdy PlusCode
                             if (!address && mapPin) {
                               const fallback = mapGeocodedAddress || mapLocality
-                                || (mapPlusCode ? `${mapPlusCode}${mapLocality ? ` ${mapLocality}` : ""}` : "")
                                 || `${mapPin.lat.toFixed(5)}, ${mapPin.lng.toFixed(5)}`;
                               setAddress(fallback);
                               if (addressInputRef.current) addressInputRef.current.value = fallback;
