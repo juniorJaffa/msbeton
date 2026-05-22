@@ -2686,7 +2686,9 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                             <EditableField value={c.loginId || "—"} onSave={v => {
                               if (v.toLowerCase() === "msbeton") { alert("Login ID 'msbeton' je rezervované."); return; }
                               if (clients.some(other => other.id !== c.id && other.loginId?.toLowerCase() === v.toLowerCase())) { alert(`Login ID '${v}' už existuje.`); return; }
-                              update(c.id, { loginId: v });
+                              const phoneMatch = v.match(/^(\+?(?:00421|421|0)[0-9\s\-]{7,})/);
+                              const extracted = phoneMatch ? formatPhone(phoneMatch[1].trim()) : "";
+                              update(c.id, { loginId: v, ...(!c.phone && extracted ? { phone: extracted } : {}) });
                             }} />
                           </div>
                           <div className="flex items-center gap-2 px-3 py-2">
