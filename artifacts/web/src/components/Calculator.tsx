@@ -1579,8 +1579,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     lines.push("Tel: +421 909 205 205");
     const text = lines.join("\n");
 
-    // Vytvorenie objednávky na pozadí s flagom viaSms=true (iba ak je prihlásený klient a SMS objednávky sú povolené)
-    if (loggedClient && selectedType && tsettings.smsOrderEnabled) {
+    // Vytvorenie objednávky — globálne smsOrderEnabled + per-klient smsOrderDisabled override
+    if (loggedClient && selectedType && tsettings.smsOrderEnabled && !loggedClient.smsOrderDisabled) {
       const isFakt = priceMode === "faktura";
       clientApi.submitOrder({
         id: Math.random().toString(36).slice(2, 10),
@@ -1612,7 +1612,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
     const rawPhone = loggedClient?.phone ?? "";
     const normalPhone = rawPhone.startsWith("0") ? "+421" + rawPhone.slice(1) : rawPhone.replace(/^00421/, "+421");
-    if (normalPhone && normalPhone.length > 6) {
+    // smsShareOnly: zobraziť share menu namiesto auto-otvorenia SMS aplikácie
+    if (!loggedClient?.smsShareOnly && normalPhone && normalPhone.length > 6) {
       window.open(`sms:${normalPhone}?body=${encodeURIComponent(text)}`, "_blank");
     } else if (navigator.share) {
       navigator.share({ text }).catch(() => {});
@@ -2495,7 +2496,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                       setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, svc: defaults, showSvc: true } : i));
                       setShowResult(false);
                     }}
-                    className="w-full py-1.5 text-primary/40 hover:text-primary transition-colors text-xs font-semibold cursor-pointer text-center">
+                    className="w-full py-2 border border-dashed border-primary/30 text-primary/50 hover:border-primary hover:text-primary transition-all text-xs font-semibold cursor-pointer rounded-sm">
                     + Pridať Služby ({tab === "pumpa" ? "čerpanie, hadice, čakačky" : "čakačky"})
                   </button>
                 )}
@@ -2567,7 +2568,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 setExtraItems([...extraItems, { id: Date.now().toString(), categoryName: null, typeLabel: null, quantity: "" }]);
                 setShowResult(false);
               }}
-              className="w-full py-2.5 mt-4 border border-dashed border-white/20 text-white/40 hover:border-white/40 hover:text-white/65 transition-all text-sm font-semibold tracking-wide cursor-pointer rounded-sm"
+              className="w-full py-2.5 border border-dashed border-primary/40 text-primary/60 hover:border-primary hover:text-primary transition-all text-sm font-semibold tracking-wide cursor-pointer rounded-sm"
             >
               + Pridať položku
             </button>

@@ -71,6 +71,8 @@ export interface Client {
   sharedLink?: string; // zdieľaný odkaz (Google Sheet, PDF, prezentácia...)
   createdAt?: string; // ISO timestamp vytvorenia klienta
   lastLoginAt?: string; // ISO timestamp posledného prihlásenia
+  smsOrderDisabled?: boolean; // true = nevytvárať objednávku pri SMS exporte (pretlačí globálne nastavenie)
+  smsShareOnly?: boolean;     // true = zobraziť share menu namiesto auto-otvorenia SMS aplikácie
 }
 
 export interface Order {

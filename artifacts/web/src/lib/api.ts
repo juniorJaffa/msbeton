@@ -60,6 +60,8 @@ export interface LoggedClient {
   hotovostDph?: number;
   manualPrices?: Record<string, number>;
   sharedLink?: string;
+  smsOrderDisabled?: boolean;
+  smsShareOnly?: boolean;
 }
 
 export const clientApi = {

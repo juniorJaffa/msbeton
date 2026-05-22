@@ -2812,6 +2812,20 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                             <input type="checkbox" checked={c.canZimneOpatrenia ?? false} onChange={e => update(c.id, { canZimneOpatrenia: e.target.checked })} className="accent-blue-600 w-4 h-4 shrink-0" />
                             <span className="text-sm text-gray-700">Zimné opatrenia</span>
                           </label>
+                          <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50 select-none">
+                            <input type="checkbox" checked={c.smsOrderDisabled ?? false} onChange={e => update(c.id, { smsOrderDisabled: e.target.checked })} className="accent-orange-500 w-4 h-4 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <span className="text-sm text-gray-700">SMS — nevytvárať objednávku</span>
+                              <div className="text-[11px] text-gray-400">Pretlačí globálne nastavenie · klik SMS = iba text, bez záznamu</div>
+                            </div>
+                          </label>
+                          <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50 select-none">
+                            <input type="checkbox" checked={c.smsShareOnly ?? false} onChange={e => update(c.id, { smsShareOnly: e.target.checked })} className="accent-orange-500 w-4 h-4 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <span className="text-sm text-gray-700">SMS — zobraziť share menu</span>
+                              <div className="text-[11px] text-gray-400">Namiesto auto-otvorenia SMS aplikácie · zdieľacie okno</div>
+                            </div>
+                          </label>
                           <div className="px-3 py-2.5">
                             <div className="text-xs text-gray-400 mb-1">Typ dopravy</div>
                             {(() => {

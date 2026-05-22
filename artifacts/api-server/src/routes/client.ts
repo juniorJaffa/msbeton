@@ -94,6 +94,8 @@ interface UnifiedClient {
   name?: string;
   discountPct?: number;
   sharedLink?: string;
+  smsOrderDisabled?: boolean;
+  smsShareOnly?: boolean;
 }
 
 interface LegacyClientAccount {
@@ -167,6 +169,8 @@ function buildClientResponse(account: UnifiedClient) {
     hotovostDph: account.hotovostDph,
     manualPrices: account.manualPrices,
     sharedLink: account.sharedLink || undefined,
+    smsOrderDisabled: account.smsOrderDisabled ?? false,
+    smsShareOnly: account.smsShareOnly ?? false,
   };
 }
 
