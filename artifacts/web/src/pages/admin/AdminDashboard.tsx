@@ -297,12 +297,12 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
   return (
     <div className="space-y-3">
       {/* ── Typy dopravy ── */}
-      {/* Podmienky — min/max počet vozidiel pre kalkulačku */}
+      {/* Admin úprava vozidiel — min/max rozsah pre ručný override v kalkulačke */}
       <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-5 py-2.5 border-b border-gray-100 bg-gray-50">
-          <h3 className="font-black text-secondary text-sm uppercase tracking-widest">Podmienky čerpania – počet vozidiel</h3>
+          <h3 className="font-black text-secondary text-sm uppercase tracking-widest">Admin – úprava počtu vozidiel</h3>
           <p className="text-[10px] text-gray-400 mt-0.5 leading-snug">
-            Zákazník si pri kalkulácii (tab Pumpa) nastavuje počet vozidiel. Tu nastavíš povolený rozsah.
+            Admin môže v kalkulačke manuálne upraviť počet vozidiel podľa podmienok terénu, počasia alebo objemu betónu. Zákazník túto možnosť nemá. Tu nastavíš povolený rozsah tejto úpravy.
             Pumpa = betonárska pumpa; Mixer = domiešavač dodávajúci betón za pumpou.
           </p>
         </div>
