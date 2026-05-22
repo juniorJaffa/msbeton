@@ -1231,7 +1231,14 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const mainTransportDisc = mainTransportOrig * result.fTransport;
     const mainPricingType = clientDeliveryZone?.pricingType ?? "standard";
     const mainMinFeePerTruck = (() => {
-      if (mainPricingType === "km") return clientDeliveryZone?.minimumFeeKm ?? 0;
+      if (mainPricingType === "km") {
+        const mpKm = loggedClient?.manualPrices ?? {};
+        const kmMinKey = tab === "pumpa" ? `km_min_pumpa_${clientDeliveryZone?.id}` : `km_min_mix_${clientDeliveryZone?.id}`;
+        const kmMinBase = tab === "pumpa"
+          ? (clientDeliveryZone?.minimumFeeKmPumpa ?? clientDeliveryZone?.minimumFeeKm)
+          : (clientDeliveryZone?.minimumFeeKmMix ?? clientDeliveryZone?.minimumFeeKm);
+        return mpKm[kmMinKey] !== undefined ? mpKm[kmMinKey] : (kmMinBase ?? 0);
+      }
       if (mainPricingType === "auto") return clientDeliveryZone?.minimumFeeAuto ?? 0;
       const mpLocal = loggedClient?.manualPrices ?? {};
       return mpLocal["min_fee"] !== undefined ? mpLocal["min_fee"] : (tsettings.minimumFee ?? 62.50);
@@ -1538,6 +1545,20 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             lines.push(`Doťaženie do ${ci.transportFillupTarget}m³`);
             lines.push(rowUnit(`${ci.transportFillupM3}m³`, effectiveRate, fillupDisc));
           }
+        } else if (clientDeliveryZone?.pricingType === "km") {
+          const mpSms = loggedClient?.manualPrices ?? {};
+          const baseKmRate = clientDeliveryZone.ratePerKm ?? 1.8;
+          const smsKm = Math.max(parseFloat(distance) || 0, clientDeliveryZone.minKm ?? 0);
+          const kmRate = (mpSms[`km_rate_${clientDeliveryZone.id}`] ?? baseKmRate) * result.fTransport;
+          lines.push(`Doprava ${smsKm}km × ${kmRate.toFixed(2)} €/km`);
+          const perAutoDisc = ci.transportTrucks > 0 ? transportDisc / ci.transportTrucks : transportDisc;
+          lines.push(rowUnit(`${ci.transportTrucks}x auto`, perAutoDisc, transportDisc));
+        } else if (clientDeliveryZone?.pricingType === "auto") {
+          const mpSmsA = loggedClient?.manualPrices ?? {};
+          const baseAutoRate = clientDeliveryZone.ratePerTruck ?? 0;
+          const autoRate = (mpSmsA[`auto_rate_${clientDeliveryZone.id}`] ?? baseAutoRate) * result.fTransport;
+          lines.push("Doprava");
+          lines.push(rowUnit(`${ci.transportTrucks}x auto`, autoRate, transportDisc));
         } else {
           lines.push(row("Doprava", transportDisc));
         }
@@ -3204,7 +3225,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                       const distKm = parseFloat(distance) || 0;
                       const kmMinDist = clientDeliveryZone?.minKm ?? 0;
                       const effectiveKm = Math.max(distKm, kmMinDist);
-                      const kmMinFee = clientDeliveryZone?.minimumFeeKm;
+                      const kmMinFeeKey = tab === "pumpa" ? `km_min_pumpa_${clientDeliveryZone?.id}` : `km_min_mix_${clientDeliveryZone?.id}`;
+                      const kmMinFeeBase = tab === "pumpa"
+                        ? (clientDeliveryZone?.minimumFeeKmPumpa ?? clientDeliveryZone?.minimumFeeKm)
+                        : (clientDeliveryZone?.minimumFeeKmMix ?? clientDeliveryZone?.minimumFeeKm);
+                      const kmMinFee = mp2[kmMinFeeKey] !== undefined ? mp2[kmMinFeeKey] : kmMinFeeBase;
                       if (ci.transportIsMin && kmMinFee) return `min. poplatok ${fmtR(kmMinFee * result.fTransport)} €/auto × ${trucks} ${autaLabel}`;
                       const kmLabel = effectiveKm !== distKm ? `${distKm}→${effectiveKm} km` : `${distKm} km`;
                       return `${kmLabel} × ${fmtR(rate)} €/km × ${trucks} ${autaLabel}`;
