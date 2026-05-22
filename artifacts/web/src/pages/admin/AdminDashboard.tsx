@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
-import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, SlidersHorizontal, ShoppingCart, MessageSquare, BarChart2, TrendingUp, Monitor, Globe, MousePointerClick, MoreHorizontal, Activity, Smartphone, Laptop, Tablet, Mail, MapPin, Navigation, Copy, Fingerprint } from "lucide-react";
+import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, SlidersHorizontal, ShoppingCart, MessageSquare, BarChart2, TrendingUp, Monitor, Globe, MousePointerClick, MoreHorizontal, Activity, Smartphone, Laptop, Tablet, Mail, MapPin, Navigation, Copy, Fingerprint } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
@@ -1401,13 +1401,13 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
               </button>
               {quickDate === "mesiac" && (
                 <div className="inline-flex items-center gap-0.5 border border-secondary/30 rounded-sm bg-secondary/5 px-1 py-0.5">
-                  <button onClick={() => stepMonth(-1)} className="px-1.5 py-0.5 text-secondary hover:bg-secondary/10 rounded-sm font-bold text-xs transition-colors">◄</button>
+                  <button onClick={() => stepMonth(-1)} className="p-1 text-secondary hover:bg-secondary/10 rounded-sm transition-colors"><ChevronLeft className="w-3.5 h-3.5" /></button>
                   <span className="text-xs font-bold text-secondary w-20 text-center select-none">{SK_MONTHS[quickMY.m - 1]}</span>
-                  <button onClick={() => stepMonth(1)} className="px-1.5 py-0.5 text-secondary hover:bg-secondary/10 rounded-sm font-bold text-xs transition-colors">►</button>
+                  <button onClick={() => stepMonth(1)} className="p-1 text-secondary hover:bg-secondary/10 rounded-sm transition-colors"><ChevronRight className="w-3.5 h-3.5" /></button>
                   <div className="w-px h-4 bg-secondary/20 mx-0.5" />
-                  <button onClick={() => applyMonthFilter(quickMY.m, quickMY.y - 1)} className="px-1.5 py-0.5 text-secondary hover:bg-secondary/10 rounded-sm font-bold text-xs transition-colors">◄</button>
+                  <button onClick={() => applyMonthFilter(quickMY.m, quickMY.y - 1)} className="p-1 text-secondary hover:bg-secondary/10 rounded-sm transition-colors"><ChevronLeft className="w-3.5 h-3.5" /></button>
                   <span className="text-xs font-bold text-secondary w-10 text-center select-none">{quickMY.y}</span>
-                  <button onClick={() => applyMonthFilter(quickMY.m, quickMY.y + 1)} className="px-1.5 py-0.5 text-secondary hover:bg-secondary/10 rounded-sm font-bold text-xs transition-colors">►</button>
+                  <button onClick={() => applyMonthFilter(quickMY.m, quickMY.y + 1)} className="p-1 text-secondary hover:bg-secondary/10 rounded-sm transition-colors"><ChevronRight className="w-3.5 h-3.5" /></button>
                 </div>
               )}
               <div className={`inline-flex items-center gap-1 px-2.5 py-1.5 border rounded-sm cursor-pointer transition-all ${
@@ -1506,10 +1506,10 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <TabBadge tab={o.tab} />
-                      <span className="font-bold text-secondary text-sm leading-tight">{o.clientName}</span>
-                      {o.company && <span className="text-xs text-gray-500 truncate max-w-[120px]">{o.company}</span>}
+                      <span className="font-bold text-secondary text-base leading-tight">{o.clientName}</span>
+                      {o.company && <span className="text-sm text-gray-500 truncate max-w-[120px]">{o.company}</span>}
                     </div>
-                    <div className="flex items-center gap-1.5 flex-wrap text-xs">
+                    <div className="flex items-center gap-1.5 flex-wrap text-sm">
                       <span className="font-medium text-gray-600">{o.concreteType.replace(/ – [\d.,]+ €.*/, "")}</span>
                       <span className="font-bold text-secondary">{o.totalQty} m³</span>
                       {o.km ? <span className="text-gray-400">{o.km} km</span> : null}
@@ -1526,7 +1526,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                       ) : null}
                     </div>
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className={`text-[10px] font-bold ${o.createdAt.slice(0,10) === todayStr ? "text-primary" : o.createdAt.slice(0,10) === yesterdayStr ? "text-blue-400" : "text-gray-400 font-normal"}`}>{fmtDate(o.createdAt)}</span>
+                      <span className={`text-xs font-bold ${o.createdAt.slice(0,10) === todayStr ? "bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-sm" : o.createdAt.slice(0,10) === yesterdayStr ? "text-blue-500" : "text-gray-400 font-normal"}`}>{fmtDate(o.createdAt)}</span>
                       {o.viaSms
                         ? <span className="inline-flex items-center gap-0.5 bg-green-100 text-green-700 text-[9px] font-black px-1.5 py-0.5 rounded-sm"><MessageSquare className="w-2.5 h-2.5" /> SMS</span>
                         : <span className="inline-flex items-center bg-secondary/10 text-secondary px-1.5 py-0.5 rounded-sm"><ShoppingCart className="w-3 h-3" /></span>}
@@ -1545,7 +1545,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                   {/* Right */}
                   <div className="flex flex-col items-end justify-between shrink-0 gap-1.5" onClick={e => e.stopPropagation()}>
                     <div className="text-right">
-                      <div className="font-black text-secondary text-sm tabular-nums leading-tight">{fmtEur(o.totalSDph)}</div>
+                      <div className="font-black text-secondary text-base tabular-nums leading-tight">{fmtEur(o.totalSDph)}</div>
                       <div className={cn("text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-sm mt-0.5 inline-block",
                         o.priceMode === "hotovost" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
                       )}>
@@ -1562,7 +1562,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                   <div className="border-t border-gray-100 bg-gray-50/40">
                     <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-100">
                       {/* Kontakt */}
-                      <div className="px-4 py-3 space-y-1.5 text-xs">
+                      <div className="px-4 py-3 space-y-1.5 text-sm">
                         <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Kontakt</div>
                         <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Meno</span><span className="font-medium text-gray-700">{o.clientName}</span></div>
                         {o.company && <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Firma</span><span className="text-gray-600">{o.company}</span></div>}
@@ -1607,7 +1607,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                         ) : null}
                       </div>
                       {/* Detail dopravy + poznámka */}
-                      <div className="px-4 py-3 space-y-1.5 text-xs">
+                      <div className="px-4 py-3 space-y-1.5 text-sm">
                         <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Objednávka</div>
                         <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Dátum</span><span className="text-gray-500">{fmtDate(o.createdAt)}</span></div>
                         {o.deliveryZoneName && (
