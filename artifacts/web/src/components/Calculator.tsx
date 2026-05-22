@@ -1207,7 +1207,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const pdfAddToMainQty = extraItems.reduce((s, i) => { const q = parseFloat(i.quantity || "0") || 0; return (q > 0 && i.transportMode === "addToMain") ? s + q : s; }, 0);
     const pdfZone = result.transportZone ? `${result.transportZone.fromKm}–${result.transportZone.toKm}&nbsp;km` : "";
     const pdfPrefix = result.transportIsMin ? "Min. doprava" : "Doprava";
-    const dopravaLabel = `${pdfAddToMainQty > 0 ? "⊙ " : ""}${pdfPrefix}${pdfZone ? ` ${pdfZone}` : ""} · ${pdfTrucks}${podmienkyEnabled ? " ★" : ""}`;
+    const hlavnaBadge = pdfAddToMainQty > 0
+      ? `<span style="display:inline-block;background:#1d4ed8;color:#fff;font-weight:900;font-size:6pt;padding:1px 5px;border-radius:3px;vertical-align:middle;letter-spacing:0.04em;margin-right:5px">&#9673;&nbsp;HLAVNÁ</span>`
+      : "";
+    const dopravaLabel = `${hlavnaBadge}${pdfPrefix}${pdfZone ? ` ${pdfZone}` : ""} · ${pdfTrucks}${podmienkyEnabled ? " ★" : ""}`;
     const podmienkyMixCount = tab === "pumpa" ? podmienkyMixC : podmienkyTrucks;
     const podmienkyTotalTrucks = tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks;
     const podmienkyFillupM3pdf = result.concreteBreakdown[0]?.transportFillupM3 ?? 0;
@@ -1233,11 +1236,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         ? `<span style="text-decoration:line-through;color:#bbb;font-size:7.5pt">${fmtN(mainMinFeePerTruck)}&nbsp;€/auto</span><br>${fmtN(mainMinFeeDisc)}&nbsp;€/auto`
         : `${fmtN(mainMinFeeDisc)}&nbsp;€/auto`)
       : transRateStr(mainTransportOrig, result.qty, result.fTransport);
+    const truckWord = (n: number) => n === 1 ? "auto" : "autá";
     const mainTransportMnozstvo = result.transportIsMin
-      ? `${result.trucks}&nbsp;autá`
+      ? `${result.trucks}&nbsp;${truckWord(result.trucks)}&nbsp;(${result.qty}&nbsp;m³)`
       : pdfAddToMainQty > 0
-        ? `${result.qty}+${fmtQ(pdfAddToMainQty)}&nbsp;m³`
-        : `${result.qty}&nbsp;m³`;
+        ? `${result.trucks}&nbsp;${truckWord(result.trucks)}&nbsp;(${result.qty}+${fmtQ(pdfAddToMainQty)}&nbsp;m³)`
+        : `${result.trucks}&nbsp;${truckWord(result.trucks)}&nbsp;(${result.qty}&nbsp;m³)`;
     const transportRow = mainTransportOrig > 0
       ? trow(dopravaLabel, mainTransportMnozstvo, transportUnitStr, mainTransportOrig, mainTransportDisc)
       : "";
@@ -1305,7 +1309,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const isAddToMainExtra = idx < extraItems.length && extraItems[idx]?.transportMode === "addToMain";
       let rows = sectionRow(`Pridaná položka ${idx + 1}${extraBetonLabel ? ` – ${extraBetonLabel}` : ""}`);
       rows += trow(ci.label, `${ci.qty}&nbsp;m³`, unitStr, betonOrig, betonDisc, undefined, true);
-      rows += trow(dopravaExtraLabel, `${ci.qty}&nbsp;m³`, extraTransportUnitStr, transOrig, transDisc);
+      rows += trow(dopravaExtraLabel, `${ci.transportTrucks}&nbsp;${truckWord(ci.transportTrucks)}&nbsp;(${ci.qty}&nbsp;m³)`, extraTransportUnitStr, transOrig, transDisc);
       if (isAddToMainExtra && transOrig === 0) {
         const mainLabel = (result.concreteBreakdown[0]?.label ?? "").split("–")[0].trim() || "Hlavný produkt";
         rows += `<tr><td colspan="5" style="padding:2px 8px 6px 16px">
