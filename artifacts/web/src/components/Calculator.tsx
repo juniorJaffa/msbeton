@@ -2569,7 +2569,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 setExtraItems([...extraItems, { id: Date.now().toString(), categoryName: null, typeLabel: null, quantity: "" }]);
                 setShowResult(false);
               }}
-              className="w-full py-2.5 border border-dashed border-primary/40 text-primary/60 hover:border-primary hover:text-primary transition-all text-sm font-semibold tracking-wide cursor-pointer rounded-sm"
+              className="w-full py-3 mt-1 border border-dashed border-blue-400/40 text-blue-400/70 hover:border-blue-400 hover:text-blue-300 transition-all text-sm font-semibold tracking-wide cursor-pointer rounded-sm"
             >
               + Pridať položku
             </button>
