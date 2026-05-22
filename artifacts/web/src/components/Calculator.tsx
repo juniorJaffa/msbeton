@@ -2416,7 +2416,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                   </div>
                   <button
                     type="button"
-                    onClick={() => { setExtraItems(extraItems.filter((i) => i.id !== item.id)); setShowResult(false); }}
+                    onClick={() => { setExtraItems(extraItems.filter((i) => i.id !== item.id)); }}
                     className="text-white/30 hover:text-red-400 transition-colors cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
