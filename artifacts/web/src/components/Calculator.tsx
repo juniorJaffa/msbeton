@@ -225,8 +225,8 @@ function TypeRadioGroup({ label, value, onChange, options }: {
 function fmt(n: number) { return n.toFixed(2) + " €"; }
 function cleanType(lbl: string) { return lbl.replace(/ – [\d.]+ € \/ m³/, "").replace(/ – [\d,.]+ €\/m³/, "").replace(/^Betón\s+/i, ""); }
 
-function PriceRow({ label, original, discounted, hasDiscount, isFillup }: { label: React.ReactNode; original: number; discounted: number; hasDiscount: boolean; isFillup?: boolean }) {
-  if (original === 0) return null;
+function PriceRow({ label, original, discounted, hasDiscount, isFillup, alwaysShow }: { label: React.ReactNode; original: number; discounted: number; hasDiscount: boolean; isFillup?: boolean; alwaysShow?: boolean }) {
+  if (original === 0 && !alwaysShow) return null;
   if (isFillup) {
     return (
       <div className="flex justify-between items-center text-sm px-3 py-2 mt-1 rounded-sm" style={{ background: "rgba(44,46,67,0.7)" }}>
@@ -1138,8 +1138,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
     // Table row: # | Popis | Množstvo | Jedn. cena | Spolu
     let rowNum = 0;
-    const trow = (popis: string, mnozstvo: string, jednCena: string, orig: number, disc: number, sectionBg?: string) => {
-      if (orig === 0 && disc === 0) return "";
+    const trow = (popis: string, mnozstvo: string, jednCena: string, orig: number, disc: number, sectionBg?: string, forceShow?: boolean) => {
+      if (orig === 0 && disc === 0 && !forceShow) return "";
       rowNum++;
       const bg = rowNum % 2 === 0 ? "background:#f9f9f9;" : "";
       const crossed = hasDiscount && Math.abs(orig - disc) > 0.001
@@ -1228,8 +1228,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         ? `<span style="text-decoration:line-through;color:#bbb;font-size:7.5pt">${fmtN(mainMinFeePerTruck)}&nbsp;€/auto</span><br>${fmtN(mainMinFeeDisc)}&nbsp;€/auto`
         : `${fmtN(mainMinFeeDisc)}&nbsp;€/auto`)
       : transRateStr(mainTransportOrig, result.qty, result.fTransport);
+    const mainTransportMnozstvo = result.transportIsMin
+      ? `${result.trucks}&nbsp;autá`
+      : pdfAddToMainQty > 0
+        ? `${result.qty}+${fmtQ(pdfAddToMainQty)}&nbsp;m³`
+        : `${result.qty}&nbsp;m³`;
     const transportRow = mainTransportOrig > 0
-      ? trow(dopravaLabel, pdfAddToMainQty > 0 ? `${result.qty}+${fmtQ(pdfAddToMainQty)}&nbsp;m³` : `${result.qty}&nbsp;m³`, transportUnitStr, mainTransportOrig, mainTransportDisc)
+      ? trow(dopravaLabel, mainTransportMnozstvo, transportUnitStr, mainTransportOrig, mainTransportDisc)
       : "";
     const mainFillupOrig = mainCI?.transportFillup ?? 0;
     const mainFillupDisc = mainFillupOrig * result.fFillup;
@@ -1292,9 +1297,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
           : `${fmtN(extraMinFeeDisc)}&nbsp;€/auto`)
         : transRateStr(transOrig, ci.qty, result.fTransport);
       const extraBetonLabel = ci.label.replace(/ – [\d.,]+ m³$/, "");
+      const isAddToMainExtra = idx < extraItems.length && extraItems[idx]?.transportMode === "addToMain";
       let rows = sectionRow(`Pridaná položka ${idx + 1}${extraBetonLabel ? ` – ${extraBetonLabel}` : ""}`);
-      rows += trow(ci.label, `${ci.qty}&nbsp;m³`, unitStr, betonOrig, betonDisc);
+      rows += trow(ci.label, `${ci.qty}&nbsp;m³`, unitStr, betonOrig, betonDisc, undefined, true);
       rows += trow(dopravaExtraLabel, `${ci.qty}&nbsp;m³`, extraTransportUnitStr, transOrig, transDisc);
+      if (isAddToMainExtra && transOrig === 0) {
+        rows += `<tr><td colspan="5" style="padding:2px 8px 4px 24px;font-size:7.5pt;color:#999;font-style:italic">+${ci.qty}&nbsp;m³ zarátané do dopravy Hlavnej položky</td></tr>`;
+      }
       rows += trow(`Doťaženie do&nbsp;${ci.transportFillupTarget}&nbsp;m³`, `${ci.transportFillupM3}&nbsp;m³`, transRateStr(fillupOrig, ci.transportFillupM3, result.fFillup), fillupOrig, fillupDisc);
       const hasExtraSvc = ci.svcPumpCost > 0 || ci.svcHoseCost > 0 || ci.svcWashCost > 0 || ci.svcWaitCost > 0;
       if (hasExtraSvc) rows += subSectionRow(svcLabel);
@@ -1468,6 +1477,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const concreteName = ci.label.replace(/ – \d+(?:[.,]\d+)? m³$/, "");
       lines.push(concreteName);
       lines.push(rowUnit(`${ci.qty}m³`, unitPrice, concreteVal));
+      if (!result.isOwn && ci.transport === 0 && result.concreteBreakdown.indexOf(ci) > 0) {
+        const smsCiIdx = result.concreteBreakdown.indexOf(ci) - 1;
+        if (smsCiIdx >= 0 && extraItems[smsCiIdx]?.transportMode === "addToMain") {
+          lines.push(`  +${ci.qty}m³ zarat. do dopravy hl.pol.`);
+        }
+      }
 
       if (!result.isOwn && ci.transport > 0) {
         const transportDisc = ci.transport * result.fTransport;
@@ -3205,7 +3220,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                                 Pridaná položka {idx}
                               </div>
                             )}
-                            <PriceRow label={ci.label} original={origVal} discounted={discVal} hasDiscount={Math.abs(origVal - discVal) > 0.001} />
+                            <PriceRow label={ci.label} original={origVal} discounted={discVal} hasDiscount={Math.abs(origVal - discVal) > 0.001} alwaysShow={isExtra} />
 
                             {/* Doprava pre tento item */}
                             {!result.isOwn && ci.transport > 0 && (
