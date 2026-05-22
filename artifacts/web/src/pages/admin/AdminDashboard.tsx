@@ -3802,12 +3802,17 @@ function AnalyticsTab() {
                 const skCities = data.cities!
                   .filter(c => c.country === "Slovakia" && SVK_CITY_SVG[c.city])
                   .sort((a, b) => b.sessions - a.sessions);
+                const unmapped = data.cities!
+                  .filter(c => c.country === "Slovakia" && !SVK_CITY_SVG[c.city] && c.city && c.city !== "(not set)")
+                  .sort((a, b) => b.sessions - a.sessions);
                 const maxC = Math.max(...skCities.map(c => c.sessions), 1);
+                const totalSkSess = skCities.reduce((s, c) => s + c.sessions, 0) + unmapped.reduce((s, c) => s + c.sessions, 0);
                 return (
-                  <div className="mt-3 rounded-xl overflow-hidden border border-slate-700/60" style={{ background: "linear-gradient(135deg,#0d1f3c 0%,#071526 100%)" }}>
+                  <div className="rounded-xl overflow-hidden border border-slate-700/60" style={{ background: "linear-gradient(135deg,#0d1f3c 0%,#071526 100%)" }}>
+                    <style>{`@keyframes svkPulse{0%{opacity:.22;transform:scale(1)}100%{opacity:0;transform:scale(2.2)}} .svk-pulse{animation:svkPulse 2.4s ease-out infinite;transform-box:fill-box;transform-origin:center}`}</style>
                     <div className="px-3 pt-2.5 pb-0 flex items-center justify-between">
-                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">🇸🇰 Slovensko — mestá</span>
-                      <span className="text-[9px] text-slate-600">{skCities.length} {skCities.length === 1 ? "mesto" : "miest"}</span>
+                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">🇸🇰 Slovensko — mestá</span>
+                      <span className="text-[9px] text-slate-500">{skCities.length} miest · {totalSkSess} sess.</span>
                     </div>
                     <svg viewBox="0 0 420 175" className="w-full" style={{ height: 145, display: "block" }}>
                       <defs>
@@ -3815,61 +3820,54 @@ function AnalyticsTab() {
                           <stop offset="0%" stopColor="#1a3a62" />
                           <stop offset="100%" stopColor="#0d2444" />
                         </linearGradient>
-                        <filter id="svkGlow" x="-50%" y="-50%" width="200%" height="200%">
-                          <feGaussianBlur stdDeviation="3" result="blur" />
-                          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-                        </filter>
                         <filter id="svkShadow">
                           <feDropShadow dx="0" dy="3" stdDeviation="4" floodColor="#000" floodOpacity="0.5" />
                         </filter>
                       </defs>
                       <g transform="translate(10,8)">
-                        {/* Slovakia outline */}
                         <path
                           d="M 2,128 L 3,19 L 48,6 L 150,3 L 215,4 L 232,1 L 248,12 L 289,17 L 324,28 L 358,30 L 399,34 L 399,76 L 386,93 L 352,152 L 290,152 L 220,152 L 128,152 L 83,152 L 62,152 L 14,152 L 3,147 Z"
                           fill="url(#svkGrad)" stroke="#2d5a99" strokeWidth="1.5" filter="url(#svkShadow)"
                         />
-                        {/* Subtle horizontal grid */}
                         {[38, 76, 114].map(y => (
                           <line key={y} x1="2" y1={y} x2="399" y2={y} stroke="#1e3a5f" strokeWidth="0.4" strokeDasharray="6,6" />
                         ))}
-                        {/* City dots — back to front (small first) */}
                         {[...skCities].reverse().map((c, ri) => {
                           const i = skCities.length - 1 - ri;
                           const xy = SVK_CITY_SVG[c.city];
                           if (!xy) return null;
                           const pct = c.sessions / maxC;
-                          const r = Math.max(4, Math.min(15, 4 + pct * 11));
+                          const r = Math.max(3, Math.min(10, 3 + pct * 7));
                           const isTop3 = i < 3;
-                          const showLabel = isTop3 || r >= 8;
+                          const showLabel = isTop3 || r >= 6;
                           const lw = c.city.length * 3.6 + 8;
+                          const pctTotal = totalSkSess > 0 ? Math.round((c.sessions / totalSkSess) * 100) : 0;
+                          const labelY = xy[1] - r - 3;
+                          const labelPinned = Math.max(12, labelY);
                           return (
-                            <g key={c.city}>
-                              {/* Outer glow ring */}
-                              <circle cx={xy[0]} cy={xy[1]} r={r + 5} fill="#EDC531" fillOpacity={pct * 0.18} />
-                              {/* Mid glow */}
-                              <circle cx={xy[0]} cy={xy[1]} r={r + 2} fill="#EDC531" fillOpacity={pct * 0.28} />
-                              {/* Main dot */}
-                              <circle cx={xy[0]} cy={xy[1]} r={r} fill="#EDC531" fillOpacity={0.55 + pct * 0.45}
-                                stroke={isTop3 ? "#fff8e1" : "#b38600"} strokeWidth={isTop3 ? 1.5 : 0.7} />
-                              {/* Inner highlight */}
-                              <circle cx={xy[0] - r * 0.25} cy={xy[1] - r * 0.25} r={r * 0.35} fill="#fff" fillOpacity="0.25" />
-                              {/* Label pill */}
+                            <g key={c.city} style={{ cursor: "default" }}>
+                              <title>{c.city}: {c.sessions} sess. ({pctTotal}% SK)</title>
+                              {i === 0 && (
+                                <circle className="svk-pulse" cx={xy[0]} cy={xy[1]} r={r + 7} fill="#EDC531" fillOpacity="0.22" />
+                              )}
+                              <circle cx={xy[0]} cy={xy[1]} r={r + 3} fill="#EDC531" fillOpacity={pct * 0.18} />
+                              <circle cx={xy[0]} cy={xy[1]} r={r} fill="#EDC531" fillOpacity={0.6 + pct * 0.4}
+                                stroke={isTop3 ? "#fff8e1" : "#b38600"} strokeWidth={isTop3 ? 1.2 : 0.5} />
+                              <circle cx={xy[0] - r * 0.25} cy={xy[1] - r * 0.25} r={r * 0.35} fill="#fff" fillOpacity="0.28" />
                               {showLabel && (
                                 <g>
-                                  <rect x={xy[0] - lw / 2} y={xy[1] - r - 15} width={lw} height={11} rx="3"
-                                    fill="#071526" fillOpacity="0.9" stroke="#2d5a99" strokeWidth="0.6" />
-                                  <text x={xy[0]} y={xy[1] - r - 6.5} textAnchor="middle" fontSize="5.8"
+                                  <rect x={xy[0] - lw / 2} y={labelPinned - 11} width={lw} height={10} rx="2.5"
+                                    fill="#071526" fillOpacity="0.92" stroke="#2d5a99" strokeWidth="0.5" />
+                                  <text x={xy[0]} y={labelPinned - 3.5} textAnchor="middle" fontSize="5.5"
                                     fill={isTop3 ? "#EDC531" : "#cbd5e1"} fontFamily="system-ui,sans-serif" fontWeight="700" letterSpacing="0.3">
                                     {c.city}
                                   </text>
                                 </g>
                               )}
-                              {/* Rank badge for top 3 */}
                               {isTop3 && (
                                 <>
-                                  <circle cx={xy[0] + r - 1} cy={xy[1] - r + 1} r={4.5} fill="#071526" stroke="#EDC531" strokeWidth="0.8" />
-                                  <text x={xy[0] + r - 1} y={xy[1] - r + 3.8} textAnchor="middle" fontSize="5" fill="#EDC531" fontFamily="system-ui,sans-serif" fontWeight="900">{i + 1}</text>
+                                  <circle cx={xy[0] + r} cy={xy[1] - r} r={4} fill="#071526" stroke="#EDC531" strokeWidth="0.8" />
+                                  <text x={xy[0] + r} y={xy[1] - r + 3.2} textAnchor="middle" fontSize="4.5" fill="#EDC531" fontFamily="system-ui,sans-serif" fontWeight="900">{i + 1}</text>
                                 </>
                               )}
                             </g>
@@ -3878,22 +3876,34 @@ function AnalyticsTab() {
                       </g>
                     </svg>
                     {/* Ranked legend */}
-                    <div className="px-3 pb-3 grid grid-cols-2 gap-x-4 gap-y-1.5 border-t border-slate-700/40 pt-2.5 mt-0">
-                      {skCities.slice(0, 8).map((c, i) => (
-                        <div key={c.city} className="flex items-center gap-1.5 min-w-0">
-                          <span className="text-[8px] font-black text-slate-600 w-2.5 text-right shrink-0">{i + 1}</span>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-1 mb-0.5">
-                              <span className="text-[9px] font-medium truncate" style={{ color: i < 3 ? "#EDC531" : "#94a3b8" }}>{c.city}</span>
-                              <span className="text-[9px] font-black text-primary shrink-0">{c.sessions}</span>
-                            </div>
-                            <div className="h-[2px] rounded-full" style={{ background: "#1e3a5f" }}>
-                              <div className="h-full rounded-full" style={{ width: `${(c.sessions / maxC) * 100}%`, background: i === 0 ? "#EDC531" : i === 1 ? "#d4a017" : i === 2 ? "#b38600" : "#4a6fa5" }} />
+                    <div className="px-3 pb-3 grid grid-cols-2 gap-x-4 gap-y-1.5 border-t border-slate-700/40 pt-2.5">
+                      {skCities.slice(0, 8).map((c, i) => {
+                        const pctTotal = totalSkSess > 0 ? Math.round((c.sessions / totalSkSess) * 100) : 0;
+                        return (
+                          <div key={c.city} className="flex items-center gap-1.5 min-w-0">
+                            <span className="text-[8px] font-black text-slate-600 w-2.5 text-right shrink-0">{i + 1}</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-1 mb-0.5">
+                                <span className="text-[9px] font-medium truncate" style={{ color: i < 3 ? "#EDC531" : "#94a3b8" }}>{c.city}</span>
+                                <span className="text-[9px] font-black text-primary shrink-0">{c.sessions} <span className="text-slate-600 font-normal">({pctTotal}%)</span></span>
+                              </div>
+                              <div className="h-[2px] rounded-full" style={{ background: "#1e3a5f" }}>
+                                <div className="h-full rounded-full" style={{ width: `${(c.sessions / maxC) * 100}%`, background: i === 0 ? "#EDC531" : i === 1 ? "#d4a017" : i === 2 ? "#b38600" : "#4a6fa5" }} />
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
+                    {/* Unmapped SK cities */}
+                    {unmapped.length > 0 && (
+                      <div className="px-3 pb-2.5 border-t border-slate-700/30 pt-2">
+                        <span className="text-[8px] uppercase tracking-widest text-slate-600 font-black">Ostatné mestá: </span>
+                        {unmapped.slice(0, 6).map((c, i) => (
+                          <span key={c.city} className="text-[8px] text-slate-500">{i > 0 ? " · " : ""}{c.city} <span className="text-slate-600">{c.sessions}</span></span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })()}
