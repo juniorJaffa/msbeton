@@ -1237,11 +1237,31 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       return mpLocal["min_fee"] !== undefined ? mpLocal["min_fee"] : (tsettings.minimumFee ?? 62.50);
     })();
     const mainMinFeeDisc = mainMinFeePerTruck * result.fTransport;
-    const transportUnitStr = result.transportIsMin && mainMinFeePerTruck > 0
-      ? (hasDiscount && Math.abs(mainMinFeePerTruck - mainMinFeeDisc) > 0.001
-        ? `<span style="text-decoration:line-through;color:#bbb;font-size:7.5pt">${fmtN(mainMinFeePerTruck)}&nbsp;€/auto</span><br>${fmtN(mainMinFeeDisc)}&nbsp;€/auto`
-        : `${fmtN(mainMinFeeDisc)}&nbsp;€/auto`)
-      : transRateStr(mainTransportOrig, result.qty, result.fTransport);
+    const mpPdf = loggedClient?.manualPrices ?? {};
+    const buildTransportUnitStr = (isMin: boolean, qty: number) => {
+      if (isMin && mainMinFeePerTruck > 0) {
+        return hasDiscount && Math.abs(mainMinFeePerTruck - mainMinFeeDisc) > 0.001
+          ? `<span style="text-decoration:line-through;color:#bbb;font-size:7.5pt">${fmtN(mainMinFeePerTruck)}&nbsp;€/auto</span><br>${fmtN(mainMinFeeDisc)}&nbsp;€/auto`
+          : `${fmtN(mainMinFeeDisc)}&nbsp;€/auto`;
+      }
+      if (mainPricingType === "auto") {
+        const origRate = mpPdf[`auto_rate_${clientDeliveryZone?.id}`] ?? clientDeliveryZone?.ratePerTruck ?? 0;
+        const discRate = origRate * result.fTransport;
+        if (origRate <= 0) return "—";
+        return hasDiscount && Math.abs(origRate - discRate) > 0.001
+          ? `<span style="text-decoration:line-through;color:#bbb;font-size:7.5pt">${fmtN(origRate)}&nbsp;€/auto</span><br>${fmtN(discRate)}&nbsp;€/auto`
+          : `${fmtN(discRate)}&nbsp;€/auto`;
+      }
+      if (mainPricingType === "km") {
+        const origRate = mpPdf[`km_rate_${clientDeliveryZone?.id}`] ?? clientDeliveryZone?.ratePerKm ?? 1.8;
+        const discRate = origRate * result.fTransport;
+        return hasDiscount && Math.abs(origRate - discRate) > 0.001
+          ? `<span style="text-decoration:line-through;color:#bbb;font-size:7.5pt">${fmtN(origRate)}&nbsp;€/km</span><br>${fmtN(discRate)}&nbsp;€/km`
+          : `${fmtN(discRate)}&nbsp;€/km`;
+      }
+      return transRateStr(mainTransportOrig, qty, result.fTransport);
+    };
+    const transportUnitStr = buildTransportUnitStr(result.transportIsMin, result.qty);
     const truckWord = (n: number) => n === 1 ? "auto" : "autá";
     const mainTransportMnozstvo = result.transportIsMin
       ? `${result.trucks}&nbsp;${truckWord(result.trucks)}&nbsp;(${result.qty}&nbsp;m³)`
@@ -1305,12 +1325,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         ? `1×Pumpa${ci.transportTrucks > 1 ? `+${ci.transportTrucks - 1}×Mix` : ""}`
         : `${ci.transportTrucks}×Mix`;
       const dopravaExtraLabel = `${ci.transportIsMin ? "Min. doprava" : "Doprava"}${pdfZone ? ` ${pdfZone}` : ""} · ${pdfExtraTrucks}`;
-      const extraMinFeeDisc = mainMinFeePerTruck * result.fTransport;
-      const extraTransportUnitStr = ci.transportIsMin && mainMinFeePerTruck > 0
-        ? (hasDiscount && Math.abs(mainMinFeePerTruck - extraMinFeeDisc) > 0.001
-          ? `<span style="text-decoration:line-through;color:#bbb;font-size:7.5pt">${fmtN(mainMinFeePerTruck)}&nbsp;€/auto</span><br>${fmtN(extraMinFeeDisc)}&nbsp;€/auto`
-          : `${fmtN(extraMinFeeDisc)}&nbsp;€/auto`)
-        : transRateStr(transOrig, ci.qty, result.fTransport);
+      const extraTransportUnitStr = buildTransportUnitStr(ci.transportIsMin, ci.qty);
       const extraBetonLabel = ci.label.replace(/ – [\d.,]+ m³$/, "");
       const isAddToMainExtra = idx < extraItems.length && extraItems[idx]?.transportMode === "addToMain";
       let rows = sectionRow(`Pridaná položka ${idx + 1}${extraBetonLabel ? ` – ${extraBetonLabel}` : ""}`);
