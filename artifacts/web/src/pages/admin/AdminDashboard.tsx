@@ -944,21 +944,98 @@ const ORDER_STATUSES: { key: Order["status"]; label: string; color: string }[] =
   { key: "zrusena",     label: "Zrušená",     color: "bg-red-100 text-red-500" },
 ];
 
-function OrderStatusBadge({ status, onChange }: { status: Order["status"]; onChange: (s: Order["status"]) => void }) {
+function OrderStatusBadge({ status, onChange, orderTotal }: {
+  status: Order["status"];
+  onChange: (s: Order["status"], paidAmount?: number) => void;
+  orderTotal?: number;
+}) {
   const [open, setOpen] = useState(false);
+  const [payModal, setPayModal] = useState(false);
+  const [payInput, setPayInput] = useState("");
   const cur = ORDER_STATUSES.find(s => s.key === status) ?? ORDER_STATUSES.find(s => s.key === "odoslana")!;
+
+  const openPayModal = () => {
+    setPayInput(orderTotal !== undefined ? orderTotal.toFixed(2) : "");
+    setPayModal(true);
+    setOpen(false);
+  };
+  const confirmPay = () => {
+    const amt = parseFloat(payInput.replace(",", "."));
+    onChange("vyplatena", isNaN(amt) ? undefined : amt);
+    setPayModal(false);
+  };
+
   return (
-    <div className="relative">
-      <button onClick={() => setOpen(o => !o)} className={`px-2 py-1 text-xs font-bold rounded-sm cursor-pointer ${cur.color}`}>{cur.label} ▾</button>
-      {open && (
-        <div className="absolute z-50 bg-white border border-gray-200 shadow-lg rounded-sm min-w-[110px] left-0 top-full mt-0.5">
-          {ORDER_STATUSES.map(s => (
-            <button key={s.key} onClick={() => { onChange(s.key); setOpen(false); }}
-              className={`block w-full text-left px-3 py-1.5 text-xs font-bold hover:bg-gray-50 ${s.color}`}>{s.label}</button>
-          ))}
+    <>
+      <div className="relative">
+        <button onClick={() => setOpen(o => !o)} className={`px-2 py-1 text-xs font-bold rounded-sm cursor-pointer ${cur.color}`}>{cur.label} ▾</button>
+        {open && (
+          <div className="absolute z-50 bg-white border border-gray-200 shadow-lg rounded-sm min-w-[110px] left-0 top-full mt-0.5">
+            {ORDER_STATUSES.map(s => (
+              <button key={s.key} onClick={() => {
+                if (s.key === "vyplatena") { openPayModal(); }
+                else { onChange(s.key); setOpen(false); }
+              }}
+                className={`block w-full text-left px-3 py-1.5 text-xs font-bold hover:bg-gray-50 ${s.color}`}>{s.label}</button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {payModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" onClick={() => setPayModal(false)}>
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="relative bg-white rounded-lg shadow-2xl w-full max-w-xs p-5" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
+                <svg className="w-4 h-4 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+              </div>
+              <div>
+                <div className="font-black text-secondary text-sm">Vyplatená suma</div>
+                <div className="text-xs text-gray-400">Uprav ak klient dal viac (tringelt)</div>
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="block text-xs font-bold text-gray-600 mb-1.5">Vyplatená suma (€)</label>
+              <div className="relative">
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={payInput}
+                  onChange={e => setPayInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") confirmPay(); if (e.key === "Escape") setPayModal(false); }}
+                  className="w-full border border-gray-200 rounded-md px-3 py-2.5 text-lg font-black text-secondary text-right focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400 pr-10"
+                  autoFocus
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm pointer-events-none">€</span>
+              </div>
+              {orderTotal !== undefined && payInput && (() => {
+                const diff = parseFloat(payInput.replace(",", ".")) - orderTotal;
+                if (Math.abs(diff) < 0.01) return null;
+                return (
+                  <div className={`mt-1.5 text-xs font-bold text-right ${diff > 0 ? "text-teal-600" : "text-red-500"}`}>
+                    {diff > 0 ? `+${diff.toFixed(2)} € tringelt` : `${diff.toFixed(2)} € rozdiel`}
+                  </div>
+                );
+              })()}
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setPayModal(false)}
+                className="flex-1 px-3 py-2 text-xs font-bold text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors cursor-pointer">
+                Zrušiť
+              </button>
+              <button onClick={confirmPay}
+                className="flex-1 px-3 py-2 text-xs font-black text-white bg-teal-600 rounded-md hover:bg-teal-700 transition-colors cursor-pointer">
+                Potvrdiť
+              </button>
+            </div>
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -1036,7 +1113,8 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
 
   const save = (data: Order[]) => { setOrders(data); adminData.saveOrders(data); };
   const remove = (id: string) => { if (confirm("Vymazať objednávku?")) save(orders.filter(o => o.id !== id)); };
-  const updateStatus = (id: string, status: Order["status"]) => save(orders.map(o => o.id === id ? { ...o, status } : o));
+  const updateStatus = (id: string, status: Order["status"], paidAmount?: number) =>
+    save(orders.map(o => o.id === id ? { ...o, status, ...(paidAmount !== undefined ? { paidAmount } : {}) } : o));
 
   const SK_MONTHS = ["Január","Február","Marec","Apríl","Máj","Jún","Júl","August","September","Október","November","December"];
 
@@ -1448,7 +1526,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      <OrderStatusBadge status={o.status} onChange={s => updateStatus(o.id, s)} />
+                      <OrderStatusBadge status={o.status} orderTotal={o.totalSDph} onChange={(s, amt) => updateStatus(o.id, s, amt)} />
                       <button onClick={() => remove(o.id)} className="p-1.5 text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </div>
@@ -1660,6 +1738,21 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                                 <span className="text-xs font-bold text-white/70">{o.priceMode === "hotovost" ? "Spolu" : "Spolu s DPH"}</span>
                                 <span className="text-lg font-black text-primary">{fmtEur(o.totalSDph)}</span>
                               </div>
+                              {o.paidAmount !== undefined && o.status === "vyplatena" && (
+                                <div className="flex justify-between items-center bg-teal-50 border border-teal-200 rounded-sm px-3 py-2 mt-1.5">
+                                  <div>
+                                    <div className="text-xs font-bold text-teal-700">Vyplatená suma</div>
+                                    {Math.abs(o.paidAmount - o.totalSDph) > 0.01 && (
+                                      <div className="text-[10px] text-teal-500">
+                                        {o.paidAmount > o.totalSDph
+                                          ? `+${(o.paidAmount - o.totalSDph).toFixed(2)} € tringelt`
+                                          : `${(o.paidAmount - o.totalSDph).toFixed(2)} € rozdiel`}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <span className="text-lg font-black text-teal-700">{fmtEur(o.paidAmount)}</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>

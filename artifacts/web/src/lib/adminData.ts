@@ -105,6 +105,7 @@ export interface Order {
   mapLocality?: string;
   pumpTimer?: { start: string; stop: string };
   podmienky?: { trucks: number; pumpa: number; mix: number; m3PerTruck: number };
+  paidAmount?: number;
 }
 
 export interface ClientAccount {
