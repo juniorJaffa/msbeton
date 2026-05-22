@@ -102,12 +102,34 @@ cost = km × ratePerKm × trucks
 ```
 Bez fill-up, `trucks = ceil(qty / truckCapacity)`.
 
+**Min. poplatok km** — pumpa a mix majú oddelené minimá:
+```typescript
+// manualPrices kľúče
+`km_rate_${zoneId}`         → sadzba €/km (override zone.ratePerKm)
+`km_min_pumpa_${zoneId}`    → min €/auto pre pumpu (override zone.minimumFeeKmPumpa)
+`km_min_mix_${zoneId}`      → min €/auto pre mix (override zone.minimumFeeKmMix)
+
+// Lookup poradie (tab = "pumpa" | "mix"):
+kmMinBase = tab === "pumpa"
+  ? (zone.minimumFeeKmPumpa ?? zone.minimumFeeKm)
+  : (zone.minimumFeeKmMix   ?? zone.minimumFeeKm)
+mainMinFeePerTruck = mp[kmMinKey] !== undefined ? mp[kmMinKey] : kmMinBase
+```
+
+Ak `cost < mainMinFeePerTruck × trucks` → `transportIsMin = true`, platí minimum.
+
 ### auto typ
 
 ```
 cost = trucks × ratePerTruck
 ```
 Bez fill-up.
+
+**manualPrices kľúče auto:**
+```typescript
+`auto_rate_${zoneId}`   → paušál €/auto (override zone.ratePerTruck)
+// min fee: zone.minimumFeeAuto (bez manualPrices override)
+```
 
 ### Počet áut
 
@@ -159,6 +181,50 @@ for (const item of extraItems) {
 | PDF section header | `Pridaná položka {idx+1} – {kategória}` kde `kategória = ci.label.replace(/ – [\d.,]+ m³$/, "")` |
 
 `origItems.transport` je **súčet** transport nákladov všetkých položiek. Pri PDF exporte **nepoužívaj** `origItems.transport` pre hlavnú položku — použi `concreteBreakdown[0].transport`.
+
+---
+
+---
+
+## buildTransportUnitStr — PDF Jedn. cena helper
+
+```typescript
+function buildTransportUnitStr(isMin: boolean, qty: number): string
+```
+
+Vracia správny unit string pre Jedn. cena stĺpec PDF transport riadku:
+
+| pricingType | isMin=false | isMin=true |
+|-------------|-------------|------------|
+| `standard`  | `€/m³`      | `Min. €/auto` |
+| `km`        | `€/km`      | `Min. €/auto` |
+| `auto`      | `€/auto`    | `Min. €/auto` |
+
+Implementácia závisí od `clientDeliveryZone?.pricingType` a `transportIsMin`.
+
+---
+
+## Info karta — transport pricing cells
+
+Kalkulačka zobrazuje info kartu (Betónová pumpa / Domiešavač) s bunkami z dopravy pre aktuálnu zónu klienta. Pravidlá:
+
+**Faktory:**
+```typescript
+const fT = dopravaFactor;  // NIE result?.fTransport — ten je null pred výpočtom
+```
+
+**pricingType → bunky:**
+
+| pricingType | Cell 1 | Cell 2 |
+|-------------|--------|--------|
+| `standard`  | Min. doprava (minFeeStd · fT) | Doprava od (tzones[0].ratePerM3 · fT) |
+| `km`        | Sadzba/km (kmRate · fT)       | Min. doprava (kmMinFee · fT) |
+| `auto`      | Paušál/auto (autoRate · fT)   | Min. doprava (minimumFeeAuto · fT) |
+
+Pre pumpu pridáva: Čerpanie (fPump), Rozbeh. chémia (fChem).
+Pre mix pridáva: Čakačka / 15 min (fWaitM).
+
+**Kritické**: `fPump`, `fChem`, `fWaitM` sú komponento-úrovňové premenné — nie z IIFE. `fT` musí byť `dopravaFactor` (komponento-úroveň), nie `result?.fTransport`.
 
 ---
 

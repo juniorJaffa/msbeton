@@ -36,6 +36,16 @@ Skrátený prehľad:
 - `origItems.transport` = **súčet všetkých** — pre PDF hlavnej položky použi `concreteBreakdown[0].transport`
 - Fill-up len pre Standard typ; km typ: `cost = km × ratePerKm × trucks`; mix čakačky: prvých 30 min zadarmo
 
+**km typ — pumpa/mix oddelené minimá** (kritické):
+```typescript
+// manualPrices kľúče
+km_rate_{zoneId}        // sadzba €/km
+km_min_pumpa_{zoneId}   // min €/auto pre pumpu → zone.minimumFeeKmPumpa ?? zone.minimumFeeKm
+km_min_mix_{zoneId}     // min €/auto pre mix   → zone.minimumFeeKmMix   ?? zone.minimumFeeKm
+auto_rate_{zoneId}      // paušál €/auto (auto typ)
+```
+Lookup vždy: `mp[key] !== undefined ? mp[key] : baseFromZone` — rovnaké v UI, PDF, SMS, info karte.
+
 ### PDF a SMS export
 
 → **[docs/pdf-sms-export.md](docs/pdf-sms-export.md)** — štruktúra tabulky, watermark/signing box, `cleanType()`, SMS formát a `row()` zarovnanie.
@@ -105,6 +115,26 @@ Keď je klient prihlásený (alebo je aktívny `clientOverride`) a má nejakú z
 **Admin ClientPriceTable**: per-tab zobrazenie (Betóny / Služby / Doprava) s badge `−X%` pri aktívnych zľavách; editovateľné manuálne ceny (M badge) ukladajú **base cenu** (pred hotovostným DPH) do `manualPrices`.
 
 > **Kľúčové**: v hotovostnom režime sa `VAT_HOTOVOST` aplikuje **iba na betón**, nie na dopravu/služby. PDF/SMS export musí rešpektovať `isFaktura` flag.
+
+### Kalkulačka – info karta (pumpa / mix)
+
+Zobrazuje sa vedľa výsledku kalkulačky, obsahuje 4 bunky (pumpa) resp. 3 bunky (mix) s dopravnými cenami pre zónu klienta.
+
+**Kritické pravidlá:**
+- `fT = dopravaFactor` — **NIKDY `result?.fTransport ?? 1`** — ten je null pred prvým výpočtom → žiadna zľava
+- `fPump`, `fChem`, `fWaitM` sú komponento-scope premenné (nie v IIFE)
+
+**pricingType → bunky:**
+
+| pricingType | Pumpa bunka 1 | Pumpa bunka 2 | Pumpa bunka 3 | Pumpa bunka 4 |
+|-------------|---------------|---------------|---------------|---------------|
+| `standard`  | Min. doprava  | Doprava od (tzones[0] rate) | Čerpanie | Rozbeh. chémia |
+| `km`        | Sadzba/km     | Min. doprava (pumpa/mix specific) | Čerpanie | Rozbeh. chémia |
+| `auto`      | Paušál/auto   | Min. doprava  | Čerpanie | Rozbeh. chémia |
+
+Mix: rovnaké transport bunky 1+2, tretia bunka = Čakačka / 15 min.
+
+---
 
 ### Admin Klienti – bezpečnostné pravidlá
 
