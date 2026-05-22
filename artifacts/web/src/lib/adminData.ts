@@ -70,6 +70,7 @@ export interface Client {
   isOwner?: boolean; // vlastník / hlavný účet — nedá sa vymazať
   sharedLink?: string; // zdieľaný odkaz (Google Sheet, PDF, prezentácia...)
   createdAt?: string; // ISO timestamp vytvorenia klienta
+  lastLoginAt?: string; // ISO timestamp posledného prihlásenia
 }
 
 export interface Order {

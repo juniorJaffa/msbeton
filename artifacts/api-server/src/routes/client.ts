@@ -188,6 +188,14 @@ router.post("/login", async (req, res) => {
     if (!account) {
       return res.status(401).json({ ok: false, error: "Nesprávne prihlasovacie údaje" });
     }
+    // Ulož lastLoginAt
+    const clientRows2 = await db.select().from(adminConfig).where(eq(adminConfig.key, "clients"));
+    if (clientRows2.length > 0) {
+      const clients = clientRows2[0].data as UnifiedClient[];
+      const updated = clients.map((c) => c.id === account!.id ? { ...c, lastLoginAt: new Date().toISOString() } : c);
+      await db.insert(adminConfig).values({ key: "clients", data: updated })
+        .onConflictDoUpdate({ target: adminConfig.key, set: { data: updated, updatedAt: new Date() } });
+    }
     return res.json({ ok: true, client: buildClientResponse(account) });
   } catch (err) {
     req.log.error({ err }, "Client login failed");

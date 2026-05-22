@@ -2620,6 +2620,14 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                           </div>
                         )}
                         <div className="flex gap-2 items-center">
+                          <span className="text-gray-400 text-xs w-20 shrink-0">Prihlásený</span>
+                          <span className={`text-xs font-medium ${c.lastLoginAt ? "text-gray-600" : "text-gray-300"}`}>
+                            {c.lastLoginAt
+                              ? new Date(c.lastLoginAt).toLocaleDateString("sk-SK", { day: "numeric", month: "long", year: "numeric" })
+                              : "—"}
+                          </span>
+                        </div>
+                        <div className="flex gap-2 items-center">
                           <span className="text-gray-400 text-xs w-20 shrink-0">Odkaz</span>
                           {editingLinkFor === c.id ? (
                             <div className="flex items-center gap-1 flex-1 min-w-0">
