@@ -2620,7 +2620,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 const billingMins = blocks * 15;
 
                 const estimatedCostBase = blocks > 0 ? (billingMins / 60) * pumpServicePrice * fPump : 0;
-                const estimatedCost = loggedClient ? estimatedCostBase : estimatedCostBase * (1 + VAT);
+                const estimatedCost = estimatedCostBase;
                 const BillingSummary = () => blocks > 0 ? (
                   <div className="bg-amber-500/10 border border-amber-500/25 rounded-sm overflow-hidden">
                     <div className="px-3 py-2.5 grid grid-cols-3 gap-2">
