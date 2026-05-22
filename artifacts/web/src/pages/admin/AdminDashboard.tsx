@@ -1989,6 +1989,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
     discountBeton: "20", discountDoprava: "0", discountSluzby: "0", discountCelkovo: "0",
     hotovostDph: "20",
     canHotovost: true, canPridatBeton: true, canZimneOpatrenia: false, active: true,
+    smsOrderDisabled: false, smsShareOnly: false,
     deliveryZoneId: zones.find(z => (z.pricingType ?? "standard") === "standard")?.id ?? zones[0]?.id ?? "",
     sharedLink: "",
   };
@@ -2083,6 +2084,8 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
       hotovostDph: (() => { const v = parseFloat(form.hotovostDph); return Number.isNaN(v) ? 0.20 : v / 100; })(),
       canHotovost: form.canHotovost, canPridatBeton: form.canPridatBeton,
       canZimneOpatrenia: form.canZimneOpatrenia,
+      smsOrderDisabled: form.smsOrderDisabled || undefined,
+      smsShareOnly: form.smsShareOnly || undefined,
       active: form.active,
       deliveryZoneId: form.deliveryZoneId || undefined,
       sharedLink: form.sharedLink.trim() || undefined,
@@ -2380,6 +2383,20 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                 <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
                   <input type="checkbox" checked={form.canZimneOpatrenia} onChange={e => setForm({ ...form, canZimneOpatrenia: e.target.checked })} className="accent-blue-600 w-5 h-5 shrink-0" />
                   <span className="text-sm text-gray-700">Zimné opatrenia (auto-ON v zime)</span>
+                </label>
+                <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
+                  <input type="checkbox" checked={form.smsOrderDisabled} onChange={e => setForm({ ...form, smsOrderDisabled: e.target.checked })} className="accent-orange-500 w-5 h-5 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm text-gray-700">SMS — nevytvárať objednávku</span>
+                    <div className="text-[11px] text-gray-400">Pretlačí globálne nastavenie · klik SMS = iba text, bez záznamu</div>
+                  </div>
+                </label>
+                <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
+                  <input type="checkbox" checked={form.smsShareOnly} onChange={e => setForm({ ...form, smsShareOnly: e.target.checked })} className="accent-orange-500 w-5 h-5 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm text-gray-700">SMS — zobraziť share menu</span>
+                    <div className="text-[11px] text-gray-400">Namiesto auto-otvorenia SMS aplikácie · zdieľacie okno</div>
+                  </div>
                 </label>
                 <div className="px-3 py-3">
                   <div className="text-xs text-gray-400 mb-1.5">Typ dopravy</div>
