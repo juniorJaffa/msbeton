@@ -1012,13 +1012,40 @@ function OrderStatusBadge({ status, onChange, orderTotal }: {
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm pointer-events-none">€</span>
               </div>
-              {orderTotal !== undefined && payInput && (() => {
-                const diff = parseFloat(payInput.replace(",", ".")) - orderTotal;
-                if (Math.abs(diff) < 0.01) return null;
+              {(() => {
+                const cur = parseFloat(payInput.replace(",", "."));
+                if (isNaN(cur)) return null;
+                const ceilTo = (n: number, step: number) => Math.ceil((n + 0.001) / step) * step;
+                const roundTargets = [1, 5, 10, 50, 100]
+                  .map(s => ceilTo(cur, s))
+                  .filter((v, i, arr) => v > cur + 0.001 && arr.indexOf(v) === i)
+                  .slice(0, 4);
+                const diff = orderTotal !== undefined ? cur - orderTotal : null;
                 return (
-                  <div className={`mt-1.5 text-xs font-bold text-right ${diff > 0 ? "text-teal-600" : "text-red-500"}`}>
-                    {diff > 0 ? `+${diff.toFixed(2)} € tringelt` : `${diff.toFixed(2)} € rozdiel`}
-                  </div>
+                  <>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {[1, 5].map(n => (
+                        <button key={`+${n}`} type="button"
+                          onClick={() => setPayInput((cur + n).toFixed(2))}
+                          className="px-2 py-0.5 text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-600 rounded cursor-pointer transition-colors">
+                          +{n}€
+                        </button>
+                      ))}
+                      {roundTargets.length > 0 && <span className="text-gray-200 font-black self-center">|</span>}
+                      {roundTargets.map(v => (
+                        <button key={v} type="button"
+                          onClick={() => setPayInput(v.toFixed(2))}
+                          className="px-2 py-0.5 text-xs font-bold bg-teal-50 hover:bg-teal-100 text-teal-700 rounded cursor-pointer transition-colors">
+                          →{v % 1 === 0 ? v : v.toFixed(2)}€
+                        </button>
+                      ))}
+                    </div>
+                    {diff !== null && Math.abs(diff) >= 0.01 && (
+                      <div className={`mt-1.5 text-xs font-bold text-right ${diff > 0 ? "text-teal-600" : "text-red-500"}`}>
+                        {diff > 0 ? `+${diff.toFixed(2)} € tringelt` : `${diff.toFixed(2)} € rozdiel`}
+                      </div>
+                    )}
+                  </>
                 );
               })()}
             </div>
