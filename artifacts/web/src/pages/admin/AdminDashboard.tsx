@@ -1964,6 +1964,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
   };
   const [form, setForm] = useState(emptyForm);
   const [showFormPass, setShowFormPass] = useState(false);
+  const [phoneHighlight, setPhoneHighlight] = useState(false);
   const [sendRegEmail, setSendRegEmail] = useState(true);
   const [emailStatus, setEmailStatus] = useState<"idle" | "sending" | "ok" | "error">("idle");
   const [sysDphOpen, setSysDphOpen] = useState(false);
@@ -2252,7 +2253,14 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                   const v = e.target.value;
                   const phoneMatch = v.match(/^(\+?(?:00421|421|0)[0-9\s\-]{7,})/);
                   const extracted = phoneMatch ? formatPhone(phoneMatch[1].trim()) : "";
-                  setForm(f => ({ ...f, firstName: v, ...(!f.phone && extracted ? { phone: extracted } : {}) }));
+                  setForm(f => {
+                    if (!f.phone && extracted) {
+                      setPhoneHighlight(true);
+                      setTimeout(() => setPhoneHighlight(false), 1200);
+                      return { ...f, firstName: v, phone: extracted };
+                    }
+                    return { ...f, firstName: v };
+                  });
                 }} className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" autoFocus />
                 <input placeholder="Priezvisko" value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })}
                   className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
@@ -2260,7 +2268,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                   className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
                 <PhoneInput value={form.phone} onChange={v => setForm({ ...form, phone: v })}
                   placeholder="0944 xxx xxx"
-                  className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+                  className={`px-3 py-2 text-sm focus:outline-none transition-all duration-300 ${phoneHighlight ? "border-2 border-teal-400 bg-teal-50 shadow-[0_0_0_3px_rgba(45,212,191,0.25)]" : "border border-gray-200 focus:border-primary"}`} />
                 <input placeholder="Spoločnosť" value={form.company} onChange={e => setForm({ ...form, company: e.target.value })}
                   className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary sm:col-span-2" />
                 <div className="relative sm:col-span-2">
