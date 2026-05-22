@@ -325,10 +325,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
   useEffect(() => {
     if (!showResult) return;
-    const el = resultRef.current;
-    if (!el) return;
-    const NAVBAR_H = 96;
-    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - NAVBAR_H - 8, behavior: "smooth" });
+    requestAnimationFrame(() => {
+      const el = resultRef.current;
+      if (!el) return;
+      const NAVBAR_H = 96;
+      window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - NAVBAR_H - 8, behavior: "smooth" });
+    });
   }, [showResult]);
 
   const resetForm = () => {
@@ -1208,7 +1210,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const pdfAddToMainQty = extraItems.reduce((s, i) => { const q = parseFloat(i.quantity || "0") || 0; return (q > 0 && i.transportMode === "addToMain") ? s + q : s; }, 0);
     const pdfZone = result.transportZone ? `${result.transportZone.fromKm}–${result.transportZone.toKm}&nbsp;km` : "";
     const pdfPrefix = result.transportIsMin ? "Min. doprava" : "Doprava";
-    const dopravaLabel = `${pdfPrefix}${pdfZone ? ` ${pdfZone}` : ""} · ${pdfTrucks}${podmienkyEnabled ? " ★" : ""}`;
+    const dopravaLabel = `${pdfAddToMainQty > 0 ? "⊙ " : ""}${pdfPrefix}${pdfZone ? ` ${pdfZone}` : ""} · ${pdfTrucks}${podmienkyEnabled ? " ★" : ""}`;
     const podmienkyMixCount = tab === "pumpa" ? podmienkyMixC : podmienkyTrucks;
     const podmienkyTotalTrucks = tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks;
     const podmienkyFillupM3pdf = result.concreteBreakdown[0]?.transportFillupM3 ?? 0;
@@ -3062,7 +3064,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             const canCalc = hasQty && hasKm;
             return (
               <div className="space-y-1 mt-2">
-                <button onClick={() => { if (canCalc) { setShowResult(true); gtagEvent("calculator_complete", { tab, quantity, type: selectedType?.label }); setTimeout(() => { const el = resultRef.current; if (!el) return; const NAVBAR_H = 96; window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - NAVBAR_H - 8, behavior: "smooth" }); }, 50); } }} disabled={!canCalc}
+                <button onClick={() => { if (canCalc) { setShowResult(true); gtagEvent("calculator_complete", { tab, quantity, type: selectedType?.label }); requestAnimationFrame(() => { const el = resultRef.current; if (!el) return; const NAVBAR_H = 96; window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - NAVBAR_H - 8, behavior: "smooth" }); }); } }} disabled={!canCalc}
                   className={cn("w-full py-4 border-2 font-bold text-base tracking-widest transition-all duration-200",
                     canCalc
                       ? "bg-transparent border-primary text-primary hover:bg-primary hover:text-white cursor-pointer"
@@ -3246,10 +3248,14 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                                     <span>
                                       {idx === 0 && addToMainQtyDisplay > 0 && (
                                         <span className="inline-flex items-center justify-center w-4 h-4 bg-blue-500/25 rounded-sm mr-1 align-middle shrink-0" title="Hlavná doprava – zahŕňa m³ z pridaných položiek">
-                                          {/* merge/funnel icon — dve čiary konvergujú do jednej */}
-                                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#60a5fa" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="M2 1 L5 5 L8 1"/>
-                                            <line x1="5" y1="5" x2="5" y2="9"/>
+                                          {/* wheel icon — koleso = hlavná doprava */}
+                                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#60a5fa" strokeWidth="1.4" strokeLinecap="round">
+                                            <circle cx="5" cy="5" r="4"/>
+                                            <circle cx="5" cy="5" r="1.5"/>
+                                            <line x1="5" y1="1" x2="5" y2="3.5"/>
+                                            <line x1="5" y1="6.5" x2="5" y2="9"/>
+                                            <line x1="1" y1="5" x2="3.5" y2="5"/>
+                                            <line x1="6.5" y1="5" x2="9" y2="5"/>
                                           </svg>
                                         </span>
                                       )}

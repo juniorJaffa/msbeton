@@ -1116,6 +1116,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
   const [ts, setTs] = useState<TransportSettings>(adminData.getTransportSettings());
   const saveTs = (data: TransportSettings) => { setTs(data); adminData.saveTransportSettings(data); };
   const [mapModalOrder, setMapModalOrder] = useState<Order | null>(null);
+  const plusCodeBackfilledRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -1137,6 +1138,35 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
     const interval = setInterval(fetchOrders, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    const w = window as unknown as { google?: { maps?: { Geocoder?: unknown } } };
+    if (!w.google?.maps?.Geocoder) return;
+    const toFill = orders.filter(o => o.mapPlusCode && !o.mapLocality && !plusCodeBackfilledRef.current.has(o.id));
+    if (toFill.length === 0) return;
+    toFill.forEach(o => {
+      plusCodeBackfilledRef.current.add(o.id);
+      new google.maps.Geocoder().geocode({ address: o.mapPlusCode!, region: "SK" }, (results, status) => {
+        if (status !== "OK" || !results?.[0]) return;
+        const comps = results[0].address_components ?? [];
+        const loc = comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("locality"))?.long_name
+          ?? comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("postal_town"))?.long_name
+          ?? comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("administrative_area_level_3"))?.long_name
+          ?? comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("administrative_area_level_4"))?.long_name
+          ?? comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("sublocality_level_1"))?.long_name
+          ?? comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("neighborhood"))?.long_name
+          ?? "";
+        const district = comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("administrative_area_level_2"))?.long_name ?? "";
+        const mapLocality = [loc, district].filter(Boolean).join(", ");
+        if (!mapLocality) return;
+        setOrders(prev => {
+          const updated = prev.map(p => p.id === o.id ? { ...p, mapLocality } : p);
+          adminData.saveOrders(updated);
+          return updated;
+        });
+      });
+    });
+  }, [orders]);
 
   const save = (data: Order[]) => { setOrders(data); adminData.saveOrders(data); };
   const remove = (id: string) => { if (confirm("Vymazať objednávku?")) save(orders.filter(o => o.id !== id)); };
@@ -2254,9 +2284,11 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                   const phoneMatch = v.match(/^(\+?(?:00421|421|0)[0-9\s\-]{7,})/);
                   const extracted = phoneMatch ? formatPhone(phoneMatch[1].trim()) : "";
                   setForm(f => {
-                    if (!f.phone && extracted) {
-                      setPhoneHighlight(true);
-                      setTimeout(() => setPhoneHighlight(false), 1200);
+                    if (extracted) {
+                      if (!f.phone) {
+                        setPhoneHighlight(true);
+                        setTimeout(() => setPhoneHighlight(false), 1200);
+                      }
                       return { ...f, firstName: v, phone: extracted };
                     }
                     return { ...f, firstName: v };
