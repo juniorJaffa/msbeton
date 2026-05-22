@@ -20,8 +20,8 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { PhoneInput } from "@/components/PhoneInput";
 const ConcreteCalculator = lazy(() => import("@/components/Calculator").then(m => ({ default: m.ConcreteCalculator })));
-const PARTNERS: { name: string; logo?: string; hasText?: boolean }[] = [
-  { name: "ZAPA Beton SK",       logo: "/images/partners/zapa-beton.png", hasText: true },
+const PARTNERS: { name: string; logo?: string; hasText?: boolean; imgClass?: string }[] = [
+  { name: "ZAPA Beton SK",       logo: "/images/partners/zapa-beton.png", hasText: true, imgClass: "max-h-9 max-w-[110px]" },
   { name: "STRABAG s.r.o.",      logo: "/images/partners/strabag.png",    hasText: true },
   { name: "Eurovia SK a.s.",     logo: "/images/partners/eurovia.svg",    hasText: true },
   { name: "VÁHOSTAV – SK a.s.",  logo: "/images/partners/vahostav.jpg" },
@@ -237,10 +237,10 @@ export default function Home() {
               <div className="grid grid-cols-2 gap-2 relative">
                 <div className="absolute -inset-3 bg-primary/6 rounded-xl -rotate-1 pointer-events-none" />
                 {[
-                  { src: "/images/vozovy-park/p03.jpg", label: "Betónová pumpa", pos: "center 50%" },
-                  { src: "/images/vozovy-park/pumpa-site.jpg", label: "Pumpa na stavbe", pos: "center 35%" },
-                  { src: "/images/vozovy-park/mixer-krajina.jpg", label: "Domiešavač", pos: "center 40%" },
-                  { src: "/images/vozovy-park/p27.jpg", label: "2 pumpy + 1 mixer", pos: "center 50%" },
+                  { src: "/images/vozovy-park/ms-beton-pumpa-man-tga-reprezentativna.jpg", label: "Betónová pumpa", pos: "center 50%" },
+                  { src: "/images/vozovy-park/ms-beton-pumpa-man-tga-na-stavbe.jpg", label: "Pumpa na stavbe", pos: "center 35%" },
+                  { src: "/images/vozovy-park/ms-beton-domiesavac-beton-krajina.jpg", label: "Domiešavač", pos: "center 40%" },
+                  { src: "/images/vozovy-park/ms-beton-2-pumpy-mixer-kompletna-zakazka.jpg", label: "2 pumpy + 1 mixer", pos: "center 50%" },
                 ].map((p, i) => (
                   <div key={i} className="relative overflow-hidden rounded-lg h-[110px] sm:h-[150px] md:h-[190px] group">
                     <img
@@ -542,7 +542,7 @@ export default function Home() {
                 <img
                   src={p.logo}
                   alt={p.name}
-                  className="max-h-7 max-w-[80px] object-contain opacity-80 group-hover:opacity-100 transition-opacity duration-300 shrink-0"
+                  className={`${p.imgClass ?? "max-h-7 max-w-[80px]"} object-contain opacity-80 group-hover:opacity-100 transition-opacity duration-300 shrink-0`}
                   onError={(e) => { e.currentTarget.style.display = "none"; }}
                 />
               ) : (
