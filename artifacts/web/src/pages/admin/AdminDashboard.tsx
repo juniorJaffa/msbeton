@@ -2248,8 +2248,12 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
             <div>
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Osobné info</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input placeholder="Meno *" value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })}
-                  className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" autoFocus />
+                <input placeholder="Meno *" value={form.firstName} onChange={e => {
+                  const v = e.target.value;
+                  const phoneMatch = v.match(/^(\+?(?:00421|421|0)[0-9\s\-]{7,})/);
+                  const extracted = phoneMatch ? formatPhone(phoneMatch[1].trim()) : "";
+                  setForm(f => ({ ...f, firstName: v, ...(!f.phone && extracted ? { phone: extracted } : {}) }));
+                }} className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" autoFocus />
                 <input placeholder="Priezvisko" value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })}
                   className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
                 <input placeholder="E-Mail" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
