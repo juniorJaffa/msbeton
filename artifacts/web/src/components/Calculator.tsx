@@ -2316,8 +2316,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
               <div>
                 <label className="block text-sm font-semibold text-white/80 mb-2">Množstvo betónu (m³)</label>
                 <div className="flex items-stretch gap-2">
-                  <input type="number" min="0" step="0.5" value={quantity} inputMode="decimal"
-                    onChange={(e) => { setQuantity(e.target.value); setShowResult(false); }}
+                  <input type="text" inputMode="decimal" value={quantity}
+                    onChange={(e) => { setQuantity(e.target.value.replace(",", ".")); setShowResult(false); }}
                     onWheel={(e) => e.currentTarget.blur()}
                     enterKeyHint="go"
                     onKeyDown={(e) => {
@@ -2480,8 +2480,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 <div>
                   <label className="block text-sm font-semibold text-white/80 mb-2">Množstvo betónu (m³)</label>
                   <input
-                    type="number" min="0" step="0.5" value={item.quantity} inputMode="decimal"
-                    onChange={(e) => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, quantity: e.target.value } : i)); setShowResult(false); }}
+                    type="text" inputMode="decimal" value={item.quantity}
+                    onChange={(e) => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, quantity: e.target.value.replace(",", ".") } : i)); setShowResult(false); }}
                     onWheel={(e) => e.currentTarget.blur()}
                     onKeyDown={(e) => { if (["e", "E", "+", "-"].includes(e.key)) e.preventDefault(); }}
                     placeholder="Zadajte množstvo"
