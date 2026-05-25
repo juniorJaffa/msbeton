@@ -29,10 +29,23 @@ Tento service account bol pridaný do GSC property `msbeton.sk` s oprávnením *
 
 ### Konfigurácia na serveri (`ecosystem.config.cjs`)
 
+**OAuth2 refresh token (aktívna metóda)** — service account UI nefunguje pre GSC, OAuth obchádza obmedzenie:
+
 ```js
-GSC_KEY_JSON: '{"type":"service_account","project_id":"ms-beton-sk",...}',  // celý JSON ako string
-GSC_SITE_URL: 'sc-domain:msbeton.sk',  // Domain property (pokrýva aj demo.msbeton.sk)
+GSC_CLIENT_ID:     '<OAuth2 Desktop client ID z GCP gsc-local>',
+GSC_CLIENT_SECRET: '<OAuth2 client secret z GCP gsc-local>',
+GSC_REFRESH_TOKEN: '<refresh token z scripts/gsc-oauth.mjs>',
+GSC_SITE_URL:      'sc-domain:msbeton.sk',
 ```
+
+Hodnoty sú uložené iba v `ecosystem.config.cjs` na serveri — nikdy do gitu.
+
+**⚠️ Refresh token expirácia:** OAuth app je v "Testing" móde → token vyprší za 7 dní.  
+Fix: GCP → Google Auth Platform → **Audience → Publish app** → token bude trvalý.  
+Obnova tokenu: `node scripts/gsc-oauth.mjs` (lokálne) → nový token → update na serveri.
+
+OAuth credentials: OAuth 2.0 Client ID `gsc-local` (Desktop app), GCP projekt `ms-beton-sk`  
+Autorizovaný účet: `kubincanek@gmail.com`
 
 `sc-domain:msbeton.sk` pokrýva **všetky subdomény aj protokoly** (http/https, www/demo/...).
 
