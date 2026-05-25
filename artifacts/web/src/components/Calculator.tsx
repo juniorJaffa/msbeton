@@ -893,19 +893,20 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const ratePerM3 = mpStd[zone?.id ?? ""] !== undefined ? mpStd[zone!.id] : baseRatePerM3;
     const effectiveMinFee = mpStd["min_fee"] !== undefined ? mpStd["min_fee"] : minimumFee;
 
+    const fillupMin = tsettings.minimumLoadM3 ?? 5;
     let fillupM3 = 0;
     if (overrideTrucks) {
       const qtyPerTruck = qty / overrideTrucks;
       const cap = mixCap; // podmienky: mix kapacita platí pre per-vozidlo fill-up (aj pumpa tab)
       let fillupPerTruck = 0;
-      if (qtyPerTruck < 5) fillupPerTruck = 5 - qtyPerTruck;
+      if (qtyPerTruck < fillupMin) fillupPerTruck = fillupMin - qtyPerTruck;
       else if (qtyPerTruck > cap && qtyPerTruck < 10) fillupPerTruck = 10 - qtyPerTruck;
       fillupM3 = Math.round(Math.max(0, fillupPerTruck) * overrideTrucks * 10) / 10;
     } else if (tabType === "pumpa") {
-      if (qty < 5) fillupM3 = 5 - qty;
+      if (qty < fillupMin) fillupM3 = fillupMin - qty;
       else if (qty > pumpCap && qty < 10) fillupM3 = 10 - qty;
     } else {
-      if (qty < 5) fillupM3 = 5 - qty;
+      if (qty < fillupMin) fillupM3 = fillupMin - qty;
       else if (qty > mixCap && qty < 10) fillupM3 = 10 - qty;
     }
 
@@ -2410,8 +2411,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
               const trucks = tab === "pumpa" ? totalP : podmienkyTrucks;
               if (trucks <= 0) return 0;
               const qPT = qty / trucks;
+              const fMin = tsettings?.minimumLoadM3 ?? 5;
               let fPT = 0;
-              if (qPT < 5) fPT = 5 - qPT;
+              if (qPT < fMin) fPT = fMin - qPT;
               else if (qPT > mixCap && qPT < 10) fPT = 10 - qPT;
               return Math.round(Math.max(0, fPT) * trucks * 10) / 10;
             })();
