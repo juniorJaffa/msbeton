@@ -357,17 +357,18 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
     }).catch(() => {});
   }, []);
 
-  const scrollToClientCard = (id: string) => {
+  const scrollToClientCard = (id: string, toTabs = false) => {
     setTimeout(() => {
       const container = document.getElementById("admin-content");
       const toolbar = document.getElementById("klienti-toolbar");
       if (!container) return;
       const cR = container.getBoundingClientRect();
       const toolbarH = toolbar?.getBoundingClientRect().height ?? 82;
-      // Always reserve floating indicator height — it will appear after scroll even if not visible yet
       const floatingEl = document.getElementById("floating-client-indicator");
       const floatingH = floatingEl ? floatingEl.getBoundingClientRect().height : 32;
-      const targetEl = document.getElementById(`client-tabs-${id}`) ?? document.getElementById(`client-card-${id}`);
+      const targetEl = toTabs
+        ? (document.getElementById(`client-tabs-${id}`) ?? document.getElementById(`client-card-${id}`))
+        : document.getElementById(`client-card-${id}`);
       if (!targetEl) return;
       const eR = targetEl.getBoundingClientRect();
       container.scrollTo({ top: container.scrollTop + (eR.top - cR.top) - toolbarH - floatingH - 4, behavior: "smooth" });
@@ -379,7 +380,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
     const c = clients.find(cl => cl.loginId === expandClientId);
     if (c) {
       setExpanded(c.id);
-      scrollToClientCard(c.id);
+      scrollToClientCard(c.id, true);
     }
     onExpanded?.();
   }, [expandClientId]);
@@ -936,7 +937,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                 {/* Ikona tlačidlá — pevná šírka zodpovedá header akciám */}
                 <div className="flex items-center justify-end w-40 shrink-0">
                   <button
-                    onClick={(e) => { e.stopPropagation(); setExpanded(c.id); setClientDetailTab(prev => ({ ...prev, [c.id]: "calc" })); scrollToClientCard(c.id); }}
+                    onClick={(e) => { e.stopPropagation(); setExpanded(c.id); setClientDetailTab(prev => ({ ...prev, [c.id]: "calc" })); scrollToClientCard(c.id, true); }}
                     title="Kalkulačka klienta"
                     className="p-1.5 text-gray-300 hover:text-primary transition-colors">
                     <Calculator className="w-5 h-5" />
@@ -972,14 +973,14 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                   {/* Tab bar: Detail | Kalkulačka */}
                   <div id={`client-tabs-${c.id}`} className="flex border-b border-gray-200">
                     <button
-                      onClick={() => setClientDetailTab(prev => ({ ...prev, [c.id]: "detail" }))}
+                      onClick={() => { setClientDetailTab(prev => ({ ...prev, [c.id]: "detail" })); scrollToClientCard(c.id, true); }}
                       className={cn("flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-black uppercase tracking-wide transition-all", (clientDetailTab[c.id] ?? "detail") === "detail" ? "bg-secondary text-white" : "bg-white text-gray-400 hover:text-secondary hover:bg-secondary/5")}
                     >
                       <ClipboardList className={cn("w-5 h-5 shrink-0", (clientDetailTab[c.id] ?? "detail") === "detail" ? "text-primary" : "")} />
                       Detail
                     </button>
                     <button
-                      onClick={() => setClientDetailTab(prev => ({ ...prev, [c.id]: "calc" }))}
+                      onClick={() => { setClientDetailTab(prev => ({ ...prev, [c.id]: "calc" })); scrollToClientCard(c.id, true); }}
                       className={cn("flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-black uppercase tracking-wide transition-all", clientDetailTab[c.id] === "calc" ? "bg-secondary text-white" : "bg-white text-gray-400 hover:text-secondary hover:bg-secondary/5")}
                     >
                       <Calculator className={cn("w-5 h-5 shrink-0", clientDetailTab[c.id] === "calc" ? "text-primary" : "")} />
