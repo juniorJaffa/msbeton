@@ -2961,10 +2961,10 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Možnosti</p>
                         <div className="border border-gray-200 bg-white divide-y divide-gray-100">
                           {/* — PLATBA — */}
-                          <div className="px-3 pt-1.5 pb-0.5 bg-gray-50">
+                          <div className="px-3 pt-1 pb-0 bg-gray-50">
                             <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Platba</span>
                           </div>
-                          <label className="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-gray-50 select-none">
+                          <label className="flex items-center gap-1.5 px-3 py-1 cursor-pointer hover:bg-gray-50 select-none">
                             <input type="checkbox" checked={c.canHotovost ?? true} onChange={e => update(c.id, { canHotovost: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />
                             <span className="text-sm text-gray-700 shrink-0">Hotovosť</span>
                             {(c.canHotovost ?? true) ? (
@@ -2980,38 +2980,40 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                             )}
                           </label>
                           {/* — KALKULAČKA — */}
-                          <div className="px-3 pt-1.5 pb-0.5 bg-gray-50">
+                          <div className="px-3 pt-1 pb-0 bg-gray-50">
                             <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Kalkulačka</span>
                           </div>
-                          <label className="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-gray-50 select-none">
-                            <input type="checkbox" checked={c.canPridatBeton ?? true} onChange={e => update(c.id, { canPridatBeton: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />
-                            <span className="text-sm text-gray-700 shrink-0">Pridať položku</span>
-                            <span className="text-[11px] text-gray-400 truncate">· tlačidlo „+ Pridať položku" v kalkulačke</span>
-                          </label>
-                          <label className="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-gray-50 select-none">
-                            <input type="checkbox" checked={c.canZimneOpatrenia ?? false} onChange={e => update(c.id, { canZimneOpatrenia: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />
-                            <span className="text-sm text-gray-700">Zimné opatrenia</span>
-                          </label>
-                          <label className="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-gray-50 select-none">
+                          {/* Pridať + Zimné — 2-col grid; Minusové full-width */}
+                          <div className="grid grid-cols-2 divide-x divide-gray-100">
+                            <label className="flex items-center gap-1.5 px-3 py-1 cursor-pointer hover:bg-gray-50 select-none">
+                              <input type="checkbox" checked={c.canPridatBeton ?? true} onChange={e => update(c.id, { canPridatBeton: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />
+                              <span className="text-sm text-gray-700 truncate">Pridať položku</span>
+                            </label>
+                            <label className="flex items-center gap-1.5 px-3 py-1 cursor-pointer hover:bg-gray-50 select-none">
+                              <input type="checkbox" checked={c.canZimneOpatrenia ?? false} onChange={e => update(c.id, { canZimneOpatrenia: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />
+                              <span className="text-sm text-gray-700 truncate">Zimné opatrenia</span>
+                            </label>
+                          </div>
+                          <label className="flex items-center gap-1.5 px-3 py-1 cursor-pointer hover:bg-gray-50 select-none">
                             <input type="checkbox" checked={c.allowExtraOverload ?? true} onChange={e => update(c.id, { allowExtraOverload: e.target.checked })} className="accent-red-500 w-4 h-4 shrink-0" />
                             <span className="text-sm text-gray-700 shrink-0">Minusové pretaženie</span>
                             <span className="text-[11px] text-gray-400 truncate">· Pumpa {ts.condPumpaMin ?? 1} voz., Mix {ts.condMixMin ?? 0} voz.</span>
                           </label>
                           {/* — SMS — */}
-                          <div className="px-3 pt-1.5 pb-0.5 bg-gray-50">
+                          <div className="px-3 pt-1 pb-0 bg-gray-50">
                             <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">SMS</span>
                           </div>
-                          <label className="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-gray-50 select-none">
-                            <input type="checkbox" checked={c.smsOrderDisabled ?? false} onChange={e => update(c.id, { smsOrderDisabled: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />
-                            <span className="text-sm text-gray-700 shrink-0">Nevytvárať objednávku</span>
-                            <span className="text-[11px] text-gray-400 truncate">· klik SMS = iba text, bez záznamu</span>
-                          </label>
-                          <label className="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-gray-50 select-none">
-                            <input type="checkbox" checked={c.smsShareOnly ?? false} onChange={e => update(c.id, { smsShareOnly: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />
-                            <span className="text-sm text-gray-700 shrink-0">Zobraziť share menu</span>
-                            <span className="text-[11px] text-gray-400 truncate">· zdieľacie okno</span>
-                          </label>
-                          <div className="px-3 py-2.5">
+                          <div className="grid grid-cols-2 divide-x divide-gray-100">
+                            <label className="flex items-center gap-1.5 px-3 py-1 cursor-pointer hover:bg-gray-50 select-none">
+                              <input type="checkbox" checked={c.smsOrderDisabled ?? false} onChange={e => update(c.id, { smsOrderDisabled: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />
+                              <span className="text-sm text-gray-700 truncate">Nevytvárať obj.</span>
+                            </label>
+                            <label className="flex items-center gap-1.5 px-3 py-1 cursor-pointer hover:bg-gray-50 select-none">
+                              <input type="checkbox" checked={c.smsShareOnly ?? false} onChange={e => update(c.id, { smsShareOnly: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />
+                              <span className="text-sm text-gray-700 truncate">Share menu</span>
+                            </label>
+                          </div>
+                          <div className="px-3 py-2">
                             <div className="text-xs text-gray-400 mb-1">Typ dopravy</div>
                             {(() => {
                               const allZ = adminData.getDelivery();
