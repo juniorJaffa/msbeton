@@ -1296,6 +1296,18 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
     });
   const sorted = [...filtered].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
+  const getOrderIsRisk = (o: Order): boolean => {
+    if (o.podmienky?.isRisk === true) return true;
+    if (o.podmienky?.isRisk === false) return false;
+    try {
+      if (o.breakdown?.startsWith("{")) {
+        const b = JSON.parse(o.breakdown) as { s: { rows: { l: string }[] }[] };
+        return b.s?.some(sec => sec.rows?.some(r => r.l?.includes("Minusové pretaženie"))) ?? false;
+      }
+    } catch { /* */ }
+    return false;
+  };
+
   const [floatingOrder, setFloatingOrder] = useState<Order | null>(null);
   const sortedRef = useRef(sorted);
   sortedRef.current = sorted;
@@ -1630,7 +1642,12 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                       {o.viaSms
                         ? <span className="inline-flex items-center gap-0.5 bg-green-100 text-green-700 text-[9px] font-black px-1.5 py-0.5 rounded-sm"><MessageSquare className="w-2.5 h-2.5" /> SMS</span>
                         : <span className="inline-flex items-center bg-secondary/10 text-secondary px-1.5 py-0.5 rounded-sm"><ShoppingCart className="w-3 h-3" /></span>}
-                      {o.podmienky ? <span className={`inline-flex items-center gap-0.5 text-[9px] font-black px-1.5 py-0.5 rounded-sm ${o.podmienky.isRisk ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-800"}`}>{o.podmienky.isRisk ? "⚠" : "★"} {o.podmienky.pumpa > 0 ? `1×P+${o.podmienky.mix}×M` : `${o.podmienky.trucks}×Mix`}</span> : null}
+                      {o.podmienky ? (() => { const ir = getOrderIsRisk(o); return (
+                        <span className={`inline-flex items-center gap-0.5 text-[9px] font-black px-1.5 py-0.5 rounded-sm ${ir ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-800"}`}>
+                          {ir ? <AlertTriangle className="w-2.5 h-2.5 shrink-0" /> : <span>★</span>}
+                          {o.podmienky.pumpa > 0 ? `1×P+${o.podmienky.mix}×M` : `${o.podmienky.trucks}×Mix`}
+                        </span>
+                      ); })() : null}
                       {(o.discountBeton || o.discountDoprava || o.discountSluzby || o.discountCelkovo) ? (
                         o.discountCelkovo ? (
                           <span className="bg-primary text-secondary text-[9px] font-black px-1.5 py-0.5 rounded-sm">−{o.discountCelkovo}%</span>
@@ -1747,25 +1764,30 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                                 <span className="text-amber-400 font-bold">→</span>
                                 <span className="font-black">{o.fillupTarget} m³/auto</span>
                               </div>
-                              {o.podmienky && (
-                                <p className="text-[10px] text-amber-700 mt-0.5 font-medium">
-                                  ★ {o.podmienky.pumpa > 0 ? `1× Pumpa + ${o.podmienky.mix}× Mix` : `${o.podmienky.trucks}× Mix`} · ∅ {o.podmienky.m3PerTruck?.toFixed(1) ?? "—"} m³/vozidlo — terén/počasie
-                                </p>
-                              )}
+                              {o.podmienky && (() => { const ir = getOrderIsRisk(o); return (
+                                <div className={`flex items-start gap-1.5 mt-1 px-2 py-1.5 rounded-sm ${ir ? "bg-red-50 border border-red-200" : "bg-amber-50 border border-amber-200"}`}>
+                                  {ir ? <AlertTriangle className="w-3 h-3 text-red-500 shrink-0 mt-0.5" /> : <span className="text-amber-600 text-[10px] font-black">★</span>}
+                                  <div>
+                                    <div className={`text-[10px] font-black uppercase tracking-wide ${ir ? "text-red-600" : "text-amber-700"}`}>{ir ? "Minusové pretaženie — vlastné riziko" : "Pretaženie — terén/počasie"}</div>
+                                    <div className={`text-[10px] ${ir ? "text-red-500" : "text-amber-600"}`}>{o.podmienky.pumpa > 0 ? `1× Pumpa + ${o.podmienky.mix}× Mix` : `${o.podmienky.trucks}× Mix`} · ∅ {o.podmienky.m3PerTruck?.toFixed(1) ?? "—"} m³/vozidlo</div>
+                                  </div>
+                                </div>
+                              ); })()}
                             </div>
                           </div>
                         )}
-                        {o.podmienky && (o.fillupM3 ?? 0) === 0 && (
+                        {o.podmienky && (o.fillupM3 ?? 0) === 0 && (() => { const ir = getOrderIsRisk(o); return (
                           <div className="flex gap-2 items-start">
                             <span className="text-gray-400 w-24 shrink-0 mt-0.5">Podmienky</span>
-                            <div className="space-y-0.5">
-                              <span className="inline-flex items-center gap-1 font-black text-amber-700 text-xs bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-sm">
-                                ★ {o.podmienky.pumpa > 0 ? `1× Pumpa + ${o.podmienky.mix}× Mix` : `${o.podmienky.trucks}× Mix`}
-                              </span>
-                              <p className="text-[10px] text-gray-500">∅ {o.podmienky.m3PerTruck?.toFixed(1) ?? "—"} m³/vozidlo — terén / počasie</p>
+                            <div className={`flex items-start gap-1.5 px-2 py-1.5 rounded-sm ${ir ? "bg-red-50 border border-red-200" : "bg-amber-50 border border-amber-200"}`}>
+                              {ir ? <AlertTriangle className="w-3 h-3 text-red-500 shrink-0 mt-0.5" /> : <span className="text-amber-600 text-[10px] font-black mt-0.5">★</span>}
+                              <div>
+                                <div className={`text-[10px] font-black uppercase tracking-wide ${ir ? "text-red-600" : "text-amber-700"}`}>{ir ? "Minusové pretaženie — vlastné riziko" : "Pretaženie"}</div>
+                                <div className={`text-[10px] ${ir ? "text-red-500" : "text-amber-600"}`}>{o.podmienky.pumpa > 0 ? `1× Pumpa + ${o.podmienky.mix}× Mix` : `${o.podmienky.trucks}× Mix`} · ∅ {o.podmienky.m3PerTruck?.toFixed(1) ?? "—"} m³/vozidlo</div>
+                              </div>
                             </div>
                           </div>
-                        )}
+                        ); })()}
                         {o.km && <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Vzdialenosť</span><span className="font-medium text-gray-700">{o.km} km</span></div>}
                         {(o.address || o.mapPlusCode) && (
                           <div className="flex gap-2 items-start">
@@ -1826,15 +1848,26 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                                       sec.h.startsWith("Pridaná") || sec.h.startsWith("Produkty") ? "bg-primary/20 text-secondary" : "bg-gray-100 text-gray-500 ml-2")}>
                                       {sec.h}
                                     </div>
-                                    {sec.rows.map((row, ri) => (
-                                      <div key={ri} className={cn("flex justify-between items-baseline text-xs gap-4 py-0.5", sec.h.startsWith("Pridaná") || sec.h.startsWith("Produkty") ? "pl-1" : "pl-4")}>
-                                        <span className="text-gray-500">{row.l}</span>
-                                        <span className="shrink-0 text-right">
-                                          {row.o !== undefined && <span className="line-through text-gray-300 text-[10px] mr-1">{fmtEur(row.o)}</span>}
-                                          <span className={cn("font-bold", row.o !== undefined ? "text-primary" : "text-gray-700")}>{fmtEur(row.v)}</span>
-                                        </span>
-                                      </div>
-                                    ))}
+                                    {sec.rows.map((row, ri) => {
+                                      const isRiskRow = row.l?.includes("Minusové pretaženie");
+                                      const isPretazenieRow = !isRiskRow && row.l?.startsWith("★ Pretaženie");
+                                      return (
+                                        <div key={ri} className={cn(
+                                          "flex justify-between items-baseline text-xs gap-4 py-0.5 rounded-sm",
+                                          sec.h.startsWith("Pridaná") || sec.h.startsWith("Produkty") ? "pl-1" : "pl-4",
+                                          isRiskRow ? "bg-red-50 px-2 py-1 rounded-sm" : isPretazenieRow ? "bg-amber-50 px-2 py-1 rounded-sm" : ""
+                                        )}>
+                                          <span className={isRiskRow ? "text-red-600 font-semibold flex items-center gap-1" : isPretazenieRow ? "text-amber-700 font-semibold" : "text-gray-500"}>
+                                            {isRiskRow && <AlertTriangle className="w-3 h-3 inline shrink-0" />}
+                                            {row.l}
+                                          </span>
+                                          <span className="shrink-0 text-right">
+                                            {row.o !== undefined && <span className="line-through text-gray-300 text-[10px] mr-1">{fmtEur(row.o)}</span>}
+                                            <span className={cn("font-bold", isRiskRow ? "text-red-600" : isPretazenieRow ? "text-amber-700" : row.o !== undefined ? "text-primary" : "text-gray-700")}>{fmtEur(row.v)}</span>
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
                                   </div>
                                 ))}
                               </div>
