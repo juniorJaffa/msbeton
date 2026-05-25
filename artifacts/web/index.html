@@ -10,6 +10,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-v2.png" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#001D3D" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="MS-BETON" />
@@ -28,8 +29,7 @@
     <link rel="alternate" hreflang="sk" href="https://msbeton.sk/" />
     <style>html, body { overflow-x: hidden; }</style>
     <!-- Montserrat self-hosted via @fontsource/montserrat (GDPR + no CDN latency) -->
-    <link rel="preload" as="image" href="/images/hero-bg.jpg">
-    <link rel="preload" as="image" href="/images/vozovy-park/g01.jpg">
+    <!-- image preloads only on Home route — handled via JS in Home.tsx -->
     <!-- Google Maps loaded lazily by Calculator when user clicks "Mapa" -->
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 
