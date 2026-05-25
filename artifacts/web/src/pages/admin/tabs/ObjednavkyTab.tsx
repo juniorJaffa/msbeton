@@ -290,6 +290,12 @@ ${breakdownHtml ? `
   <div style="text-align:right">
     <div style="font-size:8pt;color:rgba(255,255,255,0.6)">${o.priceMode === "hotovost" ? "Spolu" : "Celkom s DPH"}</div>
     <div style="font-size:16pt;font-weight:bold;color:#EDC531">${fmtEurPdf(o.totalSDph)}</div>
+    ${o.status === "vyplatena" && o.paidAmount !== undefined ? `
+    <div style="margin-top:4px;border-top:1px solid rgba(255,255,255,0.2);padding-top:4px">
+      <div style="font-size:8pt;color:rgba(255,255,255,0.6)">Zaplatené</div>
+      <div style="font-size:11pt;font-weight:bold;color:#fff">${fmtEurPdf(o.paidAmount)}</div>
+      ${Math.abs(o.paidAmount - o.totalSDph) > 0.01 ? `<div style="font-size:8pt;font-weight:bold;color:${o.paidAmount > o.totalSDph ? "#86efac" : "#fca5a5"}">${o.paidAmount > o.totalSDph ? `+${(o.paidAmount - o.totalSDph).toFixed(2)} € tringelt` : `${(o.paidAmount - o.totalSDph).toFixed(2)} € rozdiel`}</div>` : ""}
+    </div>` : ""}
   </div>
 </div>
 
