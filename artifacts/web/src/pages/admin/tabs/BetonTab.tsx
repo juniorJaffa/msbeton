@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Pencil, Trash2, Check, X, Plus } from "lucide-react";
+import { ChevronDown, ChevronUp, Pencil, Trash2, Check, X, Plus, ArrowUp, ArrowDown } from "lucide-react";
 import { adminData, ConcreteCategory, ConcreteType } from "@/lib/adminData";
 import { EditableField } from "./_shared";
 
@@ -18,11 +18,30 @@ export default function BetonTab() {
 
   const addCategory = () => {
     if (!newCatName.trim()) return;
-    save([...cats, { id: adminData.generateId(), name: newCatName.trim().toUpperCase(), types: [] }]);
+    save([...cats, { id: adminData.generateId(), name: newCatName.trim(), types: [] }]);
     setNewCatName(""); setAddingCat(false);
   };
   const deleteCategory = (id: string) => { if (confirm("Vymazať kategóriu?")) save(cats.filter(c => c.id !== id)); };
-  const updateCatName = (id: string, name: string) => save(cats.map(c => c.id === id ? { ...c, name: name.toUpperCase() } : c));
+  const updateCatName = (id: string, name: string) => save(cats.map(c => c.id === id ? { ...c, name } : c));
+
+  const moveCat = (id: string, dir: -1 | 1) => {
+    const idx = cats.findIndex(c => c.id === id);
+    if (idx < 0) return;
+    const ni = idx + dir;
+    if (ni < 0 || ni >= cats.length) return;
+    const arr = [...cats]; [arr[idx], arr[ni]] = [arr[ni], arr[idx]]; save(arr);
+  };
+  const moveType = (catId: string, typeId: string, dir: -1 | 1) => {
+    save(cats.map(c => {
+      if (c.id !== catId) return c;
+      const idx = c.types.findIndex(t => t.id === typeId);
+      if (idx < 0) return c;
+      const ni = idx + dir;
+      if (ni < 0 || ni >= c.types.length) return c;
+      const arr = [...c.types]; [arr[idx], arr[ni]] = [arr[ni], arr[idx]];
+      return { ...c, types: arr };
+    }));
+  };
 
   const addType = (catId: string) => {
     if (!newTypeName.trim() || !newTypePrice) return;
@@ -45,6 +64,14 @@ export default function BetonTab() {
             </div>
             <div className="flex items-center gap-2 shrink-0" onClick={e => e.stopPropagation()}>
               <span className="text-xs text-gray-400">{cat.types.length} typov</span>
+              <button onClick={() => moveCat(cat.id, -1)} disabled={cats.indexOf(cat) === 0}
+                className="p-2 text-gray-300 hover:text-secondary disabled:opacity-20 transition-colors" title="Nahor">
+                <ArrowUp className="w-4 h-4" />
+              </button>
+              <button onClick={() => moveCat(cat.id, 1)} disabled={cats.indexOf(cat) === cats.length - 1}
+                className="p-2 text-gray-300 hover:text-secondary disabled:opacity-20 transition-colors" title="Nadol">
+                <ArrowDown className="w-4 h-4" />
+              </button>
               <button onClick={() => { setRenamingCat(renamingCat === cat.id ? null : cat.id); setRenameCatVal(cat.name); setExpanded(cat.id); }}
                 className="p-2.5 bg-gray-100 text-gray-500 hover:bg-primary hover:text-secondary transition-colors rounded-sm" title="Premenovať">
                 <Pencil className="w-5 h-5" />
@@ -85,7 +112,15 @@ export default function BetonTab() {
                       <td className="py-2 text-right">
                         <EditableField value={t.price.toFixed(2)} type="number" onSave={v => updateType(cat.id, t.id, "price", v)} />
                       </td>
-                      <td className="py-2 text-right">
+                      <td className="py-2 text-right whitespace-nowrap">
+                        <button onClick={() => moveType(cat.id, t.id, -1)} disabled={cat.types.indexOf(t) === 0}
+                          className="p-1.5 text-gray-300 hover:text-secondary disabled:opacity-20 transition-colors" title="Nahor">
+                          <ArrowUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => moveType(cat.id, t.id, 1)} disabled={cat.types.indexOf(t) === cat.types.length - 1}
+                          className="p-1.5 text-gray-300 hover:text-secondary disabled:opacity-20 transition-colors" title="Nadol">
+                          <ArrowDown className="w-3.5 h-3.5" />
+                        </button>
                         <button onClick={() => deleteType(cat.id, t.id)} className="p-2 text-red-400 hover:text-red-600 transition-colors">
                           <Trash2 className="w-5 h-5" />
                         </button>

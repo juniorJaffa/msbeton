@@ -18,7 +18,7 @@ export function EditableField({ value, onSave, type = "text" }: { value: string 
   const startEdit = () => { setVal(String(value)); setEditing(true); };
   if (!editing) return (
     <span className="cursor-pointer hover:text-primary transition-colors group flex items-center gap-1.5 min-w-0" onClick={e => { e.stopPropagation(); startEdit(); }}>
-      <span className="truncate">{value}</span>
+      <span className="break-words min-w-0 leading-snug">{value}</span>
       <Pencil className="w-3.5 h-3.5 opacity-0 group-hover:opacity-40 transition-opacity shrink-0" />
     </span>
   );
