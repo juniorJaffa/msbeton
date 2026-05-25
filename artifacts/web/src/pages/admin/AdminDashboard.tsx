@@ -382,9 +382,10 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
               <div className="text-center">
                 <div className="text-[8px] text-amber-500 font-bold uppercase mb-0.5">Min</div>
                 <div className="flex items-baseline gap-0.5 font-bold text-secondary text-sm">
-                  <EditableField value={ts.condMixMin ?? 0} type="number" onSave={v => saveTs({ ...ts, condMixMin: Math.max(0, parseInt(v) || 0) })} />
+                  <span className="text-secondary font-bold">1</span>
                   <span className="text-gray-400 text-xs">voz.</span>
                 </div>
+                <div className="text-[8px] text-gray-400 mt-0.5">auto ⌈m³÷kap.⌉</div>
               </div>
               <span className="text-gray-300 font-black text-sm">—</span>
               <div className="text-center">
@@ -395,7 +396,7 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                 </div>
               </div>
             </div>
-            <p className="text-[10px] text-gray-400 mt-1.5">Rovnaký vozový park ako Mix doplnkový v Pumpa tab · min. aut = ⌈m³ ÷ kapacita⌉</p>
+            <p className="text-[10px] text-gray-400 mt-1.5">Rovnaký vozový park ako Mix doplnkový v Pumpa tab</p>
           </div>
           {/* Minusové pretaženie — globálny prepínač */}
           <div className="px-4 py-3 flex items-start gap-3">
