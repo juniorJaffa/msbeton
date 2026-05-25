@@ -2957,7 +2957,11 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                       <div>
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Možnosti</p>
                         <div className="border border-gray-200 bg-white divide-y divide-gray-100">
-                          <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50 select-none">
+                          {/* — PLATBA — */}
+                          <div className="px-3 pt-1.5 pb-0.5 bg-gray-50">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Platba</span>
+                          </div>
+                          <label className="flex items-center gap-3 px-3 py-1.5 cursor-pointer hover:bg-gray-50 select-none">
                             <input type="checkbox" checked={c.canHotovost ?? true} onChange={e => update(c.id, { canHotovost: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />
                             <div className="flex-1 min-w-0">
                               <span className="text-sm text-gray-700">Hotovosť</span>
@@ -2976,33 +2980,41 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                               )}
                             </div>
                           </label>
-                          <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50 select-none">
+                          {/* — KALKULAČKA — */}
+                          <div className="px-3 pt-1.5 pb-0.5 bg-gray-50">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Kalkulačka</span>
+                          </div>
+                          <label className="flex items-center gap-3 px-3 py-1.5 cursor-pointer hover:bg-gray-50 select-none">
                             <input type="checkbox" checked={c.canPridatBeton ?? true} onChange={e => update(c.id, { canPridatBeton: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />
                             <span className="text-sm text-gray-700">Pridať položku (betón)</span>
                           </label>
-                          <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50 select-none">
-                            <input type="checkbox" checked={c.canZimneOpatrenia ?? false} onChange={e => update(c.id, { canZimneOpatrenia: e.target.checked })} className="accent-blue-600 w-4 h-4 shrink-0" />
+                          <label className="flex items-center gap-3 px-3 py-1.5 cursor-pointer hover:bg-gray-50 select-none">
+                            <input type="checkbox" checked={c.canZimneOpatrenia ?? false} onChange={e => update(c.id, { canZimneOpatrenia: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />
                             <span className="text-sm text-gray-700">Zimné opatrenia</span>
                           </label>
-                          <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50 select-none">
-                            <input type="checkbox" checked={c.smsOrderDisabled ?? false} onChange={e => update(c.id, { smsOrderDisabled: e.target.checked })} className="accent-orange-500 w-4 h-4 shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <span className="text-sm text-gray-700">SMS — nevytvárať objednávku</span>
-                              <div className="text-[11px] text-gray-400">Pretlačí globálne nastavenie · klik SMS = iba text, bez záznamu</div>
-                            </div>
-                          </label>
-                          <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50 select-none">
-                            <input type="checkbox" checked={c.smsShareOnly ?? false} onChange={e => update(c.id, { smsShareOnly: e.target.checked })} className="accent-orange-500 w-4 h-4 shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <span className="text-sm text-gray-700">SMS — zobraziť share menu</span>
-                              <div className="text-[11px] text-gray-400">Namiesto auto-otvorenia SMS aplikácie · zdieľacie okno</div>
-                            </div>
-                          </label>
-                          <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50 select-none">
+                          <label className="flex items-center gap-3 px-3 py-1.5 cursor-pointer hover:bg-gray-50 select-none">
                             <input type="checkbox" checked={c.allowExtraOverload ?? true} onChange={e => update(c.id, { allowExtraOverload: e.target.checked })} className="accent-red-500 w-4 h-4 shrink-0" />
                             <div className="flex-1 min-w-0">
                               <span className="text-sm text-gray-700">Minusové pretaženie</span>
-                              <div className="text-[11px] text-gray-400">Povolí ísť pod min. limit vozidiel (Pumpa min. {ts.condPumpaMin ?? 1} voz., Mix min. {ts.condMixMin ?? 0} voz.)</div>
+                              <div className="text-[11px] text-gray-400">Pod min. limit vozidiel (Pumpa {ts.condPumpaMin ?? 1} voz., Mix {ts.condMixMin ?? 0} voz.)</div>
+                            </div>
+                          </label>
+                          {/* — SMS — */}
+                          <div className="px-3 pt-1.5 pb-0.5 bg-gray-50">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">SMS</span>
+                          </div>
+                          <label className="flex items-center gap-3 px-3 py-1.5 cursor-pointer hover:bg-gray-50 select-none">
+                            <input type="checkbox" checked={c.smsOrderDisabled ?? false} onChange={e => update(c.id, { smsOrderDisabled: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <span className="text-sm text-gray-700">Nevytvárať objednávku</span>
+                              <div className="text-[11px] text-gray-400">Pretlačí globálne nastavenie · klik SMS = iba text</div>
+                            </div>
+                          </label>
+                          <label className="flex items-center gap-3 px-3 py-1.5 cursor-pointer hover:bg-gray-50 select-none">
+                            <input type="checkbox" checked={c.smsShareOnly ?? false} onChange={e => update(c.id, { smsShareOnly: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <span className="text-sm text-gray-700">Zobraziť share menu</span>
+                              <div className="text-[11px] text-gray-400">Namiesto auto-otvorenia SMS aplikácie · zdieľacie okno</div>
                             </div>
                           </label>
                           <div className="px-3 py-2.5">
