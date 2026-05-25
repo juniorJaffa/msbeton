@@ -1617,13 +1617,11 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                       {o.km ? <span className="text-gray-400">{o.km} km</span> : null}
                       {(o.address || o.mapPlusCode) ? (
                         <button onClick={e => { e.stopPropagation(); setMapModalOrder(o); }}
-                          className="inline-flex items-center gap-0.5 text-primary/50 hover:text-primary transition-colors" title="Zobraziť na mape">
+                          className="inline-flex items-center gap-1 text-primary/50 hover:text-primary transition-colors" title="Zobraziť na mape">
                           <MapPin className="w-3 h-3 shrink-0" />
-                          {o.address
-                            ? <span className="text-gray-600 hover:text-gray-800">{o.address}</span>
-                            : o.mapLocality
-                              ? <span className="text-gray-600 hover:text-gray-800">{o.mapLocality.split(",")[0]}</span>
-                              : <span className="text-gray-500 text-[10px]">Mapa ↗</span>}
+                          {o.address && <span className="text-gray-600">{o.address}</span>}
+                          {!o.address && o.mapLocality && <span className="text-gray-600">{o.mapLocality.split(",")[0]}</span>}
+                          {o.mapPlusCode && <span className="text-gray-400 font-mono text-[10px]">{o.mapPlusCode}</span>}
                         </button>
                       ) : null}
                     </div>
