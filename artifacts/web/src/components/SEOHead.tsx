@@ -76,6 +76,12 @@ export function LocalBusinessSchema() {
       },
       "geoRadius": "50000"
     },
+    "foundingDate": "2020",
+    "legalName": "MS-BETON, spol. s r.o.",
+    "vatID": "SK2122074603",
+    "priceRange": "€€",
+    "currenciesAccepted": "EUR",
+    "paymentAccepted": "Faktúra, Hotovosť",
     "openingHoursSpecification": [
       {
         "@type": "OpeningHoursSpecification",
@@ -84,13 +90,24 @@ export function LocalBusinessSchema() {
         "closes": "17:00"
       }
     ],
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "telephone": "+421944069305",
+      "contactType": "customer service",
+      "areaServed": "SK",
+      "availableLanguage": "Slovak"
+    },
+    "sameAs": [
+      "https://www.google.com/maps?cid=MS-BETON"
+    ],
     "hasOfferCatalog": {
       "@type": "OfferCatalog",
       "name": "Služby MS-BETON",
       "itemListElement": [
-        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Betón pumpa 28 m" } },
-        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Domiešavač betónu 9 m³" } },
-        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Doprava betónu Žilina a okolie" } }
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Betón pumpa 28 m", "description": "Čerpanie betónu betónovou pumpou s dosahom 28 m" } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Domiešavač betónu 9 m³", "description": "Doprava betónu domiešavačom s kapacitou 9 m³" } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Doprava betónu Žilina a okolie", "description": "Čerstvý betón C16/20 až C35/45 s dopravou v okruhu 50 km od Žiliny" } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Výroba betónu na mieru", "description": "Betón rôznych tried podľa projektu a požiadaviek zákazníka" } }
       ]
     }
   };
