@@ -14,22 +14,32 @@ export function EditableField({ value, onSave, type = "text" }: { value: string 
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(String(value));
   const save = () => { onSave(val); setEditing(false); };
-  const cancel = () => setEditing(false);
+  const cancel = () => { setVal(String(value)); setEditing(false); };
   const startEdit = () => { setVal(String(value)); setEditing(true); };
   if (!editing) return (
-    <span className="cursor-pointer hover:text-primary transition-colors group flex items-center gap-1" onClick={e => { e.stopPropagation(); startEdit(); }}>
-      {value}
-      <Pencil className="w-3.5 h-3.5 opacity-0 group-hover:opacity-50 transition-opacity" />
+    <span className="cursor-pointer hover:text-primary transition-colors group flex items-center gap-1.5 min-w-0" onClick={e => { e.stopPropagation(); startEdit(); }}>
+      <span className="truncate">{value}</span>
+      <Pencil className="w-3.5 h-3.5 opacity-0 group-hover:opacity-40 transition-opacity shrink-0" />
     </span>
   );
   return (
-    <span className="flex items-center gap-1">
-      <input type={type} value={val} onChange={e => setVal(e.target.value)}
+    <span className="flex items-center gap-1.5">
+      <input
+        type={type}
+        value={val}
+        onChange={e => setVal(e.target.value)}
         onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); save(); } if (e.key === "Escape") cancel(); }}
-        onBlur={cancel}
-        className={`bg-white border border-primary px-2 py-0.5 text-secondary text-sm ${type === "number" ? "w-20" : "w-32"} focus:outline-none`} autoFocus onFocus={e => e.target.select()} />
-      <button onMouseDown={e => e.preventDefault()} onClick={save} className="text-green-600 hover:text-green-700"><Check className="w-5 h-5" /></button>
-      <button onMouseDown={e => e.preventDefault()} onClick={cancel} className="text-red-500 hover:text-red-600"><X className="w-5 h-5" /></button>
+        onBlur={save}
+        className={`bg-amber-50 border-2 border-primary px-2.5 py-1 text-secondary text-sm focus:outline-none rounded-sm ${type === "number" ? "w-28 text-right" : "w-56 min-w-[120px]"}`}
+        autoFocus
+        onFocus={e => e.target.select()}
+      />
+      <button onMouseDown={e => e.preventDefault()} onClick={save} className="p-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors" aria-label="Uložiť">
+        <Check className="w-4 h-4" />
+      </button>
+      <button onMouseDown={e => e.preventDefault()} onClick={cancel} className="p-1.5 text-red-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors" aria-label="Zrušiť">
+        <X className="w-4 h-4" />
+      </button>
     </span>
   );
 }

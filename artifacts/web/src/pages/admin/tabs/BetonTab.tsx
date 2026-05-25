@@ -96,17 +96,41 @@ export default function BetonTab() {
               </table>
 
               {addingType === cat.id ? (
-                <div className="flex gap-2 mt-2">
-                  <input placeholder="Názov betónu" value={newTypeName} onChange={e => setNewTypeName(e.target.value)}
-                    className="flex-1 border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-                  <input placeholder="Cena €/m³" type="number" step="0.01" value={newTypePrice} onChange={e => setNewTypePrice(e.target.value)}
-                    className="w-28 border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-                  <button onClick={() => addType(cat.id)} className="px-3 py-2 bg-primary text-secondary text-sm font-bold hover:bg-primary/90"><Check className="w-4 h-4" /></button>
-                  <button onClick={() => setAddingType(null)} className="px-3 py-2 bg-gray-100 text-gray-500 text-sm hover:bg-gray-200"><X className="w-4 h-4" /></button>
+                <div className="mt-3 border border-primary/40 rounded-md bg-white p-3 shadow-sm">
+                  <p className="text-[10px] font-bold text-secondary/50 uppercase tracking-widest mb-2 flex items-center gap-1">
+                    <Plus className="w-3 h-3" /> Nový typ betónu
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      placeholder="Názov betónu (napr. C25/30 XC1)"
+                      value={newTypeName}
+                      onChange={e => setNewTypeName(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Tab") return; if (e.key === "Enter") addType(cat.id); if (e.key === "Escape") setAddingType(null); }}
+                      className="flex-1 border-2 border-primary/40 focus:border-primary px-3 py-2.5 text-sm focus:outline-none rounded-md bg-amber-50/30 font-medium placeholder:text-gray-400 text-secondary"
+                      autoFocus
+                    />
+                    <div className="flex gap-2">
+                      <input
+                        placeholder="Cena €/m³"
+                        type="number"
+                        step="0.01"
+                        value={newTypePrice}
+                        onChange={e => setNewTypePrice(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter") addType(cat.id); if (e.key === "Escape") setAddingType(null); }}
+                        className="w-32 border-2 border-primary/40 focus:border-primary px-3 py-2.5 text-sm focus:outline-none rounded-md bg-amber-50/30 font-medium text-right placeholder:text-gray-400 text-secondary"
+                      />
+                      <button onClick={() => addType(cat.id)} className="px-3 py-2.5 bg-primary text-secondary text-sm font-bold hover:bg-primary/90 rounded-md transition-colors flex items-center gap-1.5">
+                        <Check className="w-4 h-4" /> OK
+                      </button>
+                      <button onClick={() => setAddingType(null)} className="px-3 py-2.5 bg-gray-100 text-gray-600 text-sm hover:bg-gray-200 rounded-md transition-colors">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <button onClick={() => { setAddingType(cat.id); setNewTypeName(""); setNewTypePrice(""); }}
-                  className="flex items-center gap-1 text-xs text-primary font-bold hover:text-secondary transition-colors mt-1">
+                  className="flex items-center gap-1.5 text-xs text-primary font-bold hover:bg-primary/10 hover:text-secondary transition-colors mt-2 px-3 py-2 rounded-md border border-dashed border-primary/40 hover:border-primary cursor-pointer">
                   <Plus className="w-3.5 h-3.5" /> Pridať typ betónu
                 </button>
               )}
@@ -116,11 +140,29 @@ export default function BetonTab() {
       ))}
 
       {addingCat ? (
-        <div className="flex gap-2 mt-3">
-          <input placeholder="Názov kategórie (napr. DRVENÉ KAMENIVO Dmax8)" value={newCatName} onChange={e => setNewCatName(e.target.value)}
-            className="flex-1 border-2 border-primary px-4 py-3 text-sm focus:outline-none" autoFocus />
-          <button onClick={addCategory} className="px-4 py-3 bg-primary text-secondary font-bold text-sm hover:bg-primary/90">Pridať</button>
-          <button onClick={() => setAddingCat(false)} className="px-4 py-3 bg-gray-100 text-gray-500 text-sm hover:bg-gray-200">Zrušiť</button>
+        <div className="mt-3 border-2 border-primary/60 border-l-4 border-l-primary rounded-lg bg-primary/5 p-4 shadow-sm">
+          <p className="text-xs font-bold text-secondary/60 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+            <Plus className="w-3.5 h-3.5" /> Nová kategória kameniva
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              placeholder="Názov kategórie (napr. DRVENÉ KAMENIVO Dmax8)"
+              value={newCatName}
+              onChange={e => setNewCatName(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") addCategory(); if (e.key === "Escape") { setAddingCat(false); setNewCatName(""); } }}
+              className="flex-1 border-2 border-primary/50 focus:border-primary px-4 py-3 text-sm focus:outline-none bg-white rounded-md font-medium placeholder:text-gray-400 text-secondary"
+              autoFocus
+            />
+            <div className="flex gap-2 shrink-0">
+              <button onClick={addCategory} className="flex-1 sm:flex-none px-5 py-3 bg-primary text-secondary font-bold text-sm hover:bg-primary/90 rounded-md transition-colors flex items-center justify-center gap-2">
+                <Check className="w-4 h-4" /> Pridať
+              </button>
+              <button onClick={() => { setAddingCat(false); setNewCatName(""); }} className="flex-1 sm:flex-none px-5 py-3 bg-gray-100 text-gray-600 text-sm hover:bg-gray-200 rounded-md transition-colors font-medium">
+                Zrušiť
+              </button>
+            </div>
+          </div>
+          <p className="text-[10px] text-gray-400 mt-2">Stlač Enter na pridanie · Escape na zrušenie</p>
         </div>
       ) : (
         <button onClick={() => setAddingCat(true)}

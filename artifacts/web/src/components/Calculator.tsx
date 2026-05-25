@@ -2421,11 +2421,6 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             const normalBtnCls = "w-8 h-8 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors";
             return (
               <div>
-                {isAdminMode && (
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-amber-400/70 border border-amber-400/30 rounded px-1.5 py-0.5">Admin mode</span>
-                  </div>
-                )}
                 <label className="block text-sm font-semibold text-white/80 mb-2">Množstvo betónu (m³)</label>
                 <div className="flex items-stretch gap-2">
                   <input type="text" inputMode="decimal" value={quantity}
