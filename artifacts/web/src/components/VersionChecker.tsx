@@ -26,6 +26,12 @@ export function VersionChecker() {
           localStorage.setItem(VERSION_KEY, hash);
           return;
         }
+        // First check after user clicked Obnoviť — silently accept server hash
+        if (sessionStorage.getItem("msbeton_refreshed")) {
+          sessionStorage.removeItem("msbeton_refreshed");
+          localStorage.setItem(VERSION_KEY, hash);
+          return;
+        }
         if (stored !== hash) setNeedsRefresh(true);
       } catch {
         // network error — ignore
@@ -52,10 +58,7 @@ export function VersionChecker() {
       <button
         type="button"
         onClick={() => {
-          // Store the new hash BEFORE reload — prevents banner from showing again
-          const h = latestHashRef.current;
-          if (h) localStorage.setItem(VERSION_KEY, h);
-          else localStorage.removeItem(VERSION_KEY);
+          sessionStorage.setItem("msbeton_refreshed", "1");
           window.location.reload();
         }}
         className="shrink-0 bg-primary text-secondary text-xs font-black px-3 py-1.5 rounded-lg hover:bg-primary/80 transition-colors cursor-pointer"
