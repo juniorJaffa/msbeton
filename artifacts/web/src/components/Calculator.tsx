@@ -896,7 +896,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     let fillupM3 = 0;
     if (overrideTrucks && overrideTrucks > 1) {
       const qtyPerTruck = qty / overrideTrucks;
-      const cap = tabType === "pumpa" ? pumpCap : mixCap;
+      const cap = mixCap; // podmienky: mix kapacita platí pre per-vozidlo fill-up (aj pumpa tab)
       let fillupPerTruck = 0;
       if (qtyPerTruck < 5) fillupPerTruck = 5 - qtyPerTruck;
       else if (qtyPerTruck > cap && qtyPerTruck < 10) fillupPerTruck = 10 - qtyPerTruck;
@@ -951,8 +951,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const totPodm = tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks;
     const effTrucksOverride = podmienkyEnabled && totPodm > 0 ? totPodm : undefined;
     const mainTC_raw = isOwn ? zeroTC : calcTransport(km, qty + addToMainQty, tab, clientDeliveryZone, effTrucksOverride);
-    // Podmienky: admin ručne riadi vozidlá — fillup potlač (flotila pokrýva objednané množstvo)
-    const mainTC = (podmienkyEnabled && !isOwn) ? { ...mainTC_raw, fillupM3: 0, fillupCost: 0 } : mainTC_raw;
+    const mainTC = mainTC_raw;
     const mainTrucks = effTrucksOverride ?? (tab === "pumpa" ? calcPumpTrucks(qty + addToMainQty) : Math.ceil((qty + addToMainQty) / mixCap));
     concreteBreakdown.push({
       label: `Betón ${cleanType(selectedType.label)} – ${qty} m³`,
@@ -2406,6 +2405,16 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 ? qty / Math.max(1, totalP)
                 : qty / Math.max(1, podmienkyTrucks)
               : 0;
+            const podmienkyFillupPrev = (() => {
+              if (!podmienkyEnabled || qty <= 0 || tab === "vlastnadoprava") return 0;
+              const trucks = tab === "pumpa" ? totalP : podmienkyTrucks;
+              if (trucks <= 0) return 0;
+              const qPT = qty / trucks;
+              let fPT = 0;
+              if (qPT < 5) fPT = 5 - qPT;
+              else if (qPT > mixCap && qPT < 10) fPT = 10 - qPT;
+              return Math.round(Math.max(0, fPT) * trucks * 10) / 10;
+            })();
             const riskBtnCls = "w-8 h-8 rounded border border-red-500/60 text-red-400 hover:border-red-400 hover:bg-red-500/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors";
             const normalBtnCls = "w-8 h-8 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors";
             return (
@@ -2514,6 +2523,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                         {m3PerT > 0 && (
                           <span className="text-amber-300/60">· ∅ {m3PerT.toFixed(1)} m³/voz.</span>
                         )}
+                        {podmienkyFillupPrev > 0 && (
+                          <span className="text-orange-300/80">+{podmienkyFillupPrev}m³ doť.</span>
+                        )}
                         {qty > 0 && tab === "pumpa" && (
                           <span className={`text-[9px] px-1 rounded ${(podmienkyPumpa * pumpCap + podmienkyMixC * mixCap) >= qty ? "text-green-400/70 bg-green-500/10" : "text-red-400/70 bg-red-500/10"}`}>
                             kap. {podmienkyPumpa * pumpCap + podmienkyMixC * mixCap}m³
@@ -2547,10 +2559,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                       <div className="text-[10px] text-amber-100/60 bg-amber-500/5 border border-amber-400/15 rounded px-2.5 py-2 space-y-1.5 leading-relaxed">
                         <p className="font-black text-amber-200/80 uppercase tracking-widest text-[9px]">Ako funguje pretaženie vozidiel</p>
                         <p>Podmienky umožňujú ručne navýšiť počet vozidiel nad bežný výpočet — napr. pri sťaženom teréne alebo zlom počasí.</p>
-                        <p>Keď je vozidiel viac ako štandardne, každé vezme <strong className="text-amber-200/80">menej m³</strong>. Keď je vozidiel menej ako štandardne (minusové pretaženie), každé vezme <strong className="text-amber-200/80">viac m³</strong>. Doťaženie sa pri podmienkovom nastavení <strong className="text-amber-200/80">neúčtuje</strong>.</p>
+                        <p>Keď je vozidiel viac ako štandardne, každé vezme <strong className="text-amber-200/80">menej m³</strong>. Keď je vozidiel menej ako štandardne (minusové pretaženie), každé vezme <strong className="text-amber-200/80">viac m³</strong>. Doťaženie sa účtuje podľa pravidiel aj pri podmienkovom nastavení — ak m³/voz. klesne pod 5 m³, každé vozidlo sa doťaží na min. 5 m³.</p>
                         {m3PerT > 0 && qty > 0 && (
                           <p className="font-mono text-amber-200/70 border-t border-amber-400/15 pt-1.5">
-                            {qty.toFixed(1)} m³ ÷ {tab === "pumpa" ? totalP : podmienkyTrucks} voz = ∅ {(qty / (tab === "pumpa" ? totalP : podmienkyTrucks)).toFixed(2)} m³/voz → bez doťaženia
+                            {qty.toFixed(1)} m³ ÷ {tab === "pumpa" ? totalP : podmienkyTrucks} voz = ∅ {m3PerT.toFixed(2)} m³/voz
+                            {podmienkyFillupPrev > 0
+                              ? ` → doťaženie +${podmienkyFillupPrev} m³ (min 5 m³/voz)`
+                              : " → bez doťaženia"}
                           </p>
                         )}
                       </div>
