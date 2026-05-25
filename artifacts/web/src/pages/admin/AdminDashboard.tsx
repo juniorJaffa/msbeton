@@ -307,66 +307,84 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
           <div className="text-left">
             <h3 className="font-black text-secondary text-sm uppercase tracking-widest">Podmienky m³ → počet vozidiel</h3>
             <p className="text-xs text-gray-500 mt-0.5">
-              Admin mení počet vozidiel podľa terénu a počasia — upravuje m³/auto — zákazník nemá prístup
+              Iba admin vidí tlačidlo PODMIENKY pri Množstve m³ — zákazník nemá prístup
             </p>
           </div>
           <svg className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${podmienkyOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="m19 9-7 7-7-7" />
           </svg>
         </button>
-        {podmienkyOpen && <div className="grid grid-cols-2 divide-y divide-gray-100">
-          {/* PUMPA row */}
-          <div className="col-span-2 grid grid-cols-2 divide-x divide-gray-100 border-b border-gray-100">
-            <div className="px-4 py-3 bg-blue-50/40">
-              <div className="flex items-center gap-1.5 mb-2">
-                <PumpTruckIcon />
-                <span className="text-[10px] text-blue-700 font-black uppercase tracking-wide">Pumpa</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div>
-                  <div className="text-[9px] text-blue-500 font-bold uppercase tracking-wide mb-0.5">Min</div>
-                  <div className="flex items-baseline gap-1 font-bold text-secondary text-sm">
-                    <EditableField value={ts.condPumpaMin ?? 1} type="number" onSave={v => saveTs({ ...ts, condPumpaMin: Math.max(1, parseInt(v) || 1) })} />
-                    <span className="text-gray-400 text-xs">voz.</span>
-                  </div>
-                </div>
-                <span className="text-gray-300 font-black">—</span>
-                <div>
-                  <div className="text-[9px] text-blue-500 font-bold uppercase tracking-wide mb-0.5">Max</div>
-                  <div className="flex items-baseline gap-1 font-bold text-secondary text-sm">
-                    <EditableField value={ts.condPumpaMax ?? 2} type="number" onSave={v => saveTs({ ...ts, condPumpaMax: Math.max(1, parseInt(v) || 2) })} />
-                    <span className="text-gray-400 text-xs">voz.</span>
-                  </div>
-                </div>
-              </div>
+        {podmienkyOpen && <div className="divide-y divide-gray-100">
+          {/* PUMPA tab — má Pumpa + Mix doplnkový */}
+          <div className="px-4 py-3 bg-blue-50/30">
+            <div className="flex items-center gap-1.5 mb-3">
+              <PumpTruckIcon />
+              <span className="text-[10px] text-blue-700 font-black uppercase tracking-wide">Pumpa tab</span>
+              <span className="text-[9px] text-blue-400 ml-1">— platí pri výbere Pumpa</span>
             </div>
-            {/* MIXER row */}
-            <div className="px-4 py-3 bg-amber-50/40">
-              <div className="flex items-center gap-1.5 mb-2">
-                <MixTruckIcon />
-                <span className="text-[10px] text-amber-700 font-black uppercase tracking-wide">Mixer</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div>
-                  <div className="text-[9px] text-amber-500 font-bold uppercase tracking-wide mb-0.5">Min</div>
-                  <div className="flex items-baseline gap-1 font-bold text-secondary text-sm">
-                    <EditableField value={ts.condMixMin ?? 0} type="number" onSave={v => saveTs({ ...ts, condMixMin: Math.max(0, parseInt(v) || 0) })} />
-                    <span className="text-gray-400 text-xs">voz.</span>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="flex items-center gap-1 mb-1.5">
+                  <PumpTruckIcon />
+                  <span className="text-[9px] text-blue-600 font-bold uppercase tracking-wide">Pumpa vozidiel</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="text-center">
+                    <div className="text-[8px] text-blue-400 font-bold uppercase mb-0.5">Min</div>
+                    <div className="flex items-baseline gap-0.5 font-bold text-secondary text-sm">
+                      <EditableField value={ts.condPumpaMin ?? 1} type="number" onSave={v => saveTs({ ...ts, condPumpaMin: Math.max(1, parseInt(v) || 1) })} />
+                      <span className="text-gray-400 text-xs">voz.</span>
+                    </div>
+                  </div>
+                  <span className="text-gray-300 font-black text-sm">—</span>
+                  <div className="text-center">
+                    <div className="text-[8px] text-blue-400 font-bold uppercase mb-0.5">Max</div>
+                    <div className="flex items-baseline gap-0.5 font-bold text-secondary text-sm">
+                      <EditableField value={ts.condPumpaMax ?? 2} type="number" onSave={v => saveTs({ ...ts, condPumpaMax: Math.max(1, parseInt(v) || 2) })} />
+                      <span className="text-gray-400 text-xs">voz.</span>
+                    </div>
                   </div>
                 </div>
-                <span className="text-gray-300 font-black">—</span>
-                <div>
-                  <div className="text-[9px] text-amber-500 font-bold uppercase tracking-wide mb-0.5">Max</div>
-                  <div className="flex items-baseline gap-1 font-bold text-secondary text-sm">
-                    <EditableField value={ts.condMixMax ?? 2} type="number" onSave={v => saveTs({ ...ts, condMixMax: Math.max(0, parseInt(v) || 2) })} />
-                    <span className="text-gray-400 text-xs">voz.</span>
+              </div>
+              <div className="border-l border-blue-100 pl-4">
+                <div className="flex items-center gap-1 mb-1.5">
+                  <MixTruckIcon />
+                  <span className="text-[9px] text-blue-600 font-bold uppercase tracking-wide">Mix doplnkový</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="text-center">
+                    <div className="text-[8px] text-blue-400 font-bold uppercase mb-0.5">Min</div>
+                    <div className="flex items-baseline gap-0.5 font-bold text-secondary text-sm">
+                      <EditableField value={ts.condMixMin ?? 0} type="number" onSave={v => saveTs({ ...ts, condMixMin: Math.max(0, parseInt(v) || 0) })} />
+                      <span className="text-gray-400 text-xs">voz.</span>
+                    </div>
+                  </div>
+                  <span className="text-gray-300 font-black text-sm">—</span>
+                  <div className="text-center">
+                    <div className="text-[8px] text-blue-400 font-bold uppercase mb-0.5">Max</div>
+                    <div className="flex items-baseline gap-0.5 font-bold text-secondary text-sm">
+                      <EditableField value={ts.condMixMax ?? 2} type="number" onSave={v => saveTs({ ...ts, condMixMax: Math.max(0, parseInt(v) || 2) })} />
+                      <span className="text-gray-400 text-xs">voz.</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          {/* Extra pretaženie — globálny prepínač */}
-          <div className="col-span-2 px-4 py-3 border-t border-gray-100 flex items-start gap-3">
+          {/* MIX tab — iba Mix vozidlá, auto-výpočet */}
+          <div className="px-4 py-3 bg-amber-50/30">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <MixTruckIcon />
+              <span className="text-[10px] text-amber-700 font-black uppercase tracking-wide">Mix tab</span>
+              <span className="text-[9px] text-amber-400 ml-1">— platí pri výbere Domiešavač</span>
+            </div>
+            <p className="text-[11px] text-gray-400 leading-relaxed">
+              Min. vozidiel = ⌈m³ ÷ kapacita⌉ &nbsp;·&nbsp; max. = podľa množstva m³
+              <br />Nie je editovateľné — vychádza z objednaného množstva.
+            </p>
+          </div>
+          {/* Minusové pretaženie — globálny prepínač */}
+          <div className="px-4 py-3 flex items-start gap-3">
             <input
               type="checkbox"
               id="allowExtraOverload"
@@ -375,9 +393,12 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
               className="accent-red-500 w-4 h-4 shrink-0 mt-0.5"
             />
             <label htmlFor="allowExtraOverload" className="cursor-pointer select-none">
-              <div className="text-sm font-semibold text-gray-700">Rizikové pretaženie (Extra podmienky)</div>
-              <div className="text-[11px] text-gray-400 mt-0.5">
-                Admin môže znížiť počet vozidiel <strong>pod kapacitný minimum</strong> — napr. 7,5 m³ na 1× Pumpa bez Mixu, alebo 9,5 m³ na 1× Mix. Vozidlo ide do rizika. Upozornenie sa zobrazí v kalkulačke, PDF aj objednávke.
+              <div className="text-sm font-semibold text-gray-700">Minusové pretaženie</div>
+              <div className="text-[11px] text-gray-400 mt-0.5 space-y-0.5">
+                <p>Povolí znížiť počet vozidiel <strong>pod štandardný min. limit</strong>.</p>
+                <p>· Pumpa: napr. 7,5 m³ na 1× Pumpu bez Mixu</p>
+                <p>· Mix: napr. 9,5 m³ na 1× Mix (kapacita 9 m³)</p>
+                <p>Varovanie ⚠ sa zobrazí v kalkulačke, PDF aj objednávke.</p>
               </div>
             </label>
           </div>
@@ -2400,7 +2421,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                   <input type="checkbox" checked={form.smsOrderDisabled} onChange={e => setForm({ ...form, smsOrderDisabled: e.target.checked })} className="accent-orange-500 w-5 h-5 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <span className="text-sm text-gray-700">SMS — nevytvárať objednávku</span>
-                    <div className="text-[11px] text-gray-400">Pretlačí globálne nastavenie · klik SMS = iba text, bez záznamu</div>
+                    <div className="text-[11px] text-gray-400">Klik SMS odošle iba text, bez vytvorenia objednávky</div>
                   </div>
                 </label>
                 <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
@@ -2413,8 +2434,8 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                 <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
                   <input type="checkbox" checked={form.allowExtraOverload} onChange={e => setForm({ ...form, allowExtraOverload: e.target.checked })} className="accent-red-500 w-5 h-5 shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <span className="text-sm text-gray-700">Rizikové pretaženie (Extra podmienky)</span>
-                    <div className="text-[11px] text-gray-400">Admin môže ísť pod kapacitný min vozidiel pre tohto klienta</div>
+                    <span className="text-sm text-gray-700">Minusové pretaženie</span>
+                    <div className="text-[11px] text-gray-400">Povolí ísť pod min. limit vozidiel (Pumpa min. {ts.condPumpaMin ?? 1} voz., Mix min. {ts.condMixMin ?? 0} voz.)</div>
                   </div>
                 </label>
                 <div className="px-3 py-3">
@@ -2865,8 +2886,8 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                           <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50 select-none">
                             <input type="checkbox" checked={c.allowExtraOverload ?? true} onChange={e => update(c.id, { allowExtraOverload: e.target.checked })} className="accent-red-500 w-4 h-4 shrink-0" />
                             <div className="flex-1 min-w-0">
-                              <span className="text-sm text-gray-700">Rizikové pretaženie (Extra podmienky)</span>
-                              <div className="text-[11px] text-gray-400">Admin môže ísť pod kapacitný min vozidiel pre tohto klienta</div>
+                              <span className="text-sm text-gray-700">Minusové pretaženie</span>
+                              <div className="text-[11px] text-gray-400">Povolí ísť pod min. limit vozidiel (Pumpa min. {ts.condPumpaMin ?? 1} voz., Mix min. {ts.condMixMin ?? 0} voz.)</div>
                             </div>
                           </label>
                           <div className="px-3 py-2.5">

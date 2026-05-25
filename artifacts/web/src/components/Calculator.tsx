@@ -1790,7 +1790,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         const pTotalTrucks = tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks;
         const pVehicleStr = tab === "pumpa" ? `1× Pumpa + ${podmienkyMixC}× Mix` : `${podmienkyTrucks}× Mix`;
         const pM3 = pTotalTrucks > 0 ? Math.round(((ci.qty + ci.transportFillupM3) / pTotalTrucks) * 10) / 10 : 0;
-        rows.push({ l: `★ Pretaženie: ${pVehicleStr} · ∅ ${pM3} m³/vozidlo`, v: 0, u: undefined });
+        const pIsRisk = tab === "pumpa" ? podmienkyMixC < Math.max(0, (calcPumpTrucks(ci.qty) || 1) - 1) : podmienkyTrucks < Math.max(1, Math.ceil(ci.qty / mixCap));
+        rows.push({ l: `${pIsRisk ? "⚠ Minusové pretaženie" : "★ Pretaženie"}: ${pVehicleStr} · ∅ ${pM3} m³/vozidlo`, v: 0, u: undefined });
       }
       bdSections.push({ h: header, rows });
       if (svcRows.length > 0) {
@@ -2446,10 +2447,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                       <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 rounded px-2.5 py-2">
                         <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
                         <div className="text-[10px] text-red-300/90 leading-relaxed">
-                          <span className="font-black uppercase tracking-wider text-red-400">Rizikové pretaženie — idem do vlastného rizika</span>
+                          <span className="font-black uppercase tracking-wider text-red-400">Minusové pretaženie — vlastné riziko</span>
                           {tab === "pumpa"
-                            ? <> · Pumpa vezme {qty > 0 ? qty.toFixed(1) : "—"} m³ (kapacita {pumpCap} m³). Schválené vodicom.</>
-                            : <> · {podmienkyTrucks}× Mix nesie {qty > 0 ? (qty / podmienkyTrucks).toFixed(1) : "—"} m³/voz (kapacita {mixCap} m³). Schválené vodicom.</>
+                            ? <><br />Pumpa berie {qty > 0 ? qty.toFixed(1) : "—"} m³ bez doplnkového Mixu (štand. {pumpCap} m³). Vodič preberá zodpovednosť.</>
+                            : <><br />{podmienkyTrucks}× Mix berie {qty > 0 ? (qty / podmienkyTrucks).toFixed(1) : "—"} m³/voz. (štand. kapacita {mixCap} m³). Vodič preberá zodpovednosť.</>
                           }
                         </div>
                       </div>
