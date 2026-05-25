@@ -199,7 +199,7 @@ Oba servery musia bežať súčasne. Vite **vyhodí chybu** ak chýba `PORT` ale
 
 ```bash
 # API server (terminál 1)
-PORT=3000 DATABASE_URL="postgresql://junior@localhost:5432/msbeton" pnpm --filter @workspace/api-server dev
+PORT=3000 DATABASE_URL="postgresql://junior@localhost:5432/msbeton" ADMIN_PASSWORD=Msbeton2023 pnpm --filter @workspace/api-server dev
 
 # Web dev server (terminál 2)
 PORT=5173 BASE_PATH=/ pnpm --filter @workspace/web dev

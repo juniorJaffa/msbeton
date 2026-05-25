@@ -12,7 +12,7 @@ const router = Router();
 router.post("/login", loginRateLimit, async (req, res) => {
   const { username, password } = req.body as { username?: string; password?: string };
   const adminUser = (process.env.ADMIN_USER ?? "msbeton").toLowerCase();
-  const adminPassword = process.env.ADMIN_PASSWORD;
+  const adminPassword = process.env.ADMIN_PASSWORD ?? (process.env.NODE_ENV !== "production" ? "Msbeton2023" : undefined);
 
   if (!username || !password) {
     res.status(400).json({ ok: false, error: "Chýbajú prihlasovacie údaje" });
