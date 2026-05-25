@@ -2977,7 +2977,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                                   <input type="number" min="0" max="100" value={Math.round((c.hotovostDph ?? 0.20) * 100)}
                                     onClick={e => e.stopPropagation()}
                                     onChange={e => { const v = parseFloat(e.target.value); if (!Number.isNaN(v) && v >= 0 && v <= 100) update(c.id, { hotovostDph: v / 100 }); }}
-                                    className="border border-gray-200 px-2 py-0.5 text-xs focus:outline-none focus:border-primary w-12 text-center" />
+                                    className="border border-gray-200 px-2 py-0.5 text-xs focus:outline-none focus:border-primary w-16 text-center" />
                                   <span className="text-xs text-gray-400">%</span>
                                   <span className="text-[10px] text-gray-400 italic">· iba betón</span>
                                 </div>
