@@ -371,17 +371,31 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
               </div>
             </div>
           </div>
-          {/* MIX tab — iba Mix vozidlá, auto-výpočet */}
+          {/* MIX tab — Mix vozidlá (rovnaký vozový park ako doplnkový mix v pumpe) */}
           <div className="px-4 py-3 bg-amber-50/30">
-            <div className="flex items-center gap-1.5 mb-1.5">
+            <div className="flex items-center gap-1.5 mb-3">
               <MixTruckIcon />
               <span className="text-[10px] text-amber-700 font-black uppercase tracking-wide">Mix tab</span>
               <span className="text-[9px] text-amber-400 ml-1">— platí pri výbere Domiešavač</span>
             </div>
-            <p className="text-[11px] text-gray-400 leading-relaxed">
-              Min. vozidiel = ⌈m³ ÷ kapacita⌉ &nbsp;·&nbsp; max. = podľa množstva m³
-              <br />Nie je editovateľné — vychádza z objednaného množstva.
-            </p>
+            <div className="flex items-center gap-2">
+              <div className="text-center">
+                <div className="text-[8px] text-amber-500 font-bold uppercase mb-0.5">Min</div>
+                <div className="flex items-baseline gap-0.5 font-bold text-secondary text-sm">
+                  <EditableField value={ts.condMixMin ?? 0} type="number" onSave={v => saveTs({ ...ts, condMixMin: Math.max(0, parseInt(v) || 0) })} />
+                  <span className="text-gray-400 text-xs">voz.</span>
+                </div>
+              </div>
+              <span className="text-gray-300 font-black text-sm">—</span>
+              <div className="text-center">
+                <div className="text-[8px] text-amber-500 font-bold uppercase mb-0.5">Max</div>
+                <div className="flex items-baseline gap-0.5 font-bold text-secondary text-sm">
+                  <EditableField value={ts.condMixMax ?? 2} type="number" onSave={v => saveTs({ ...ts, condMixMax: Math.max(1, parseInt(v) || 2) })} />
+                  <span className="text-gray-400 text-xs">voz.</span>
+                </div>
+              </div>
+            </div>
+            <p className="text-[10px] text-gray-400 mt-1.5">Rovnaký vozový park ako Mix doplnkový v Pumpa tab · min. aut = ⌈m³ ÷ kapacita⌉</p>
           </div>
           {/* Minusové pretaženie — globálny prepínač */}
           <div className="px-4 py-3 flex items-start gap-3">

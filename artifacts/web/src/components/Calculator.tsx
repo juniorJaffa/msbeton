@@ -2331,7 +2331,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             // MIX tab — spodný limit: štandardný min (autoTrucksM) alebo 1 ak extraOverload povolený
             const minMixStd = Math.max(1, autoTrucksM);
             const minMixM = allowExtraOverload ? 1 : minMixStd;
-            const maxMixM = qty > 0 ? Math.max(minMixStd, Math.floor(qty)) : minMixStd + 8;
+            // maxMixM rešpektuje vozový park (condMixMax) — rovnaké vozidlá ako doplnkový mix v pumpa tab
+            const maxMixM = Math.min(adminMaxMix, qty > 0 ? Math.max(minMixStd, Math.floor(qty)) : minMixStd + 8);
             const totalP = podmienkyPumpa + podmienkyMixC;
             const podmienkyFillupM3ui = result?.concreteBreakdown?.[0]?.transportFillupM3 ?? 0;
             const m3PerT = podmienkyEnabled && qty > 0
