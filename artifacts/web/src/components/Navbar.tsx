@@ -3,7 +3,7 @@ import { Menu, X, Phone, Mail, LogIn, LogOut, Calculator, UserCog, ShieldCheck, 
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { clientAuth, type LoggedClient } from "@/lib/clientAuth";
-import { hasStoredCredential, isBiometricAvailable } from "@/lib/adminAuth";
+import { hasStoredCredential, isBiometricAvailable, isLoggedIn as adminIsLoggedIn } from "@/lib/adminAuth";
 import { hasClientBiometric, isBiometricAvailable as isClientBioAvailable } from "@/lib/clientAuth";
 
 export function Navbar() {
@@ -12,17 +12,21 @@ export function Navbar() {
   const [loggedClient, setLoggedClient] = useState<LoggedClient | null>(() => clientAuth.getLoggedClient());
   const [adminBioActive, setAdminBioActive] = useState(() => isBiometricAvailable() && hasStoredCredential());
   const [clientBioActive, setClientBioActive] = useState(() => isClientBioAvailable() && hasClientBiometric());
+  const [adminLoggedIn, setAdminLoggedIn] = useState(() => adminIsLoggedIn());
 
   useEffect(() => {
     const onBioChange = () => {
       setAdminBioActive(isBiometricAvailable() && hasStoredCredential());
       setClientBioActive(isClientBioAvailable() && hasClientBiometric());
+      setAdminLoggedIn(adminIsLoggedIn());
     };
     window.addEventListener("bio-status-changed", onBioChange);
     window.addEventListener("client-session-changed", onBioChange);
+    window.addEventListener("admin-session-changed", onBioChange);
     return () => {
       window.removeEventListener("bio-status-changed", onBioChange);
       window.removeEventListener("client-session-changed", onBioChange);
+      window.removeEventListener("admin-session-changed", onBioChange);
     };
   }, []);
 
@@ -77,8 +81,11 @@ export function Navbar() {
               {loggedClient ? (
                 <>
                   {loggedClient.id !== "admin" ? (
-                    <a href="/klient-profil" className="flex items-center gap-1.5 text-white/70 hover:text-white transition-colors text-xs group" title="Môj profil">
-                      <UserCog className="w-3.5 h-3.5 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity" />
+                    <a href="/klient-profil" className="flex items-center gap-1.5 text-primary hover:text-primary/80 transition-colors text-xs group" title="Môj profil">
+                      <span className="relative inline-flex items-center justify-center">
+                        <UserCog className="w-3.5 h-3.5 shrink-0 drop-shadow-[0_0_5px_rgba(237,197,49,0.7)]" />
+                        <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_4px_rgba(237,197,49,0.9)]" />
+                      </span>
                       <span className="font-bold hidden sm:inline">{loggedClient.name}</span>
                     </a>
                   ) : (
@@ -108,7 +115,7 @@ export function Navbar() {
                     <LogIn className="w-3.5 h-3.5 shrink-0" />
                     {clientBioActive && <Fingerprint className="absolute -bottom-1 -right-1 w-2.5 h-2.5 text-primary" />}
                   </span>
-                  <span>Klient</span>
+                  <span>Prihlásiť</span>
                 </a>
               )}
             </div>
@@ -129,16 +136,24 @@ export function Navbar() {
               <span className="text-white/15">|</span>
               <a
                 href="/admin/login"
-                className="flex items-center gap-1 text-white/20 hover:text-amber-400/60 transition-colors py-1 px-1 relative"
-                title="Admin"
+                className={cn(
+                  "flex items-center gap-1 transition-colors py-1 px-1 relative",
+                  adminLoggedIn
+                    ? "text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.8)]"
+                    : "text-white/20 hover:text-amber-400/60"
+                )}
+                title={adminLoggedIn ? "Admin (prihlásený)" : "Admin"}
               >
                 {adminBioActive ? (
                   <span className="relative inline-flex items-center justify-center w-3.5 h-3.5">
-                    <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-primary/70" />
+                    <ShieldCheck className={cn("w-3.5 h-3.5 shrink-0", adminLoggedIn ? "text-amber-400" : "text-primary/70")} />
                     <Fingerprint className="absolute -bottom-1 -right-1 w-2.5 h-2.5 text-primary" />
                   </span>
                 ) : (
                   <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                )}
+                {adminLoggedIn && (
+                  <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_4px_rgba(251,191,36,0.9)]" />
                 )}
               </a>
             </div>

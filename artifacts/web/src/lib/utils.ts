@@ -30,7 +30,9 @@ export function formatPhone(value: string): string {
 }
 
 export function isValidSvkPhone(value: string): boolean {
-  const digits = value.replace(/\D/g, "");
+  // Normalizuj +421/00421 → 0XXX rovnako ako formatPhone
+  const formatted = formatPhone(value);
+  const digits = formatted.replace(/\D/g, "");
   // SVK mobilné: 09XX XXX XXX (10 číslic, začína 09)
   // SVK pevné: 02/03/04/05 (10 číslic)
   return digits.length === 10 && /^0[2-9]/.test(digits);
