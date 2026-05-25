@@ -1862,8 +1862,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                                           sec.h.startsWith("Pridaná") || sec.h.startsWith("Produkty") ? "pl-1" : "pl-4",
                                           isRiskRow ? "bg-red-50 px-2 py-1 rounded-sm" : isPretazenieRow ? "bg-amber-50 px-2 py-1 rounded-sm" : ""
                                         )}>
-                                          <span className={isRiskRow ? "text-red-600 font-semibold flex items-center gap-1" : isPretazenieRow ? "text-amber-700 font-semibold" : "text-gray-500"}>
-                                            {isRiskRow && <AlertTriangle className="w-3 h-3 inline shrink-0" />}
+                                          <span className={isRiskRow ? "text-red-600 font-semibold" : isPretazenieRow ? "text-amber-700 font-semibold" : "text-gray-500"}>
                                             {row.l}
                                           </span>
                                           <span className="shrink-0 text-right">
@@ -3383,6 +3382,9 @@ function exportOrderPDF(o: Order) {
   const breakdownHtml = parsed ? parsed.s.map(sec => {
     const isMain = sec.h.startsWith("Pridaná") || sec.h.startsWith("Produkty");
     const rows = sec.rows.map(row => {
+      if (row.l.startsWith("⚠") && row.v === 0) {
+        return `<tr><td colspan="3" style="padding:4px 8px 4px 14px;font-size:7.5pt;font-weight:600;color:#991b1b;background:#fef2f2;border-top:1px solid #fca5a5;border-bottom:1px solid #fca5a5">${row.l}</td></tr>`;
+      }
       if (row.l.startsWith("★") && row.v === 0) {
         return `<tr><td colspan="3" style="padding:3px 8px 3px 14px;font-size:7.5pt;color:#92400e;background:#fffbeb;border-bottom:1px solid #fde68a">${row.l}</td></tr>`;
       }
