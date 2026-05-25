@@ -178,6 +178,97 @@ function ga4Rows(data: unknown): Array<{ dims: string[]; vals: string[] }> {
   }));
 }
 
+// ── Google Search Console ──────────────────────────────────────────────────
+async function getGscToken(): Promise<string | null> {
+  const keyJson = process.env.GSC_KEY_JSON;
+  if (!keyJson) return null;
+  let key: { client_email: string; private_key: string };
+  try { key = JSON.parse(keyJson); } catch { return null; }
+  const crypto = await import("crypto");
+  const now = Math.floor(Date.now() / 1000);
+  const header = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT" })).toString("base64url");
+  const payload = Buffer.from(JSON.stringify({
+    iss: key.client_email,
+    scope: "https://www.googleapis.com/auth/webmasters.readonly",
+    aud: "https://oauth2.googleapis.com/token",
+    exp: now + 3600,
+    iat: now,
+  })).toString("base64url");
+  const sign = crypto.createSign("RSA-SHA256");
+  sign.update(`${header}.${payload}`);
+  const sig = sign.sign(key.private_key, "base64url");
+  const jwt = `${header}.${payload}.${sig}`;
+  const resp = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`,
+  });
+  if (!resp.ok) return null;
+  const data = await resp.json() as { access_token?: string };
+  return data.access_token ?? null;
+}
+
+async function gscQuery(token: string, body: object): Promise<unknown> {
+  const siteUrl = encodeURIComponent(process.env.GSC_SITE_URL ?? "sc-domain:msbeton.sk");
+  const r = await fetch(`https://searchconsole.googleapis.com/webmasters/v3/sites/${siteUrl}/searchAnalytics/query`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(`GSC ${r.status}: ${await r.text()}`);
+  return r.json();
+}
+
+function gscRows(data: unknown): Array<{ keys: string[]; clicks: number; impressions: number; ctr: number; position: number }> {
+  const d = data as { rows?: Array<{ keys: string[]; clicks: number; impressions: number; ctr: number; position: number }> };
+  return d.rows ?? [];
+}
+
+router.get("/analytics/gsc", async (req, res) => {
+  try {
+    const token = await getGscToken();
+    if (!token) { res.status(503).json({ error: "GSC_KEY_JSON not configured" }); return; }
+
+    const end = new Date(); end.setDate(end.getDate() - 3); // GSC má 3-dňové oneskorenie
+    const start28 = new Date(end); start28.setDate(start28.getDate() - 28);
+    const start90 = new Date(end); start90.setDate(start90.getDate() - 90);
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+
+    const [queries, pages, devices, countries, daily] = await Promise.all([
+      gscQuery(token, { startDate: fmt(start28), endDate: fmt(end), dimensions: ["query"], rowLimit: 25, dataState: "final" }),
+      gscQuery(token, { startDate: fmt(start28), endDate: fmt(end), dimensions: ["page"], rowLimit: 10, dataState: "final" }),
+      gscQuery(token, { startDate: fmt(start28), endDate: fmt(end), dimensions: ["device"], rowLimit: 10, dataState: "final" }),
+      gscQuery(token, { startDate: fmt(start28), endDate: fmt(end), dimensions: ["country"], rowLimit: 10, dataState: "final" }),
+      gscQuery(token, { startDate: fmt(start90), endDate: fmt(end), dimensions: ["date"], rowLimit: 90, dataState: "final" }),
+    ]);
+
+    const qRows = gscRows(queries);
+    const pRows = gscRows(pages);
+    const dRows = gscRows(devices);
+    const cRows = gscRows(countries);
+    const dailyRows = gscRows(daily);
+
+    const totClicks = qRows.reduce((s, r) => s + r.clicks, 0);
+    const totImpr = qRows.reduce((s, r) => s + r.impressions, 0);
+
+    res.json({
+      summary: {
+        clicks28: totClicks,
+        impressions28: totImpr,
+        avgCtr28: totImpr > 0 ? totClicks / totImpr : 0,
+        avgPosition28: qRows.length > 0 ? qRows.reduce((s, r) => s + r.position, 0) / qRows.length : 0,
+      },
+      queries: qRows.map(r => ({ query: r.keys[0], clicks: r.clicks, impressions: r.impressions, ctr: r.ctr, position: r.position })),
+      pages: pRows.map(r => ({ page: r.keys[0], clicks: r.clicks, impressions: r.impressions, ctr: r.ctr, position: r.position })),
+      devices: dRows.map(r => ({ device: r.keys[0], clicks: r.clicks, impressions: r.impressions, ctr: r.ctr })),
+      countries: cRows.map(r => ({ country: r.keys[0], clicks: r.clicks, impressions: r.impressions })),
+      daily: dailyRows.map(r => ({ date: r.keys[0], clicks: r.clicks, impressions: r.impressions })),
+    });
+  } catch (err) {
+    res.status(502).json({ error: String(err instanceof Error ? err.message : err) });
+  }
+});
+
 router.get("/analytics", async (req, res) => {
   try {
     const token = await getGa4Token();
