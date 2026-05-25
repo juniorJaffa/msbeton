@@ -30,8 +30,9 @@ export function PhoneInput({ value, onChange, placeholder = "0944 xxx xxx", clas
     <input
       id={id}
       type="tel"
+      inputMode="tel"
       value={focused ? raw : value}
-      onChange={e => setRaw(e.target.value)}
+      onChange={e => setRaw(e.target.value.replace(/[^\d+\s\-()]/g, ""))}
       onFocus={() => { setFocused(true); setRaw(value); }}
       onBlur={handleBlur}
       placeholder={placeholder}

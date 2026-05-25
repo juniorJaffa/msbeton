@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Truck, LogIn, LogOut, FileText, FileSpreadsheet, FileType2, MessageSquare, Minus, Plus, Trash2, Table2, ShoppingCart, X, Info, Check, ExternalLink, MapPin, Copy, Navigation, Settings2, AlertTriangle, Timer } from "lucide-react";
 import { OpenLocationCode } from "open-location-code";
-import { cn, formatPhone } from "@/lib/utils";
+import { cn, formatPhone, isValidSvkPhone } from "@/lib/utils";
 
 declare global { function gtag(...args: unknown[]): void; }
 function gtagEvent(name: string, params?: Record<string, unknown>) {
@@ -3962,10 +3962,15 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                         className="w-full bg-white/10 border-b-2 border-b-primary/60 text-white px-3 py-2 text-sm focus:outline-none focus:border-b-primary placeholder:text-white/30 rounded-sm" />
                     </div>
                     <div>
-                      <label className="text-xs text-white/60 mb-1 block">Telefón</label>
+                      <label className="text-xs text-white/60 mb-1 block">
+                        Telefón <span className="text-red-400">*</span>
+                      </label>
                       <PhoneInput value={orderForm.phone} onChange={v => setOrderForm(f => ({ ...f, phone: v }))}
                         placeholder="0944 xxx xxx"
-                        className="w-full bg-white/10 border-b-2 border-b-primary/60 text-white px-3 py-2 text-sm focus:outline-none focus:border-b-primary placeholder:text-white/30 rounded-sm" />
+                        className={`w-full bg-white/10 border-b-2 text-white px-3 py-2 text-sm focus:outline-none placeholder:text-white/30 rounded-sm ${orderForm.phone && !isValidSvkPhone(orderForm.phone) ? "border-b-red-400" : "border-b-primary/60 focus:border-b-primary"}`} />
+                      {orderForm.phone && !isValidSvkPhone(orderForm.phone) && (
+                        <p className="text-[10px] text-red-400 mt-0.5">Zadajte platné SK číslo (09XX XXX XXX)</p>
+                      )}
                     </div>
                     <div>
                       <label className="text-xs text-white/60 mb-1 block">Poznámka</label>
@@ -3977,7 +3982,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                   </div>
                   <button
                     onClick={handleSubmitOrder}
-                    disabled={orderSubmitting || !orderForm.name.trim()}
+                    disabled={orderSubmitting || !orderForm.name.trim() || !orderForm.phone.trim() || !isValidSvkPhone(orderForm.phone)}
                     className="w-full py-3 bg-primary text-white font-bold text-sm tracking-widest hover:bg-primary/90 transition-all cursor-pointer disabled:opacity-50">
                     {orderSubmitting ? "Odosiela sa..." : "ODOSLAŤ OBJEDNÁVKU"}
                   </button>

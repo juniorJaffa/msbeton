@@ -28,3 +28,10 @@ export function formatPhone(value: string): string {
   const a = digits.slice(0, 4), b = digits.slice(4, 7), c = digits.slice(7, 10);
   return [a, b, c].filter(Boolean).join(" ");
 }
+
+export function isValidSvkPhone(value: string): boolean {
+  const digits = value.replace(/\D/g, "");
+  // SVK mobilné: 09XX XXX XXX (10 číslic, začína 09)
+  // SVK pevné: 02/03/04/05 (10 číslic)
+  return digits.length === 10 && /^0[2-9]/.test(digits);
+}
