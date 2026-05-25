@@ -143,6 +143,8 @@ export interface TransportSettings {
   condMixMin?: number;    // Podmienky – min počet Mix vozidiel v pumpa tab (default 0)
   condMixMax?: number;    // Podmienky – max počet Mix vozidiel v pumpa tab (default 2)
   allowExtraOverload?: boolean; // Podmienky – povoliť rizikové pretaženie pod kapacitný min (default true)
+  waitFreeMinutesMix?: number;  // Čakačka mix – voľný čas zadarmo v minútach (default 30)
+  waitIntervalMinutes?: number; // Čakačka – interval účtovania v minútach (default 15)
 }
 
 const DEFAULT_CATEGORIES: ConcreteCategory[] = [

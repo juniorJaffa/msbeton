@@ -998,7 +998,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             svcWaitLabel = `${s.waitPiecesPumpa} ks`;
           } else if (tab === "mix") {
             const wm = (parseInt(s.waitHour) || 0) * 60 + (parseInt(s.waitMin) || 0);
-            svcWaitIntervals = Math.ceil(Math.max(0, wm - 30) / 15);
+            svcWaitIntervals = Math.ceil(Math.max(0, wm - (tsettings.waitFreeMinutesMix ?? 30)) / (tsettings.waitIntervalMinutes ?? 15));
             svcWaitCost = svcWaitIntervals * waitServicePriceMix;
             const wh = parseInt(s.waitHour) || 0;
             const wmm = parseInt(s.waitMin) || 0;
@@ -1069,7 +1069,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const waitIntervalsPumpa = waitPiecesPumpa;
     const waitIntervalsMix = clientDeliveryZone?.pricingType === "km"
       ? waitPiecesMix
-      : Math.ceil(Math.max(0, waitTotalMins - 30) / 15);
+      : Math.ceil(Math.max(0, waitTotalMins - (tsettings.waitFreeMinutesMix ?? 30)) / (tsettings.waitIntervalMinutes ?? 15));
     const waitIntervals = tab === "pumpa" ? waitIntervalsPumpa : waitIntervalsMix;
 
     const transportCalc = { cost: totalTransportCost, isMin: concreteBreakdown[0] ? (isOwn ? false : calcTransport(km, qty, tab, clientDeliveryZone).isMin) : false, fillupM3: concreteBreakdown[0]?.transportFillupM3 ?? 0, fillupCost: totalFillupCost };
@@ -1724,7 +1724,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         breakdown: buildBreakdown(),
         viaSms: true,
         ...(tab === "pumpa" && pumpMode === "timer" && pumpStartTime && pumpStopTime ? { pumpTimer: { start: pumpStartTime, stop: pumpStopTime } } : tab === "pumpa" && pumpMode === "edit" && editStartTime && editStopTime ? { pumpTimer: { start: editStartTime, stop: editStopTime } } : {}),
-        ...(podmienkyEnabled ? { podmienky: { trucks: tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks, pumpa: tab === "pumpa" ? podmienkyPumpa : 0, mix: tab === "pumpa" ? podmienkyMixC : podmienkyTrucks, m3PerTruck: (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks) > 0 ? Math.round((result!.qty / (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks)) * 10) / 10 : 0, isRisk: tab === "pumpa" ? podmienkyMixC < Math.max(0, (calcPumpTrucks(result!.qty) || 1) - 1) : podmienkyTrucks < Math.max(1, Math.ceil(result!.qty / mixCap)) } } : {}),
+        ...(podmienkyEnabled ? { podmienky: { trucks: tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks, pumpa: tab === "pumpa" ? podmienkyPumpa : 0, mix: tab === "pumpa" ? podmienkyMixC : podmienkyTrucks, m3PerTruck: (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks) > 0 ? Math.round(((result!.qty + (result!.concreteBreakdown[0]?.transportFillupM3 ?? 0)) / (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks)) * 10) / 10 : 0, isRisk: tab === "pumpa" ? podmienkyMixC < Math.max(0, (calcPumpTrucks(result!.qty) || 1) - 1) : podmienkyTrucks < Math.max(1, Math.ceil(result!.qty / mixCap)) } } : {}),
       }).then(() => {
         setSmsOrderCreated(true);
         setTimeout(() => setSmsOrderCreated(false), 5000);
@@ -1895,7 +1895,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       discountSluzby:  discountSluzby  > 0 ? discountSluzby  : undefined,
       discountCelkovo: discountCelkovo > 0 ? discountCelkovo : undefined,
       ...(tab === "pumpa" && pumpStartTime && pumpStopTime ? { pumpTimer: { start: pumpStartTime, stop: pumpStopTime } } : {}),
-      ...(podmienkyEnabled ? { podmienky: { trucks: tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks, pumpa: tab === "pumpa" ? podmienkyPumpa : 0, mix: tab === "pumpa" ? podmienkyMixC : podmienkyTrucks, m3PerTruck: (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks) > 0 ? Math.round(((result!.qty + (result!.concreteBreakdown[0]?.transportFillupM3 ?? 0)) / (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks)) * 10) / 10 : 0 } } : {}),
+      ...(podmienkyEnabled ? { podmienky: { trucks: tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks, pumpa: tab === "pumpa" ? podmienkyPumpa : 0, mix: tab === "pumpa" ? podmienkyMixC : podmienkyTrucks, m3PerTruck: (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks) > 0 ? Math.round(((result!.qty + (result!.concreteBreakdown[0]?.transportFillupM3 ?? 0)) / (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks)) * 10) / 10 : 0, isRisk: tab === "pumpa" ? podmienkyMixC < Math.max(0, (calcPumpTrucks(result!.qty) || 1) - 1) : podmienkyTrucks < Math.max(1, Math.ceil(result!.qty / mixCap)) } } : {}),
       turnstileToken: turnstileToken || undefined,
     });
     const w = window as Window & { turnstile?: { reset: (id: string) => void } };

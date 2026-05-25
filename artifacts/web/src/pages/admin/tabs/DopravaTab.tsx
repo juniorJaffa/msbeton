@@ -344,8 +344,28 @@ export default function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void
                               </div>
                             </div>
                             <div>
-                              <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Čakačka / 15 min</div>
+                              <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Čakačka / int.</div>
                               <div className="font-bold text-secondary text-sm">{waitingRateMix != null ? `${waitingRateMix.toFixed(2)} €` : "—"}</div>
+                            </div>
+                          </div>
+                        </div>
+                        {/* Pravidlá čakačky mix */}
+                        <div className="col-span-3 px-4 py-3 bg-orange-50/30 border-t border-orange-100">
+                          <div className="text-[9px] font-black text-secondary uppercase tracking-wide mb-2">Pravidlá čakačky (Mix)</div>
+                          <div className="grid grid-cols-2 gap-x-6">
+                            <div>
+                              <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Voľný čas</div>
+                              <div className="font-bold text-secondary text-sm flex items-baseline gap-0.5">
+                                <EditableField value={ts.waitFreeMinutesMix ?? 30} type="number" onSave={v => saveTs({ ...ts, waitFreeMinutesMix: parseFloat(v) || 0 })} /> <span>min</span>
+                              </div>
+                              <div className="text-[9px] text-gray-400 mt-0.5">zadarmo pred začatím účtovania</div>
+                            </div>
+                            <div>
+                              <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Interval účtovania</div>
+                              <div className="font-bold text-secondary text-sm flex items-baseline gap-0.5">
+                                <EditableField value={ts.waitIntervalMinutes ?? 15} type="number" onSave={v => saveTs({ ...ts, waitIntervalMinutes: parseFloat(v) || 15 })} /> <span>min</span>
+                              </div>
+                              <div className="text-[9px] text-gray-400 mt-0.5">každý začatý interval</div>
                             </div>
                           </div>
                         </div>
@@ -518,12 +538,12 @@ export default function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void
                               <div className="bg-gray-50 border border-gray-100 rounded p-2.5 space-y-1">
                                 <div className="font-black text-secondary text-[10px] uppercase">🚛 Pumpa</div>
                                 <div>množstvo &lt; {ts.minimumLoadM3 ?? 5} m³ → doťaž na {ts.minimumLoadM3 ?? 5} m³</div>
-                                <div>{pumpCap} m³ &lt; mn. &lt; 10 m³ → doťaž na 10 m³</div>
+                                <div>{pumpCap} m³ &lt; mn. &lt; {2 * (ts.minimumLoadM3 ?? 5)} m³ → doťaž na {2 * (ts.minimumLoadM3 ?? 5)} m³</div>
                               </div>
                               <div className="bg-gray-50 border border-gray-100 rounded p-2.5 space-y-1">
                                 <div className="font-black text-secondary text-[10px] uppercase">🔄 Mixér</div>
                                 <div>množstvo &lt; {ts.minimumLoadM3 ?? 5} m³ → doťaž na {ts.minimumLoadM3 ?? 5} m³</div>
-                                <div>{mixCap} m³ &lt; mn. &lt; 10 m³ → doťaž na 10 m³</div>
+                                <div>{mixCap} m³ &lt; mn. &lt; {2 * (ts.minimumLoadM3 ?? 5)} m³ → doťaž na {2 * (ts.minimumLoadM3 ?? 5)} m³</div>
                               </div>
                             </div>
                             <div className="mt-2 flex items-start gap-1.5 bg-amber-50 border border-amber-200 rounded px-2.5 py-1.5 text-xs text-amber-800">
