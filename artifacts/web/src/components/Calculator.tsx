@@ -2382,8 +2382,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             const adminMaxMix = tsettings.condMixMax ?? 2;
             const adminMinMix = tsettings.condMixMin ?? 0;
             const maxMixP = qty > 0 ? Math.min(adminMaxMix, Math.max(0, Math.floor(qty) - podmienkyPumpa)) : adminMaxMix;
-            // allowExtraOverload: iba prihlásený klient s explicitným povolením — anonymous vždy false
-            const allowExtraOverload = loggedClient ? (loggedClient.allowExtraOverload ?? false) : false;
+            // allowExtraOverload: admin vždy; klient iba ak má explicitné povolenie
+            const allowExtraOverload = isAdminMode || (loggedClient ? (loggedClient.allowExtraOverload ?? false) : false);
             // bez povolenia extraOverload → min Mix pre pumpa tab = štandardné minimum (autoMixP)
             const minMixPumpa = allowExtraOverload ? adminMinMix : autoMixP;
             // Risk zone: pod kapacitným minimom
@@ -2430,6 +2430,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                   {isAdminMode && tab !== "vlastnadoprava" && (
                     <button type="button"
                       onClick={() => {
+                        if (qty === 0) return;
                         if (!podmienkyEnabled) {
                           setPodmienkyPumpa(1);
                           setPodmienkyMixC(autoMixP);
@@ -2437,7 +2438,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                         }
                         setPodmienkyEnabled(v => !v);
                       }}
-                      className={`shrink-0 flex items-center gap-1.5 px-3 rounded-sm border transition-colors ${podmienkyEnabled ? "border-amber-400/70 bg-amber-500/20 text-amber-300" : "border-white/20 bg-white/5 text-white/40 hover:text-amber-300 hover:border-amber-400/40"}`}>
+                      disabled={qty === 0 && !podmienkyEnabled}
+                      className={`shrink-0 flex items-center gap-1.5 px-3 rounded-sm border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${podmienkyEnabled ? "border-amber-400/70 bg-amber-500/20 text-amber-300" : "border-white/20 bg-white/5 text-white/40 hover:text-amber-300 hover:border-amber-400/40"}`}>
                       <AlertTriangle className="w-3.5 h-3.5" />
                       <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Podmienky</span>
                     </button>
@@ -2458,10 +2460,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                             <circle cx="8" cy="42" r="4" strokeWidth="2"/><circle cx="36" cy="42" r="4" strokeWidth="2"/>
                           </svg>
                           <span className="text-[10px] font-black text-amber-300/80 uppercase tracking-widest flex-1">Pumpa</span>
-                          <button type="button" onClick={() => setPodmienkyPumpa(p => Math.max(minPumpa, p - 1))} disabled={podmienkyPumpa <= minPumpa}
+                          <button type="button" onClick={() => setPodmienkyPumpa(p => Math.max(minPumpa, p - 1))} disabled={qty === 0 || podmienkyPumpa <= minPumpa}
                             className={normalBtnCls}>−</button>
                           <span className="text-xl font-black text-amber-200 w-7 text-center">{podmienkyPumpa}</span>
-                          <button type="button" onClick={() => setPodmienkyPumpa(p => Math.min(maxPumpa, p + 1))} disabled={podmienkyPumpa >= maxPumpa}
+                          <button type="button" onClick={() => setPodmienkyPumpa(p => Math.min(maxPumpa, p + 1))} disabled={qty === 0 || podmienkyPumpa >= maxPumpa}
                             className={normalBtnCls}>+</button>
                         </div>
                         {/* MIX stepper — červený v rizikovej zóne */}
@@ -2473,10 +2475,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                             <circle cx="10" cy="38" r="4" strokeWidth="2"/><circle cx="52" cy="38" r="4" strokeWidth="2"/>
                           </svg>
                           <span className={`text-[10px] font-black uppercase tracking-widest flex-1 ${isRiskMixP ? "text-red-400/80" : "text-amber-300/80"}`}>Mix</span>
-                          <button type="button" onClick={() => setPodmienkyMixC(m => Math.max(minMixPumpa, m - 1))} disabled={podmienkyMixC <= minMixPumpa}
+                          <button type="button" onClick={() => setPodmienkyMixC(m => Math.max(minMixPumpa, m - 1))} disabled={qty === 0 || podmienkyMixC <= minMixPumpa}
                             className={isRiskMixP ? riskBtnCls : normalBtnCls}>−</button>
                           <span className={`text-xl font-black w-7 text-center ${isRiskMixP ? "text-red-300" : "text-amber-200"}`}>{podmienkyMixC}</span>
-                          <button type="button" onClick={() => setPodmienkyMixC(m => Math.min(maxMixP, m + 1))} disabled={podmienkyMixC >= maxMixP}
+                          <button type="button" onClick={() => setPodmienkyMixC(m => Math.min(maxMixP, m + 1))} disabled={qty === 0 || podmienkyMixC >= maxMixP}
                             className={normalBtnCls}>+</button>
                         </div>
                       </div>
@@ -2490,10 +2492,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                           <circle cx="10" cy="38" r="4" strokeWidth="2"/><circle cx="52" cy="38" r="4" strokeWidth="2"/>
                         </svg>
                         <span className={`text-[10px] font-black uppercase tracking-widest flex-1 ${isRiskTrucksM ? "text-red-400/80" : "text-amber-300/80"}`}>Mix vozidlá</span>
-                        <button type="button" onClick={() => setPodmienkyTrucks(t => Math.max(minMixM, t - 1))} disabled={podmienkyTrucks <= minMixM}
+                        <button type="button" onClick={() => setPodmienkyTrucks(t => Math.max(minMixM, t - 1))} disabled={qty === 0 || podmienkyTrucks <= minMixM}
                           className={isRiskTrucksM ? riskBtnCls : normalBtnCls}>−</button>
                         <span className={`text-xl font-black w-7 text-center ${isRiskTrucksM ? "text-red-300" : "text-amber-200"}`}>{podmienkyTrucks}</span>
-                        <button type="button" onClick={() => setPodmienkyTrucks(t => Math.min(maxMixM, t + 1))} disabled={podmienkyTrucks >= maxMixM}
+                        <button type="button" onClick={() => setPodmienkyTrucks(t => Math.min(maxMixM, t + 1))} disabled={qty === 0 || podmienkyTrucks >= maxMixM}
                           className={normalBtnCls}>+</button>
                       </div>
                     )}
