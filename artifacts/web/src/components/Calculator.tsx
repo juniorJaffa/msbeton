@@ -1842,10 +1842,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         if (ci.svcWashCost > 0) { svcRows.push({ l: "Umývanie mimo stavby", v: fmt2(ci.svcWashCost * fWash), ...(fWash < 1 ? { o: fmt2(ci.svcWashCost) } : {}), u: fmt2(washServicePrice * fWash), uSuffix: "€", ...(fWash < 1 ? { uOrig: washServicePrice } : {}) }); }
         if (ci.svcWaitCost > 0) { const wfExtra = tab === "pumpa" ? fWaitP : fWaitM; const wRateExtra = tab === "pumpa" ? waitServicePricePumpa : waitServicePriceMix; svcRows.push({ l: `Čakačky – ${ci.svcWaitLabel}`, v: fmt2(ci.svcWaitCost * wfExtra), ...(wfExtra < 1 ? { o: fmt2(ci.svcWaitCost) } : {}), u: fmt2(wRateExtra * wfExtra), uSuffix: "€/int.", ...(wfExtra < 1 ? { uOrig: wRateExtra } : {}) }); }
       }
-      if (podmienkyEnabled && idx === 0 && ci.transportFillup > 0) {
+      if (podmienkyEnabled && idx === 0) {
         const pTotalTrucks = tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks;
-        const pVehicleStr = tab === "pumpa" ? `1× Pumpa + ${podmienkyMixC}× Mix` : `${podmienkyTrucks}× Mix`;
-        const pM3 = pTotalTrucks > 0 ? Math.round(((ci.qty + ci.transportFillupM3) / pTotalTrucks) * 10) / 10 : 0;
+        const pVehicleStr = tab === "pumpa"
+          ? `${podmienkyPumpa}× Pumpa${podmienkyMixC > 0 ? ` + ${podmienkyMixC}× Mix` : ""}`
+          : `${podmienkyTrucks}× Mix`;
+        const pM3 = pTotalTrucks > 0 ? Math.round((ci.qty / pTotalTrucks) * 10) / 10 : 0;
         const pIsRisk = tab === "pumpa" ? podmienkyMixC < Math.max(0, (calcPumpTrucks(ci.qty) || 1) - 1) : podmienkyTrucks < Math.max(1, Math.ceil(ci.qty / mixCap));
         rows.push({ l: `${pIsRisk ? "⚠ Minusové pretaženie" : "★ Pretaženie"}: ${pVehicleStr} · ∅ ${pM3} m³/vozidlo`, v: 0, u: undefined });
       }
@@ -2379,10 +2381,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             const qty = parseFloat(quantity) || 0;
             const autoMixP = Math.max(0, (calcPumpTrucks(qty) || 1) - 1);
             const autoTrucksM = Math.max(1, Math.ceil(qty / mixCap) || 1);
-            const maxPumpa = tsettings.condPumpaMax ?? 2;
+            const maxPumpa = isAdminMode ? Math.max(tsettings.condPumpaMax ?? 2, 5) : (tsettings.condPumpaMax ?? 2);
             const minPumpa = tsettings.condPumpaMin ?? 1;
             const adminMaxMix = isAdminMode
-              ? Math.max(tsettings.condMixMax ?? 2, Math.ceil(qty / mixCap) + 2)
+              ? Math.max(99, Math.ceil(qty / mixCap) * 4)
               : (tsettings.condMixMax ?? 2);
             const adminMinMix = tsettings.condMixMin ?? 0;
             const maxMixP = qty > 0 ? Math.min(adminMaxMix, Math.max(0, Math.floor(qty) - podmienkyPumpa)) : adminMaxMix;
@@ -2503,11 +2505,25 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                       </div>
                     )}
                     <div className="flex items-center justify-between gap-2">
-                      <div className="text-[10px] text-amber-200/80 font-mono">
-                        {tab === "pumpa"
-                          ? `${podmienkyPumpa}× Pumpa${podmienkyMixC > 0 ? ` + ${podmienkyMixC}× Mix` : ""} · ∅ ${m3PerT > 0 ? m3PerT.toFixed(1) : "—"} m³/voz.`
-                          : `${podmienkyTrucks}× Mix · ∅ ${m3PerT > 0 ? m3PerT.toFixed(1) : "—"} m³/voz.`
-                        }
+                      <div className="text-[10px] text-amber-200/80 font-mono flex items-center gap-2 flex-wrap">
+                        <span>
+                          {tab === "pumpa"
+                            ? `${podmienkyPumpa}× Pumpa${podmienkyMixC > 0 ? ` + ${podmienkyMixC}× Mix` : ""}`
+                            : `${podmienkyTrucks}× Mix`}
+                        </span>
+                        {m3PerT > 0 && (
+                          <span className="text-amber-300/60">· ∅ {m3PerT.toFixed(1)} m³/voz.</span>
+                        )}
+                        {qty > 0 && tab === "pumpa" && (
+                          <span className={`text-[9px] px-1 rounded ${(podmienkyPumpa * pumpCap + podmienkyMixC * mixCap) >= qty ? "text-green-400/70 bg-green-500/10" : "text-red-400/70 bg-red-500/10"}`}>
+                            kap. {podmienkyPumpa * pumpCap + podmienkyMixC * mixCap}m³
+                          </span>
+                        )}
+                        {qty > 0 && tab === "mix" && (
+                          <span className={`text-[9px] px-1 rounded ${podmienkyTrucks * mixCap >= qty ? "text-green-400/70 bg-green-500/10" : "text-red-400/70 bg-red-500/10"}`}>
+                            kap. {podmienkyTrucks * mixCap}m³
+                          </span>
+                        )}
                       </div>
                       <button type="button" onClick={() => setPodmienkyInfoOpen(v => !v)}
                         className="shrink-0 w-5 h-5 rounded-full border border-amber-400/40 text-amber-300/60 hover:text-amber-300 hover:border-amber-400 transition-colors flex items-center justify-center text-[10px] font-black">
@@ -3591,7 +3607,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     const totT = tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks;
                     const qPT = totT > 0 ? Math.round(q / totT * 10) / 10 : 0;
                     const vehicleStr = tab === "pumpa"
-                      ? `${podmienkyPumpa}× Pumpa + ${podmienkyMixC}× Mix`
+                      ? `${podmienkyPumpa}× Pumpa${podmienkyMixC > 0 ? ` + ${podmienkyMixC}× Mix` : ""}`
                       : `${podmienkyTrucks}× Mix`;
                     return isRisk ? (
                       <div className="flex items-start gap-2.5 bg-red-500/12 border border-red-500/25 rounded-sm px-3 py-2.5 mt-1">
@@ -3941,7 +3957,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     const totT = tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks;
                     const qPT = totT > 0 ? Math.round(q / totT * 10) / 10 : 0;
                     const vehicleStr = tab === "pumpa"
-                      ? `${podmienkyPumpa}× Pumpa + ${podmienkyMixC}× Mix`
+                      ? `${podmienkyPumpa}× Pumpa${podmienkyMixC > 0 ? ` + ${podmienkyMixC}× Mix` : ""}`
                       : `${podmienkyTrucks}× Mix`;
                     return isRisk ? (
                       <div className="flex items-start gap-2.5 bg-red-500/12 border border-red-500/30 rounded-lg px-3 py-2.5">
