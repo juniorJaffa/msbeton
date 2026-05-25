@@ -332,9 +332,10 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
                   <div className="text-center">
                     <div className="text-[8px] text-blue-400 font-bold uppercase mb-0.5">Min</div>
                     <div className="flex items-baseline gap-0.5 font-bold text-secondary text-sm">
-                      <EditableField value={ts.condPumpaMin ?? 1} type="number" onSave={v => saveTs({ ...ts, condPumpaMin: Math.max(1, parseInt(v) || 1) })} />
+                      <span className="text-secondary font-bold">1</span>
                       <span className="text-gray-400 text-xs">voz.</span>
                     </div>
+                    <div className="text-[8px] text-gray-400 mt-0.5">vždy 1</div>
                   </div>
                   <span className="text-gray-300 font-black text-sm">—</span>
                   <div className="text-center">
