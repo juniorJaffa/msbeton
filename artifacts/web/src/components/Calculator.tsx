@@ -394,7 +394,15 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   useEffect(() => {
     const handler = () => setRevision((r) => r + 1);
     window.addEventListener("admin-data-synced", handler);
-    return () => window.removeEventListener("admin-data-synced", handler);
+    // Cross-tab sync: storage event fires in OTHER tabs when localStorage changes
+    const storageHandler = (e: StorageEvent) => {
+      if (e.key && e.key.startsWith("msbeton_")) setRevision((r) => r + 1);
+    };
+    window.addEventListener("storage", storageHandler);
+    return () => {
+      window.removeEventListener("admin-data-synced", handler);
+      window.removeEventListener("storage", storageHandler);
+    };
   }, []);
 
   useEffect(() => {
