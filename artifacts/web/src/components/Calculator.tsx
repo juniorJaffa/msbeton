@@ -900,14 +900,14 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const cap = mixCap; // podmienky: mix kapacita platí pre per-vozidlo fill-up (aj pumpa tab)
       let fillupPerTruck = 0;
       if (qtyPerTruck < fillupMin) fillupPerTruck = fillupMin - qtyPerTruck;
-      else if (qtyPerTruck > cap && qtyPerTruck < 10) fillupPerTruck = 10 - qtyPerTruck;
+      else if (qtyPerTruck > cap && qtyPerTruck < 2 * fillupMin) fillupPerTruck = 2 * fillupMin - qtyPerTruck;
       fillupM3 = Math.round(Math.max(0, fillupPerTruck) * overrideTrucks * 10) / 10;
     } else if (tabType === "pumpa") {
       if (qty < fillupMin) fillupM3 = fillupMin - qty;
-      else if (qty > pumpCap && qty < 10) fillupM3 = 10 - qty;
+      else if (qty > pumpCap && qty < 2 * fillupMin) fillupM3 = 2 * fillupMin - qty;
     } else {
       if (qty < fillupMin) fillupM3 = fillupMin - qty;
-      else if (qty > mixCap && qty < 10) fillupM3 = 10 - qty;
+      else if (qty > mixCap && qty < 2 * fillupMin) fillupM3 = 2 * fillupMin - qty;
     }
 
     const baseCost = qty * ratePerM3;
@@ -2414,7 +2414,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
               const fMin = tsettings?.minimumLoadM3 ?? 5;
               let fPT = 0;
               if (qPT < fMin) fPT = fMin - qPT;
-              else if (qPT > mixCap && qPT < 10) fPT = 10 - qPT;
+              else if (qPT > mixCap && qPT < 2 * fMin) fPT = 2 * fMin - qPT;
               return Math.round(Math.max(0, fPT) * trucks * 10) / 10;
             })();
             const riskBtnCls = "w-8 h-8 rounded border border-red-500/60 text-red-400 hover:border-red-400 hover:bg-red-500/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors";

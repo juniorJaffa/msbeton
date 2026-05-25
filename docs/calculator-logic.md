@@ -98,17 +98,19 @@ Zmena v admin → okamžite platí vo výpočte (kalkulačka, PDF, SMS, podmienk
 | Podmienka | Akcia |
 |-----------|-------|
 | `qty < fillupMin` | doplní na `fillupMin` m³ (celkové qty) |
-| `qty > pumpCap && qty < 10` (pumpa) | doplní na 10 m³ |
-| `qty > mixCap && qty < 10` (mix) | doplní na 10 m³ |
+| `qty > pumpCap && qty < 2*fillupMin` (pumpa) | doplní na `2*fillupMin` m³ |
+| `qty > mixCap && qty < 2*fillupMin` (mix) | doplní na `2*fillupMin` m³ |
+
+> **Vzorec**: `2 * fillupMin` = prah pre doťaženie druhého vozidla. Default `fillupMin=5` → prah=10 (pôvodné správanie). Ak admin zmení `minimumLoadM3=7` → prah=14.
 
 *S podmienkami (`overrideTrucks` definované — admin podmienky panel):*
 ```
 qtyPerTruck = qty / overrideTrucks
 cap         = mixCap   // vždy mixCap pre per-vozidlo výpočet
 fillupPerTruck:
-  qtyPerTruck < fillupMin          → fillupMin - qtyPerTruck
-  qtyPerTruck > cap && < 10        → 10 - qtyPerTruck
-  inak                             → 0
+  qtyPerTruck < fillupMin                       → fillupMin - qtyPerTruck
+  qtyPerTruck > cap && < 2 * fillupMin          → 2 * fillupMin - qtyPerTruck
+  inak                                          → 0
 fillupM3 = round(fillupPerTruck × overrideTrucks, 1)
 ```
 
@@ -118,7 +120,8 @@ fillupM3 = round(fillupPerTruck × overrideTrucks, 1)
 | 8 m³ | 1 | 8.0 | 0 (5≤8<9) ✓ |
 | 20 m³ | 5 | 4.0 | 5×(5-4)=**5 m³** ✓ |
 | 70 m³ | 8 | 8.75 | 0 (5≤8.75<9) ✓ |
-| 8 m³ | – | – | 10-8=**2 m³** (pumpa, 7<8<10) ✓ |
+| 8 m³ | – | – | 2×5-8=**2 m³** (pumpa, 7<8<10) ✓ |
+| 10 m³ | – | – | 2×7-10=**4 m³** (pumpa, fillupMin=7, 7<10<14) ✓ |
 
 **Min. doprava — fill-up sa neúčtuje:**
 ```
