@@ -1196,6 +1196,8 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
   const saveTs = (data: TransportSettings) => { setTs(data); adminData.saveTransportSettings(data); };
   const [mapModalOrder, setMapModalOrder] = useState<Order | null>(null);
   const plusCodeBackfilledRef = useRef<Set<string>>(new Set());
+  const [ordersPage, setOrdersPage] = useState(0);
+  const ORDERS_PAGE_SIZE = 30;
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -1354,6 +1356,9 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
   const activeFilters = [filterStatus !== "vsetky", filterTab !== "vsetky", filterPriceMode !== "vsetky", filterChannel !== "vsetky", !!search, !!(dateFrom || dateTo)].filter(Boolean).length;
   const sortedCount = sorted.length;
   const sortedCountLabel = sortedCount === 1 ? "objednávka" : sortedCount >= 2 && sortedCount <= 4 ? "objednávky" : "objednávok";
+  const totalPages = Math.ceil(sortedCount / ORDERS_PAGE_SIZE);
+  const pagedOrders = sorted.slice(ordersPage * ORDERS_PAGE_SIZE, (ordersPage + 1) * ORDERS_PAGE_SIZE);
+  useEffect(() => { setOrdersPage(0); }, [filterStatus, filterTab, filterPriceMode, filterChannel, search, dateFrom, dateTo]);
 
   return (
     <div className="space-y-3">
@@ -1595,13 +1600,13 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
       )}
       </div>
 
-      {sorted.length === 0 ? (
+      {sortedCount === 0 ? (
         <div className="bg-white border border-gray-200 px-8 py-12 text-center text-gray-400 text-sm">
           Žiadne objednávky
         </div>
       ) : (
         <div className="space-y-2">
-          {sorted.map(o => {
+          {pagedOrders.map(o => {
             const isExp = expanded === o.id;
             return (
               <div key={o.id} id={`order-card-${o.id}`} className={`border shadow-sm ${o.createdAt.slice(0,10) === todayStr ? "bg-gray-50 border-gray-300" : "bg-white border-gray-200"}`}>
@@ -1934,6 +1939,39 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* ── Pagination ── */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between bg-white border border-gray-200 px-4 py-2.5">
+          <span className="text-xs text-gray-400">
+            Strana {ordersPage + 1} z {totalPages} · {sortedCount} {sortedCountLabel}
+          </span>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setOrdersPage(0)} disabled={ordersPage === 0}
+              className="px-2 py-1 text-xs font-bold text-gray-500 hover:text-secondary disabled:opacity-30 disabled:cursor-not-allowed transition-colors">«</button>
+            <button onClick={() => setOrdersPage(p => Math.max(0, p - 1))} disabled={ordersPage === 0}
+              className="px-2 py-1 text-xs font-bold text-gray-500 hover:text-secondary disabled:opacity-30 disabled:cursor-not-allowed transition-colors">‹</button>
+            {Array.from({ length: totalPages }, (_, i) => i)
+              .filter(i => i === 0 || i === totalPages - 1 || Math.abs(i - ordersPage) <= 1)
+              .reduce<(number | "…")[]>((acc, i, idx, arr) => {
+                if (idx > 0 && (arr[idx - 1] as number) < i - 1) acc.push("…");
+                acc.push(i);
+                return acc;
+              }, [])
+              .map((item, idx) => item === "…"
+                ? <span key={`e${idx}`} className="px-1 text-xs text-gray-300">…</span>
+                : <button key={item} onClick={() => setOrdersPage(item as number)}
+                    className={`min-w-[28px] px-1.5 py-1 text-xs font-bold rounded transition-colors ${ordersPage === item ? "bg-secondary text-white" : "text-gray-500 hover:text-secondary"}`}>
+                    {(item as number) + 1}
+                  </button>
+              )}
+            <button onClick={() => setOrdersPage(p => Math.min(totalPages - 1, p + 1))} disabled={ordersPage === totalPages - 1}
+              className="px-2 py-1 text-xs font-bold text-gray-500 hover:text-secondary disabled:opacity-30 disabled:cursor-not-allowed transition-colors">›</button>
+            <button onClick={() => setOrdersPage(totalPages - 1)} disabled={ordersPage === totalPages - 1}
+              className="px-2 py-1 text-xs font-bold text-gray-500 hover:text-secondary disabled:opacity-30 disabled:cursor-not-allowed transition-colors">»</button>
+          </div>
         </div>
       )}
 
