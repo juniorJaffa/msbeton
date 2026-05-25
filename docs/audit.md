@@ -94,19 +94,21 @@
 
 *Sadzba: 50 €/h · 1 MD = 8h · Ceny bez DPH · Stav: 2026-05-25*
 
-| Komponent | Popis | MD | ~€ |
-|-----------|-------|----|----|
-| 🧮 **Kalkulačka betónu** | 3 módy dopravy (Pumpa / Mix / Vlastná), extra položky, addToMain logika, info karta, PODMIENKY vozidiel | 8 MD | 3 200 € |
-| 🗂️ **Admin dashboard** | Správa betónov, dopravy, služieb, klientov, objednávok — kompletné CRUD operácie, filtrovanie, vyhľadávanie | 6 MD | 2 400 € |
-| 🔐 **Autentifikácia + Bezpečnosť** | JWT server auth, klient login cez DB, WebAuthn biometria, rate limiting, HTTP security headers, Turnstile CAPTCHA | 4 MD | 1 600 € |
-| 📄 **PDF a SMS export** | Cenové rozpisy so zľavami a DPH, watermark, podpisový box, výstražné riadky pri pretažení | 2 MD | 800 € |
-| 📊 **Analytics a SEO reporting** | Google Analytics 4 tab, Google Search Console tab, interný štatistiky tab | 2 MD | 800 € |
-| 👤 **Manuálne ceny klientov** | Per-klient cenová mapa, zľavové tabuľky, PDF export cenníka, klient štatistiky | 2 MD | 800 € |
-| 🎨 **Design a UX** | Tailwind v4, betónová textúra, tmavý navy admin, responzívny dizajn, mobile optimalizácia | 2 MD | 800 € |
-| ⚖️ **GDPR a právne** | Cookie consent banner (GA4 Consent Mode v2), Ochrana osobných údajov, VOP | 1 MD | 400 € |
-| ⚡ **PWA a SEO technické** | Service Worker (offline stránka), per-route meta tagy + OG, sitemap.xml, self-hosted fonty | 1 MD | 400 € |
-| 🚀 **Deployment a DevOps** | PM2, GitHub Actions CI/CD, PostgreSQL, SMTP email, automatický DB backup | 1 MD | 400 € |
-| | **Celkom** | **29 MD / 230h** | **11 600 €** |
+| Komponent | Popis | h | MD | ~€ |
+|-----------|-------|---|----|----|
+| 🌐 **Celá web aplikácia** | Kompletný redesign msbeton.sk | **240h** | **30 MD** | **12 000 €** |
+| — | — | — | — | — |
+| 🧮 **Kalkulačka betónu** | 3 módy dopravy (Pumpa / Mix / Vlastná), extra položky, addToMain logika, info karta, PODMIENKY vozidiel | 72h | 9 MD | 3 600 € |
+| 🗂️ **Admin dashboard** | Správa betónov, dopravy, služieb, klientov, objednávok — kompletné CRUD operácie, filtrovanie, vyhľadávanie | 52h | 6.5 MD | 2 600 € |
+| 🔐 **Autentifikácia + Bezpečnosť** | JWT server auth, klient login cez DB, WebAuthn biometria, rate limiting, HTTP security headers, Turnstile CAPTCHA | 32h | 4 MD | 1 600 € |
+| 📄 **PDF a SMS export** | Cenové rozpisy so zľavami a DPH, watermark, podpisový box, výstražné riadky pri pretažení | 16h | 2 MD | 800 € |
+| 📊 **Analytics a SEO reporting** | Google Analytics 4 tab, Google Search Console tab, interný štatistiky tab | 16h | 2 MD | 800 € |
+| 👤 **Manuálne ceny klientov** | Per-klient cenová mapa, zľavové tabuľky, PDF export cenníka, klient štatistiky | 16h | 2 MD | 800 € |
+| 🎨 **Design a UX** | Tailwind v4, betónová textúra, tmavý navy admin, responzívny dizajn, mobile optimalizácia | 16h | 2 MD | 800 € |
+| ⚖️ **GDPR a právne** | Cookie consent banner (GA4 Consent Mode v2), Ochrana osobných údajov, VOP | 4h | 0.5 MD | 200 € |
+| ⚡ **PWA a SEO technické** | Service Worker (offline stránka), per-route meta tagy + OG, sitemap.xml, self-hosted fonty | 4h | 0.5 MD | 200 € |
+| 🚀 **Deployment a DevOps** | PM2, GitHub Actions CI/CD, PostgreSQL, SMTP email, automatický DB backup | 4h | 0.5 MD | 200 € |
+| 🖥️ **Hosting setup + Webglobe** | VPS konfigurácia, Webglobe SMTP nastavenie, DNS záznamy, SSL certifikát, doménový management | 8h | 1 MD | 400 € |
 
 > Nezahŕňa: projektové riadenie, UAT testovanie, migrácia z WordPress, Cloudflare setup (~+20–30%).
 > Zostatok (plánované položky #11, #16, #33, #34, #50, #53): ~9 MD / ~3 600 €
