@@ -2124,7 +2124,6 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
   useEffect(() => {
     const container = document.getElementById("admin-content");
     if (!container) return;
-    let floatTimer: ReturnType<typeof setTimeout> | null = null;
     const onScroll = () => {
       const sticky = document.getElementById("klienti-sticky");
       const tbBottom = sticky ? sticky.getBoundingClientRect().bottom : 82;
@@ -2137,14 +2136,10 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
           if (found) last = found;
         } else break;
       }
-      // 50ms debounce eliminates Safari elastic scroll micro-oscillations at boundary
-      if (floatTimer) clearTimeout(floatTimer);
-      floatTimer = setTimeout(() => {
-        setFloatingClient(prev => prev?.id === last?.id ? prev : last);
-      }, 50);
+      setFloatingClient(prev => prev?.id === last?.id ? prev : last);
     };
     container.addEventListener("scroll", onScroll, { passive: true });
-    return () => { container.removeEventListener("scroll", onScroll); if (floatTimer) clearTimeout(floatTimer); };
+    return () => { container.removeEventListener("scroll", onScroll); };
   }, []);
 
   return (
