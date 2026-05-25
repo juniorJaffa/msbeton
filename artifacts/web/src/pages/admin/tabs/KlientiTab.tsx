@@ -863,7 +863,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
           return (
             <div key={c.id} id={`client-card-${c.id}`} className={cn("border shadow-sm overflow-hidden", c.isOwner ? "bg-amber-50 border-primary/40" : "bg-white border-gray-200")}>
               {/* Card header */}
-              <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => { const next = isExpanded ? null : c.id; setExpanded(next); if (next) scrollToClientCard(next); }}>
+              <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => { const next = isExpanded ? null : c.id; setExpanded(next); if (next) scrollToClientCard(next, true); }}>
                 {/* Avatar + active dot */}
                 <div className="relative shrink-0">
                   <div className={cn("w-9 h-9 rounded-full flex items-center justify-center", c.isOwner ? "bg-primary/20" : "bg-secondary/10")}>
