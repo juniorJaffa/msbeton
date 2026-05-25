@@ -9,7 +9,14 @@ import { VersionBadge } from "@/components/VersionBadge";
 import { PhoneInput } from "@/components/PhoneInput";
 import { cn, formatPhone } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { isLoggedIn, logout, isBiometricAvailable, hasStoredCredential } from "@/lib/adminAuth";
+import { isLoggedIn, logout, isBiometricAvailable, hasStoredCredential, getAdminToken } from "@/lib/adminAuth";
+
+function authFetch(url: string, opts?: RequestInit): Promise<Response> {
+  const token = getAdminToken();
+  const headers: Record<string, string> = { "Content-Type": "application/json", ...(opts?.headers as Record<string, string> ?? {}) };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  return fetch(url, { ...opts, headers });
+}
 import { adminData, adminApi, syncFromServer, SYSTEM_OWNER_ID, ConcreteCategory, ConcreteType, DeliveryZone, Service, Client, TransportPricingZone, TransportSettings, Order } from "@/lib/adminData";
 
 type Tab = "betony" | "sluzby" | "doprava" | "klienti" | "objednavky" | "analytics" | "statistiky" | "gsc";
@@ -3526,7 +3533,7 @@ function RealtimeCard() {
 
   const load = useCallback(async () => {
     try {
-      const r = await fetch("/api/admin/analytics/realtime", { cache: "no-store" });
+      const r = await authFetch("/api/admin/analytics/realtime", { cache: "no-store" });
       if (!r.ok) throw new Error();
       setData(await r.json());
       setErrored(false);
@@ -3732,7 +3739,7 @@ function SearchConsoleTab() {
 
   useEffect(() => {
     setLoading(true); setErr(null);
-    fetch("/api/admin/analytics/gsc")
+    authFetch("/api/admin/analytics/gsc")
       .then(async r => { const j = await r.json(); if (!r.ok) throw new Error(j.error ?? `HTTP ${r.status}`); return j as GscData; })
       .then(d => { setData(d); setLoading(false); })
       .catch(e => { setErr(String(e instanceof Error ? e.message : e)); setLoading(false); });
@@ -3885,7 +3892,7 @@ function AnalyticsTab() {
 
   useEffect(() => {
     setLoading(true); setErr(null);
-    fetch("/api/admin/analytics")
+    authFetch("/api/admin/analytics")
       .then(async r => {
         const text = await r.text();
         let json: { error?: string } & Ga4Data;
