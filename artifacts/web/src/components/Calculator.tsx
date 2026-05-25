@@ -894,7 +894,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const effectiveMinFee = mpStd["min_fee"] !== undefined ? mpStd["min_fee"] : minimumFee;
 
     let fillupM3 = 0;
-    if (overrideTrucks && overrideTrucks > 1) {
+    if (overrideTrucks) {
       const qtyPerTruck = qty / overrideTrucks;
       const cap = mixCap; // podmienky: mix kapacita platí pre per-vozidlo fill-up (aj pumpa tab)
       let fillupPerTruck = 0;
