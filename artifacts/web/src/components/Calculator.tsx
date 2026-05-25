@@ -950,7 +950,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     }, 0);
     const totPodm = tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks;
     const effTrucksOverride = podmienkyEnabled && totPodm > 0 ? totPodm : undefined;
-    const mainTC = isOwn ? zeroTC : calcTransport(km, qty + addToMainQty, tab, clientDeliveryZone, effTrucksOverride);
+    const mainTC_raw = isOwn ? zeroTC : calcTransport(km, qty + addToMainQty, tab, clientDeliveryZone, effTrucksOverride);
+    // Podmienky: admin ručne riadi vozidlá — fillup potlač (flotila pokrýva objednané množstvo)
+    const mainTC = (podmienkyEnabled && !isOwn) ? { ...mainTC_raw, fillupM3: 0, fillupCost: 0 } : mainTC_raw;
     const mainTrucks = effTrucksOverride ?? (tab === "pumpa" ? calcPumpTrucks(qty + addToMainQty) : Math.ceil((qty + addToMainQty) / mixCap));
     concreteBreakdown.push({
       label: `Betón ${cleanType(selectedType.label)} – ${qty} m³`,
@@ -2379,7 +2381,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             const autoTrucksM = Math.max(1, Math.ceil(qty / mixCap) || 1);
             const maxPumpa = tsettings.condPumpaMax ?? 2;
             const minPumpa = tsettings.condPumpaMin ?? 1;
-            const adminMaxMix = tsettings.condMixMax ?? 2;
+            const adminMaxMix = isAdminMode
+              ? Math.max(tsettings.condMixMax ?? 2, Math.ceil(qty / mixCap) + 2)
+              : (tsettings.condMixMax ?? 2);
             const adminMinMix = tsettings.condMixMin ?? 0;
             const maxMixP = qty > 0 ? Math.min(adminMaxMix, Math.max(0, Math.floor(qty) - podmienkyPumpa)) : adminMaxMix;
             // allowExtraOverload: admin vždy; klient iba ak má explicitné povolenie
@@ -2395,11 +2399,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             // maxMixM rešpektuje vozový park (condMixMax) — rovnaké vozidlá ako doplnkový mix v pumpa tab
             const maxMixM = Math.min(adminMaxMix, qty > 0 ? Math.max(minMixStd, Math.floor(qty)) : minMixStd + 8);
             const totalP = podmienkyPumpa + podmienkyMixC;
-            const podmienkyFillupM3ui = result?.concreteBreakdown?.[0]?.transportFillupM3 ?? 0;
             const m3PerT = podmienkyEnabled && qty > 0
               ? tab === "pumpa"
-                ? (qty + podmienkyFillupM3ui) / Math.max(1, totalP)
-                : (qty + podmienkyFillupM3ui) / Math.max(1, podmienkyTrucks)
+                ? qty / Math.max(1, totalP)
+                : qty / Math.max(1, podmienkyTrucks)
               : 0;
             const riskBtnCls = "w-8 h-8 rounded border border-red-500/60 text-red-400 hover:border-red-400 hover:bg-red-500/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors";
             const normalBtnCls = "w-8 h-8 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors";
@@ -2502,8 +2505,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     <div className="flex items-center justify-between gap-2">
                       <div className="text-[10px] text-amber-200/80 font-mono">
                         {tab === "pumpa"
-                          ? `${podmienkyPumpa}× Pumpa${podmienkyMixC > 0 ? ` + ${podmienkyMixC}× Mix` : ""} · ∅ ${m3PerT > 0 ? m3PerT.toFixed(1) : "—"} m³/voz.${podmienkyFillupM3ui > 0 ? ` (+${podmienkyFillupM3ui} doť.)` : ""}`
-                          : `${podmienkyTrucks}× Mix · ∅ ${m3PerT > 0 ? m3PerT.toFixed(1) : "—"} m³/voz.${podmienkyFillupM3ui > 0 ? ` (+${podmienkyFillupM3ui} doť.)` : ""}`
+                          ? `${podmienkyPumpa}× Pumpa${podmienkyMixC > 0 ? ` + ${podmienkyMixC}× Mix` : ""} · ∅ ${m3PerT > 0 ? m3PerT.toFixed(1) : "—"} m³/voz.`
+                          : `${podmienkyTrucks}× Mix · ∅ ${m3PerT > 0 ? m3PerT.toFixed(1) : "—"} m³/voz.`
                         }
                       </div>
                       <button type="button" onClick={() => setPodmienkyInfoOpen(v => !v)}
@@ -2528,15 +2531,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                       <div className="text-[10px] text-amber-100/60 bg-amber-500/5 border border-amber-400/15 rounded px-2.5 py-2 space-y-1.5 leading-relaxed">
                         <p className="font-black text-amber-200/80 uppercase tracking-widest text-[9px]">Ako funguje pretaženie vozidiel</p>
                         <p>Podmienky umožňujú ručne navýšiť počet vozidiel nad bežný výpočet — napr. pri sťaženom teréne alebo zlom počasí.</p>
-                        <p>Keď je vozidiel viac ako štandardne, každé vezme <strong className="text-amber-200/80">menej m³</strong>. Ak je betónu na vozidlo menej ako minimálny prah, platí rovnaké pravidlo doťaženia ako vždy:</p>
-                        <ul className="space-y-0.5 pl-2">
-                          <li>· &lt; 5 m³/voz → doťaženie na <strong className="text-amber-200/80">5 m³/voz</strong></li>
-                          <li>· &gt; kapacita mixéra a &lt; 10 m³/voz → doťaženie na <strong className="text-amber-200/80">10 m³/voz</strong></li>
-                        </ul>
+                        <p>Keď je vozidiel viac ako štandardne, každé vezme <strong className="text-amber-200/80">menej m³</strong>. Keď je vozidiel menej ako štandardne (minusové pretaženie), každé vezme <strong className="text-amber-200/80">viac m³</strong>. Doťaženie sa pri podmienkovom nastavení <strong className="text-amber-200/80">neúčtuje</strong>.</p>
                         {m3PerT > 0 && qty > 0 && (
                           <p className="font-mono text-amber-200/70 border-t border-amber-400/15 pt-1.5">
-                            {qty.toFixed(1)} m³ ÷ {tab === "pumpa" ? totalP : podmienkyTrucks} voz = ∅ {(qty / (tab === "pumpa" ? totalP : podmienkyTrucks)).toFixed(2)} m³/voz
-                            {podmienkyFillupM3ui > 0 ? ` → doťaženie +${podmienkyFillupM3ui} m³ (do ${(qty + podmienkyFillupM3ui).toFixed(1)} m³)` : " → bez doťaženia"}
+                            {qty.toFixed(1)} m³ ÷ {tab === "pumpa" ? totalP : podmienkyTrucks} voz = ∅ {(qty / (tab === "pumpa" ? totalP : podmienkyTrucks)).toFixed(2)} m³/voz → bez doťaženia
                           </p>
                         )}
                       </div>
