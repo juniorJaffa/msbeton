@@ -2373,9 +2373,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             const minPumpa = tsettings.condPumpaMin ?? 1;
             const adminMaxMix = tsettings.condMixMax ?? 2;
             const adminMinMix = tsettings.condMixMin ?? 0;
+            // bez povolenia extraOverload → min Mix pre pumpa tab = štandardné minimum (autoMixP)
+            const minMixPumpa = allowExtraOverload ? adminMinMix : autoMixP;
             const maxMixP = qty > 0 ? Math.min(adminMaxMix, Math.max(0, Math.floor(qty) - podmienkyPumpa)) : adminMaxMix;
-            // allowExtraOverload: per-klient override, fallback na globálne nastavenie (default true)
-            const allowExtraOverload = loggedClient?.allowExtraOverload ?? tsettings.allowExtraOverload ?? true;
+            // allowExtraOverload: iba prihlásený klient s explicitným povolením — anonymous vždy false
+            const allowExtraOverload = loggedClient ? (loggedClient.allowExtraOverload ?? false) : false;
             // Risk zone: pod kapacitným minimom
             const isRiskMixP = podmienkyMixC < autoMixP; // pumpa tab: mix pod standardným minimom
             const isRiskTrucksM = podmienkyTrucks < autoTrucksM; // mix tab: pod kapacitným minimom
@@ -2458,7 +2460,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                             <circle cx="10" cy="38" r="4" strokeWidth="2"/><circle cx="52" cy="38" r="4" strokeWidth="2"/>
                           </svg>
                           <span className={`text-[10px] font-black uppercase tracking-widest flex-1 ${isRiskMixP ? "text-red-400/80" : "text-amber-300/80"}`}>Mix</span>
-                          <button type="button" onClick={() => setPodmienkyMixC(m => Math.max(adminMinMix, m - 1))} disabled={podmienkyMixC <= adminMinMix}
+                          <button type="button" onClick={() => setPodmienkyMixC(m => Math.max(minMixPumpa, m - 1))} disabled={podmienkyMixC <= minMixPumpa}
                             className={isRiskMixP ? riskBtnCls : normalBtnCls}>−</button>
                           <span className={`text-xl font-black w-7 text-center ${isRiskMixP ? "text-red-300" : "text-amber-200"}`}>{podmienkyMixC}</span>
                           <button type="button" onClick={() => setPodmienkyMixC(m => Math.min(maxMixP, m + 1))} disabled={podmienkyMixC >= maxMixP}

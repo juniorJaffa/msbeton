@@ -2107,11 +2107,12 @@ function DiscountGroupEditor({
   );
 }
 
-function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | null; onExpanded?: () => void }) {
+function KlientiTab({ expandClientId, onExpanded, onGoToOrders }: { expandClientId?: string | null; onExpanded?: () => void; onGoToOrders?: () => void }) {
   const [clients, setClients] = useState<Client[]>(adminData.getClients());
   const [zones] = useState(() => adminData.getDelivery());
   const [pZones] = useState(() => adminData.getTransportZones());
   const [ts, setTs] = useState<TransportSettings>(adminData.getTransportSettings());
+  const [allOrders, setAllOrders] = useState<Order[]>(() => adminData.getOrders());
   const saveTs = (data: TransportSettings) => { setTs(data); adminData.saveTransportSettings(data); };
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showPass, setShowPass] = useState<Set<string>>(new Set());
@@ -2161,6 +2162,13 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
     const handler = () => setTs(adminData.getTransportSettings());
     window.addEventListener("admin-data-synced", handler);
     return () => window.removeEventListener("admin-data-synced", handler);
+  }, []);
+
+  // Načítaj objednávky pre štatistiky klienta
+  useEffect(() => {
+    adminApi.getOrders().then(r => {
+      if (r?.data) { adminData.saveOrders(r.data as Order[]); setAllOrders(r.data as Order[]); }
+    }).catch(() => {});
   }, []);
 
   const scrollToClientCard = (id: string) => {
@@ -2956,6 +2964,70 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                           )
                         )}
                       </div>
+
+                      {/* Štatistiky klienta */}
+                      {(() => {
+                        const cOrders = allOrders
+                          .filter(o => o.clientId === c.id)
+                          .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+                        const totalM3 = cOrders.reduce((s, o) => s + o.quantity, 0);
+                        const totalEur = cOrders.reduce((s, o) => s + o.totalBezDph, 0);
+                        const last = cOrders[0];
+                        const now = new Date();
+                        const months = [2, 1, 0].map(i => {
+                          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+                          const cnt = cOrders.filter(o => o.createdAt.slice(0, 7) === key).length;
+                          return { key, cnt, label: d.toLocaleString("sk", { month: "short" }) };
+                        });
+                        const maxCnt = Math.max(1, ...months.map(m => m.cnt));
+                        return (
+                          <div className="border-t border-gray-100 pt-3 mt-2">
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Štatistiky</p>
+                            {cOrders.length === 0 ? (
+                              <p className="text-[10px] text-gray-400 text-center py-1">Žiadne objednávky</p>
+                            ) : (
+                              <>
+                                <div className="grid grid-cols-3 gap-1.5 mb-2">
+                                  {[
+                                    { v: String(cOrders.length), l: "Objednávky" },
+                                    { v: totalM3.toFixed(1) + " m³", l: "Celkom m³" },
+                                    { v: "€ " + Math.round(totalEur), l: "Bez DPH" },
+                                  ].map(({ v, l }) => (
+                                    <div key={l} className="bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-center">
+                                      <div className="text-sm font-black text-secondary">{v}</div>
+                                      <div className="text-[9px] text-gray-400 uppercase tracking-wide leading-tight">{l}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                                {last && (
+                                  <div className="flex items-center gap-2 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded mb-2">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="text-[9px] text-gray-400 uppercase tracking-wider">Posledná objednávka</div>
+                                      <div className="text-xs text-secondary font-medium truncate">
+                                        {new Date(last.createdAt).toLocaleDateString("sk")} · {last.concreteType} · {last.quantity} m³
+                                      </div>
+                                    </div>
+                                    {onGoToOrders && (
+                                      <button onClick={onGoToOrders} title="Objednávky" className="shrink-0 text-primary hover:text-secondary transition-colors cursor-pointer">
+                                        <ExternalLink className="w-4 h-4" />
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                                <div className="flex items-end gap-1.5 h-9 px-0.5">
+                                  {months.map(m => (
+                                    <div key={m.key} className="flex-1 flex flex-col items-center gap-0.5">
+                                      <div className="w-full rounded-sm" style={{ height: `${Math.max(3, (m.cnt / maxCnt) * 24)}px`, background: m.cnt > 0 ? "#001D3D99" : "#e5e7eb" }} />
+                                      <span className="text-[8px] text-gray-400 leading-none">{m.label}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
 
@@ -4770,7 +4842,7 @@ export default function AdminDashboard() {
           {tab === "betony" && <BetonTab key={syncKey} />}
           {tab === "sluzby" && <SluzbyTab key={syncKey} onGoToDoprava={() => { setTab("doprava"); window.location.hash = "doprava"; }} scrollToPumpa={sluzbyScrollPumpa} onScrollDone={() => setSluzbyScrollPumpa(false)} />}
           {tab === "doprava" && <DopravaTab key={syncKey} onGoToSluzby={() => { setTab("sluzby"); setSluzbyScrollPumpa(true); window.location.hash = "sluzby"; }} />}
-          {tab === "klienti" && <KlientiTab expandClientId={goToClientId} onExpanded={() => setGoToClientId(null)} />}
+          {tab === "klienti" && <KlientiTab expandClientId={goToClientId} onExpanded={() => setGoToClientId(null)} onGoToOrders={() => { setTab("objednavky"); window.location.hash = "objednavky"; }} />}
           {tab === "objednavky" && <ObjednavkyTab key={syncKey} onGoToClient={(loginId) => { setTab("klienti"); setGoToClientId(loginId); }} />}
           {tab === "analytics" && <AnalyticsTab />}
           {tab === "statistiky" && <StatistikyTab />}
