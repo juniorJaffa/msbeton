@@ -104,6 +104,11 @@ Riešenie: lightweight consent banner → GA4 len po súhlase (`gtag('consent', 
 | #1 | 2026-05-25 | Frontend — Admin login | Jednoduchý btoa formulár | WebAuthn biometria + math captcha + lockout |
 | #1 | 2026-05-25 | PDF — Minusové pretaženie | Čierny text (neviditeľný problém) | Červený riadok background:#fef2f2 |
 | #1 | 2026-05-25 | PDF — Duplicitné ikony | Dve AlertTriangle ikony vedľa seba | Jedna ikona (text má ⚠ prefix) |
+| #2 | 2026-05-25 | Bezpečnosť — Circular import | loginRateLimit v app.ts → 502 crash pri štarte API | Presunutý do lib/rateLimits.ts |
+| #2 | 2026-05-25 | Bezpečnosť — Rate limit IPv6 | keyGenerator bez ipKeyGenerator → ValidationError crash | ipKeyGenerator() helper |
+| #2 | 2026-05-25 | Analýzy — JWT auth | fetch bez Bearer tokenu → 401 na analytics/realtime/gsc | authFetch helper s getAdminToken() |
+| #2 | 2026-05-25 | Admin login localhost | ADMIN_PASSWORD env var chýbal → vždy 401 na dev | Dev fallback ?? "Msbeton2023" ak NODE_ENV!=production |
+| #2 | 2026-05-25 | Admin login lockout | 5 neúspešných pokusov → 5 min lockout v localStorage | Reset cez /admin/login?reset |
 
 ---
 
@@ -118,6 +123,7 @@ Riešenie: lightweight consent banner → GA4 len po súhlase (`gtag('consent', 
 | 5 | CORS whitelist | msbeton.sk, demo.msbeton.sk, www.msbeton.sk, localhost:5173 | ✅ Hotovo |
 | 6 | Turnstile CAPTCHA | Invisible Cloudflare Turnstile na objednávky (site key + secret key) | ✅ Hotovo |
 | 7 | Circular import fix | loginRateLimit presunutý do lib/rateLimits.ts (API 502 crash) | ✅ Hotovo |
+| 7b | Rate limit IPv6 | ipKeyGenerator helper — ValidationError crash fix | ✅ Hotovo |
 | 8 | GeoIP blokovanie SK/CZ | Cloudflare WAF firewall rule — čaká na migráciu domény msbeton.sk | ⏳ Čaká (po migrácii) |
 | 9 | Cloudflare proxy | DNS + WAF + Bot Fight Mode — čaká na migráciu | ⏳ Čaká (po migrácii) |
 
