@@ -4678,6 +4678,14 @@ export default function AdminDashboard() {
   }, [navigate]);
 
   useEffect(() => {
+    const meta = document.createElement("meta");
+    meta.name = "robots";
+    meta.content = "noindex,nofollow";
+    document.head.appendChild(meta);
+    return () => { document.head.removeChild(meta); };
+  }, []);
+
+  useEffect(() => {
     const el = document.querySelector<HTMLLinkElement>("link[rel='manifest']");
     const prev = el?.href ?? "";
     if (el) el.href = "/admin-manifest.json";
