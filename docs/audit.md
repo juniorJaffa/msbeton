@@ -76,6 +76,7 @@
 | 63 | 🚀 CI/CD | DB backup | Žiadny backup. `pg_dump` cron 3:17 AM, 30-dňová retencia. | ✅ |
 | 64 | 🚀 CI/CD | PM2 `--update-env` fix | `--update-env` nenačítal nové env z `ecosystem.config.cjs`. Deploy skript používa `pm2 delete + start`. | ✅ |
 | 65 | 🔐 Admin login | WebAuthn biometria | Jednoduchý btoa formulár. Pridaný WebAuthn (Touch ID / Face ID) + math captcha + lockout po 5 pokusoch. | ✅ |
+| 66 | ⚡ Výkon | Code splitting — Admin taby | AdminDashboard.tsx (~4500 riadkov) načíta všetkých 8 tabov naraz (~1MB bundle). Rozbiť na samostatné súbory + React.lazy(). Mobile FCP: 7.3s → ~4s, initial bundle -40%. | ❌ ~2-3h |
 
 ---
 
@@ -85,8 +86,8 @@
 |------|-------|
 | ✅ Hotovo | 54 |
 | ⏳ Čaká (externá podmienka) | 4 |
-| ❌ Plánované | 7 |
-| **Celkom** | **65** |
+| ❌ Plánované | 8 |
+| **Celkom** | **66** |
 
 ---
 
