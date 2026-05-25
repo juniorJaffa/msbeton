@@ -137,111 +137,100 @@ export default function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void
             <path strokeLinecap="round" strokeLinejoin="round" d="m19 9-7 7-7-7" />
           </svg>
         </button>
-        {podmienkyOpen && <div className="divide-y divide-gray-100">
-          {/* PUMPA tab — má Pumpa + Mix doplnkový */}
-          <div className="px-4 py-3 bg-blue-50/30">
-            <div className="flex items-center gap-1.5 mb-3">
-              <PumpTruckIcon />
-              <span className="text-[10px] text-blue-700 font-black uppercase tracking-wide">Pumpa tab</span>
-              <span className="text-[9px] text-blue-400 ml-1">— platí pri výbere Pumpa</span>
+        {podmienkyOpen && (
+          <div className="px-5 py-4 space-y-4">
+            {/* Tabuľka: PUMPA tab */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[10px] font-black uppercase tracking-widest text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">PUMPA TAB</span>
+                <span className="text-[10px] text-gray-400">pri výbere Pumpa</span>
+              </div>
+              <div className="grid grid-cols-2 border border-gray-200 rounded overflow-hidden text-sm">
+                <div className="px-4 py-3 border-r border-gray-200">
+                  <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wide mb-2">Pumpa vozidlá</div>
+                  <div className="flex items-end gap-3">
+                    <div>
+                      <div className="text-[9px] text-gray-400 mb-0.5">Min</div>
+                      <div className="font-bold text-secondary">1 <span className="text-gray-400 font-normal text-xs">voz.</span></div>
+                      <div className="text-[9px] text-gray-400">vždy 1</div>
+                    </div>
+                    <span className="text-gray-300 pb-4">—</span>
+                    <div>
+                      <div className="text-[9px] text-blue-500 font-bold mb-0.5">Max</div>
+                      <div className="flex items-baseline gap-1 font-bold text-secondary">
+                        <EditableField value={ts.condPumpaMax ?? 2} type="number" onSave={v => saveTs({ ...ts, condPumpaMax: Math.max(1, parseInt(v) || 2) })} />
+                        <span className="text-gray-400 font-normal text-xs">voz.</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="px-4 py-3">
+                  <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wide mb-2">Mix doplnkový <span className="text-[9px] text-amber-500 font-normal normal-case">(vrátane otočiek)</span></div>
+                  <div className="flex items-end gap-3">
+                    <div>
+                      <div className="text-[9px] text-gray-400 mb-0.5">Min</div>
+                      <div className="flex items-baseline gap-1 font-bold text-secondary">
+                        <EditableField value={ts.condMixMin ?? 0} type="number" onSave={v => saveTs({ ...ts, condMixMin: Math.max(0, parseInt(v) || 0) })} />
+                        <span className="text-gray-400 font-normal text-xs">voz.</span>
+                      </div>
+                    </div>
+                    <span className="text-gray-300 pb-4">—</span>
+                    <div>
+                      <div className="text-[9px] text-amber-500 font-bold mb-0.5">Max</div>
+                      <div className="flex items-baseline gap-1 font-bold text-secondary">
+                        <EditableField value={ts.condMixMax ?? 2} type="number" onSave={v => saveTs({ ...ts, condMixMax: Math.max(0, parseInt(v) || 2) })} />
+                        <span className="text-gray-400 font-normal text-xs">voz.</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="flex items-center gap-1 mb-1.5">
-                  <PumpTruckIcon />
-                  <span className="text-[9px] text-blue-600 font-bold uppercase tracking-wide">Pumpa vozidiel</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="text-center">
-                    <div className="text-[8px] text-blue-400 font-bold uppercase mb-0.5">Min</div>
-                    <div className="flex items-baseline gap-0.5 font-bold text-secondary text-sm">
-                      <span className="text-secondary font-bold">1</span>
-                      <span className="text-gray-400 text-xs">voz.</span>
-                    </div>
-                    <div className="text-[8px] text-gray-400 mt-0.5">vždy 1</div>
-                  </div>
-                  <span className="text-gray-300 font-black text-sm">—</span>
-                  <div className="text-center">
-                    <div className="text-[8px] text-blue-400 font-bold uppercase mb-0.5">Max</div>
-                    <div className="flex items-baseline gap-0.5 font-bold text-secondary text-sm">
-                      <EditableField value={ts.condPumpaMax ?? 2} type="number" onSave={v => saveTs({ ...ts, condPumpaMax: Math.max(1, parseInt(v) || 2) })} />
-                      <span className="text-gray-400 text-xs">voz.</span>
-                    </div>
-                  </div>
-                </div>
+
+            {/* MIX tab */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[10px] font-black uppercase tracking-widest text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">MIX TAB</span>
+                <span className="text-[10px] text-gray-400">pri výbere Domiešavač</span>
               </div>
-              <div className="border-l border-blue-100 pl-4">
-                <div className="flex items-center gap-1 mb-1.5">
-                  <MixTruckIcon />
-                  <span className="text-[9px] text-blue-600 font-bold uppercase tracking-wide">Mix doplnkový</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="text-center">
-                    <div className="text-[8px] text-blue-400 font-bold uppercase mb-0.5">Min</div>
-                    <div className="flex items-baseline gap-0.5 font-bold text-secondary text-sm">
-                      <EditableField value={ts.condMixMin ?? 0} type="number" onSave={v => saveTs({ ...ts, condMixMin: Math.max(0, parseInt(v) || 0) })} />
-                      <span className="text-gray-400 text-xs">voz.</span>
-                    </div>
+              <div className="border border-gray-200 rounded px-4 py-3 text-sm">
+                <div className="flex items-end gap-3">
+                  <div>
+                    <div className="text-[9px] text-gray-400 mb-0.5">Min</div>
+                    <div className="font-bold text-secondary">1 <span className="text-gray-400 font-normal text-xs">voz.</span></div>
+                    <div className="text-[9px] text-gray-400">auto ⌈m³÷kap.⌉</div>
                   </div>
-                  <span className="text-gray-300 font-black text-sm">—</span>
-                  <div className="text-center">
-                    <div className="text-[8px] text-blue-400 font-bold uppercase mb-0.5">Max</div>
-                    <div className="flex items-baseline gap-0.5 font-bold text-secondary text-sm">
-                      <EditableField value={ts.condMixMax ?? 2} type="number" onSave={v => saveTs({ ...ts, condMixMax: Math.max(0, parseInt(v) || 2) })} />
-                      <span className="text-gray-400 text-xs">voz.</span>
+                  <span className="text-gray-300 pb-4">—</span>
+                  <div>
+                    <div className="text-[9px] text-amber-500 font-bold mb-0.5">Max</div>
+                    <div className="flex items-baseline gap-1 font-bold text-secondary">
+                      <EditableField value={ts.condMixMax ?? 2} type="number" onSave={v => saveTs({ ...ts, condMixMax: Math.max(1, parseInt(v) || 2) })} />
+                      <span className="text-gray-400 font-normal text-xs">voz.</span>
                     </div>
                   </div>
                 </div>
+                <p className="text-[10px] text-gray-400 mt-2">Max zdieľaný s Mix doplnkovým v Pumpa tab</p>
               </div>
+            </div>
+
+            {/* Minusové pretaženie */}
+            <div className="flex items-start gap-3 pt-1 border-t border-gray-100">
+              <input type="checkbox" id="allowExtraOverload"
+                checked={ts.allowExtraOverload ?? true}
+                onChange={e => saveTs({ ...ts, allowExtraOverload: e.target.checked })}
+                className="accent-red-500 w-4 h-4 shrink-0 mt-0.5" />
+              <label htmlFor="allowExtraOverload" className="cursor-pointer select-none">
+                <div className="text-sm font-semibold text-gray-700">Minusové pretaženie</div>
+                <div className="text-[11px] text-gray-400 mt-0.5 space-y-0.5">
+                  <p>Povolí znížiť počet vozidiel <strong>pod štandardný min. limit</strong>.</p>
+                  <p>· Pumpa: napr. 7,5 m³ na 1× Pumpu bez Mixu</p>
+                  <p>· Mix: napr. 9,5 m³ na 1× Mix (kapacita 9 m³)</p>
+                  <p>Varovanie ⚠ sa zobrazí v kalkulačke, PDF aj objednávke.</p>
+                </div>
+              </label>
             </div>
           </div>
-          {/* MIX tab — Mix vozidlá (rovnaký vozový park ako doplnkový mix v pumpe) */}
-          <div className="px-4 py-3 bg-amber-50/30">
-            <div className="flex items-center gap-1.5 mb-3">
-              <MixTruckIcon />
-              <span className="text-[10px] text-amber-700 font-black uppercase tracking-wide">Mix tab</span>
-              <span className="text-[9px] text-amber-400 ml-1">— platí pri výbere Domiešavač</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="text-center">
-                <div className="text-[8px] text-amber-500 font-bold uppercase mb-0.5">Min</div>
-                <div className="flex items-baseline gap-0.5 font-bold text-secondary text-sm">
-                  <span className="text-secondary font-bold">1</span>
-                  <span className="text-gray-400 text-xs">voz.</span>
-                </div>
-                <div className="text-[8px] text-gray-400 mt-0.5">auto ⌈m³÷kap.⌉</div>
-              </div>
-              <span className="text-gray-300 font-black text-sm">—</span>
-              <div className="text-center">
-                <div className="text-[8px] text-amber-500 font-bold uppercase mb-0.5">Max</div>
-                <div className="flex items-baseline gap-0.5 font-bold text-secondary text-sm">
-                  <EditableField value={ts.condMixMax ?? 2} type="number" onSave={v => saveTs({ ...ts, condMixMax: Math.max(1, parseInt(v) || 2) })} />
-                  <span className="text-gray-400 text-xs">voz.</span>
-                </div>
-              </div>
-            </div>
-            <p className="text-[10px] text-gray-400 mt-1.5">Rovnaký vozový park ako Mix doplnkový v Pumpa tab</p>
-          </div>
-          {/* Minusové pretaženie — globálny prepínač */}
-          <div className="px-4 py-3 flex items-start gap-3">
-            <input
-              type="checkbox"
-              id="allowExtraOverload"
-              checked={ts.allowExtraOverload ?? true}
-              onChange={e => saveTs({ ...ts, allowExtraOverload: e.target.checked })}
-              className="accent-red-500 w-4 h-4 shrink-0 mt-0.5"
-            />
-            <label htmlFor="allowExtraOverload" className="cursor-pointer select-none">
-              <div className="text-sm font-semibold text-gray-700">Minusové pretaženie</div>
-              <div className="text-[11px] text-gray-400 mt-0.5 space-y-0.5">
-                <p>Povolí znížiť počet vozidiel <strong>pod štandardný min. limit</strong>.</p>
-                <p>· Pumpa: napr. 7,5 m³ na 1× Pumpu bez Mixu</p>
-                <p>· Mix: napr. 9,5 m³ na 1× Mix (kapacita 9 m³)</p>
-                <p>Varovanie ⚠ sa zobrazí v kalkulačke, PDF aj objednávke.</p>
-              </div>
-            </label>
-          </div>
-        </div>}
+        )}
       </div>
 
       <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
