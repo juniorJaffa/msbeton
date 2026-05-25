@@ -517,12 +517,12 @@ export default function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void
                             <div className="grid sm:grid-cols-2 gap-2 text-xs text-gray-600">
                               <div className="bg-gray-50 border border-gray-100 rounded p-2.5 space-y-1">
                                 <div className="font-black text-secondary text-[10px] uppercase">🚛 Pumpa</div>
-                                <div>množstvo &lt; 5 m³ → doťaž na 5 m³</div>
+                                <div>množstvo &lt; {ts.minimumLoadM3 ?? 5} m³ → doťaž na {ts.minimumLoadM3 ?? 5} m³</div>
                                 <div>{pumpCap} m³ &lt; mn. &lt; 10 m³ → doťaž na 10 m³</div>
                               </div>
                               <div className="bg-gray-50 border border-gray-100 rounded p-2.5 space-y-1">
                                 <div className="font-black text-secondary text-[10px] uppercase">🔄 Mixér</div>
-                                <div>množstvo &lt; 5 m³ → doťaž na 5 m³</div>
+                                <div>množstvo &lt; {ts.minimumLoadM3 ?? 5} m³ → doťaž na {ts.minimumLoadM3 ?? 5} m³</div>
                                 <div>{mixCap} m³ &lt; mn. &lt; 10 m³ → doťaž na 10 m³</div>
                               </div>
                             </div>
