@@ -1929,7 +1929,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                 </div>
                 <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-secondary text-xs font-black rounded-lg hover:bg-primary/80 transition-colors shrink-0">
-                  <Navigation className="w-3.5 h-3.5" /> Otvoriť
+                  <Navigation className="w-3.5 h-3.5" /> Navigovať
                 </a>
                 <button onClick={() => setMapModalOrder(null)} className="text-white/40 hover:text-white transition-colors ml-1">
                   <X className="w-5 h-5" />
