@@ -5,6 +5,79 @@
 
 ---
 
+## Originálny audit — nájdené nedostatky (pred akýmikoľvek fixmi)
+
+> Toto bol výsledok kompletnej analýzy projektu pri prvom audite (2026-05-25).
+> Prioritizované podľa závažnosti — slúži ako referencia čo existovalo pred fixmi.
+
+### 🔴 BEZPEČNOSŤ (kritické)
+
+| # | Problém | Prečo riešiť | Riešenie |
+|---|---------|--------------|----------|
+| 1 | **Admin heslo v JS bundle** — `btoa("Msbeton2023")` v `adminAuth.ts` viditeľné každému v DevTools | Ktokoľvek otvorí Sources tab → vidí heslo | Presunúť admin auth na server (`POST /api/admin/login` + JWT) |
+| 2 | **Žiadny rate limit na API** — `/api/client/login` bez obmedzenia | Brute force 1000 hesiel/sek | `express-rate-limit` — max 10 req/min per IP na login endpoint |
+| 3 | **Žiadne security headers** — bez `helmet.js` | XSS, clickjacking, MIME sniffing | `app.use(helmet())` — 1 riadok, pokryje CSP, X-Frame-Options, HSTS |
+| 4 | **Žiadny Cloudflare** | DDoS, boty, scraperi | Cloudflare free plan — DNS → proxy. Bot Fight Mode zapnutý zadarmo |
+| 5 | **Žiadna CAPTCHA na objednávkach** | Spam objednávky, email flooding | Cloudflare Turnstile (zadarmo, privacy-friendly, lepší ako reCAPTCHA) |
+| 6 | **Session v localStorage** (admin + klient) | XSS útok môže ukradnúť session | HttpOnly cookie pre session token (po presune na server auth) |
+
+### 🟡 GDPR / PRÁVNE (pre SK trh povinné)
+
+| # | Problém | Prečo riešiť |
+|---|---------|--------------|
+| 7 | **GA4 bez cookie consent bannera** | GDPR vyžaduje súhlas pred spustením analytiky — pokuta od ÚOOÚ |
+| 8 | **Žiadna stránka Ochrana osobných údajov** | Povinná pre každý web zbierajúci dáta (GA4, objednávky) |
+| 9 | **Žiadne VOP** | Záväzná objednávka bez VOP = právna šedá zóna |
+
+Riešenie: lightweight consent banner → GA4 len po súhlase (`gtag('consent', 'update', ...)`). Pre SK trh stačí jednoduchý modal pri prvej návšteve.
+
+### 🟡 SEO
+
+| # | Problém | Prečo riešiť | Riešenie |
+|---|---------|--------------|----------|
+| 10 | **SPA — jedna meta description** | Google vidí rovnaký popis pre všetky stránky (/, /cennik, /vozovy-park) | `react-helmet-async` — per-route title + description |
+| 11 | **Sitemap — len 3 URL** | Google neindexuje `/kontakt` ak existuje | Doplniť všetky verejné routes |
+| 12 | **robots.txt Allow: / na demo** | noindex v HTML ho prekoná, ale lepší je `Disallow: /` pokiaľ je demo | Zmeniť na `Disallow: /` kým je demo — odstrániť po migrácii na prod |
+| 13 | **Canonical URL chýba** | Demo URL môže konkurovať prod URL po migrácii | `<link rel="canonical" href="https://msbeton.sk/...">` |
+| 14 | **Core Web Vitals — Google Maps script vždy načítaný** | Spomaľuje LCP na stránkach bez mapy | Lazy-load Maps API len na `/cennik` kde je kalkulačka |
+
+### 🟡 UI/UX
+
+| # | Problém | Prečo riešiť | Riešenie |
+|---|---------|--------------|----------|
+| 15 | **Admin nav 8 tabov** — na 1280px monitor preplnené | Príliš dlhé, horšia orientácia | Zoskupiť ŠTATISTIKY + ANALÝZY + SEO pod jeden "Analýzy" tab s vlastným subtab menu |
+| 16 | **Kalkulačka — žiadne zdieľanie výsledku** | Klient chce poslať link s výsledkom obchodníkovi | "Kopírovať link" tlačidlo ktoré zakóduje parametre do URL |
+| 17 | **Objednávky — žiadna stránkovanie/virtualizácia** | Po 200+ objednávkach DOM bude pomalý | Virtualizácia zoznamu alebo server-side pagination |
+| 18 | **Kalkulačka — žiadny "Uložiť kalkuláciu"** | Klient musí zadávať znova pri ďalšej návšteve | localStorage uloženie poslednej kalkulácie |
+| 19 | **Admin — žiadny CSV export objednávok** | Vedenie chce tabuľku na mesačné reporty | Export button → `orders.csv` |
+| 20 | **Žiadna offline stránka** (PWA manifest existuje) | Keď server padne, biela stránka | Service worker + offline fallback stránka |
+
+### 🟢 VÝKON
+
+| # | Problém | Riešenie |
+|---|---------|----------|
+| 21 | Google Fonts načítava z CDN (latencia) | Self-host Montserrat (woff2) v `/public/fonts/` |
+| 22 | Google Maps API vždy načítaný | Lazy import len keď klik na "Mapa" v kalkulačke |
+| 23 | Žiadny CDN pre statické assets | Cloudflare (bod 4) rieši aj toto zadarmo |
+
+### 🔵 CI/CD + DevOps
+
+| # | Problém | Riešenie |
+|---|---------|----------|
+| 24 | Žiadne automatické testy | Aspoň smoke test — `curl demo.msbeton.sk/api/healthz` v GitHub Action po deployi |
+| 25 | DB backup žiadny viditeľný | `pg_dump` cron na serveri → uložiť na B2/S3 |
+| 26 | PM2 `--update-env` nefunguje (zdokumentované) | Vyriešiť raz natrvalo — `pm2 delete + start` v deploy scripte |
+
+### Prioritné poradie (pôvodné odporúčanie)
+
+1. **Cloudflare (bod 4)** — 30 min, zadarmo, rieši DDoS + CDN + bot filter
+2. **Cookie consent + GDPR (bod 7–9)** — právna povinnosť
+3. **Admin server-side auth (bod 1)** — kritická bezpečnostná diera
+4. **Rate limit (bod 2) + Helmet (bod 3)** — 2 riadky kódu
+5. **Turnstile CAPTCHA na objednávky (bod 5)**
+
+---
+
 ## Changelog — čo sa zmenilo (pred → po)
 
 | Iterácia | Dátum | Sekcia | Pred | Po |
