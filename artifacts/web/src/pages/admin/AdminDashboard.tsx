@@ -365,6 +365,22 @@ function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void }) {
               </div>
             </div>
           </div>
+          {/* Extra pretaženie — globálny prepínač */}
+          <div className="col-span-2 px-4 py-3 border-t border-gray-100 flex items-start gap-3">
+            <input
+              type="checkbox"
+              id="allowExtraOverload"
+              checked={ts.allowExtraOverload ?? true}
+              onChange={e => saveTs({ ...ts, allowExtraOverload: e.target.checked })}
+              className="accent-red-500 w-4 h-4 shrink-0 mt-0.5"
+            />
+            <label htmlFor="allowExtraOverload" className="cursor-pointer select-none">
+              <div className="text-sm font-semibold text-gray-700">Rizikové pretaženie (Extra podmienky)</div>
+              <div className="text-[11px] text-gray-400 mt-0.5">
+                Admin môže znížiť počet vozidiel <strong>pod kapacitný minimum</strong> — napr. 7,5 m³ na 1× Pumpa bez Mixu, alebo 9,5 m³ na 1× Mix. Vozidlo ide do rizika. Upozornenie sa zobrazí v kalkulačke, PDF aj objednávke.
+              </div>
+            </label>
+          </div>
         </div>}
       </div>
 
@@ -1560,7 +1576,7 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                       {o.viaSms
                         ? <span className="inline-flex items-center gap-0.5 bg-green-100 text-green-700 text-[9px] font-black px-1.5 py-0.5 rounded-sm"><MessageSquare className="w-2.5 h-2.5" /> SMS</span>
                         : <span className="inline-flex items-center bg-secondary/10 text-secondary px-1.5 py-0.5 rounded-sm"><ShoppingCart className="w-3 h-3" /></span>}
-                      {o.podmienky ? <span className="inline-flex items-center gap-0.5 bg-amber-100 text-amber-800 text-[9px] font-black px-1.5 py-0.5 rounded-sm">★ {o.podmienky.pumpa > 0 ? `1×P+${o.podmienky.mix}×M` : `${o.podmienky.trucks}×Mix`}</span> : null}
+                      {o.podmienky ? <span className={`inline-flex items-center gap-0.5 text-[9px] font-black px-1.5 py-0.5 rounded-sm ${o.podmienky.isRisk ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-800"}`}>{o.podmienky.isRisk ? "⚠" : "★"} {o.podmienky.pumpa > 0 ? `1×P+${o.podmienky.mix}×M` : `${o.podmienky.trucks}×Mix`}</span> : null}
                       {(o.discountBeton || o.discountDoprava || o.discountSluzby || o.discountCelkovo) ? (
                         o.discountCelkovo ? (
                           <span className="bg-primary text-secondary text-[9px] font-black px-1.5 py-0.5 rounded-sm">−{o.discountCelkovo}%</span>
@@ -1989,7 +2005,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
     discountBeton: "20", discountDoprava: "0", discountSluzby: "0", discountCelkovo: "0",
     hotovostDph: "20",
     canHotovost: true, canPridatBeton: true, canZimneOpatrenia: false, active: true,
-    smsOrderDisabled: false, smsShareOnly: false,
+    smsOrderDisabled: false, smsShareOnly: false, allowExtraOverload: true,
     deliveryZoneId: zones.find(z => (z.pricingType ?? "standard") === "standard")?.id ?? zones[0]?.id ?? "",
     sharedLink: "",
   };
@@ -2086,6 +2102,7 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
       canZimneOpatrenia: form.canZimneOpatrenia,
       smsOrderDisabled: form.smsOrderDisabled || undefined,
       smsShareOnly: form.smsShareOnly || undefined,
+      allowExtraOverload: form.allowExtraOverload ? undefined : false,
       active: form.active,
       deliveryZoneId: form.deliveryZoneId || undefined,
       sharedLink: form.sharedLink.trim() || undefined,
@@ -2391,6 +2408,13 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                   <div className="flex-1 min-w-0">
                     <span className="text-sm text-gray-700">SMS — zobraziť share menu</span>
                     <div className="text-[11px] text-gray-400">Namiesto auto-otvorenia SMS aplikácie · zdieľacie okno</div>
+                  </div>
+                </label>
+                <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
+                  <input type="checkbox" checked={form.allowExtraOverload} onChange={e => setForm({ ...form, allowExtraOverload: e.target.checked })} className="accent-red-500 w-5 h-5 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm text-gray-700">Rizikové pretaženie (Extra podmienky)</span>
+                    <div className="text-[11px] text-gray-400">Admin môže ísť pod kapacitný min vozidiel pre tohto klienta</div>
                   </div>
                 </label>
                 <div className="px-3 py-3">
@@ -2836,6 +2860,13 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                             <div className="flex-1 min-w-0">
                               <span className="text-sm text-gray-700">SMS — zobraziť share menu</span>
                               <div className="text-[11px] text-gray-400">Namiesto auto-otvorenia SMS aplikácie · zdieľacie okno</div>
+                            </div>
+                          </label>
+                          <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50 select-none">
+                            <input type="checkbox" checked={c.allowExtraOverload ?? true} onChange={e => update(c.id, { allowExtraOverload: e.target.checked })} className="accent-red-500 w-4 h-4 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <span className="text-sm text-gray-700">Rizikové pretaženie (Extra podmienky)</span>
+                              <div className="text-[11px] text-gray-400">Admin môže ísť pod kapacitný min vozidiel pre tohto klienta</div>
                             </div>
                           </label>
                           <div className="px-3 py-2.5">

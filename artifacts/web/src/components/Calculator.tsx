@@ -691,6 +691,19 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const pumpCap = clientDeliveryZone?.pumpTruckCapacity ?? PUMP_TRUCK_CAPACITY;
   const mixCap  = clientDeliveryZone?.truckCapacity ?? MIX_TRUCK_CAPACITY;
 
+  // Instant recount podmienky stepperov pri zmene množstva
+  useEffect(() => {
+    if (!podmienkyEnabled) return;
+    const q = parseFloat(quantity) || 0;
+    // inline calcPumpTrucks(q, pumpCap, mixCap)
+    let autoMixP = 0;
+    if (q > 0) { let r = q - pumpCap; let t = 1; while (r > 0) { r -= mixCap; t++; } autoMixP = Math.max(0, t - 1); }
+    const autoTrucksM = q > 0 ? Math.max(1, Math.ceil(q / mixCap)) : 1;
+    setPodmienkyPumpa(1);
+    setPodmienkyMixC(autoMixP);
+    setPodmienkyTrucks(autoTrucksM);
+  }, [quantity, pumpCap, mixCap]); // podmienkyEnabled intentionally excluded — recount iba pri zmene qty/kapacity
+
   // DPH sadzby
   const VAT           = tsettings.dph ?? DEFAULT_VAT;
   const VAT_HOTOVOST  = loggedClient?.hotovostDph ?? DEFAULT_VAT_HOTOVOST;
@@ -1224,8 +1237,14 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const podmienkyVehicleStr = tab === "pumpa"
       ? `${podmienkyPumpa}× Pumpa${podmienkyMixC > 0 ? ` + ${podmienkyMixC}× Mix` : ""}`
       : `${podmienkyTrucks}× Mix`;
+    const isRiskZonePdf = podmienkyEnabled && (
+      tab === "pumpa" ? podmienkyMixC < Math.max(0, (calcPumpTrucks(result.qty) || 1) - 1)
+                      : podmienkyTrucks < Math.max(1, Math.ceil(result.qty / mixCap))
+    );
     const podmienkyNoteRow = podmienkyEnabled
-      ? `<tr><td colspan="5" style="background:#fffbeb;color:#92400e;font-size:7pt;padding:4px 8px 4px 12px;border-top:1px solid #fde68a">★ Pretaženie: ${podmienkyVehicleStr} · ∅ ${podmienkyM3PerTruck} m³/vozidlo — terén / počasie</td></tr>`
+      ? isRiskZonePdf
+        ? `<tr><td colspan="5" style="background:#fef2f2;color:#991b1b;font-size:7pt;padding:4px 8px 4px 12px;border-top:1px solid #fca5a5">⚠ RIZIKOVÉ PRETAŽENIE — vlastné riziko: ${podmienkyVehicleStr} · ∅ ${podmienkyM3PerTruck} m³/vozidlo — schválené vodicom</td></tr>`
+        : `<tr><td colspan="5" style="background:#fffbeb;color:#92400e;font-size:7pt;padding:4px 8px 4px 12px;border-top:1px solid #fde68a">★ Pretaženie: ${podmienkyVehicleStr} · ∅ ${podmienkyM3PerTruck} m³/vozidlo — terén / počasie</td></tr>`
       : "";
     const mainTransportOrig = mainCI?.transport ?? 0;
     const mainTransportDisc = mainTransportOrig * result.fTransport;
@@ -1649,7 +1668,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         breakdown: buildBreakdown(),
         viaSms: true,
         ...(tab === "pumpa" && pumpMode === "timer" && pumpStartTime && pumpStopTime ? { pumpTimer: { start: pumpStartTime, stop: pumpStopTime } } : tab === "pumpa" && pumpMode === "edit" && editStartTime && editStopTime ? { pumpTimer: { start: editStartTime, stop: editStopTime } } : {}),
-        ...(podmienkyEnabled ? { podmienky: { trucks: tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks, pumpa: tab === "pumpa" ? podmienkyPumpa : 0, mix: tab === "pumpa" ? podmienkyMixC : podmienkyTrucks, m3PerTruck: (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks) > 0 ? Math.round(((result!.qty + (result!.concreteBreakdown[0]?.transportFillupM3 ?? 0)) / (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks)) * 10) / 10 : 0 } } : {}),
+        ...(podmienkyEnabled ? { podmienky: { trucks: tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks, pumpa: tab === "pumpa" ? podmienkyPumpa : 0, mix: tab === "pumpa" ? podmienkyMixC : podmienkyTrucks, m3PerTruck: (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks) > 0 ? Math.round(((result!.qty + (result!.concreteBreakdown[0]?.transportFillupM3 ?? 0)) / (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks)) * 10) / 10 : 0, isRisk: tab === "pumpa" ? podmienkyMixC < Math.max(0, (calcPumpTrucks(result!.qty) || 1) - 1) : podmienkyTrucks < Math.max(1, Math.ceil(result!.qty / mixCap)) } } : {}),
       }).then(() => {
         setSmsOrderCreated(true);
         setTimeout(() => setSmsOrderCreated(false), 5000);
@@ -2303,8 +2322,15 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             const adminMaxMix = tsettings.condMixMax ?? 2;
             const adminMinMix = tsettings.condMixMin ?? 0;
             const maxMixP = qty > 0 ? Math.min(adminMaxMix, Math.max(0, Math.floor(qty) - podmienkyPumpa)) : adminMaxMix;
-            const minMixM = Math.max(1, autoTrucksM);
-            const maxMixM = qty > 0 ? Math.max(minMixM, Math.floor(qty)) : minMixM + 8;
+            // allowExtraOverload: per-klient override, fallback na globálne nastavenie (default true)
+            const allowExtraOverload = loggedClient?.allowExtraOverload ?? tsettings.allowExtraOverload ?? true;
+            // Risk zone: pod kapacitným minimom
+            const isRiskMixP = podmienkyMixC < autoMixP; // pumpa tab: mix pod standardným minimom
+            const isRiskTrucksM = podmienkyTrucks < autoTrucksM; // mix tab: pod kapacitným minimom
+            // MIX tab — spodný limit: štandardný min (autoTrucksM) alebo 1 ak extraOverload povolený
+            const minMixStd = Math.max(1, autoTrucksM);
+            const minMixM = allowExtraOverload ? 1 : minMixStd;
+            const maxMixM = qty > 0 ? Math.max(minMixStd, Math.floor(qty)) : minMixStd + 8;
             const totalP = podmienkyPumpa + podmienkyMixC;
             const podmienkyFillupM3ui = result?.concreteBreakdown?.[0]?.transportFillupM3 ?? 0;
             const m3PerT = podmienkyEnabled && qty > 0
@@ -2312,6 +2338,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 ? (qty + podmienkyFillupM3ui) / Math.max(1, totalP)
                 : (qty + podmienkyFillupM3ui) / Math.max(1, podmienkyTrucks)
               : 0;
+            const riskBtnCls = "w-8 h-8 rounded border border-red-500/60 text-red-400 hover:border-red-400 hover:bg-red-500/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors";
+            const normalBtnCls = "w-8 h-8 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors";
             return (
               <div>
                 <label className="block text-sm font-semibold text-white/80 mb-2">Množstvo betónu (m³)</label>
@@ -2363,41 +2391,42 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                           </svg>
                           <span className="text-[10px] font-black text-amber-300/80 uppercase tracking-widest flex-1">Pumpa</span>
                           <button type="button" onClick={() => setPodmienkyPumpa(p => Math.max(minPumpa, p - 1))} disabled={podmienkyPumpa <= minPumpa}
-                            className="w-8 h-8 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">−</button>
+                            className={normalBtnCls}>−</button>
                           <span className="text-xl font-black text-amber-200 w-7 text-center">{podmienkyPumpa}</span>
                           <button type="button" onClick={() => setPodmienkyPumpa(p => Math.min(maxPumpa, p + 1))} disabled={podmienkyPumpa >= maxPumpa}
-                            className="w-8 h-8 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">+</button>
+                            className={normalBtnCls}>+</button>
                         </div>
-                        {/* MIX stepper */}
-                        <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-400/25 rounded px-3 py-2">
-                          <svg viewBox="0 0 80 44" className="w-9 h-[15px] text-amber-300/60 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        {/* MIX stepper — červený v rizikovej zóne */}
+                        <div className={`flex items-center gap-2 rounded px-3 py-2 border transition-colors ${isRiskMixP ? "bg-red-500/10 border-red-500/30" : "bg-amber-500/10 border-amber-400/25"}`}>
+                          <svg viewBox="0 0 80 44" className={`w-9 h-[15px] shrink-0 ${isRiskMixP ? "text-red-400/60" : "text-amber-300/60"}`} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                             <rect x="2" y="22" width="18" height="16" rx="1"/>
                             <line x1="20" y1="30" x2="62" y2="30"/><line x1="20" y1="38" x2="62" y2="38"/><line x1="62" y1="30" x2="62" y2="38"/>
                             <ellipse cx="44" cy="22" rx="18" ry="12"/>
                             <circle cx="10" cy="38" r="4" strokeWidth="2"/><circle cx="52" cy="38" r="4" strokeWidth="2"/>
                           </svg>
-                          <span className="text-[10px] font-black text-amber-300/80 uppercase tracking-widest flex-1">Mix</span>
+                          <span className={`text-[10px] font-black uppercase tracking-widest flex-1 ${isRiskMixP ? "text-red-400/80" : "text-amber-300/80"}`}>Mix</span>
                           <button type="button" onClick={() => setPodmienkyMixC(m => Math.max(adminMinMix, m - 1))} disabled={podmienkyMixC <= adminMinMix}
-                            className="w-8 h-8 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">−</button>
-                          <span className="text-xl font-black text-amber-200 w-7 text-center">{podmienkyMixC}</span>
+                            className={isRiskMixP ? riskBtnCls : normalBtnCls}>−</button>
+                          <span className={`text-xl font-black w-7 text-center ${isRiskMixP ? "text-red-300" : "text-amber-200"}`}>{podmienkyMixC}</span>
                           <button type="button" onClick={() => setPodmienkyMixC(m => Math.min(maxMixP, m + 1))} disabled={podmienkyMixC >= maxMixP}
-                            className="w-8 h-8 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">+</button>
+                            className={normalBtnCls}>+</button>
                         </div>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-400/25 rounded px-3 py-2">
-                        <svg viewBox="0 0 80 44" className="w-9 h-[15px] text-amber-300/60 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      /* MIX tab stepper — červený v rizikovej zóne */
+                      <div className={`flex items-center gap-2 rounded px-3 py-2 border transition-colors ${isRiskTrucksM ? "bg-red-500/10 border-red-500/30" : "bg-amber-500/10 border-amber-400/25"}`}>
+                        <svg viewBox="0 0 80 44" className={`w-9 h-[15px] shrink-0 ${isRiskTrucksM ? "text-red-400/60" : "text-amber-300/60"}`} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                           <rect x="2" y="22" width="18" height="16" rx="1"/>
                           <line x1="20" y1="30" x2="62" y2="30"/><line x1="20" y1="38" x2="62" y2="38"/><line x1="62" y1="30" x2="62" y2="38"/>
                           <ellipse cx="44" cy="22" rx="18" ry="12"/>
                           <circle cx="10" cy="38" r="4" strokeWidth="2"/><circle cx="52" cy="38" r="4" strokeWidth="2"/>
                         </svg>
-                        <span className="text-[10px] font-black text-amber-300/80 uppercase tracking-widest flex-1">Mix vozidlá</span>
+                        <span className={`text-[10px] font-black uppercase tracking-widest flex-1 ${isRiskTrucksM ? "text-red-400/80" : "text-amber-300/80"}`}>Mix vozidlá</span>
                         <button type="button" onClick={() => setPodmienkyTrucks(t => Math.max(minMixM, t - 1))} disabled={podmienkyTrucks <= minMixM}
-                          className="w-8 h-8 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">−</button>
-                        <span className="text-xl font-black text-amber-200 w-7 text-center">{podmienkyTrucks}</span>
+                          className={isRiskTrucksM ? riskBtnCls : normalBtnCls}>−</button>
+                        <span className={`text-xl font-black w-7 text-center ${isRiskTrucksM ? "text-red-300" : "text-amber-200"}`}>{podmienkyTrucks}</span>
                         <button type="button" onClick={() => setPodmienkyTrucks(t => Math.min(maxMixM, t + 1))} disabled={podmienkyTrucks >= maxMixM}
-                          className="w-8 h-8 rounded border border-amber-400/40 text-amber-300 hover:border-amber-400 hover:bg-amber-400/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors">+</button>
+                          className={normalBtnCls}>+</button>
                       </div>
                     )}
                     <div className="flex items-center justify-between gap-2">
@@ -2412,6 +2441,19 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                         ⓘ
                       </button>
                     </div>
+                    {/* Rizikové pretaženie — varovanie */}
+                    {(tab === "pumpa" ? isRiskMixP : isRiskTrucksM) && (
+                      <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 rounded px-2.5 py-2">
+                        <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+                        <div className="text-[10px] text-red-300/90 leading-relaxed">
+                          <span className="font-black uppercase tracking-wider text-red-400">Rizikové pretaženie — idem do vlastného rizika</span>
+                          {tab === "pumpa"
+                            ? <> · Pumpa vezme {qty > 0 ? qty.toFixed(1) : "—"} m³ (kapacita {pumpCap} m³). Schválené vodicom.</>
+                            : <> · {podmienkyTrucks}× Mix nesie {qty > 0 ? (qty / podmienkyTrucks).toFixed(1) : "—"} m³/voz (kapacita {mixCap} m³). Schválené vodicom.</>
+                          }
+                        </div>
+                      </div>
+                    )}
                     {podmienkyInfoOpen && (
                       <div className="text-[10px] text-amber-100/60 bg-amber-500/5 border border-amber-400/15 rounded px-2.5 py-2 space-y-1.5 leading-relaxed">
                         <p className="font-black text-amber-200/80 uppercase tracking-widest text-[9px]">Ako funguje pretaženie vozidiel</p>

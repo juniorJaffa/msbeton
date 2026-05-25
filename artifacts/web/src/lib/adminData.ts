@@ -73,6 +73,7 @@ export interface Client {
   lastLoginAt?: string; // ISO timestamp posledného prihlásenia
   smsOrderDisabled?: boolean; // true = nevytvárať objednávku pri SMS exporte (pretlačí globálne nastavenie)
   smsShareOnly?: boolean;     // true = zobraziť share menu namiesto auto-otvorenia SMS aplikácie
+  allowExtraOverload?: boolean; // true = admin môže ísť do rizikového pretaženia (pod kapacitný min) pre tohto klienta
 }
 
 export interface Order {
@@ -107,7 +108,7 @@ export interface Order {
   mapPlusCode?: string;
   mapLocality?: string;
   pumpTimer?: { start: string; stop: string };
-  podmienky?: { trucks: number; pumpa: number; mix: number; m3PerTruck: number };
+  podmienky?: { trucks: number; pumpa: number; mix: number; m3PerTruck: number; isRisk?: boolean };
   paidAmount?: number;
 }
 
@@ -140,6 +141,7 @@ export interface TransportSettings {
   condPumpaMax?: number;  // Podmienky – max počet Pumpa vozidiel (default 2)
   condMixMin?: number;    // Podmienky – min počet Mix vozidiel v pumpa tab (default 0)
   condMixMax?: number;    // Podmienky – max počet Mix vozidiel v pumpa tab (default 2)
+  allowExtraOverload?: boolean; // Podmienky – povoliť rizikové pretaženie pod kapacitný min (default true)
 }
 
 const DEFAULT_CATEGORIES: ConcreteCategory[] = [
