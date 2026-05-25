@@ -1,4 +1,5 @@
 import { adminApi } from "./api";
+import { isLoggedIn } from "./adminAuth";
 export { adminApi };
 
 export interface ConcreteType {
@@ -354,6 +355,8 @@ function saveData<T>(key: string, data: T): void {
 }
 
 export async function syncFromServer(): Promise<void> {
+  // Bez platného admin JWT → preskočiť API volania, použiť localStorage/defaults
+  if (!isLoggedIn()) return;
   try {
     const [cats, delivery, services, clients, tzones, tsettings, orders] = await Promise.all([
       adminApi.getCategories(),

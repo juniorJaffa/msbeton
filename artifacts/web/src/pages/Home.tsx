@@ -58,6 +58,17 @@ const staggerContainer = {
 export default function Home() {
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  // Preload hero poster only on Home route — avoids unused preload warning on /admin
+  useEffect(() => {
+    const link = document.createElement("link");
+    link.rel = "preload";
+    link.as = "image";
+    link.href = `${import.meta.env.BASE_URL}images/hero-bg.jpg`;
+    (link as HTMLLinkElement & { fetchPriority: string }).fetchPriority = "high";
+    document.head.appendChild(link);
+    return () => { document.head.removeChild(link); };
+  }, []);
+
   useEffect(() => {
     const scrollToEl = (el: Element) => {
       // scrollIntoView uses scroll-margin-top (96px) set on #calculator — immune to NAVBAR_H drift
