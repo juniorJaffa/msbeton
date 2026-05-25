@@ -180,6 +180,28 @@ function ga4Rows(data: unknown): Array<{ dims: string[]; vals: string[] }> {
 
 // ── Google Search Console ──────────────────────────────────────────────────
 async function getGscToken(): Promise<string | null> {
+  // Path A: OAuth2 refresh token (user account — keď service account UI nefunguje)
+  const refreshToken  = process.env.GSC_REFRESH_TOKEN;
+  const oauthClientId = process.env.GSC_CLIENT_ID;
+  const oauthSecret   = process.env.GSC_CLIENT_SECRET;
+  if (refreshToken && oauthClientId && oauthSecret) {
+    const resp = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        refresh_token: refreshToken,
+        client_id:     oauthClientId,
+        client_secret: oauthSecret,
+        grant_type:    "refresh_token",
+      }).toString(),
+    });
+    if (resp.ok) {
+      const data = await resp.json() as { access_token?: string };
+      if (data.access_token) return data.access_token;
+    }
+  }
+
+  // Path B: Service account JWT (pôvodný prístup)
   const keyJson = process.env.GSC_KEY_JSON;
   if (!keyJson) return null;
   let key: { client_email: string; private_key: string };
@@ -227,7 +249,7 @@ function gscRows(data: unknown): Array<{ keys: string[]; clicks: number; impress
 router.get("/analytics/gsc", async (req, res) => {
   try {
     const token = await getGscToken();
-    if (!token) { res.status(503).json({ error: "GSC_KEY_JSON not configured" }); return; }
+    if (!token) { res.status(503).json({ error: "GSC not configured (chýba GSC_REFRESH_TOKEN alebo GSC_KEY_JSON)" }); return; }
 
     const end = new Date(); end.setDate(end.getDate() - 3); // GSC má 3-dňové oneskorenie
     const start28 = new Date(end); start28.setDate(start28.getDate() - 28);
