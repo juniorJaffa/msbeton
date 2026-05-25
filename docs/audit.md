@@ -1,7 +1,97 @@
 # MS-BETON — Audit stav projektu
 
-> Aktualizované: 2026-05-25  
+> Aktualizované: 2026-05-25 (iterácia #2)
 > Prostredie: demo.msbeton.sk → finálna migrácia na msbeton.sk
+
+---
+
+## Audit stav — pred a po (všetky sekcie)
+
+### 🔴 Bezpečnosť
+
+| # | Problém | Pred | Po | Stav |
+|---|---------|------|----|------|
+| 1 | Admin heslo v JS bundle (`btoa`) | Viditeľné v DevTools | Server-side JWT (`POST /api/admin/login`) | ✅ |
+| 2 | Rate limit na login | Žiadny | 10 req/15 min per IP (admin + klient) | ✅ |
+| 3 | Security headers | Žiadne | `helmet.js` — HSTS, X-Frame, MIME | ✅ |
+| 4 | CAPTCHA na objednávkach | Žiadna | Cloudflare Turnstile (invisible) | ✅ |
+| 5 | Cloudflare proxy / WAF | Žiadny | Po migrácii na msbeton.sk | ⏳ |
+| 6 | GeoIP blocking SK/CZ | Žiadny | Po Cloudflare proxy | ⏳ |
+| 7 | CORS wildcard | `cors()` bez origin | Whitelist msbeton.sk + demo + localhost | ✅ |
+| 8 | Circular import crash (502) | `loginRateLimit` undefined → 502 | `lib/rateLimits.ts` | ✅ |
+| 9 | Rate limit IPv6 crash | `keyGenerator` bez IPv6 → ValidationError | `ipKeyGenerator()` helper | ✅ |
+| 10 | Session v localStorage | XSS theft možný | HttpOnly cookie (po Cloudflare) | ⏳ |
+
+### 🟡 GDPR / Právne
+
+| # | Problém | Pred | Po | Stav |
+|---|---------|------|----|------|
+| 11 | GA4 bez cookie súhlasu | Spúšťal sa vždy | Consent Mode v2 — denied by default | ✅ |
+| 12 | Cookie banner bez GA4 | Banner bez gtag | `accept()` → `gtag consent update` | ✅ |
+| 13 | Ochrana osobných údajov | Chýbala | `/ochrana-osobnych-udajov` — plná GDPR politika | ✅ |
+| 14 | VOP | Chýbali | `/vop` — 7 sekcií | ✅ |
+| 15 | Footer linky | `href="#"` | Správne linky na OÚ + VOP | ✅ |
+
+### 🟡 SEO
+
+| # | Problém | Pred | Po | Stav |
+|---|---------|------|----|------|
+| 16 | robots.txt | `Allow: /` — demo sa indexovalo | `Disallow: /` | ✅ |
+| 17 | noindex meta | Chýbal | `<meta name="robots" content="noindex,nofollow">` | ✅ |
+| 18 | Canonical URL | Chýbal | `<link rel="canonical" href="https://msbeton.sk/">` | ✅ |
+| 19 | Sitemap | Len 3 URL | +OÚ, +VOP (5 URL) | ✅ |
+| 20 | Per-route meta description | Jedna pre celú SPA | `SEOHead` komponent — chýba per-route title/desc | ❌ |
+| 21 | Self-host Montserrat | Google CDN latencia + GDPR | Zatiaľ z CDN | ❌ |
+
+### 🟡 UI/UX
+
+| # | Problém | Pred | Po | Stav |
+|---|---------|------|----|------|
+| 22 | Admin nav 8 tabov preplnené | Na 1280px preplnené | SEO tab pridaný, grouping ešte chýba | ⚠ čiastočne |
+| 23 | Kalkulačka — zdieľanie výsledku | Žiadne | Neplánované — chýba | ❌ |
+| 24 | Objednávky — stránkovanie | Všetky naraz, pomalé 200+ | Chýba | ❌ |
+| 25 | Kalkulačka — uložiť výpočet | Musí zadávať znova | Chýba | ❌ |
+| 26 | CSV export objednávok | Žiadny | Chýba | ❌ |
+| 27 | Offline stránka (PWA) | Biela stránka pri crash | Chýba | ❌ |
+| 28 | Admin login UX | Jednoduchý btoa formulár | WebAuthn biometria + math captcha + lockout | ✅ |
+| 29 | Floating client indikátor | Objavoval sa až po pustení scroll | Zobrazuje sa počas scrollovania | ✅ |
+
+### 🟢 Výkon
+
+| # | Problém | Pred | Po | Stav |
+|---|---------|------|----|------|
+| 30 | Google Maps vždy načítaný | Pri každom otvorení webu | Lazy load — iba pri address/map mode | ✅ |
+| 31 | Google Fonts z CDN | Latencia + GDPR | Zatiaľ z CDN — self-host plánovaný | ❌ |
+| 32 | CDN pre statické assets | Žiadny | Cloudflare (po migrácii) | ⏳ |
+
+### 🔵 CI/CD + DevOps
+
+| # | Problém | Pred | Po | Stav |
+|---|---------|------|----|------|
+| 33 | Smoke test po deployi | Žiadny | HTTP 200 + `/api/healthz` v GH Action | ✅ |
+| 34 | DB backup | Žiadny | `pg_dump` cron 3:17 AM, 30-dňová retencia | ✅ |
+| 35 | PM2 `--update-env` | Nenačítal nové env | `pm2 delete + start` v deploy scripte | ✅ |
+| 36 | GH Action DATABASE_URL | Hardcoded | Čítaná z `ecosystem.config.cjs` | ✅ |
+
+### 🟡 Analýzy & Monitoring
+
+| # | Problém | Pred | Po | Stav |
+|---|---------|------|----|------|
+| 37 | GA4 tab — JWT auth | `fetch` bez tokenu → 401 | `authFetch` helper | ✅ |
+| 38 | Realtime tab — JWT auth | `fetch` bez tokenu → 401 | `authFetch` helper | ✅ |
+| 39 | GSC SEO tab | Chýbala v desktop nav | Pridaná do `tabs` array | ✅ |
+| 40 | GSC grafy | Chýbajú | Čaká na dáta od ~2026-06-01 | ⏳ |
+
+### 📄 PDF / Exporty
+
+| # | Problém | Pred | Po | Stav |
+|---|---------|------|----|------|
+| 41 | Minusové pretaženie PDF farba | Čierny text | Červený riadok `background:#fef2f2` | ✅ |
+| 42 | Duplicitné ikony warning | Dve AlertTriangle vedľa seba | Jedna ikona | ✅ |
+
+---
+
+**Legenda:** ✅ Hotovo | ⏳ Čaká (externá podmienka) | ❌ Chýba | ⚠ Čiastočne
 
 ---
 
