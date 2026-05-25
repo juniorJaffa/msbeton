@@ -5,7 +5,7 @@ import { randomBytes } from "crypto";
 import { invalidateClientCache } from "./client";
 import { sendRegistrationEmail, sendCredentialsEmail } from "../lib/mailer";
 import { signAdminToken, requireAdminJwt } from "../lib/adminJwt";
-import { loginRateLimit } from "../app";
+import { loginRateLimit } from "../lib/rateLimits";
 
 const router = Router();
 

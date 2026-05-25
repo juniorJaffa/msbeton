@@ -435,6 +435,17 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
   // Google Maps Autocomplete + DistanceMatrix pre adresný režim
   useEffect(() => {
+    if (deliveryMode === "distance") return;
+    if (typeof google !== "undefined" && google.maps?.places) return;
+    if (document.querySelector('script[src*="maps.googleapis.com"]')) return;
+    const script = document.createElement("script");
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_KEY}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+  }, [deliveryMode]);
+
+  useEffect(() => {
     if (deliveryMode !== "address" || !addressInputRef.current) return;
     const ORIGIN = { lat: 49.204417, lng: 18.729029 };
 

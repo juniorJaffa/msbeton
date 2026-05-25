@@ -4,7 +4,7 @@ import { sendOrderNotification, sendPasswordResetEmail } from "../lib/mailer";
 import { eq } from "drizzle-orm";
 import { createHash, randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
-import { loginRateLimit } from "../app";
+import { loginRateLimit } from "../lib/rateLimits";
 
 const ITOA64 = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
