@@ -4,6 +4,7 @@ import { sendOrderNotification, sendPasswordResetEmail } from "../lib/mailer";
 import { eq } from "drizzle-orm";
 import { createHash, randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
+import { loginRateLimit } from "../app";
 
 const ITOA64 = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
@@ -174,7 +175,7 @@ function buildClientResponse(account: UnifiedClient) {
   };
 }
 
-router.post("/login", async (req, res) => {
+router.post("/login", loginRateLimit, async (req, res) => {
   try {
     const { clientId, password } = req.body ?? {};
     if (!clientId || !password) {
@@ -222,11 +223,32 @@ router.get("/me", async (req, res) => {
   }
 });
 
+async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
+  const secret = process.env.TURNSTILE_SECRET;
+  if (!secret) return true; // skip if not configured
+  const resp = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ secret, response: token, remoteip: ip }),
+  });
+  const data = await resp.json() as { success: boolean };
+  return data.success === true;
+}
+
 router.post("/order", async (req, res) => {
   try {
     const order = req.body;
     if (!order || !order.id) {
       return res.status(400).json({ ok: false, error: "Chýbajú dáta objednávky" });
+    }
+    const turnstileToken = order.turnstileToken as string | undefined;
+    const ip = (req.headers["cf-connecting-ip"] as string) ?? req.ip ?? "";
+    if (process.env.TURNSTILE_SECRET && !turnstileToken) {
+      return res.status(400).json({ ok: false, error: "Chýba overenie CAPTCHA" });
+    }
+    if (turnstileToken) {
+      const ok = await verifyTurnstile(turnstileToken, ip);
+      if (!ok) return res.status(400).json({ ok: false, error: "CAPTCHA overenie zlyhalo" });
     }
     // Append to orders list in DB
     const rows = await db.select().from(adminConfig).where(eq(adminConfig.key, "orders"));

@@ -1,4 +1,4 @@
-const AUTH_KEY = "msbeton_admin_auth";
+const TOKEN_KEY = "msbeton_admin_token";
 const ATTEMPTS_KEY = "msbeton_login_attempts";
 const WEBAUTHN_KEY = "msbeton_webauthn_cred";
 const DEVICE_FP_KEY = "msbeton_admin_bio_device";
@@ -10,32 +10,51 @@ function getDeviceFingerprint(): string {
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_DURATION = 5 * 60 * 1000;
 
-const ADMIN_USER = "msbeton";
-const ADMIN_PASS_HASH = btoa("Msbeton2023");
+export function getAdminToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
 
-export function checkCredentials(username: string, password: string): boolean {
-  return username.trim().toLowerCase() === ADMIN_USER && btoa(password) === ADMIN_PASS_HASH;
+export async function loginWithApi(username: string, password: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await res.json() as { ok: boolean; token?: string; error?: string };
+    if (data.ok && data.token) {
+      localStorage.setItem(TOKEN_KEY, data.token);
+      resetAttempts();
+      return { ok: true };
+    }
+    return { ok: false, error: data.error ?? "Nesprávne prihlasovacie údaje" };
+  } catch {
+    return { ok: false, error: "Server nedostupný" };
+  }
+}
+
+export function checkCredentials(_username: string, _password: string): boolean {
+  // Kept for compatibility — actual check is server-side via loginWithApi
+  return false;
 }
 
 export function isLoggedIn(): boolean {
-  const token = localStorage.getItem(AUTH_KEY);
+  const token = localStorage.getItem(TOKEN_KEY);
   if (!token) return false;
   try {
-    const { expiry } = JSON.parse(atob(token));
-    return Date.now() < expiry;
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return Date.now() / 1000 < (payload.exp as number);
   } catch {
     return false;
   }
 }
 
 export function login(): void {
-  const expiry = Date.now() + 8 * 60 * 60 * 1000;
-  localStorage.setItem(AUTH_KEY, btoa(JSON.stringify({ expiry, user: ADMIN_USER })));
-  resetAttempts();
+  // noop — token is set by loginWithApi
 }
 
 export function logout(): void {
-  localStorage.removeItem(AUTH_KEY);
+  localStorage.removeItem(TOKEN_KEY);
 }
 
 export function getAttemptInfo(): { count: number; locked: boolean; remainingMs: number } {

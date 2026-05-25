@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { SEOHead } from "@/components/SEOHead";
 import { Eye, EyeOff, Lock, User, AlertCircle, Clock, Fingerprint } from "lucide-react";
 import {
-  checkCredentials, login, isLoggedIn, getAttemptInfo, recordFailedAttempt, resetAttempts,
+  loginWithApi, isLoggedIn, getAttemptInfo, recordFailedAttempt, resetAttempts,
   isBiometricAvailable, hasStoredCredential, authenticateBiometric, registerBiometric, clearBiometric,
 } from "@/lib/adminAuth";
 import { VersionBadge } from "@/components/VersionBadge";
@@ -100,9 +100,9 @@ export default function AdminLogin() {
     }
     if (!username.trim() || !password.trim()) { setError("Zadajte meno a heslo."); return; }
     setLoading(true);
-    await new Promise(r => setTimeout(r, 600));
-    if (checkCredentials(username, password)) {
-      login();
+    const result = await loginWithApi(username, password);
+    if (result.ok) {
+      resetAttempts();
       // Offer biometric registration if available and not yet stored
       if (isBiometricAvailable() && !hasStoredCredential()) {
         setLoading(false);

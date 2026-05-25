@@ -1,11 +1,18 @@
+import { getAdminToken } from "./adminAuth";
+
 const API_BASE = "/api/admin";
 const CLIENT_API = "/api/client";
 
 async function apiFetch<T>(base: string, path: string, options?: RequestInit): Promise<T | null> {
   try {
+    const extraHeaders: Record<string, string> = {};
+    if (base === API_BASE) {
+      const token = getAdminToken();
+      if (token) extraHeaders["Authorization"] = `Bearer ${token}`;
+    }
     const res = await fetch(`${base}${path}`, {
-      headers: { "Content-Type": "application/json" },
       ...options,
+      headers: { "Content-Type": "application/json", ...extraHeaders, ...(options?.headers ?? {}) },
     });
     // Return JSON body even for non-ok responses (e.g. 401, 400) so callers get the error message
     const data = await res.json().catch(() => null);

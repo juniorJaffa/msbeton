@@ -322,6 +322,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [orderSubmitting, setOrderSubmitting] = useState(false);
   const [orderDone, setOrderDone] = useState(false);
   const [orderSubmittedBanner, setOrderSubmittedBanner] = useState(false);
+  const turnstileRef = useRef<HTMLDivElement>(null);
+  const turnstileWidgetId = useRef<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string>("");
   const [priceTableMode, setPriceTableMode] = useState<"faktura" | "hotovost">("faktura");
 
   useEffect(() => {
@@ -335,6 +338,32 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     if (orderSubmittedBanner) setOrderSubmittedBanner(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quantity, categoryName, concreteTypeLabel, tab, address, mapPlusCode, extraItems]);
+
+  const TURNSTILE_SITE_KEY = "0x4AAAAAADWD_zkdQ7J1SIxm";
+  useEffect(() => {
+    const el = turnstileRef.current;
+    if (!el) return;
+    const w = window as Window & { turnstile?: { render: (el: HTMLElement, opts: object) => string; reset: (id: string) => void; remove: (id: string) => void } };
+    const render = () => {
+      if (!w.turnstile || !turnstileRef.current) return;
+      turnstileWidgetId.current = w.turnstile.render(turnstileRef.current, {
+        sitekey: TURNSTILE_SITE_KEY,
+        callback: (token: string) => setTurnstileToken(token),
+        "expired-callback": () => setTurnstileToken(""),
+        "error-callback": () => setTurnstileToken(""),
+        size: "invisible",
+        appearance: "interaction-only",
+      });
+    };
+    if (w.turnstile) { render(); } else {
+      const s = document.querySelector('script[src*="turnstile"]');
+      s?.addEventListener("load", render, { once: true });
+    }
+    return () => {
+      if (turnstileWidgetId.current && w.turnstile) w.turnstile.remove(turnstileWidgetId.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const resetForm = () => {
     setQuantity("");
@@ -1844,7 +1873,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       discountCelkovo: discountCelkovo > 0 ? discountCelkovo : undefined,
       ...(tab === "pumpa" && pumpStartTime && pumpStopTime ? { pumpTimer: { start: pumpStartTime, stop: pumpStopTime } } : {}),
       ...(podmienkyEnabled ? { podmienky: { trucks: tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks, pumpa: tab === "pumpa" ? podmienkyPumpa : 0, mix: tab === "pumpa" ? podmienkyMixC : podmienkyTrucks, m3PerTruck: (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks) > 0 ? Math.round(((result!.qty + (result!.concreteBreakdown[0]?.transportFillupM3 ?? 0)) / (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks)) * 10) / 10 : 0 } } : {}),
+      turnstileToken: turnstileToken || undefined,
     });
+    const w = window as Window & { turnstile?: { reset: (id: string) => void } };
+    if (turnstileWidgetId.current && w.turnstile) { w.turnstile.reset(turnstileWidgetId.current); }
+    setTurnstileToken("");
     setOrderSubmitting(false);
     setOrderDone(true);
     setOrderSubmittedBanner(true);
@@ -3580,6 +3613,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     <span>Záväzná objednávka cez SMS bola evidovaná v systéme.</span>
                   </div>
                 )}
+
+                <div ref={turnstileRef} style={{ display: "none" }} aria-hidden="true" />
 
                 {orderSubmittedBanner ? (
                   <div className="flex items-center gap-3 bg-green-500/15 border border-green-500/30 rounded-sm px-4 py-3.5">

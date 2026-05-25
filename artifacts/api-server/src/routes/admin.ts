@@ -4,8 +4,28 @@ import { eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { invalidateClientCache } from "./client";
 import { sendRegistrationEmail, sendCredentialsEmail } from "../lib/mailer";
+import { signAdminToken, requireAdminJwt } from "../lib/adminJwt";
+import { loginRateLimit } from "../app";
 
 const router = Router();
+
+router.post("/login", loginRateLimit, async (req, res) => {
+  const { username, password } = req.body as { username?: string; password?: string };
+  const adminUser = (process.env.ADMIN_USER ?? "msbeton").toLowerCase();
+  const adminPassword = process.env.ADMIN_PASSWORD;
+
+  if (!username || !password) {
+    res.status(400).json({ ok: false, error: "Chýbajú prihlasovacie údaje" });
+    return;
+  }
+  if (username.trim().toLowerCase() !== adminUser || !adminPassword || password !== adminPassword) {
+    res.status(401).json({ ok: false, error: "Nesprávne prihlasovacie údaje" });
+    return;
+  }
+  res.json({ ok: true, token: signAdminToken() });
+});
+
+router.use(requireAdminJwt);
 
 const KEYS = {
   categories: "categories",
