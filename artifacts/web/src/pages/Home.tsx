@@ -59,24 +59,30 @@ export default function Home() {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    const NAVBAR_H = 96;
     const scrollToEl = (el: Element) => {
-      const top = el.getBoundingClientRect().top + window.scrollY - NAVBAR_H;
-      window.scrollTo({ top, behavior: "smooth" });
+      // scrollIntoView uses scroll-margin-top (96px) set on #calculator — immune to NAVBAR_H drift
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
     };
-    const scrollToHash = () => {
+    const scrollToHash = (delay = 0) => {
       const hash = window.location.hash;
       if (!hash) return;
-      const el = document.querySelector(hash);
-      if (el) { scrollToEl(el); return; }
-      setTimeout(() => {
-        const delayed = document.querySelector(hash);
-        if (delayed) scrollToEl(delayed);
-      }, 150);
+      const run = () => {
+        const el = document.querySelector(hash);
+        if (el) { scrollToEl(el); return; }
+        // Element not yet in DOM (lazy render) — single retry
+        setTimeout(() => {
+          const delayed = document.querySelector(hash);
+          if (delayed) scrollToEl(delayed);
+        }, 150);
+      };
+      if (delay > 0) setTimeout(run, delay); else run();
     };
-    scrollToHash();
-    window.addEventListener("hashchange", scrollToHash);
-    return () => window.removeEventListener("hashchange", scrollToHash);
+    // Cross-page SPA navigation: hero image above calculator causes layout shift.
+    // Delay 350ms lets hero paint before measuring — scroll lands on correct position.
+    scrollToHash(350);
+    const onHashChange = () => scrollToHash(0);
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
   useEffect(() => {
