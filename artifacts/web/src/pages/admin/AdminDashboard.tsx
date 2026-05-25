@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "wouter";
-import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, SlidersHorizontal, ShoppingCart, MessageSquare, BarChart2, TrendingUp, Monitor, Globe, MousePointerClick, MoreHorizontal, Activity, Smartphone, Laptop, Tablet, Mail, MapPin, Navigation, Copy, Fingerprint, Search } from "lucide-react";
+import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, SlidersHorizontal, ShoppingCart, MessageSquare, BarChart2, TrendingUp, Monitor, Globe, MousePointerClick, MoreHorizontal, Activity, Smartphone, Laptop, Tablet, Mail, MapPin, Navigation, Copy, Fingerprint, Search, AlertTriangle } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
