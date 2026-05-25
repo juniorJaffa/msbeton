@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useLocation } from "wouter";
 import { LogOut, Plus, UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Users, Truck, Wrench, Layers, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, SlidersHorizontal, ShoppingCart, MessageSquare, BarChart2, TrendingUp, Monitor, Globe, MousePointerClick, MoreHorizontal, Activity, Smartphone, Laptop, Tablet, Mail, MapPin, Navigation, Copy, Fingerprint, Search } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
@@ -1003,9 +1004,26 @@ function OrderStatusBadge({ status, onChange, orderTotal }: {
   orderTotal?: number;
 }) {
   const [open, setOpen] = useState(false);
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0 });
   const [payModal, setPayModal] = useState(false);
   const [payInput, setPayInput] = useState("");
+  const btnRef = useRef<HTMLButtonElement>(null);
   const cur = ORDER_STATUSES.find(s => s.key === status) ?? ORDER_STATUSES.find(s => s.key === "odoslana")!;
+
+  const openDrop = () => {
+    if (btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      setDropPos({ top: r.bottom + 2, left: r.left });
+    }
+    setOpen(o => !o);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [open]);
 
   const openPayModal = () => {
     setPayInput(orderTotal !== undefined ? orderTotal.toFixed(2) : "");
@@ -1021,9 +1039,9 @@ function OrderStatusBadge({ status, onChange, orderTotal }: {
   return (
     <>
       <div className="relative">
-        <button onClick={() => setOpen(o => !o)} className={`px-2 py-1 text-xs font-bold rounded-sm cursor-pointer ${cur.color}`}>{cur.label} ▾</button>
-        {open && (
-          <div className="absolute z-50 bg-white border border-gray-200 shadow-lg rounded-sm min-w-[110px] left-0 top-full mt-0.5">
+        <button ref={btnRef} onClick={e => { e.stopPropagation(); openDrop(); }} className={`px-2 py-1 text-xs font-bold rounded-sm cursor-pointer ${cur.color}`}>{cur.label} ▾</button>
+        {open && createPortal(
+          <div className="fixed z-[500] bg-white border border-gray-200 shadow-lg rounded-sm min-w-[110px]" style={{ top: dropPos.top, left: dropPos.left }} onClick={e => e.stopPropagation()}>
             {ORDER_STATUSES.map(s => (
               <button key={s.key} onClick={() => {
                 if (s.key === "vyplatena") { openPayModal(); }
@@ -1031,7 +1049,8 @@ function OrderStatusBadge({ status, onChange, orderTotal }: {
               }}
                 className={`block w-full text-left px-3 py-1.5 text-xs font-bold hover:bg-gray-50 ${s.color}`}>{s.label}</button>
             ))}
-          </div>
+          </div>,
+          document.body
         )}
       </div>
 
@@ -1598,13 +1617,13 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                       {o.km ? <span className="text-gray-400">{o.km} km</span> : null}
                       {(o.address || o.mapPlusCode) ? (
                         <button onClick={e => { e.stopPropagation(); setMapModalOrder(o); }}
-                          className="inline-flex items-center gap-0.5 text-primary/50 hover:text-primary transition-colors shrink-0" title="Zobraziť na mape">
+                          className="inline-flex items-center gap-0.5 text-primary/50 hover:text-primary transition-colors" title="Zobraziť na mape">
                           <MapPin className="w-3 h-3 shrink-0" />
                           {o.address
-                            ? <span className="text-gray-500 hover:text-gray-700 truncate max-w-[80px] sm:max-w-none sm:whitespace-normal sm:overflow-visible">{o.address}</span>
+                            ? <span className="text-gray-600 hover:text-gray-800">{o.address}</span>
                             : o.mapLocality
-                              ? <span className="text-gray-500 hover:text-gray-700 truncate max-w-[80px] sm:max-w-none sm:whitespace-normal sm:overflow-visible">{o.mapLocality.split(",")[0]}</span>
-                              : <span className="text-gray-400 font-mono text-[10px]">{o.mapPlusCode}</span>}
+                              ? <span className="text-gray-600 hover:text-gray-800">{o.mapLocality.split(",")[0]}</span>
+                              : <span className="text-gray-500 text-[10px]">Mapa ↗</span>}
                         </button>
                       ) : null}
                     </div>
