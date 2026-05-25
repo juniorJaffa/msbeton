@@ -4691,7 +4691,7 @@ export default function AdminDashboard() {
                 </button>
                 <button onClick={() => { setTab("gsc"); window.location.hash = "gsc"; setMoreOpen(false); }}
                   className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-bold transition-colors border-t border-gray-100 ${tab === "gsc" ? "text-primary bg-primary/5" : "text-gray-600 hover:bg-gray-50"}`}>
-                  <Search className="w-4 h-4 shrink-0" /> Search Console
+                  <Search className="w-4 h-4 shrink-0" /> SEO
                 </button>
               </div>
             )}
