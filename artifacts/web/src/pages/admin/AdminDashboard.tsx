@@ -2526,7 +2526,10 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                 </label>
                 <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
                   <input type="checkbox" checked={form.canPridatBeton} onChange={e => setForm({ ...form, canPridatBeton: e.target.checked })} className="accent-secondary w-5 h-5 shrink-0" />
-                  <span className="text-sm text-gray-700">Pridať položku (betón)</span>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm text-gray-700">Pridať položku (betón)</span>
+                    <div className="text-[11px] text-gray-400">Zobrazí tlačidlo „+ Pridať položku" v kalkulačke</div>
+                  </div>
                 </label>
                 <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
                   <input type="checkbox" checked={form.canZimneOpatrenia} onChange={e => setForm({ ...form, canZimneOpatrenia: e.target.checked })} className="accent-blue-600 w-5 h-5 shrink-0" />
@@ -2986,7 +2989,10 @@ function KlientiTab({ expandClientId, onExpanded }: { expandClientId?: string | 
                           </div>
                           <label className="flex items-center gap-3 px-3 py-1.5 cursor-pointer hover:bg-gray-50 select-none">
                             <input type="checkbox" checked={c.canPridatBeton ?? true} onChange={e => update(c.id, { canPridatBeton: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />
-                            <span className="text-sm text-gray-700">Pridať položku (betón)</span>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-sm text-gray-700">Pridať položku (betón)</span>
+                              <div className="text-[11px] text-gray-400">Zobrazí tlačidlo „+ Pridať položku" v kalkulačke</div>
+                            </div>
                           </label>
                           <label className="flex items-center gap-3 px-3 py-1.5 cursor-pointer hover:bg-gray-50 select-none">
                             <input type="checkbox" checked={c.canZimneOpatrenia ?? false} onChange={e => update(c.id, { canZimneOpatrenia: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />

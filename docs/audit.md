@@ -40,8 +40,8 @@
 | 17 | noindex meta | Chýbal | `<meta name="robots" content="noindex,nofollow">` | ✅ |
 | 18 | Canonical URL | Chýbal | `<link rel="canonical" href="https://msbeton.sk/">` | ✅ |
 | 19 | Sitemap | Len 3 URL | +OÚ, +VOP (5 URL) | ✅ |
-| 20 | Per-route meta description | Jedna pre celú SPA | `SEOHead` komponent — chýba per-route title/desc | ❌ |
-| 21 | Self-host Montserrat | Google CDN latencia + GDPR | Zatiaľ z CDN | ❌ |
+| 20 | Per-route meta description | Jedna pre celú SPA | `SEOHead` komponent — každá route má vlastný title/desc | ✅ |
+| 21 | Self-host Montserrat | Google CDN latencia + GDPR | `@fontsource/montserrat` — 6 váh, žiadny CDN | ✅ |
 
 ### 🟡 UI/UX
 
@@ -49,10 +49,10 @@
 |---|---------|------|----|------|
 | 22 | Admin nav 8 tabov preplnené | Na 1280px preplnené | SEO tab pridaný, grouping ešte chýba | ⚠ čiastočne |
 | 23 | Kalkulačka — zdieľanie výsledku | Žiadne | Neplánované — chýba | ❌ |
-| 24 | Objednávky — stránkovanie | Všetky naraz, pomalé 200+ | Chýba | ❌ |
+| 24 | Objednávky — stránkovanie | Všetky naraz, pomalé 200+ | 30/stránku, pagination controls | ✅ |
 | 25 | Kalkulačka — uložiť výpočet | Musí zadávať znova | Chýba | ❌ |
 | 26 | CSV export objednávok | Žiadny | Chýba | ❌ |
-| 27 | Offline stránka (PWA) | Biela stránka pri crash | Chýba | ❌ |
+| 27 | Offline stránka (PWA) | Biela stránka pri crash | `sw.js` + `offline.html` — service worker | ✅ |
 | 28 | Admin login UX | Jednoduchý btoa formulár | WebAuthn biometria + math captcha + lockout | ✅ |
 | 29 | Floating client indikátor | Objavoval sa až po pustení scroll | Zobrazuje sa počas scrollovania | ✅ |
 
@@ -61,7 +61,7 @@
 | # | Problém | Pred | Po | Stav |
 |---|---------|------|----|------|
 | 30 | Google Maps vždy načítaný | Pri každom otvorení webu | Lazy load — iba pri address/map mode | ✅ |
-| 31 | Google Fonts z CDN | Latencia + GDPR | Zatiaľ z CDN — self-host plánovaný | ❌ |
+| 31 | Google Fonts z CDN | Latencia + GDPR | `@fontsource/montserrat` — self-hosted woff2 | ✅ |
 | 32 | CDN pre statické assets | Žiadny | Cloudflare (po migrácii) | ⏳ |
 
 ### 🔵 CI/CD + DevOps
@@ -240,8 +240,8 @@ Riešenie: lightweight consent banner → GA4 len po súhlase (`gtag('consent', 
 | 17 | Canonical URL | https://msbeton.sk/ v index.html | ✅ Hotovo |
 | 18 | noindex meta | noindex,nofollow na demo.msbeton.sk | ✅ Hotovo |
 | 19 | OG tags | og:title, og:description, og:image, og:url | ✅ Hotovo |
-| 20 | Per-route meta | SEOHead komponent — chýba per-route title+description | ❌ Chýba |
-| 21 | Self-host Montserrat | Fonts cez Google CDN → self-hosted (GDPR + výkon) | ❌ Chýba |
+| 20 | Per-route meta | SEOHead komponent — každá route má vlastný title/desc | ✅ Hotovo |
+| 21 | Self-host Montserrat | `@fontsource/montserrat` — 6 váh woff2, žiadny CDN | ✅ Hotovo |
 
 ---
 
@@ -277,9 +277,9 @@ Riešenie: lightweight consent banner → GA4 len po súhlase (`gtag('consent', 
 | 33 | Floating client indikátor | Zobrazuje sa počas scrollovania | ✅ Hotovo |
 | 34 | CSV export objednávok | Export button → orders.csv v AdminDashboard | ❌ Chýba |
 | 35 | Zdieľanie výpočtu | URL-enkódované parametre kalkulačky | ❌ Chýba |
-| 36 | Virtualizácia objednávok | Pre 200+ objednávok (react-window alebo similar) | ❌ Chýba |
+| 36 | Stránkovanie objednávok | Pre 200+ objednávok — 30/stránku, pagination controls | ✅ Hotovo |
 | 37 | Uloženie výpočtu | Uložiť kalkuláciu do localStorage | ❌ Chýba |
-| 38 | Offline PWA stránka | Service worker fallback offline page | ❌ Chýba |
+| 38 | Offline PWA stránka | Service worker fallback offline page | ✅ Hotovo |
 
 ---
 
