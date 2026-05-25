@@ -1663,6 +1663,11 @@ function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => v
                   <div className="flex flex-col items-end justify-between shrink-0 gap-1.5" onClick={e => e.stopPropagation()}>
                     <div className="text-right">
                       <div className="font-black text-secondary text-base tabular-nums leading-tight">{fmtEur(o.totalSDph)}</div>
+                      {o.status === "vyplatena" && o.paidAmount !== undefined && Math.abs(o.paidAmount - o.totalSDph) > 0.01 && (
+                        <div className="text-[10px] tabular-nums text-teal-600 font-semibold leading-tight mt-0.5">
+                          {fmtEur(o.paidAmount)} <span className="text-teal-400 font-normal">{o.paidAmount > o.totalSDph ? `+${fmtEur(o.paidAmount - o.totalSDph)}` : fmtEur(o.paidAmount - o.totalSDph)}</span>
+                        </div>
+                      )}
                       <div className={cn("text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-sm mt-0.5 inline-block",
                         o.priceMode === "hotovost" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
                       )}>
