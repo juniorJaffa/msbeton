@@ -84,13 +84,47 @@ Kategória BEZ akejkoľvek zľavy (`factor = 1`) → `Math.abs(orig - disc) = 0`
 
 ### Standard typ (zóny podľa km)
 
-Fill-up pravidlo — iba pre Standard:
+**Kapacity a fill-up minimum — z admin Doprava nastavení:**
+```
+pumpCap   = clientDeliveryZone.pumpTruckCapacity ?? 7   // kapacita pumpy (m³)
+mixCap    = clientDeliveryZone.truckCapacity     ?? 9   // kapacita mixéra (m³)
+fillupMin = tsettings.minimumLoadM3              ?? 5   // min. objem na vozidlo
+```
+Zmena v admin → okamžite platí vo výpočte (kalkulačka, PDF, SMS, podmienky).
 
+**Fill-up pravidlo — iba pre Standard, iba keď nie je `isMin`:**
+
+*Bez podmienok (normálny výpočet, `overrideTrucks` = undefined):*
 | Podmienka | Akcia |
 |-----------|-------|
-| `qty < 5` | doplní na 5 m³ |
-| `qty > 7 && qty < 10` (pumpa) | doplní na 10 m³ |
-| `qty > 9 && qty < 10` (mix) | doplní na 10 m³ |
+| `qty < fillupMin` | doplní na `fillupMin` m³ (celkové qty) |
+| `qty > pumpCap && qty < 10` (pumpa) | doplní na 10 m³ |
+| `qty > mixCap && qty < 10` (mix) | doplní na 10 m³ |
+
+*S podmienkami (`overrideTrucks` definované — admin podmienky panel):*
+```
+qtyPerTruck = qty / overrideTrucks
+cap         = mixCap   // vždy mixCap pre per-vozidlo výpočet
+fillupPerTruck:
+  qtyPerTruck < fillupMin          → fillupMin - qtyPerTruck
+  qtyPerTruck > cap && < 10        → 10 - qtyPerTruck
+  inak                             → 0
+fillupM3 = round(fillupPerTruck × overrideTrucks, 1)
+```
+
+**Príklady (default: fillupMin=5, pumpCap=7, mixCap=9):**
+| qty | overrideTrucks | qPT | fill-up |
+|-----|---------------|-----|---------|
+| 8 m³ | 1 | 8.0 | 0 (5≤8<9) ✓ |
+| 20 m³ | 5 | 4.0 | 5×(5-4)=**5 m³** ✓ |
+| 70 m³ | 8 | 8.75 | 0 (5≤8.75<9) ✓ |
+| 8 m³ | – | – | 10-8=**2 m³** (pumpa, 7<8<10) ✓ |
+
+**Min. doprava — fill-up sa neúčtuje:**
+```
+isMin = costPerTruck < minimumFee (tsettings.minimumFee, default 62.50 €)
+if isMin → fillupM3 = 0, fillupCost = 0
+```
 
 Cena = `zone.ratePerM3 × totalQty` (vrátane fill-up m³)
 Ak `costPerTruck < minRate` → platí `minRate × trucks`

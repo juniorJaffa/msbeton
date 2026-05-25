@@ -136,6 +136,62 @@ Mix: rovnaké transport bunky 1+2, tretia bunka = Čakačka / 15 min.
 
 ---
 
+### Kalkulačka – PODMIENKY (admin override vozidiel)
+
+Admin panel v kalkulačke umožňuje ručne nastaviť počet vozidiel namiesto automatického výpočtu.
+
+**Stav:** `podmienkyEnabled`, `podmienkyPumpa`, `podmienkyMixC` (pumpa tab), `podmienkyTrucks` (mix tab)
+
+**`effTrucksOverride`** = `podmienkyEnabled && totPodm > 0 ? totPodm : undefined` — odovzdáva sa do `calcTransport`
+
+**`allowExtraOverload`** = `isAdminMode || (loggedClient?.allowExtraOverload ?? false)` — povolí MINUS (< kapacity)
+
+#### Fill-up v podmienky režime
+
+```typescript
+// calcTransport – keď overrideTrucks je definované (aj pre 1 vozidlo!):
+const cap = mixCap;  // vždy mixCap pre per-vozidlo fill-up (pumpa aj mix tab)
+qtyPerTruck = qty / overrideTrucks
+if qtyPerTruck < fillupMin → fillupPerTruck = fillupMin - qtyPerTruck
+if qtyPerTruck > cap && < 10 → fillupPerTruck = 10 - qtyPerTruck
+fillupM3 = round(fillupPerTruck × overrideTrucks, 1)
+if isMin → fillupM3 = 0  // pri min. doprave sa doťaženie neúčtuje
+```
+
+**Kapacity a minimum z admin Doprava:**
+```
+pumpCap   = zone.pumpTruckCapacity ?? 7   // PUMPA Kapacita
+mixCap    = zone.truckCapacity     ?? 9   // MIXÉR Kapacita
+fillupMin = tsettings.minimumLoadM3 ?? 5  // MIN. OBJ.
+```
+
+**Príklady:**
+| qty | overrideTrucks | qPT | fill-up |
+|-----|---------------|-----|---------|
+| 8 m³ | 1 | 8.0 | 0 (8 < mixCap 9, žiadne fill-up) |
+| 20 m³ | 5 | 4.0 | 5×(5−4) = **+5 m³** |
+| 70 m³ | 8 (1P+7M) | 8.75 | 0 (8.75 < mixCap 9) |
+
+**UI feedback v podmienky paneli:**
+- `m3PerT` = `qty / totalTrucks` — ∅ m³/voz live update pri +/− kliku
+- `podmienkyFillupPrev` — inline preview `+Xm³ doť.` vedľa ∅ m³/voz
+- Fleet capacity badge: `pumpa × pumpCap + mix × mixCap` — zelená ≥ qty, červená < qty
+- `buildBreakdown` PRETAŽENIE riadok: vždy zobrazený keď `podmienkyEnabled && idx === 0`
+- SMS `m3PerTruck` = `qty / trucks` (nie `qty + fillup / trucks`)
+
+**KRITICKÉ — dve dimenzie pre addToMain + podmienky:**
+- `extraTrucks = 0` pre addToMain extra (nepridal by auto)
+- `mainTrucks = calcPumpTrucks(qty + addToMainQty)` pre hlavnú položku
+
+**Admin limity podmienok** (tsettings):
+```
+condPumpaMin/Max  → min/max počet pumpa vozidiel (default 1/2)
+condMixMin/Max    → min/max mixérov v pumpa tab (default 0/2)
+adminMaxMix = isAdminMode ? max(99, ceil(qty/mixCap)*4) : condMixMax  // admin bez limitu (otočky)
+```
+
+---
+
 ### Admin Klienti – bezpečnostné pravidlá
 
 - loginId `"msbeton"` **blokovaný** pri vytváraní aj editácii
