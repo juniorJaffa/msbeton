@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 const ORDER_STATUSES: { key: Order["status"]; label: string; color: string }[] = [
   { key: "nova",        label: "Nová",        color: "bg-blue-100 text-blue-700" },
   { key: "potvrdena",   label: "Potvrdená",   color: "bg-yellow-100 text-yellow-700" },
-  { key: "odoslana",    label: "Odoslaná",    color: "bg-green-100 text-green-700" },
+  { key: "odoslana",    label: "Odoslaná FA", color: "bg-green-100 text-green-700" },
   { key: "vyuctovana",  label: "Vyúčtovaná",  color: "bg-purple-100 text-purple-700" },
   { key: "vyplatena",   label: "Vyplatená",   color: "bg-teal-100 text-teal-700" },
   { key: "zrusena",     label: "Zrušená",     color: "bg-red-100 text-red-500" },
@@ -186,7 +186,7 @@ function TabBadge({ tab }: { tab: Order["tab"] }) {
 
 function exportOrderPDF(o: Order) {
   const tabLabels: Record<string, string> = { pumpa: "Pumpa", mix: "Domiešavač", vlastnadoprava: "Vlastná doprava" };
-  const statusLabels: Record<string, string> = { nova: "Nová", potvrdena: "Potvrdená", odoslana: "Odoslaná", vyuctovana: "Vyúčtovaná", vyplatena: "Vyplatená", zrusena: "Zrušená" };
+  const statusLabels: Record<string, string> = { nova: "Nová", potvrdena: "Potvrdená", odoslana: "Odoslaná FA", vyuctovana: "Vyúčtovaná", vyplatena: "Vyplatená", zrusena: "Zrušená" };
   const today = new Date(o.createdAt).toLocaleDateString("sk-SK");
   const fmtEurPdf = (n: number | undefined) => n !== undefined ? n.toFixed(2) + " €" : "";
 
