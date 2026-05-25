@@ -5,6 +5,35 @@
 
 ---
 
+## Changelog — čo sa zmenilo (pred → po)
+
+| Iterácia | Dátum | Sekcia | Pred | Po |
+|----------|-------|--------|------|----|
+| #1 | 2026-05-25 | Bezpečnosť — Admin auth | btoa("Msbeton2023") v JS bundle (viditeľné každému) | JWT server-side, ADMIN_PASSWORD v ecosystem.config.cjs |
+| #1 | 2026-05-25 | Bezpečnosť — Rate limit | Žiadny rate limit na login | express-rate-limit 10 req/15 min |
+| #1 | 2026-05-25 | Bezpečnosť — CORS | Bez CORS whitelist | Povolené iba msbeton.sk, demo, localhost:5173 |
+| #1 | 2026-05-25 | Bezpečnosť — Headers | Bez security headers | helmet.js (HSTS, X-Frame, MIME) |
+| #1 | 2026-05-25 | Bezpečnosť — CAPTCHA | Žiadna ochrana na objednávky | Cloudflare Turnstile invisible |
+| #1 | 2026-05-25 | Bezpečnosť — Circular import | loginRateLimit v app.ts → 502 crash pri štarte | Presunutý do lib/rateLimits.ts |
+| #1 | 2026-05-25 | GDPR — GA4 | GA4 sleduje okamžite bez súhlasu | Consent Mode v2, default denied |
+| #1 | 2026-05-25 | GDPR — Cookie banner | Banner bez GA4 integrácie | accept() → gtag consent update |
+| #1 | 2026-05-25 | GDPR — Stránky | href="#" na footer linkoch, OÚ/VOP chýbali | Plné stránky /ochrana-osobnych-udajov + /vop |
+| #1 | 2026-05-25 | SEO — robots.txt | Allow: / (demo sa indexovalo) | Disallow: / (pred migráciou na msbeton.sk) |
+| #1 | 2026-05-25 | SEO — Sitemap | Chýbali OÚ a VOP URL | Doplnené s yearly/0.3 |
+| #1 | 2026-05-25 | SEO — Canonical | Chýbal canonical tag | https://msbeton.sk/ v index.html |
+| #1 | 2026-05-25 | CI/CD — PM2 | pm2 restart --update-env (nenačítal nové env) | pm2 delete + start (vždy čerstvé env) |
+| #1 | 2026-05-25 | CI/CD — DB push | DATABASE_URL natvrdo v GH Action | Čítaná z ecosystem.config.cjs |
+| #1 | 2026-05-25 | CI/CD — Health check | Žiadna verifikácia po deploy | HTTP 200 + /api/healthz JSON check |
+| #1 | 2026-05-25 | CI/CD — DB backup | Žiadny backup | pg_dump cron 3:17 AM, 30-dňová retencia |
+| #1 | 2026-05-25 | Analýzy — GA4 | /api/admin/analytics bez JWT → 401 (prázdna tab) | authFetch s Authorization: Bearer token |
+| #1 | 2026-05-25 | Analýzy — GSC SEO tab | Chýbala SEO tab v desktop nav (len v "Viac") | Pridaná do tabs array |
+| #1 | 2026-05-25 | Frontend — Maps | Google Maps načítavaný pre každého pri štarte | Lazy load iba pri address/map mode |
+| #1 | 2026-05-25 | Frontend — Admin login | Jednoduchý btoa formulár | WebAuthn biometria + math captcha + lockout |
+| #1 | 2026-05-25 | PDF — Minusové pretaženie | Čierny text (neviditeľný problém) | Červený riadok background:#fef2f2 |
+| #1 | 2026-05-25 | PDF — Duplicitné ikony | Dve AlertTriangle ikony vedľa seba | Jedna ikona (text má ⚠ prefix) |
+
+---
+
 ## Bezpečnosť
 
 | # | Sekcia | Popis | Stav |
