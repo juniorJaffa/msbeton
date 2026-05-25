@@ -11,71 +11,71 @@
 
 | # | Sekcia | Položka | Popis | Stav |
 |---|--------|---------|-------|------|
-| 1 | Bezpečnosť | Admin heslo v JS bundle | `btoa("Msbeton2023")` bolo viditeľné každému v DevTools. Nahradené server-side JWT (`POST /api/admin/login`). | ✅ |
-| 2 | Bezpečnosť | Rate limiting | Bez obmedzenia — brute-force útok bol trivial. Pridaný `express-rate-limit` (10 req/15 min per IP) na login + objednávky. IPv6-kompatibilné. | ✅ |
-| 3 | Bezpečnosť | HTTP security headers | Žiadne bezpečnostné hlavičky. Pridaný `helmet.js` — HSTS, X-Frame-Options, MIME sniff ochrana. | ✅ |
-| 4 | Bezpečnosť | CAPTCHA na objednávkach | Bez ochrany — spam objednávky. Cloudflare Turnstile (invisible, privacy-friendly). | ✅ |
-| 5 | Bezpečnosť | CORS origin whitelist | `cors()` bez origin = wildcard. Nahradené whitelistom `msbeton.sk + demo + localhost`. | ✅ |
-| 6 | Bezpečnosť | Circular import 502 crash | `loginRateLimit` import vytváral circular dep → API padalo s 502. Presunuté do `lib/rateLimits.ts`. | ✅ |
-| 7 | Bezpečnosť | Rate limit IPv6 crash | `keyGenerator` nevracal string pre IPv6 → `ValidationError`. Opravené cez `ipKeyGenerator()` helper. | ✅ |
-| 8 | Bezpečnosť | allowExtraOverload bug | Neprihlásený používateľ / admin bez klienta mohol aktivovať "minusové pretaženie" (`?? true` fallback). Opravené: `false` pre všetkých bez explicitného povolenia. | ✅ |
-| 9 | Bezpečnosť | PODMIENKY Mix stepper min clamp | Mix stepper v PODMIENKY paneli dovolil ísť na 0 vozidiel aj bez povolenia extraOverload. Teraz minimum = `autoMixP` (štandardné min) keď klient nemá povolenie. | ✅ |
-| 10 | Bezpečnosť | Cloudflare WAF + CDN | Firewall, Bot Fight Mode, GeoIP blocking SK/CZ, DDoS ochrana. | ⏳ Čaká na DNS migráciu na msbeton.sk |
-| 11 | Bezpečnosť | HttpOnly session cookie | Klientská session v localStorage (XSS riziko). Presunúť na HttpOnly cookie. | ❌ ~2h |
-| 12 | GDPR | GA4 Consent Mode v2 | GA4 sa spúšťal vždy. Pridaný cookie banner + Consent Mode v2 — GA4 len po súhlase. | ✅ |
-| 13 | GDPR | Stránka OÚ | Chýbala povinná politika GDPR. Vytvorená `/ochrana-osobnych-udajov` s kompletným znením. | ✅ |
-| 14 | GDPR | Stránka VOP | Chýbali VOP — záväzná objednávka v právnej šedej zóne. Vytvorená `/vop` — 7 sekcií. | ✅ |
-| 15 | GDPR | Footer linky OÚ + VOP | Linky viedli na `href="#"`. Opravené na správne routes. | ✅ |
-| 16 | GDPR | Rozšírený consent banner | Kategórie cookies (nutné / analytické / marketingové), uloženie preferencie. | ❌ ~3h |
-| 17 | SEO | robots.txt — demo noindex | Demo doména sa indexovala Googlom. `Disallow: /` — po migrácii na prod sa prepne. | ✅ |
-| 18 | SEO | Canonical URL | Chýbal canonical — riziko duplicitného indexu po migrácii. `<link rel="canonical">` na každej route. | ✅ |
-| 19 | SEO | Sitemap | Len 3 URL. Rozšírený na 5 URL (+ OÚ, + VOP). | ✅ |
-| 20 | SEO | Per-route meta tagy | Jedna meta description pre celú SPA. `SEOHead` komponent — každá route má vlastný title/description/OG. | ✅ |
-| 21 | SEO | Self-host Montserrat | Písmo z Google CDN (latencia + GDPR). Nahradené `@fontsource/montserrat` — 6 váh, žiadny CDN. | ✅ |
-| 22 | SEO | Google Maps lazy load | Maps API sa načítaval pri každom otvorení webu (LCP penalizácia). Lazy load — len keď klik na Mapa. | ✅ |
-| 23 | SEO | GSC SEO tab v admin nave | Tab chýbal v desktop nav poli `tabs`. Pridaný. | ✅ |
-| 24 | SEO | Cloudflare CDN | Rýchlejšie načítanie pre SR — statické assets cez CDN cache. | ⏳ Čaká na DNS migráciu |
-| 25 | Kalkulačka | Tri módy dopravy | Pumpa, Domiešavač (mix), Vlastná doprava — každý s vlastnou cenovou logikou a UI. | ✅ |
-| 26 | Kalkulačka | Extra položky (addToMain) | "+ Pridať položku" — viac typov betónu v jednej objednávke. addToMain zlučuje m³ do dopravy hlavnej položky bez phantom vozidiel. | ✅ |
-| 27 | Kalkulačka | Zóny dopravy Standard/km/auto | Tri typy zón s vlastnými sadzbami a per pumpa/mix minimálnymi poplatkami. | ✅ |
-| 28 | Kalkulačka | Info karta — dopravné ceny | Vedľa výsledku zobrazí dopravné ceny pre zónu klienta (min. poplatok, sadzba/km, čerpanie, chémia). | ✅ |
-| 29 | Kalkulačka | Zľavy — preškrtnuté ceny | Zľavy na betón/dopravu/služby. Pôvodná preškrtnutá + zľavnená cena tučná — v UI, PDF aj SMS. | ✅ |
-| 30 | Kalkulačka | PODMIENKY — vozidlá (admin) | Admin môže ručne nastaviť počet vozidiel (pumpa + mix). Farebné varovanie (amber/red) pri pretažení. Viditeľné len pre admina. | ✅ |
-| 31 | Kalkulačka | Mapa — okamžitý pin bez blokovania | Pin sa umiestni okamžite po kliku. SK validácia beží na pozadí cez Geocoder (nesmie blokovať UX). | ✅ |
-| 32 | Kalkulačka | Presné scrollovanie /#calculator | `getBoundingClientRect()` pred načítaním hero obrázka → zlý offset. Nahradené `scrollIntoView` + 350ms delay. | ✅ |
-| 33 | Kalkulačka | Zdieľanie výpočtu (URL params) | Klient chce poslať link s nastaveným výpočtom. | ❌ ~2h |
-| 34 | Kalkulačka | Uloženie výpočtu (localStorage) | Klient musí zadávať znova pri každej návšteve. | ❌ ~1h |
-| 35 | Admin — Klienti | Multi-search s diakritikou | Vyhľadávanie podľa mena, firmy, tel., emailu, loginId — AND logika, diakritikou-tolerantné. | ✅ |
-| 36 | Admin — Klienti | Klient detail — Osobné údaje | Meno, firma, telefón (formátovaný), email, adresa, zdieľaný odkaz — editovateľné inline. | ✅ |
-| 37 | Admin — Klienti | Klient detail — Prístup do kalkulačky | Login ID, heslo (skryté/viditeľné), aktivácia prístupu, odoslanie prihlasovacích údajov emailom. | ✅ |
-| 38 | Admin — Klienti | Klient detail — Možnosti | Hotovosť (+ DPH %), pridanie položky, zimné opatrenia, SMS, zdieľanie, extraOverload — v kategóriách PLATBA / KALKULAČKA / SMS. Full-width pod 2-col gridom. | ✅ |
-| 39 | Admin — Klienti | Hotovosť DPH input orezaný | Input `w-12` — číslo "100" sa orezávalo. Opravené na `w-16`. | ✅ |
-| 40 | Admin — Klienti | Klient štatistiky | Počet objednávok, celkové m³, obrat bez DPH, posledná objednávka (dátum + typ + m³), 3-mesačný mini bar graf. Tlačidlo → tab Objednávky. | ✅ |
-| 41 | Admin — Klienti | Manuálne ceny per-klient | Per-klient cenová mapa — iné ceny pre betón/dopravu/služby bez ovplyvnenia ostatných klientov. | ✅ |
-| 42 | Admin — Klienti | Zľavové tabuľky + PDF export | Interaktívna tabuľka cien s aplikovanými zľavami. PDF s firemnou hlavičkou a pečaťou. | ✅ |
-| 43 | Admin — Klienti | Typ dopravy — pill toggle | Výber Standard/Kilometre/Počet aut cez tlačidlá (iOS natívny picker vždy zobrazil floating overlay). | ✅ |
-| 44 | Admin — Klienti | Admin kalkulačka per-klient | Admin môže v detaile klienta spustiť kalkulačku s jeho zľavami a cenami (clientOverride). | ✅ |
-| 45 | Admin — Objednávky | Príjem — Košík + SMS kanál | Objednávky z kalkulačky (Košík) aj SMS kanálu. Email notifikácia na objednavky@msbeton.sk. | ✅ |
-| 46 | Admin — Objednávky | Filter objednávok | Filter: Stav / Typ vozidla / Platba / Zdroj (Košík/SMS) / Dátum (quick buttons + od–do) / Hľadaj. | ✅ |
-| 47 | Admin — Objednávky | Stránkovanie | Všetky naraz — pomalé pri 200+. Stránkovanie 30/stránku. | ✅ |
-| 48 | Admin — Objednávky | Minusové pretaženie — PDF red row | Čierny text v PDF pri pretažení. Červený varovací riadok `background:#fef2f2`. | ✅ |
-| 49 | Admin — Objednávky | Vyplatená suma + tringelt | Zobrazenie koľko klient zaplatil a prípadný rozdiel. | ✅ |
-| 50 | Admin — Objednávky | CSV export | Hromadný export do Excelu/CSV pre účtovníctvo. | ❌ ~1h |
-| 51 | Admin — Doprava | Standard / km / auto karty | Každý typ dopravy je vlastná farebná karta (modrá/navy/amber). Collapsible sekcie. | ✅ |
-| 52 | Admin — Navigácia | SEO tab pridaný do nav | Tab chýbal. Pridaný do `tabs` poľa. | ✅ |
-| 53 | Admin — Navigácia | Nav grouping (Analýzy/SEO) | 8 tabov na 1280px — preplnené. Zoskupiť Štatistiky/GA4/SEO pod subtab menu. | ❌ ~30min |
-| 54 | Analytics | GA4 tab — JWT auth | Fetch bez tokenu → 401. Opravené cez `authFetch` helper. | ✅ |
-| 55 | Analytics | GSC grafy — dáta | GSC endpoint nainštalovaný. Grafy čakajú na akumuláciu dát. | ⏳ ~od 2026-06-01 |
-| 56 | PDF / Export | Kalkulačka PDF — zľavy | Preškrtnutá pôvodná + zľavnená cena v každom riadku (betón, doprava, služby). | ✅ |
-| 57 | PDF / Export | SMS export — zľavy | SMS zobrazuje diskontované ceny + sekcia "(zľavy: betón X%, ...)" na konci. | ✅ |
-| 58 | PDF / Export | Minusové pretaženie — červený riadok | Červený warning riadok v PDF keď bolo aktivované pretaženie vozidiel. | ✅ |
-| 59 | Výkon & PWA | Offline stránka | Biela stránka pri výpadku servera. `sw.js` + `offline.html` — Service Worker cache. | ✅ |
-| 60 | Výkon & PWA | VersionChecker — phantom toast | Po kliknutí "Obnoviť" sa banner znova objavil. sessionStorage flag — banner po refreshi iba keď je fakt novšia verzia. | ✅ |
-| 61 | Výkon & PWA | Floating client indikátor | Objavoval sa až po pustení scrollu. Opravené — zobrazuje sa počas scrollovania. | ✅ |
-| 62 | CI/CD | Automatický deploy (GH Action) | Každý `git push` → automatický build + deploy na server. Smoke test `/api/healthz` po deployi. | ✅ |
-| 63 | CI/CD | DB backup | Žiadny backup. `pg_dump` cron 3:17 AM, 30-dňová retencia. | ✅ |
-| 64 | CI/CD | PM2 `--update-env` fix | `--update-env` nenačítal nové env z `ecosystem.config.cjs`. Deploy skript používa `pm2 delete + start`. | ✅ |
-| 65 | Admin login | WebAuthn biometria | Jednoduchý btoa formulár. Pridaný WebAuthn (Touch ID / Face ID) + math captcha + lockout po 5 pokusoch. | ✅ |
+| 1 | 🔐 Bezpečnosť | Admin heslo v JS bundle | `btoa("Msbeton2023")` bolo viditeľné každému v DevTools. Nahradené server-side JWT (`POST /api/admin/login`). | ✅ |
+| 2 | 🔐 Bezpečnosť | Rate limiting | Bez obmedzenia — brute-force útok bol trivial. Pridaný `express-rate-limit` (10 req/15 min per IP) na login + objednávky. IPv6-kompatibilné. | ✅ |
+| 3 | 🔐 Bezpečnosť | HTTP security headers | Žiadne bezpečnostné hlavičky. Pridaný `helmet.js` — HSTS, X-Frame-Options, MIME sniff ochrana. | ✅ |
+| 4 | 🔐 Bezpečnosť | CAPTCHA na objednávkach | Bez ochrany — spam objednávky. Cloudflare Turnstile (invisible, privacy-friendly). | ✅ |
+| 5 | 🔐 Bezpečnosť | CORS origin whitelist | `cors()` bez origin = wildcard. Nahradené whitelistom `msbeton.sk + demo + localhost`. | ✅ |
+| 6 | 🔐 Bezpečnosť | Circular import 502 crash | `loginRateLimit` import vytváral circular dep → API padalo s 502. Presunuté do `lib/rateLimits.ts`. | ✅ |
+| 7 | 🔐 Bezpečnosť | Rate limit IPv6 crash | `keyGenerator` nevracal string pre IPv6 → `ValidationError`. Opravené cez `ipKeyGenerator()` helper. | ✅ |
+| 8 | 🔐 Bezpečnosť | allowExtraOverload bug | Neprihlásený používateľ / admin bez klienta mohol aktivovať "minusové pretaženie" (`?? true` fallback). Opravené: `false` pre všetkých bez explicitného povolenia. | ✅ |
+| 9 | 🔐 Bezpečnosť | PODMIENKY Mix stepper min clamp | Mix stepper v PODMIENKY paneli dovolil ísť na 0 vozidiel aj bez povolenia extraOverload. Teraz minimum = `autoMixP` (štandardné min) keď klient nemá povolenie. | ✅ |
+| 10 | 🔐 Bezpečnosť | Cloudflare WAF + CDN | Firewall, Bot Fight Mode, GeoIP blocking SK/CZ, DDoS ochrana. | ⏳ Čaká na DNS migráciu na msbeton.sk |
+| 11 | 🔐 Bezpečnosť | HttpOnly session cookie | Klientská session v localStorage (XSS riziko). Presunúť na HttpOnly cookie. | ❌ ~2h |
+| 12 | ⚖️ GDPR | GA4 Consent Mode v2 | GA4 sa spúšťal vždy. Pridaný cookie banner + Consent Mode v2 — GA4 len po súhlase. | ✅ |
+| 13 | ⚖️ GDPR | Stránka OÚ | Chýbala povinná politika GDPR. Vytvorená `/ochrana-osobnych-udajov` s kompletným znením. | ✅ |
+| 14 | ⚖️ GDPR | Stránka VOP | Chýbali VOP — záväzná objednávka v právnej šedej zóne. Vytvorená `/vop` — 7 sekcií. | ✅ |
+| 15 | ⚖️ GDPR | Footer linky OÚ + VOP | Linky viedli na `href="#"`. Opravené na správne routes. | ✅ |
+| 16 | ⚖️ GDPR | Rozšírený consent banner | Kategórie cookies (nutné / analytické / marketingové), uloženie preferencie. | ❌ ~3h |
+| 17 | 🔍 SEO | robots.txt — demo noindex | Demo doména sa indexovala Googlom. `Disallow: /` — po migrácii na prod sa prepne. | ✅ |
+| 18 | 🔍 SEO | Canonical URL | Chýbal canonical — riziko duplicitného indexu po migrácii. `<link rel="canonical">` na každej route. | ✅ |
+| 19 | 🔍 SEO | Sitemap | Len 3 URL. Rozšírený na 5 URL (+ OÚ, + VOP). | ✅ |
+| 20 | 🔍 SEO | Per-route meta tagy | Jedna meta description pre celú SPA. `SEOHead` komponent — každá route má vlastný title/description/OG. | ✅ |
+| 21 | 🔍 SEO | Self-host Montserrat | Písmo z Google CDN (latencia + GDPR). Nahradené `@fontsource/montserrat` — 6 váh, žiadny CDN. | ✅ |
+| 22 | 🔍 SEO | Google Maps lazy load | Maps API sa načítaval pri každom otvorení webu (LCP penalizácia). Lazy load — len keď klik na Mapa. | ✅ |
+| 23 | 🔍 SEO | GSC SEO tab v admin nave | Tab chýbal v desktop nav poli `tabs`. Pridaný. | ✅ |
+| 24 | 🔍 SEO | Cloudflare CDN | Rýchlejšie načítanie pre SR — statické assets cez CDN cache. | ⏳ Čaká na DNS migráciu |
+| 25 | 🧮 Kalkulačka | Tri módy dopravy | Pumpa, Domiešavač (mix), Vlastná doprava — každý s vlastnou cenovou logikou a UI. | ✅ |
+| 26 | 🧮 Kalkulačka | Extra položky (addToMain) | "+ Pridať položku" — viac typov betónu v jednej objednávke. addToMain zlučuje m³ do dopravy hlavnej položky bez phantom vozidiel. | ✅ |
+| 27 | 🧮 Kalkulačka | Zóny dopravy Standard/km/auto | Tri typy zón s vlastnými sadzbami a per pumpa/mix minimálnymi poplatkami. | ✅ |
+| 28 | 🧮 Kalkulačka | Info karta — dopravné ceny | Vedľa výsledku zobrazí dopravné ceny pre zónu klienta (min. poplatok, sadzba/km, čerpanie, chémia). | ✅ |
+| 29 | 🧮 Kalkulačka | Zľavy — preškrtnuté ceny | Zľavy na betón/dopravu/služby. Pôvodná preškrtnutá + zľavnená cena tučná — v UI, PDF aj SMS. | ✅ |
+| 30 | 🧮 Kalkulačka | PODMIENKY — vozidlá (admin) | Admin môže ručne nastaviť počet vozidiel (pumpa + mix). Farebné varovanie (amber/red) pri pretažení. Viditeľné len pre admina. | ✅ |
+| 31 | 🧮 Kalkulačka | Mapa — okamžitý pin bez blokovania | Pin sa umiestni okamžite po kliku. SK validácia beží na pozadí cez Geocoder (nesmie blokovať UX). | ✅ |
+| 32 | 🧮 Kalkulačka | Presné scrollovanie /#calculator | `getBoundingClientRect()` pred načítaním hero obrázka → zlý offset. Nahradené `scrollIntoView` + 350ms delay. | ✅ |
+| 33 | 🧮 Kalkulačka | Zdieľanie výpočtu (URL params) | Klient chce poslať link s nastaveným výpočtom. | ❌ ~2h |
+| 34 | 🧮 Kalkulačka | Uloženie výpočtu (localStorage) | Klient musí zadávať znova pri každej návšteve. | ❌ ~1h |
+| 35 | 👤 Admin — Klienti | Multi-search s diakritikou | Vyhľadávanie podľa mena, firmy, tel., emailu, loginId — AND logika, diakritikou-tolerantné. | ✅ |
+| 36 | 👤 Admin — Klienti | Klient detail — Osobné údaje | Meno, firma, telefón (formátovaný), email, adresa, zdieľaný odkaz — editovateľné inline. | ✅ |
+| 37 | 👤 Admin — Klienti | Klient detail — Prístup do kalkulačky | Login ID, heslo (skryté/viditeľné), aktivácia prístupu, odoslanie prihlasovacích údajov emailom. | ✅ |
+| 38 | 👤 Admin — Klienti | Klient detail — Možnosti | Hotovosť (+ DPH %), pridanie položky, zimné opatrenia, SMS, zdieľanie, extraOverload — v kategóriách PLATBA / KALKULAČKA / SMS. Full-width pod 2-col gridom. | ✅ |
+| 39 | 👤 Admin — Klienti | Hotovosť DPH input orezaný | Input `w-12` — číslo "100" sa orezávalo. Opravené na `w-16`. | ✅ |
+| 40 | 👤 Admin — Klienti | Klient štatistiky | Počet objednávok, celkové m³, obrat bez DPH, posledná objednávka (dátum + typ + m³), 3-mesačný mini bar graf. Tlačidlo → tab Objednávky. | ✅ |
+| 41 | 👤 Admin — Klienti | Manuálne ceny per-klient | Per-klient cenová mapa — iné ceny pre betón/dopravu/služby bez ovplyvnenia ostatných klientov. | ✅ |
+| 42 | 👤 Admin — Klienti | Zľavové tabuľky + PDF export | Interaktívna tabuľka cien s aplikovanými zľavami. PDF s firemnou hlavičkou a pečaťou. | ✅ |
+| 43 | 👤 Admin — Klienti | Typ dopravy — pill toggle | Výber Standard/Kilometre/Počet aut cez tlačidlá (iOS natívny picker vždy zobrazil floating overlay). | ✅ |
+| 44 | 👤 Admin — Klienti | Admin kalkulačka per-klient | Admin môže v detaile klienta spustiť kalkulačku s jeho zľavami a cenami (clientOverride). | ✅ |
+| 45 | 📋 Admin — Objednávky | Príjem — Košík + SMS kanál | Objednávky z kalkulačky (Košík) aj SMS kanálu. Email notifikácia na objednavky@msbeton.sk. | ✅ |
+| 46 | 📋 Admin — Objednávky | Filter objednávok | Filter: Stav / Typ vozidla / Platba / Zdroj (Košík/SMS) / Dátum (quick buttons + od–do) / Hľadaj. | ✅ |
+| 47 | 📋 Admin — Objednávky | Stránkovanie | Všetky naraz — pomalé pri 200+. Stránkovanie 30/stránku. | ✅ |
+| 48 | 📋 Admin — Objednávky | Minusové pretaženie — PDF red row | Čierny text v PDF pri pretažení. Červený varovací riadok `background:#fef2f2`. | ✅ |
+| 49 | 📋 Admin — Objednávky | Vyplatená suma + tringelt | Zobrazenie koľko klient zaplatil a prípadný rozdiel. | ✅ |
+| 50 | 📋 Admin — Objednávky | CSV export | Hromadný export do Excelu/CSV pre účtovníctvo. | ❌ ~1h |
+| 51 | 🚛 Admin — Doprava | Standard / km / auto karty | Každý typ dopravy je vlastná farebná karta (modrá/navy/amber). Collapsible sekcie. | ✅ |
+| 52 | 🗂️ Admin — Navigácia | SEO tab pridaný do nav | Tab chýbal. Pridaný do `tabs` poľa. | ✅ |
+| 53 | 🗂️ Admin — Navigácia | Nav grouping (Analýzy/SEO) | 8 tabov na 1280px — preplnené. Zoskupiť Štatistiky/GA4/SEO pod subtab menu. | ❌ ~30min |
+| 54 | 📊 Analytics | GA4 tab — JWT auth | Fetch bez tokenu → 401. Opravené cez `authFetch` helper. | ✅ |
+| 55 | 📊 Analytics | GSC grafy — dáta | GSC endpoint nainštalovaný. Grafy čakajú na akumuláciu dát. | ⏳ ~od 2026-06-01 |
+| 56 | 📄 PDF / Export | Kalkulačka PDF — zľavy | Preškrtnutá pôvodná + zľavnená cena v každom riadku (betón, doprava, služby). | ✅ |
+| 57 | 📄 PDF / Export | SMS export — zľavy | SMS zobrazuje diskontované ceny + sekcia "(zľavy: betón X%, ...)" na konci. | ✅ |
+| 58 | 📄 PDF / Export | Minusové pretaženie — červený riadok | Červený warning riadok v PDF keď bolo aktivované pretaženie vozidiel. | ✅ |
+| 59 | ⚡ Výkon & PWA | Offline stránka | Biela stránka pri výpadku servera. `sw.js` + `offline.html` — Service Worker cache. | ✅ |
+| 60 | ⚡ Výkon & PWA | VersionChecker — phantom toast | Po kliknutí "Obnoviť" sa banner znova objavil. sessionStorage flag — banner po refreshi iba keď je fakt novšia verzia. | ✅ |
+| 61 | ⚡ Výkon & PWA | Floating client indikátor | Objavoval sa až po pustení scrollu. Opravené — zobrazuje sa počas scrollovania. | ✅ |
+| 62 | 🚀 CI/CD | Automatický deploy (GH Action) | Každý `git push` → automatický build + deploy na server. Smoke test `/api/healthz` po deployi. | ✅ |
+| 63 | 🚀 CI/CD | DB backup | Žiadny backup. `pg_dump` cron 3:17 AM, 30-dňová retencia. | ✅ |
+| 64 | 🚀 CI/CD | PM2 `--update-env` fix | `--update-env` nenačítal nové env z `ecosystem.config.cjs`. Deploy skript používa `pm2 delete + start`. | ✅ |
+| 65 | 🔐 Admin login | WebAuthn biometria | Jednoduchý btoa formulár. Pridaný WebAuthn (Touch ID / Face ID) + math captcha + lockout po 5 pokusoch. | ✅ |
 
 ---
 
