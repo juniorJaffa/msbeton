@@ -63,7 +63,7 @@ export default function Home() {
     const link = document.createElement("link");
     link.rel = "preload";
     link.as = "image";
-    link.href = `${import.meta.env.BASE_URL}images/hero-bg.jpg`;
+    link.href = `${import.meta.env.BASE_URL}images/hero-bg.webp`;
     (link as HTMLLinkElement & { fetchPriority: string }).fetchPriority = "high";
     document.head.appendChild(link);
     return () => { document.head.removeChild(link); };
@@ -153,7 +153,7 @@ export default function Home() {
             playsInline
             preload="none"
             className="w-full h-full object-cover object-center"
-            poster={`${import.meta.env.BASE_URL}images/hero-bg.jpg`}
+            poster={`${import.meta.env.BASE_URL}images/hero-bg.webp`}
           >
             <source src={`${import.meta.env.BASE_URL}videos/hero-video.mp4`} type="video/mp4" />
             <source src={`${import.meta.env.BASE_URL}videos/hero-video.webm`} type="video/webm" />
