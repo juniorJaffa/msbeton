@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Cookie, X, Shield } from "lucide-react";
+import { useLocation } from "wouter";
 
 const STORAGE_KEY = "msbeton_cookie_consent";
 
 export function CookieBanner() {
   const [visible, setVisible] = useState(false);
+  const [, navigate] = useLocation();
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -17,6 +19,8 @@ export function CookieBanner() {
 
   function accept() {
     localStorage.setItem(STORAGE_KEY, "accepted");
+    const w = window as Window & { gtag?: (...args: unknown[]) => void };
+    w.gtag?.("consent", "update", { analytics_storage: "granted" });
     setVisible(false);
   }
 
@@ -52,9 +56,9 @@ export function CookieBanner() {
               <p className="text-white text-sm font-bold mb-0.5">Táto stránka používa cookies</p>
               <p className="text-white/60 text-xs leading-relaxed">
                 Používame základné cookies na zabezpečenie funkčnosti webu. Žiadne marketingové ani sledovacie cookies bez Vášho súhlasu.{" "}
-                <a href="#" className="underline underline-offset-2 hover:text-white/90 transition-colors" style={{ color: "#EDC531" }}>
+                <button onClick={() => { dismiss(); navigate("/ochrana-osobnych-udajov"); }} className="underline underline-offset-2 hover:text-white/90 transition-colors" style={{ color: "#EDC531" }}>
                   Ochrana osobných údajov
-                </a>
+                </button>
               </p>
             </div>
 

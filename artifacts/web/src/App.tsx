@@ -14,6 +14,8 @@ const ClientLogin = lazy(() => import("@/pages/ClientLogin"));
 const ClientProfile = lazy(() => import("@/pages/ClientProfile"));
 const ClientPasswordReset = lazy(() => import("@/pages/ClientPasswordReset"));
 const NotFound = lazy(() => import("@/pages/not-found"));
+const OchranaOsobnychUdajov = lazy(() => import("@/pages/OchranaOsobnychUdajov"));
+const VOP = lazy(() => import("@/pages/VOP"));
 const AdminLogin = lazy(() => import("@/pages/admin/AdminLogin"));
 const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard"));
 import { CookieBanner } from "@/components/CookieBanner";
@@ -36,6 +38,8 @@ function Router() {
         </Route>
         <Route path="/admin/login" component={AdminLogin} />
         <Route path="/admin/dashboard" component={AdminDashboard} />
+        <Route path="/ochrana-osobnych-udajov" component={OchranaOsobnychUdajov} />
+        <Route path="/vop" component={VOP} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>

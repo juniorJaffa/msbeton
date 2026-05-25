@@ -71,8 +71,8 @@ export function Footer() {
         <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-white/40">
           <p>© {new Date().getFullYear()} MS-BETON s.r.o. Všetky práva vyhradené.</p>
           <div className="flex gap-4 mt-4 md:mt-0">
-            <a href="#" className="hover:text-white transition-colors">Ochrana osobných údajov</a>
-            <a href="#" className="hover:text-white transition-colors">Obchodné podmienky</a>
+            <a href="/ochrana-osobnych-udajov" className="hover:text-white transition-colors">Ochrana osobných údajov</a>
+            <a href="/vop" className="hover:text-white transition-colors">VOP</a>
           </div>
         </div>
       </div>

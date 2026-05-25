@@ -1,0 +1,1 @@
+- [Git commits — author pravidlo](feedback_git_author.md) — nikdy Co-Authored-By Claude; commit author = kubincanek@gmail.com
