@@ -4601,6 +4601,7 @@ export default function AdminDashboard() {
     { id: "betony",     label: "BETÓNY",     short: "BETÓNY",   icon: <Layers className="w-5 h-5" /> },
     { id: "statistiky", label: "ŠTATISTIKY", short: "ŠTAT.",    icon: <TrendingUp className="w-5 h-5" /> },
     { id: "analytics",  label: "ANALÝZY",    short: "ANAL.",    icon: <BarChart2 className="w-5 h-5" /> },
+    { id: "gsc",        label: "SEO",        short: "SEO",      icon: <Search className="w-5 h-5" /> },
   ];
 
   return (
@@ -4653,7 +4654,7 @@ export default function AdminDashboard() {
       {/* Mobile tab bar — white, fixed pod headerom, ikona + label */}
       <div className="sm:hidden fixed top-12 left-0 right-0 z-40 bg-white border-b border-gray-200 shadow-sm">
         <div className="flex">
-          {tabs.filter(t => t.id !== "analytics" && t.id !== "statistiky").map(t => (
+          {tabs.filter(t => t.id !== "analytics" && t.id !== "statistiky" && t.id !== "gsc").map(t => (
             <button key={t.id} onClick={() => { setTab(t.id); window.location.hash = t.id; setMoreOpen(false); }}
               className={`flex-1 flex flex-col items-center justify-center py-1.5 gap-0.5 border-b-2 transition-all ${
                 tab === t.id ? "text-primary border-primary" : "text-gray-400 border-transparent"
