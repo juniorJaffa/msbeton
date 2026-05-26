@@ -34,6 +34,7 @@ export default function AdminDashboard() {
   });
   const [syncKey, setSyncKey] = useState(0);
   const [goToClientId, setGoToClientId] = useState<string | null>(null);
+  const [goToOrdersSearch, setGoToOrdersSearch] = useState<string | undefined>(undefined);
   const [sluzbyScrollPumpa, setSluzbyScrollPumpa] = useState(false);
   const [bioActive, setBioActive] = useState(() => isBiometricAvailable() && hasStoredCredential());
 
@@ -221,8 +222,8 @@ export default function AdminDashboard() {
             {tab === "betony" && <BetonTab key={syncKey} />}
             {tab === "sluzby" && <SluzbyTab key={syncKey} onGoToDoprava={() => { setTab("doprava"); window.location.hash = "doprava"; }} scrollToPumpa={sluzbyScrollPumpa} onScrollDone={() => setSluzbyScrollPumpa(false)} />}
             {tab === "doprava" && <DopravaTab key={syncKey} onGoToSluzby={() => { setTab("sluzby"); setSluzbyScrollPumpa(true); window.location.hash = "sluzby"; }} />}
-            {tab === "klienti" && <KlientiTab expandClientId={goToClientId} onExpanded={() => setGoToClientId(null)} onGoToOrders={() => { setTab("objednavky"); window.location.hash = "objednavky"; }} />}
-            {tab === "objednavky" && <ObjednavkyTab key={syncKey} onGoToClient={(loginId) => { setTab("klienti"); setGoToClientId(loginId); }} />}
+            {tab === "klienti" && <KlientiTab expandClientId={goToClientId} onExpanded={() => setGoToClientId(null)} onGoToOrders={(loginId) => { setGoToOrdersSearch(loginId); setTab("objednavky"); window.location.hash = "objednavky"; }} />}
+            {tab === "objednavky" && <ObjednavkyTab key={syncKey} initialSearch={goToOrdersSearch} onGoToClient={(loginId) => { setGoToOrdersSearch(undefined); setTab("klienti"); setGoToClientId(loginId); }} />}
             {tab === "analytics" && <AnalyticsTab />}
             {tab === "statistiky" && <StatistikyTab />}
             {tab === "gsc" && <SearchConsoleTab />}

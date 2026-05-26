@@ -293,7 +293,7 @@ ${buildTable(dopravaHdr, dopravaRows)}
   if (!win) { const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.click(); }
 }
 
-export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }: { expandClientId?: string | null; onExpanded?: () => void; onGoToOrders?: () => void }) {
+export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }: { expandClientId?: string | null; onExpanded?: () => void; onGoToOrders?: (loginId: string) => void }) {
   const [clients, setClients] = useState<Client[]>(adminData.getClients());
   const [zones] = useState(() => adminData.getDelivery());
   const [pZones] = useState(() => adminData.getTransportZones());
@@ -1196,7 +1196,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                                       </div>
                                     </div>
                                     {onGoToOrders && (
-                                      <button onClick={onGoToOrders} title="Objednávky" className="shrink-0 text-primary hover:text-secondary transition-colors cursor-pointer">
+                                      <button onClick={() => onGoToOrders(c.loginId ?? c.id)} title="Zobraziť objednávky klienta" className="shrink-0 text-primary hover:text-secondary transition-colors cursor-pointer">
                                         <ExternalLink className="w-4 h-4" />
                                       </button>
                                     )}

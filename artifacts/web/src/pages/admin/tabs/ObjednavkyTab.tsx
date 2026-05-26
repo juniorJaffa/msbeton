@@ -314,14 +314,14 @@ ${breakdownHtml ? `
   if (!win) { const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.click(); }
 }
 
-export default function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginId: string) => void }) {
+export default function ObjednavkyTab({ onGoToClient, initialSearch }: { onGoToClient?: (loginId: string) => void; initialSearch?: string }) {
   const [orders, setOrders] = useState<Order[]>(() => adminData.getOrders());
   const [expanded, setExpanded] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<Order["status"] | "vsetky">("vsetky");
   const [filterTab, setFilterTab] = useState<Order["tab"] | "vsetky">("vsetky");
   const [filterPriceMode, setFilterPriceMode] = useState<"vsetky" | "faktura" | "hotovost">("vsetky");
   const [filterChannel, setFilterChannel] = useState<"vsetky" | "sms" | "kosarik">("vsetky");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch ?? "");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [quickDate, setQuickDate] = useState("");
