@@ -149,14 +149,15 @@ Admin panel v kalkulačke umožňuje ručne nastaviť počet vozidiel namiesto a
 #### Fill-up v podmienky režime
 
 ```typescript
-// calcTransport – keď overrideTrucks je definované (aj pre 1 vozidlo!):
-const cap = mixCap;  // vždy mixCap pre per-vozidlo fill-up (pumpa aj mix tab)
+// calcTransport – keď overrideTrucks je definované:
 qtyPerTruck = qty / overrideTrucks
 if qtyPerTruck < fillupMin → fillupPerTruck = fillupMin - qtyPerTruck
-if qtyPerTruck > cap && < 10 → fillupPerTruck = 10 - qtyPerTruck
-fillupM3 = round(fillupPerTruck × overrideTrucks, 1)
+// qPT > cap (overloaded/RISK): žiadne fill-up — admin zvolil menej vozidiel zámerne
+fillupM3 = round(max(0, fillupPerTruck) × overrideTrucks, 1)
 if isMin → fillupM3 = 0  // pri min. doprave sa doťaženie neúčtuje
 ```
+
+**KRITICKÉ — qPT > cap (RISK) nemá fill-up:** Keď admin nastaví menej vozidiel ako je kapacita (pretaženie), každé vozidlo vezie viac ako mixCap. Tento stav je zámerný — doťaženie by bolo fyzicky nemožné. Vetva `qPT > cap` bola odstránená z podmienky kódu.
 
 **Kapacity a minimum z admin Doprava:**
 ```
@@ -165,19 +166,35 @@ mixCap    = zone.truckCapacity     ?? 9   // MIXÉR Kapacita
 fillupMin = tsettings.minimumLoadM3 ?? 5  // MIN. OBJ.
 ```
 
-**Príklady:**
-| qty | overrideTrucks | qPT | fill-up |
-|-----|---------------|-----|---------|
-| 8 m³ | 1 | 8.0 | 0 (8 < mixCap 9, žiadne fill-up) |
-| 20 m³ | 5 | 4.0 | 5×(5−4) = **+5 m³** |
-| 70 m³ | 8 (1P+7M) | 8.75 | 0 (8.75 < mixCap 9) |
+**Príklady podmienky fill-up:**
+| qty | overrideTrucks | qPT | fill-up | Poznámka |
+|-----|---------------|-----|---------|---------|
+| 3 m³ | 1 | 3.0 | 5−3=**+2 m³** | podnaplnené |
+| 8 m³ | 1 | 8.0 | 0 | 8 ≥ fillupMin=5 |
+| 20 m³ | 5 | 4.0 | 5×(5−4)=**+5 m³** | každé podnaplnené |
+| 28 m³ | 3 (RISK) | 9.33 | 0 | pretažené, žiadne fill-up ✓ |
+| 70 m³ | 8 (1P+7M) | 8.75 | 0 | 8.75 < mixCap=9, ok |
+
+**isRisk — kapacitná formula (platí VŠADE: PDF, SMS, UI, buildBreakdown):**
+```typescript
+// pumpa tab — zahŕňa skutočný počet pump (nie vždy 1!)
+isRisk = podmienkyPumpa * pumpCap + podmienkyMixC * mixCap < qty
+// mix tab
+isRisk = podmienkyTrucks * mixCap < qty
+```
+Staré `podmienkyMixC < calcPumpTrucks(qty) - 1` bolo nesprávne pre 2P scenáre.
+
+**m3PerTruck v outputs — s fill-up (konzistentné):**
+```typescript
+// PDF, SMS, buildBreakdown, UI result display — všade rovnaké:
+qPT = (qty + transportFillupM3) / totalTrucks
+```
 
 **UI feedback v podmienky paneli:**
-- `m3PerT` = `qty / totalTrucks` — ∅ m³/voz live update pri +/− kliku
+- `m3PerT` (stepper live) = `qty / totalTrucks` — bez fill-up (pre quick feedback pri +/−)
 - `podmienkyFillupPrev` — inline preview `+Xm³ doť.` vedľa ∅ m³/voz
 - Fleet capacity badge: `pumpa × pumpCap + mix × mixCap` — zelená ≥ qty, červená < qty
 - `buildBreakdown` PRETAŽENIE riadok: vždy zobrazený keď `podmienkyEnabled && idx === 0`
-- SMS `m3PerTruck` = `qty / trucks` (nie `qty + fillup / trucks`)
 
 **KRITICKÉ — dve dimenzie pre addToMain + podmienky:**
 - `extraTrucks = 0` pre addToMain extra (nepridal by auto)
