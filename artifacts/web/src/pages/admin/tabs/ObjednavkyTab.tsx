@@ -194,9 +194,17 @@ function exportOrderPDF(o: Order) {
   try { if (o.breakdown?.startsWith("{")) parsed = JSON.parse(o.breakdown); } catch { /* */ }
 
   const fmtRate = (n: number, suffix?: string) => n.toFixed(2) + " " + (suffix ?? "€");
+  const pdfCats = adminData.getCategories();
+  const fixSecH = (h: string) => {
+    const np = h.includes(" – ") ? h.split(" – ").slice(1).join(" – ") : "";
+    if (!np || pdfCats.some(c => c.name === np)) return h;
+    const cat = pdfCats.find(c => c.types.some(t => t.label === np));
+    return cat ? h.replace(np, cat.name) : h;
+  };
   let pdfRowIdx = 0;
   const breakdownHtml = parsed ? parsed.s.map(sec => {
-    const isMain = sec.h.startsWith("Pridaná") || sec.h.startsWith("Produkty");
+    const secH = fixSecH(sec.h);
+    const isMain = secH.startsWith("Pridaná") || secH.startsWith("Produkty");
     const rows = sec.rows.map(row => {
       if (row.l.startsWith("⚠") && row.v === 0) {
         return `<tr><td colspan="5" style="padding:4px 8px 4px 14px;font-size:7.5pt;font-weight:600;color:#991b1b;background:#fef2f2;border-top:1px solid #fca5a5;border-bottom:1px solid #fca5a5">${row.l}</td></tr>`;
@@ -226,7 +234,7 @@ function exportOrderPDF(o: Order) {
         <td style="padding:3px 8px;font-size:8.5pt;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:bold;color:${row.o !== undefined ? "#b45309" : "#222"};white-space:nowrap">${orig}${fmtEurPdf(row.v)}</td>
       </tr>`;
     }).join("");
-    return `<tr><td colspan="5" style="padding:4px 8px;font-size:8.5pt;font-weight:bold;background:${isMain ? "#001D3D" : "#EDC531"};color:${isMain ? "#EDC531" : "#001D3D"}">${sec.h}</td></tr>${rows}`;
+    return `<tr><td colspan="5" style="padding:4px 8px;font-size:8.5pt;font-weight:bold;background:${isMain ? "#001D3D" : "#EDC531"};color:${isMain ? "#EDC531" : "#001D3D"}">${secH}</td></tr>${rows}`;
   }).join("") : "";
 
   const discountInfo = [
@@ -1044,11 +1052,16 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                           <div className="px-4 py-3">
                             {parsed ? (
                               <div className="space-y-2">
-                                {parsed.s.map((sec, si) => (
+                                {parsed.s.map((sec, si) => {
+                                  const hNamePart = sec.h.includes(" – ") ? sec.h.split(" – ").slice(1).join(" – ") : "";
+                                  const hFixed = hNamePart && !allCategories.some(c => c.name === hNamePart)
+                                    ? sec.h.replace(hNamePart, allCategories.find(c => c.types.some(t => t.label === hNamePart))?.name ?? hNamePart)
+                                    : sec.h;
+                                  return (
                                   <div key={si}>
                                     <div className={cn("text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 mb-1 rounded-sm",
                                       sec.h.startsWith("Pridaná") || sec.h.startsWith("Produkty") ? "bg-primary/20 text-secondary" : "bg-gray-100 text-gray-500 ml-2")}>
-                                      {sec.h}
+                                      {hFixed}
                                     </div>
                                     {sec.rows.map((row, ri) => {
                                       const isRiskRow = row.l?.includes("Minusové pretaženie");
@@ -1080,7 +1093,8 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                       );
                                     })}
                                   </div>
-                                ))}
+                                  );
+                                })}
                               </div>
                             ) : o.breakdown ? (
                               <div className="space-y-1">
