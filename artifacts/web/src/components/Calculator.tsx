@@ -1916,6 +1916,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       ...(tab === "pumpa" && pumpStartTime && pumpStopTime ? { pumpTimer: { start: pumpStartTime, stop: pumpStopTime } } : {}),
       ...(podmienkyEnabled ? { podmienky: { trucks: tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks, pumpa: tab === "pumpa" ? podmienkyPumpa : 0, mix: tab === "pumpa" ? podmienkyMixC : podmienkyTrucks, m3PerTruck: (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks) > 0 ? Math.round(((result!.qty + (result!.concreteBreakdown[0]?.transportFillupM3 ?? 0)) / (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks)) * 10) / 10 : 0, isRisk: tab === "pumpa" ? (podmienkyPumpa * pumpCap + podmienkyMixC * mixCap) < result!.qty : podmienkyTrucks * mixCap < result!.qty } } : {}),
       turnstileToken: turnstileToken || undefined,
+      _hp: "",
     });
     const w = window as Window & { turnstile?: { reset: (id: string) => void } };
     if (turnstileWidgetId.current && w.turnstile) { w.turnstile.reset(turnstileWidgetId.current); }

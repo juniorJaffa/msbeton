@@ -52,11 +52,11 @@ async function verifyPassword(plain: string, stored: string): Promise<boolean> {
 const rateMap = new Map<string, { count: number; firstAt: number }>();
 const RATE_WINDOW = 60 * 60 * 1000; // 1h
 const RATE_MAX = 3;
-function checkRate(key: string): boolean {
+function checkRate(key: string, max = RATE_MAX, window = RATE_WINDOW): boolean {
   const now = Date.now();
   const e = rateMap.get(key);
-  if (!e || now - e.firstAt > RATE_WINDOW) { rateMap.set(key, { count: 1, firstAt: now }); return true; }
-  if (e.count >= RATE_MAX) return false;
+  if (!e || now - e.firstAt > window) { rateMap.set(key, { count: 1, firstAt: now }); return true; }
+  if (e.count >= max) return false;
   e.count++; return true;
 }
 
@@ -241,13 +241,20 @@ router.post("/order", async (req, res) => {
     if (!order || !order.id) {
       return res.status(400).json({ ok: false, error: "Chýbajú dáta objednávky" });
     }
+    // Honeypot: hidden field — humans leave it empty, bots fill it
+    if (order._hp) return res.status(400).json({ ok: false, error: "Chýbajú dáta objednávky" });
+
     const turnstileToken = order.turnstileToken as string | undefined;
-    const ip = (req.headers["cf-connecting-ip"] as string) ?? req.ip ?? "";
-    // Prihlásený klient (clientId overený voči DB) nepotrebuje Turnstile — token môže expiroval/chýbať
+    const ip = (req.headers["cf-connecting-ip"] as string) ?? req.ip ?? "unknown";
+    // Prihlásený klient (clientId overený voči DB) nepotrebuje Turnstile ani rate limit
     let isVerifiedClient = false;
     if (order.clientId) {
       const accounts = await getClientAccounts();
       isVerifiedClient = accounts.some((a) => a.id === String(order.clientId) && a.active !== false);
+    }
+    // Rate limit: anonymní = 5 objednávok/hodinu per IP
+    if (!isVerifiedClient && !checkRate(`order:${ip}`, 5, 60 * 60 * 1000)) {
+      return res.status(429).json({ ok: false, error: "Príliš veľa objednávok. Skúste neskôr." });
     }
     if (process.env.TURNSTILE_SECRET && !turnstileToken && !isVerifiedClient) {
       return res.status(400).json({ ok: false, error: "Chýba overenie CAPTCHA" });
