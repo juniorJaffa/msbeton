@@ -1243,7 +1243,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       transportIsMin: transportCalc.isMin, fillupM3, fillupTarget,
       fTransport, fFillup,
     };
-  }, [tab, pumpMode, pumpHour, pumpMin, quantity, distance, selectedType, pumpStartTime, pumpStopTime, pumpFinalMs, editStartTime, editStopTime, waitTotalMins, waitPiecesPumpa, waitPiecesMix, hoseMeters, washing, zimneOpatrenia, betonFactor, dopravaFactor, sluzbyFactor, fPump, fChem, fWash, fHose, fWaitP, fWaitM, pumpServicePrice, chemServicePrice, washServicePrice, waitServicePricePumpa, waitServicePriceMix, hoseServicePrice, zimneServicePrice, tzones, tsettings, extraItems, allCategories, clientDeliveryZone, pumpCap, mixCap, VAT, VAT_HOTOVOST, loggedClient, podmienkyEnabled, podmienkyTrucks, podmienkyPumpa, podmienkyMixC]);
+  }, [tab, pumpMode, pumpHour, pumpMin, quantity, distance, categoryName, selectedType, pumpStartTime, pumpStopTime, pumpFinalMs, editStartTime, editStopTime, waitTotalMins, waitPiecesPumpa, waitPiecesMix, hoseMeters, washing, zimneOpatrenia, betonFactor, dopravaFactor, sluzbyFactor, fPump, fChem, fWash, fHose, fWaitP, fWaitM, pumpServicePrice, chemServicePrice, washServicePrice, waitServicePricePumpa, waitServicePriceMix, hoseServicePrice, zimneServicePrice, tzones, tsettings, extraItems, allCategories, clientDeliveryZone, pumpCap, mixCap, VAT, VAT_HOTOVOST, loggedClient, podmienkyEnabled, podmienkyTrucks, podmienkyPumpa, podmienkyMixC]);
 
   async function handleLogin() {
     if (!loginId || !loginPwd) return;
@@ -3522,16 +3522,16 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                           ? mainHasServices
                           : (ci.svcPumpCost > 0 || ci.svcHoseCost > 0 || ci.svcWashCost > 0 || ci.svcWaitCost > 0);
 
-                        const itemCatName = ci.categoryName || null;
+                        const itemCatName = ci.categoryName || (idx === 0 ? categoryName : null) || null;
                         return (
                           <div key={idx} className={cn(isExtra ? "mt-3 pt-2.5 border-t border-white/10" : "")}>
                             {isExtra ? (
-                              <div className="text-[10px] text-primary/60 font-black uppercase tracking-wider mb-0.5">
+                              <div className="text-[10px] font-black uppercase tracking-wider mb-0.5" style={{ color: "#EDC531" }}>
                                 Pridaná položka {idx}
-                                {itemCatName && <span className="ml-1.5 font-normal text-white/40 normal-case tracking-normal">{itemCatName}</span>}
+                                {itemCatName && <span className="ml-1.5 font-normal normal-case tracking-normal" style={{ color: "rgba(255,255,255,0.45)" }}>{itemCatName}</span>}
                               </div>
                             ) : itemCatName ? (
-                              <div className="text-[10px] text-primary/70 font-black uppercase tracking-wider mb-0.5 leading-tight">{itemCatName}</div>
+                              <div className="text-[10px] font-black uppercase tracking-wider mb-1 leading-tight" style={{ color: "#EDC531", opacity: 0.85 }}>{itemCatName}</div>
                             ) : null}
                             <PriceRow label={ci.label} original={origVal} discounted={discVal} hasDiscount={Math.abs(origVal - discVal) > 0.001} alwaysShow={isExtra} />
 
