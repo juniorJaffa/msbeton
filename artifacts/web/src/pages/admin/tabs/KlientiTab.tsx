@@ -1423,7 +1423,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
 
       {/* ── Popup: Zľavové tabuľky klienta ── */}
       {tablePdfModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 overflow-auto">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center pt-14 px-4 pb-4 overflow-auto">
           <div className="bg-gray-50 w-full max-w-3xl my-4 shadow-2xl rounded-sm">
 
             {/* Header */}
