@@ -123,13 +123,13 @@ function TypeSelectField({ label, value, onChange, options, discountFactor = 1, 
     <div>
       <label className="block text-sm font-semibold text-white/80 mb-2">{label}</label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="w-full bg-white/10 border border-white/10 border-b-2 border-b-primary text-white px-4 py-3 text-sm font-medium rounded-sm focus:ring-0 focus:ring-offset-0 min-h-[50px]">
-          <div className="flex items-center gap-3 min-w-0 overflow-hidden flex-1">
-            <span className="truncate flex-1 min-w-0 text-left text-sm">
+        <SelectTrigger className="w-full bg-white/10 border border-white/10 border-b-2 border-b-primary text-white px-4 py-3 text-sm font-medium rounded-sm focus:ring-0 focus:ring-offset-0 min-h-[50px] h-auto">
+          <div className="flex flex-col gap-0.5 flex-1 min-w-0 text-left">
+            <span className="text-sm font-medium leading-snug whitespace-normal">
               {value ? cleanLabel(value) : <span className="text-white/40 font-normal">Vyberte typ betónu</span>}
             </span>
             {selectedOpt && (
-              <span className="flex items-center gap-1.5 text-xs font-bold flex-shrink-0">
+              <span className="flex items-center gap-1.5 text-xs font-bold">
                 {selShowStrike && <s className="text-white/30 font-normal">{selectedOpt.price.toFixed(2)}</s>}
                 <span className="text-primary">
                   {selDisplayPrice.toFixed(2)} €/m³
@@ -145,9 +145,9 @@ function TypeSelectField({ label, value, onChange, options, discountFactor = 1, 
             const displayPrice = manual !== undefined ? manual : o.price * discountFactor;
             const showStrike = Math.abs(o.price - displayPrice) > 0.001;
             return (
-              <SelectItem key={o.label} value={o.label} className="text-white focus:bg-white/10 focus:text-primary cursor-pointer">
-                <span className="flex items-center gap-4">
-                  <span>{cleanLabel(o.label)}</span>
+              <SelectItem key={o.label} value={o.label} className="text-white focus:bg-white/10 focus:text-primary cursor-pointer [&>span]:whitespace-normal">
+                <span className="flex flex-col gap-0.5 py-0.5">
+                  <span className="leading-snug whitespace-normal">{cleanLabel(o.label)}</span>
                   <span className="flex items-center gap-1.5 text-xs font-bold">
                     {showStrike && <s className="text-white/30 font-normal">{o.price.toFixed(2)}</s>}
                     <span className="text-primary">
@@ -914,10 +914,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     let fillupM3 = 0;
     if (overrideTrucks) {
       const qtyPerTruck = qty / overrideTrucks;
-      const cap = mixCap; // podmienky: mix kapacita platí pre per-vozidlo fill-up (aj pumpa tab)
       let fillupPerTruck = 0;
       if (qtyPerTruck < fillupMin) fillupPerTruck = fillupMin - qtyPerTruck;
-      else if (qtyPerTruck > cap && qtyPerTruck < 2 * fillupMin) fillupPerTruck = 2 * fillupMin - qtyPerTruck;
+      // overloaded trucks (qPT > cap) → no fill-up; admin chose fewer trucks intentionally
       fillupM3 = Math.round(Math.max(0, fillupPerTruck) * overrideTrucks * 10) / 10;
     } else if (tabType === "pumpa") {
       if (qty < fillupMin) fillupM3 = fillupMin - qty;
@@ -2431,7 +2430,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
               const fMin = tsettings?.minimumLoadM3 ?? 5;
               let fPT = 0;
               if (qPT < fMin) fPT = fMin - qPT;
-              else if (qPT > mixCap && qPT < 2 * fMin) fPT = 2 * fMin - qPT;
+              // overloaded trucks → no fill-up (same as calcTransport)
               return Math.round(Math.max(0, fPT) * trucks * 10) / 10;
             })();
             const riskBtnCls = "w-8 h-8 rounded border border-red-500/60 text-red-400 hover:border-red-400 hover:bg-red-500/15 text-lg font-bold flex items-center justify-center cursor-pointer disabled:opacity-25 disabled:cursor-not-allowed transition-colors";
