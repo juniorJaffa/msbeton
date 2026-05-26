@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { SlidersHorizontal, ShoppingCart, MessageSquare, MapPin, Navigation, Copy, Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, AlertTriangle, FileText, Calculator, Users } from "lucide-react";
 import { adminData, adminApi, Order, TransportSettings } from "@/lib/adminData";
@@ -316,6 +316,7 @@ ${breakdownHtml ? `
 
 export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClientId, focusOrderId }: { onGoToClient?: (loginId: string) => void; initialSearch?: string; initialClientId?: string; focusOrderId?: string }) {
   const [orders, setOrders] = useState<Order[]>(() => adminData.getOrders());
+  const allCategories = useMemo(() => adminData.getCategories(), []);
   const [expanded, setExpanded] = useState<string | null>(focusOrderId ?? null);
   const [highlightedOrder, setHighlightedOrder] = useState<string | null>(focusOrderId ?? null);
   const [filterStatus, setFilterStatus] = useState<Order["status"] | "vsetky">("vsetky");
@@ -804,9 +805,10 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                       <span className="font-bold text-secondary text-base leading-tight">{o.clientName}</span>
                       {o.company && <span className="text-sm text-gray-500 truncate max-w-[120px]">{o.company}</span>}
                     </div>
-                    {o.concreteCategory && (
-                      <div className="text-[10px] font-black uppercase tracking-wider" style={{ color: "#EDC531" }}>{o.concreteCategory}</div>
-                    )}
+                    {(() => {
+                      const cat = o.concreteCategory ?? allCategories.find(c => c.types.some(t => t.label === o.concreteType))?.name;
+                      return cat ? <div className="text-[10px] font-black uppercase tracking-wider" style={{ color: "#EDC531" }}>{cat}</div> : null;
+                    })()}
                     <div className="flex items-center gap-1.5 flex-wrap text-sm">
                       <span className="font-medium text-gray-600">{o.concreteType.replace(/ – [\d.,]+ €.*/, "")}</span>
                       <span className="font-bold text-secondary">{o.totalQty} m³</span>
