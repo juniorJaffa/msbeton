@@ -119,43 +119,67 @@ function TypeSelectField({ label, value, onChange, options, discountFactor = 1, 
   const selManual = selectedOpt ? manualPrices?.[selectedOpt.id] : undefined;
   const selDisplayPrice = selectedOpt ? (selManual !== undefined ? selManual : selectedOpt.price * discountFactor) : 0;
   const selShowStrike = selectedOpt ? Math.abs(selectedOpt.price - selDisplayPrice) > 0.001 : false;
+  const cleanedVal = value ? cleanLabel(value) : "";
+  // Krátky názov (≤24 znakov) → 1 riadok; dlhý → 2 riadky
+  const isShort = cleanedVal.length <= 24;
+  const priceNode = selectedOpt ? (
+    <span className="flex items-center gap-1 text-xs font-bold shrink-0">
+      {selShowStrike && <s className="text-white/30 font-normal">{selectedOpt.price.toFixed(2)}</s>}
+      <span className="text-primary">
+        {selDisplayPrice.toFixed(2)} €/m³
+        {selManual !== undefined && <span className="text-[8px] ml-0.5 opacity-60">M</span>}
+      </span>
+    </span>
+  ) : null;
   return (
     <div>
       <label className="block text-sm font-semibold text-white/80 mb-2">{label}</label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="w-full bg-white/10 border border-white/10 border-b-2 border-b-primary text-white px-4 py-3 text-sm font-medium rounded-sm focus:ring-0 focus:ring-offset-0 min-h-[50px] h-auto items-start [&>span]:line-clamp-none [&>span]:overflow-visible overflow-visible">
-          <div className="flex flex-col gap-0.5 flex-1 min-w-0 text-left overflow-visible mt-0.5">
-            <span className="text-sm font-medium leading-snug whitespace-normal break-words">
-              {value ? cleanLabel(value) : <span className="text-white/40 font-normal">Vyberte typ betónu</span>}
+        <SelectTrigger className="w-full bg-white/10 border border-white/10 border-b-2 border-b-primary text-white px-4 py-3 text-sm font-medium rounded-sm focus:ring-0 focus:ring-offset-0 h-auto min-h-[48px] [&>span]:line-clamp-none overflow-visible items-center">
+          {!value ? (
+            <span className="text-white/40 font-normal text-sm flex-1 text-left">Vyberte typ betónu</span>
+          ) : isShort ? (
+            /* Krátky názov: všetko na jednom riadku */
+            <span className="flex items-center justify-between w-full gap-2 min-w-0">
+              <span className="text-sm font-medium truncate">{cleanedVal}</span>
+              {priceNode}
             </span>
-            {selectedOpt && (
-              <span className="flex items-center gap-1.5 text-xs font-bold">
-                {selShowStrike && <s className="text-white/30 font-normal">{selectedOpt.price.toFixed(2)}</s>}
-                <span className="text-primary">
-                  {selDisplayPrice.toFixed(2)} €/m³
-                  {selManual !== undefined && <span className="text-[8px] ml-0.5 opacity-60">M</span>}
-                </span>
-              </span>
-            )}
-          </div>
+          ) : (
+            /* Dlhý názov: zalomenie + cena pod ním */
+            <span className="flex flex-col gap-0.5 flex-1 min-w-0 text-left">
+              <span className="text-sm font-medium leading-snug break-words whitespace-normal">{cleanedVal}</span>
+              {priceNode}
+            </span>
+          )}
         </SelectTrigger>
-        <SelectContent className="bg-[#1e293b] border border-white/10 text-white z-[200]" side="bottom" position="popper" sideOffset={4}>
+        {/* Mobile scroll fix: bez position="popper" → Radix používa item-aligned mode
+            ktorý správne ovláda touch scroll na dlhých listoch */}
+        <SelectContent className="bg-[#1e293b] border border-white/10 text-white z-[200] max-h-[65vh] overflow-y-auto">
           {options.map((o) => {
             const manual = manualPrices?.[o.id];
             const displayPrice = manual !== undefined ? manual : o.price * discountFactor;
             const showStrike = Math.abs(o.price - displayPrice) > 0.001;
+            const itemClean = cleanLabel(o.label);
+            const itemShort = itemClean.length <= 28;
             return (
-              <SelectItem key={o.label} value={o.label} className="text-white focus:bg-white/10 focus:text-primary cursor-pointer [&>span]:whitespace-normal">
-                <span className="flex flex-col gap-0.5 py-0.5">
-                  <span className="leading-snug whitespace-normal">{cleanLabel(o.label)}</span>
-                  <span className="flex items-center gap-1.5 text-xs font-bold">
-                    {showStrike && <s className="text-white/30 font-normal">{o.price.toFixed(2)}</s>}
-                    <span className="text-primary">
-                      {displayPrice.toFixed(2)} €/m³
-                      {manual !== undefined && <span className="text-[8px] ml-0.5 opacity-60">M</span>}
+              <SelectItem key={o.label} value={o.label} className="text-white focus:bg-white/10 focus:text-primary cursor-pointer [&>span]:whitespace-normal py-2">
+                {itemShort ? (
+                  <span className="flex items-center justify-between gap-2 w-full">
+                    <span className="leading-snug">{itemClean}</span>
+                    <span className="flex items-center gap-1 text-xs font-bold shrink-0">
+                      {showStrike && <s className="text-white/30 font-normal">{o.price.toFixed(2)}</s>}
+                      <span className="text-primary">{displayPrice.toFixed(2)} €/m³{manual !== undefined && <span className="text-[8px] ml-0.5 opacity-60">M</span>}</span>
                     </span>
                   </span>
-                </span>
+                ) : (
+                  <span className="flex flex-col gap-0.5 py-0.5">
+                    <span className="leading-snug whitespace-normal">{itemClean}</span>
+                    <span className="flex items-center gap-1 text-xs font-bold">
+                      {showStrike && <s className="text-white/30 font-normal">{o.price.toFixed(2)}</s>}
+                      <span className="text-primary">{displayPrice.toFixed(2)} €/m³{manual !== undefined && <span className="text-[8px] ml-0.5 opacity-60">M</span>}</span>
+                    </span>
+                  </span>
+                )}
               </SelectItem>
             );
           })}

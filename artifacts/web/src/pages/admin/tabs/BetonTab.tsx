@@ -105,11 +105,11 @@ export default function BetonTab() {
       {addingCat ? (
         <div className="border-2 border-primary/60 border-l-4 border-l-primary rounded-lg bg-primary/5 p-4 shadow-sm">
           <p className="text-xs font-bold text-secondary/60 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-            <Plus className="w-3.5 h-3.5" /> Nová kategória kameniva
+            <Plus className="w-3.5 h-3.5" /> Nová kategória
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
             <input
-              placeholder="Názov kategórie (napr. DRVENÉ KAMENIVO Dmax8)"
+              placeholder="Názov kategórie (napr. DRVENÉ KAMENIVO Dmax8, Anhydrit…)"
               value={newCatName}
               onChange={e => setNewCatName(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter") addCategory(); if (e.key === "Escape") { setAddingCat(false); setNewCatName(""); } }}
@@ -125,12 +125,16 @@ export default function BetonTab() {
               </button>
             </div>
           </div>
-          <p className="text-[10px] text-gray-400 mt-2">Stlač Enter na pridanie · Escape na zrušenie</p>
+          <p className="text-xs text-secondary/40 font-medium mt-2 flex items-center gap-1.5">
+            <kbd className="bg-secondary/8 border border-secondary/15 text-secondary/50 rounded px-1.5 py-0.5 text-[10px] font-mono leading-none">Enter</kbd> pridanie
+            <span className="text-secondary/25">·</span>
+            <kbd className="bg-secondary/8 border border-secondary/15 text-secondary/50 rounded px-1.5 py-0.5 text-[10px] font-mono leading-none">Esc</kbd> zrušenie
+          </p>
         </div>
       ) : (
         <button onClick={() => setAddingCat(true)}
           className="flex items-center gap-2 w-full border-2 border-dashed border-gray-400 bg-white shadow-sm text-gray-600 hover:border-primary hover:text-primary font-bold text-sm py-4 justify-center transition-colors rounded-md">
-          <Plus className="w-4 h-4" /> Pridať kategóriu kameniva
+          <Plus className="w-4 h-4" /> Pridať kategóriu
         </button>
       )}
 
