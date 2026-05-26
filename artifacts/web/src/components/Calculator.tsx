@@ -1334,9 +1334,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const mainCI = result.concreteBreakdown[0];
     const mainCatName = mainCI?.categoryName ?? "";
     const mainBetonTypeName = mainCI?.label.replace(/ – [\d.,]+ m³$/, "") ?? "";
-    const mainBetonLabel = mainCatName && mainCatName !== mainBetonTypeName
-      ? `${mainCatName} · ${mainBetonTypeName}`
-      : mainBetonTypeName;
+    const mainBetonLabel = mainCatName || mainBetonTypeName;
     const betonRows = (() => {
       if (!mainCI) return "";
       const origVal = isFaktura ? mainCI.bezDph : mainCI.bezDph * (1 + VAT_HOTOVOST);
@@ -1881,8 +1879,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const tOrig = fmt2(ci.transport);
       const tDisc = fmt2(ci.transport * dopravaFactor);
       const typeLabel = ci.label.replace(/ – [\d.,]+ m³$/, "");
-      const catPrefix = ci.categoryName && ci.categoryName !== typeLabel ? `${ci.categoryName} · ` : "";
-      const catLabel = `${catPrefix}${typeLabel}`;
+      const catLabel = ci.categoryName || typeLabel;
       const header = idx === 0 ? `Produkty – ${catLabel}` : `Pridaná položka ${idx} – ${catLabel}`;
       const rows: { l: string; v: number; o?: number; u?: number; uOrig?: number; uSuffix?: string }[] = [];
       const uBeton = ci.qty > 0 ? fmt2(bDisc / ci.qty) : undefined;
