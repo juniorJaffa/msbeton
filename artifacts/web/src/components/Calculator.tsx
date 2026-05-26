@@ -127,11 +127,11 @@ function TypeSelectField({ label, value, onChange, options, discountFactor = 1, 
   const priceNode = selectedOpt ? (
     <span className="flex items-center gap-1 text-xs font-bold shrink-0">
       {selShowStrike && <s className="text-white/30 font-normal">{selectedOpt.price.toFixed(2)}</s>}
-      <span className={selManual !== undefined ? "text-cyan-300" : "text-primary"}>
+      <span className={selManual !== undefined ? "text-sky-400" : "text-primary"}>
         {selDisplayPrice.toFixed(2)} €/m³
       </span>
       {selManual !== undefined && (
-        <span className="inline-flex items-center gap-0.5 bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded px-1 py-px text-[8px] font-bold leading-none">
+        <span className="inline-flex items-center gap-0.5 bg-sky-400/20 text-sky-400 border border-sky-400/30 rounded px-1 py-px text-[8px] font-bold leading-none">
           <PenLine className="w-2 h-2" />M
         </span>
       )}
@@ -149,7 +149,7 @@ function TypeSelectField({ label, value, onChange, options, discountFactor = 1, 
         */}
         <SelectTrigger className="w-full bg-white/10 border border-white/10 border-b-2 border-b-primary text-white px-4 py-3 text-sm font-medium rounded-sm focus:ring-0 focus:ring-offset-0 h-auto min-h-[48px] overflow-visible">
           <div className={cn(
-            "flex-1 min-w-0 text-left",
+            "flex-1 min-w-0 text-left whitespace-normal",
             !value || isShort ? "flex items-center gap-2" : "flex flex-col gap-0.5"
           )}>
             {!value ? (
@@ -186,9 +186,9 @@ function TypeSelectField({ label, value, onChange, options, discountFactor = 1, 
                     <span className="leading-snug flex-1">{itemClean}</span>
                     <span className="flex items-center gap-1 text-xs font-bold shrink-0">
                       {showStrike && <s className="text-white/30 font-normal">{o.price.toFixed(2)}</s>}
-                      <span className={manual !== undefined ? "text-cyan-300" : "text-primary"}>{displayPrice.toFixed(2)} €/m³</span>
+                      <span className={manual !== undefined ? "text-sky-400" : "text-primary"}>{displayPrice.toFixed(2)} €/m³</span>
                       {manual !== undefined && (
-                        <span className="inline-flex items-center gap-0.5 bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded px-1 py-px text-[8px] font-bold leading-none">
+                        <span className="inline-flex items-center gap-0.5 bg-sky-400/20 text-sky-400 border border-sky-400/30 rounded px-1 py-px text-[8px] font-bold leading-none">
                           <PenLine className="w-2 h-2" />M
                         </span>
                       )}
@@ -200,9 +200,9 @@ function TypeSelectField({ label, value, onChange, options, discountFactor = 1, 
                     <span className="leading-snug whitespace-normal">{itemClean}</span>
                     <span className="flex items-center justify-end gap-1 text-xs font-bold">
                       {showStrike && <s className="text-white/30 font-normal">{o.price.toFixed(2)}</s>}
-                      <span className={manual !== undefined ? "text-cyan-300" : "text-primary"}>{displayPrice.toFixed(2)} €/m³</span>
+                      <span className={manual !== undefined ? "text-sky-400" : "text-primary"}>{displayPrice.toFixed(2)} €/m³</span>
                       {manual !== undefined && (
-                        <span className="inline-flex items-center gap-0.5 bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded px-1 py-px text-[8px] font-bold leading-none">
+                        <span className="inline-flex items-center gap-0.5 bg-sky-400/20 text-sky-400 border border-sky-400/30 rounded px-1 py-px text-[8px] font-bold leading-none">
                           <PenLine className="w-2 h-2" />M
                         </span>
                       )}

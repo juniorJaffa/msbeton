@@ -23,17 +23,30 @@ export function EditableField({ value, onSave, type = "text" }: { value: string 
     </span>
   );
   return (
-    <span className="flex items-center gap-1.5">
-      <input
-        type={type}
-        value={val}
-        onChange={e => setVal(e.target.value)}
-        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); save(); } if (e.key === "Escape") cancel(); }}
-        onBlur={save}
-        className={`bg-amber-50 border-2 border-primary px-2.5 py-1 text-secondary text-sm focus:outline-none rounded-sm ${type === "number" ? "w-28 text-right" : "w-full min-w-[160px]"}`}
-        autoFocus
-        onFocus={e => e.target.select()}
-      />
+    <span className="flex items-start gap-1.5 w-full">
+      {type === "number" ? (
+        <input
+          type="number"
+          value={val}
+          onChange={e => setVal(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); save(); } if (e.key === "Escape") cancel(); }}
+          onBlur={save}
+          className="bg-amber-50 border-2 border-primary px-2.5 py-1 text-secondary text-sm focus:outline-none rounded-sm w-28 text-right"
+          autoFocus
+          onFocus={e => e.target.select()}
+        />
+      ) : (
+        <textarea
+          value={val}
+          rows={Math.max(2, Math.ceil(val.length / 38))}
+          onChange={e => setVal(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); save(); } if (e.key === "Escape") cancel(); }}
+          onBlur={save}
+          className="bg-amber-50 border-2 border-primary px-2.5 py-1 text-secondary text-sm focus:outline-none rounded-sm w-full min-w-[160px] resize-none leading-snug"
+          autoFocus
+          onFocus={e => e.target.select()}
+        />
+      )}
       <button onMouseDown={e => e.preventDefault()} onClick={save} className="p-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors" aria-label="Uložiť">
         <Check className="w-4 h-4" />
       </button>
