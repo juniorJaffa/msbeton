@@ -1076,7 +1076,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         }
         concreteBreakdown.push({
           label: `Betón ${cleanType(t.label)} – ${q} m³`,
-          qty: q, categoryName: item.categoryName ?? "",
+          qty: q, categoryName: item.categoryName ?? allCategories.find(c => c.types.some(t => t.label === item.typeLabel))?.name ?? "",
           bezDph: q * t.price,
           bezDphFinal: itemManual !== undefined ? q * itemManual : q * t.price * betonFactor,
           bezDphFinalHotovost: itemManual !== undefined ? q * itemManual * (1 + VAT_HOTOVOST) : q * t.price * betonFactor * (1 + VAT_HOTOVOST),
@@ -2849,7 +2849,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             <button
               type="button"
               onClick={() => {
-                setExtraItems([...extraItems, { id: Date.now().toString(), categoryName: null, typeLabel: null, quantity: "" }]);
+                setExtraItems([...extraItems, { id: Date.now().toString(), categoryName: allCategories[0]?.name ?? null, typeLabel: null, quantity: "" }]);
                 setShowResult(false);
               }}
               className="w-full py-2.5 border border-dashed border-primary/40 text-primary/60 hover:border-primary hover:text-primary transition-all text-sm font-semibold tracking-wide cursor-pointer rounded-sm"
@@ -2862,7 +2862,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             <button
               type="button"
               onClick={() => {
-                setExtraItems([...extraItems, { id: Date.now().toString(), categoryName: null, typeLabel: null, quantity: "", transportMode: "none" }]);
+                setExtraItems([...extraItems, { id: Date.now().toString(), categoryName: allCategories[0]?.name ?? null, typeLabel: null, quantity: "", transportMode: "none" }]);
                 setShowResult(false);
               }}
               className="w-full py-2.5 border border-dashed border-primary/40 text-primary/60 hover:border-primary hover:text-primary transition-all text-sm font-semibold tracking-wide cursor-pointer rounded-sm"
