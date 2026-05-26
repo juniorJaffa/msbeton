@@ -123,9 +123,9 @@ function TypeSelectField({ label, value, onChange, options, discountFactor = 1, 
     <div>
       <label className="block text-sm font-semibold text-white/80 mb-2">{label}</label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="w-full bg-white/10 border border-white/10 border-b-2 border-b-primary text-white px-4 py-3 text-sm font-medium rounded-sm focus:ring-0 focus:ring-offset-0 min-h-[50px] h-auto">
-          <div className="flex flex-col gap-0.5 flex-1 min-w-0 text-left">
-            <span className="text-sm font-medium leading-snug whitespace-normal">
+        <SelectTrigger className="w-full bg-white/10 border border-white/10 border-b-2 border-b-primary text-white px-4 py-3 text-sm font-medium rounded-sm focus:ring-0 focus:ring-offset-0 min-h-[50px] h-auto items-start [&>span]:line-clamp-none [&>span]:overflow-visible overflow-visible">
+          <div className="flex flex-col gap-0.5 flex-1 min-w-0 text-left overflow-visible mt-0.5">
+            <span className="text-sm font-medium leading-snug whitespace-normal break-words">
               {value ? cleanLabel(value) : <span className="text-white/40 font-normal">Vyberte typ betónu</span>}
             </span>
             {selectedOpt && (
@@ -3437,13 +3437,19 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                           ? mainHasServices
                           : (ci.svcPumpCost > 0 || ci.svcHoseCost > 0 || ci.svcWashCost > 0 || ci.svcWaitCost > 0);
 
+                        const itemCatName = idx === 0
+                          ? categoryName
+                          : (extraItems[idx - 1]?.categoryName ?? null);
                         return (
                           <div key={idx} className={cn(isExtra ? "mt-3 pt-2.5 border-t border-white/10" : "")}>
-                            {isExtra && (
-                              <div className="text-[10px] text-primary/60 font-black uppercase tracking-wider mb-1">
+                            {isExtra ? (
+                              <div className="text-[10px] text-primary/60 font-black uppercase tracking-wider mb-0.5">
                                 Pridaná položka {idx}
+                                {itemCatName && <span className="ml-1.5 font-normal text-white/35 normal-case tracking-normal">{itemCatName}</span>}
                               </div>
-                            )}
+                            ) : itemCatName ? (
+                              <div className="text-[10px] text-white/35 mb-0.5 leading-tight">{itemCatName}</div>
+                            ) : null}
                             <PriceRow label={ci.label} original={origVal} discounted={discVal} hasDiscount={Math.abs(origVal - discVal) > 0.001} alwaysShow={isExtra} />
 
                             {/* Doprava pre tento item */}

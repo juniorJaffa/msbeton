@@ -250,7 +250,7 @@ router.post("/order", async (req, res) => {
     let isVerifiedClient = false;
     if (order.clientId) {
       const accounts = await getClientAccounts();
-      isVerifiedClient = accounts.some((a) => a.id === String(order.clientId) && a.active !== false);
+      isVerifiedClient = accounts.some((a) => (a.loginId === String(order.clientId) || a.id === String(order.clientId)) && a.active !== false);
     }
     // Rate limit: anonymní = 5 objednávok/hodinu per IP
     if (!isVerifiedClient && !checkRate(`order:${ip}`, 5, 60 * 60 * 1000)) {

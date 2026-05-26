@@ -1155,7 +1155,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                       {/* Štatistiky klienta */}
                       {(() => {
                         const cOrders = allOrders
-                          .filter(o => o.clientId === c.id)
+                          .filter(o => o.clientId != null && (o.clientId === c.loginId || o.clientId === c.id))
                           .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
                         const totalM3 = cOrders.reduce((s, o) => s + o.quantity, 0);
                         const totalEur = cOrders.reduce((s, o) => s + o.totalBezDph, 0);

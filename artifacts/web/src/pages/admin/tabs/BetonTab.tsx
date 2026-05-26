@@ -102,6 +102,38 @@ export default function BetonTab() {
 
   return (
     <div className="space-y-2">
+      {addingCat ? (
+        <div className="border-2 border-primary/60 border-l-4 border-l-primary rounded-lg bg-primary/5 p-4 shadow-sm">
+          <p className="text-xs font-bold text-secondary/60 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+            <Plus className="w-3.5 h-3.5" /> Nová kategória kameniva
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              placeholder="Názov kategórie (napr. DRVENÉ KAMENIVO Dmax8)"
+              value={newCatName}
+              onChange={e => setNewCatName(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") addCategory(); if (e.key === "Escape") { setAddingCat(false); setNewCatName(""); } }}
+              className="flex-1 border-2 border-primary/50 focus:border-primary px-4 py-3 text-sm focus:outline-none bg-white rounded-md font-medium placeholder:text-gray-400 text-secondary"
+              autoFocus
+            />
+            <div className="flex gap-2 shrink-0">
+              <button onClick={addCategory} className="flex-1 sm:flex-none px-5 py-3 bg-primary text-secondary font-bold text-sm hover:bg-primary/90 rounded-md transition-colors flex items-center justify-center gap-2">
+                <Check className="w-4 h-4" /> Pridať
+              </button>
+              <button onClick={() => { setAddingCat(false); setNewCatName(""); }} className="flex-1 sm:flex-none px-5 py-3 bg-gray-100 text-gray-600 text-sm hover:bg-gray-200 rounded-md transition-colors font-medium">
+                Zrušiť
+              </button>
+            </div>
+          </div>
+          <p className="text-[10px] text-gray-400 mt-2">Stlač Enter na pridanie · Escape na zrušenie</p>
+        </div>
+      ) : (
+        <button onClick={() => setAddingCat(true)}
+          className="flex items-center gap-2 w-full border-2 border-dashed border-gray-400 bg-white shadow-sm text-gray-600 hover:border-primary hover:text-primary font-bold text-sm py-4 justify-center transition-colors rounded-md">
+          <Plus className="w-4 h-4" /> Pridať kategóriu kameniva
+        </button>
+      )}
+
       {cats.map(cat => (
         <div key={cat.id}
           draggable
@@ -230,37 +262,6 @@ export default function BetonTab() {
         </div>
       ))}
 
-      {addingCat ? (
-        <div className="mt-3 border-2 border-primary/60 border-l-4 border-l-primary rounded-lg bg-primary/5 p-4 shadow-sm">
-          <p className="text-xs font-bold text-secondary/60 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-            <Plus className="w-3.5 h-3.5" /> Nová kategória kameniva
-          </p>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <input
-              placeholder="Názov kategórie (napr. DRVENÉ KAMENIVO Dmax8)"
-              value={newCatName}
-              onChange={e => setNewCatName(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter") addCategory(); if (e.key === "Escape") { setAddingCat(false); setNewCatName(""); } }}
-              className="flex-1 border-2 border-primary/50 focus:border-primary px-4 py-3 text-sm focus:outline-none bg-white rounded-md font-medium placeholder:text-gray-400 text-secondary"
-              autoFocus
-            />
-            <div className="flex gap-2 shrink-0">
-              <button onClick={addCategory} className="flex-1 sm:flex-none px-5 py-3 bg-primary text-secondary font-bold text-sm hover:bg-primary/90 rounded-md transition-colors flex items-center justify-center gap-2">
-                <Check className="w-4 h-4" /> Pridať
-              </button>
-              <button onClick={() => { setAddingCat(false); setNewCatName(""); }} className="flex-1 sm:flex-none px-5 py-3 bg-gray-100 text-gray-600 text-sm hover:bg-gray-200 rounded-md transition-colors font-medium">
-                Zrušiť
-              </button>
-            </div>
-          </div>
-          <p className="text-[10px] text-gray-400 mt-2">Stlač Enter na pridanie · Escape na zrušenie</p>
-        </div>
-      ) : (
-        <button onClick={() => setAddingCat(true)}
-          className="flex items-center gap-2 w-full border-2 border-dashed border-gray-400 bg-white shadow-sm text-gray-600 hover:border-primary hover:text-primary font-bold text-sm py-4 justify-center transition-colors rounded-md">
-          <Plus className="w-4 h-4" /> Pridať kategóriu kameniva
-        </button>
-      )}
     </div>
   );
 }
