@@ -293,7 +293,7 @@ ${buildTable(dopravaHdr, dopravaRows)}
   if (!win) { const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.click(); }
 }
 
-export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }: { expandClientId?: string | null; onExpanded?: () => void; onGoToOrders?: (loginId: string) => void }) {
+export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }: { expandClientId?: string | null; onExpanded?: () => void; onGoToOrders?: (loginId: string, focusOrderId?: string) => void }) {
   const [clients, setClients] = useState<Client[]>(adminData.getClients());
   const [zones] = useState(() => adminData.getDelivery());
   const [pZones] = useState(() => adminData.getTransportZones());
@@ -327,7 +327,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
     loginId: "", password: "1234",
     discountBeton: "20", discountDoprava: "0", discountSluzby: "0", discountCelkovo: "0",
     hotovostDph: "20",
-    canHotovost: true, canPridatBeton: true, canZimneOpatrenia: false, active: true,
+    canHotovost: true, canPridatBeton: true, canPridatBetonOwn: false, canZimneOpatrenia: false, active: true,
     smsOrderDisabled: false, smsShareOnly: false, allowExtraOverload: true,
     deliveryZoneId: zones.find(z => (z.pricingType ?? "standard") === "standard")?.id ?? zones[0]?.id ?? "",
     sharedLink: "",
@@ -430,6 +430,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
       discountCelkovo: parseFloat(form.discountCelkovo) || 0,
       hotovostDph: (() => { const v = parseFloat(form.hotovostDph); return Number.isNaN(v) ? 0.20 : v / 100; })(),
       canHotovost: form.canHotovost, canPridatBeton: form.canPridatBeton,
+      canPridatBetonOwn: form.canPridatBetonOwn || undefined,
       canZimneOpatrenia: form.canZimneOpatrenia,
       smsOrderDisabled: form.smsOrderDisabled || undefined,
       smsShareOnly: form.smsShareOnly || undefined,
@@ -722,8 +723,15 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                 <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
                   <input type="checkbox" checked={form.canPridatBeton} onChange={e => setForm({ ...form, canPridatBeton: e.target.checked })} className="accent-secondary w-5 h-5 shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <span className="text-sm text-gray-700">Pridať položku (betón)</span>
-                    <div className="text-[11px] text-gray-400">Zobrazí tlačidlo „+ Pridať položku" v kalkulačke</div>
+                    <span className="text-sm text-gray-700">Pridať položku — Pumpa a Mix</span>
+                    <div className="text-[11px] text-gray-400">„+ Pridať položku" v kalkulačke (Pumpa/Mix tab)</div>
+                  </div>
+                </label>
+                <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
+                  <input type="checkbox" checked={form.canPridatBetonOwn} onChange={e => setForm({ ...form, canPridatBetonOwn: e.target.checked })} className="accent-secondary w-5 h-5 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm text-gray-700">Pridať položku — Vlastná doprava</span>
+                    <div className="text-[11px] text-gray-400">„+ Pridať položku" v kalkulačke (Vl. doprava tab, bez dopravy/služieb)</div>
                   </div>
                 </label>
                 <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
@@ -1196,7 +1204,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                                       </div>
                                     </div>
                                     {onGoToOrders && (
-                                      <button onClick={() => onGoToOrders(c.loginId ?? c.id)} title="Zobraziť objednávky klienta" className="shrink-0 text-primary hover:text-secondary transition-colors cursor-pointer">
+                                      <button onClick={() => onGoToOrders(c.loginId ?? c.id, last?.id)} title="Zobraziť objednávky klienta" className="shrink-0 text-primary hover:text-secondary transition-colors cursor-pointer">
                                         <ExternalLink className="w-4 h-4" />
                                       </button>
                                     )}
@@ -1252,8 +1260,15 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                           <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50 select-none">
                             <input type="checkbox" checked={c.canPridatBeton ?? true} onChange={e => update(c.id, { canPridatBeton: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />
                             <div className="flex-1 min-w-0">
-                              <span className="text-sm text-gray-700">Pridať položku (betón)</span>
-                              <div className="text-[11px] text-gray-400">Zobrazí tlačidlo „+ Pridať položku" v kalkulačke</div>
+                              <span className="text-sm text-gray-700">Pridať položku — Pumpa a Mix</span>
+                              <div className="text-[11px] text-gray-400">„+ Pridať položku" v Pumpa/Mix tab</div>
+                            </div>
+                          </label>
+                          <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50 select-none">
+                            <input type="checkbox" checked={c.canPridatBetonOwn ?? false} onChange={e => update(c.id, { canPridatBetonOwn: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <span className="text-sm text-gray-700">Pridať položku — Vlastná doprava</span>
+                              <div className="text-[11px] text-gray-400">„+ Pridať položku" vo Vl. doprava tab</div>
                             </div>
                           </label>
                           <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50 select-none">

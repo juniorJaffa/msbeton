@@ -63,6 +63,7 @@ export interface Client {
   discountCelkovo: number;
   canHotovost: boolean;
   canPridatBeton: boolean;
+  canPridatBetonOwn?: boolean;
   active: boolean;
   deliveryZoneId?: string;     // ID zóny dopravy (z adminData.getDelivery()), default = prvá zóna
   canZimneOpatrenia?: boolean; // zobrazí a auto-zahrnie zimné opatrenia

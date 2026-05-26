@@ -20,6 +20,7 @@ const ADMIN_CLIENT: LoggedClient = {
   discountCelkovo: 0,
   canHotovost: true,
   canPridatBeton: true,
+  canPridatBetonOwn: true,
 };
 
 // ── WebAuthn helpers ──────────────────────────────────────────────────────────

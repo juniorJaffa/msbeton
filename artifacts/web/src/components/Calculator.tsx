@@ -2756,7 +2756,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     + Pridať Služby ({tab === "pumpa" ? "čerpanie, hadice, čakačky" : "čakačky"})
                   </button>
                 )}
-                {item.svc && (
+                {item.svc && tab !== "vlastnadoprava" && (
                   <div className="border border-primary/20 rounded-lg p-3 space-y-3 bg-primary/3">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-black text-primary/60 uppercase tracking-widest">
@@ -2816,12 +2816,25 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             );
           })}
 
-          {/* Pridať položku button — iba pre klientov s canPridatBeton, nie pre vlastnadoprava */}
-          {loggedClient?.canPridatBeton && tab !== "vlastnadoprava" && (
+          {/* Pridať položku — Pumpa/Mix */}
+          {loggedClient?.canPridatBeton && (tab === "pumpa" || tab === "mix") && (
             <button
               type="button"
               onClick={() => {
                 setExtraItems([...extraItems, { id: Date.now().toString(), categoryName: null, typeLabel: null, quantity: "" }]);
+                setShowResult(false);
+              }}
+              className="w-full py-2.5 border border-dashed border-primary/40 text-primary/60 hover:border-primary hover:text-primary transition-all text-sm font-semibold tracking-wide cursor-pointer rounded-sm"
+            >
+              + Pridať položku
+            </button>
+          )}
+          {/* Pridať položku — Vlastná doprava (bez dopravy a služieb) */}
+          {loggedClient?.canPridatBetonOwn && tab === "vlastnadoprava" && (
+            <button
+              type="button"
+              onClick={() => {
+                setExtraItems([...extraItems, { id: Date.now().toString(), categoryName: null, typeLabel: null, quantity: "", transportMode: "none" }]);
                 setShowResult(false);
               }}
               className="w-full py-2.5 border border-dashed border-primary/40 text-primary/60 hover:border-primary hover:text-primary transition-all text-sm font-semibold tracking-wide cursor-pointer rounded-sm"

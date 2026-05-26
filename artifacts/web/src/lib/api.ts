@@ -62,6 +62,7 @@ export interface LoggedClient {
   discountCelkovo: number;
   canHotovost: boolean;
   canPridatBeton: boolean;
+  canPridatBetonOwn?: boolean;
   deliveryZoneId?: string;
   canZimneOpatrenia?: boolean;
   hotovostDph?: number;
