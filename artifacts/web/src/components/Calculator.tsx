@@ -1663,10 +1663,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     lines.push(`Čas vystavenia   - ${fmtTime}`);
     lines.push(div);
 
-    for (const ci of result.concreteBreakdown) {
+    result.concreteBreakdown.forEach((ci, ciIdx) => {
       const concreteVal = isFaktura ? ci.bezDphFinal : ci.bezDphFinalHotovost;
       const unitPrice = ci.qty > 0 ? concreteVal / ci.qty : 0;
       const concreteName = ci.label.replace(/ – \d+(?:[.,]\d+)? m³$/, "");
+      if (ciIdx > 0) lines.push(div);
       if (ci.categoryName) lines.push(ci.categoryName);
       lines.push(concreteName);
       lines.push(rowUnit(`${ci.qty}m³`, unitPrice, concreteVal));
@@ -1711,7 +1712,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
           lines.push(row("Doprava", transportDisc));
         }
       }
-    }
+    });
 
     let svcSection = false;
     const svcDiv = () => { if (!svcSection) { lines.push(div); svcSection = true; } };
