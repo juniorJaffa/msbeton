@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Truck, LogIn, LogOut, FileText, FileSpreadsheet, FileType2, MessageSquare, Minus, Plus, Trash2, Table2, ShoppingCart, X, Info, Check, ExternalLink, MapPin, Copy, Navigation, Settings2, AlertTriangle, Timer } from "lucide-react";
+import { ChevronDown, Truck, LogIn, LogOut, FileText, FileSpreadsheet, FileType2, MessageSquare, Minus, Plus, Trash2, Table2, ShoppingCart, X, Info, Check, ExternalLink, MapPin, Copy, Navigation, Settings2, AlertTriangle, Timer, PenLine } from "lucide-react";
 import { OpenLocationCode } from "open-location-code";
 import { cn, formatPhone, isValidSvkPhone } from "@/lib/utils";
 
@@ -127,10 +127,14 @@ function TypeSelectField({ label, value, onChange, options, discountFactor = 1, 
   const priceNode = selectedOpt ? (
     <span className="flex items-center gap-1 text-xs font-bold shrink-0">
       {selShowStrike && <s className="text-white/30 font-normal">{selectedOpt.price.toFixed(2)}</s>}
-      <span className="text-primary">
+      <span className={selManual !== undefined ? "text-cyan-300" : "text-primary"}>
         {selDisplayPrice.toFixed(2)} €/m³
-        {selManual !== undefined && <span className="text-[8px] ml-0.5 opacity-60">M</span>}
       </span>
+      {selManual !== undefined && (
+        <span className="inline-flex items-center gap-0.5 bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded px-1 py-px text-[8px] font-bold leading-none">
+          <PenLine className="w-2 h-2" />M
+        </span>
+      )}
     </span>
   ) : null;
 
@@ -158,10 +162,10 @@ function TypeSelectField({ label, value, onChange, options, discountFactor = 1, 
                 {priceNode}
               </>
             ) : (
-              /* 2 riadky: dlhý názov zalomí, cena pod ním */
+              /* 2 riadky: dlhý názov zalomí, cena pod ním vpravo */
               <>
                 <span className="text-sm font-medium leading-snug break-words whitespace-normal">{cleanedVal}</span>
-                {priceNode}
+                <div className="flex justify-end">{priceNode}</div>
               </>
             )}
           </div>
@@ -182,16 +186,26 @@ function TypeSelectField({ label, value, onChange, options, discountFactor = 1, 
                     <span className="leading-snug flex-1">{itemClean}</span>
                     <span className="flex items-center gap-1 text-xs font-bold shrink-0">
                       {showStrike && <s className="text-white/30 font-normal">{o.price.toFixed(2)}</s>}
-                      <span className="text-primary">{displayPrice.toFixed(2)} €/m³{manual !== undefined && <span className="text-[8px] ml-0.5 opacity-60">M</span>}</span>
+                      <span className={manual !== undefined ? "text-cyan-300" : "text-primary"}>{displayPrice.toFixed(2)} €/m³</span>
+                      {manual !== undefined && (
+                        <span className="inline-flex items-center gap-0.5 bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded px-1 py-px text-[8px] font-bold leading-none">
+                          <PenLine className="w-2 h-2" />M
+                        </span>
+                      )}
                     </span>
                   </span>
                 ) : (
                   /* Dlhá položka: 2 riadky */
                   <span className="flex flex-col gap-0.5 py-0.5 w-full">
                     <span className="leading-snug whitespace-normal">{itemClean}</span>
-                    <span className="flex items-center gap-1 text-xs font-bold">
+                    <span className="flex items-center justify-end gap-1 text-xs font-bold">
                       {showStrike && <s className="text-white/30 font-normal">{o.price.toFixed(2)}</s>}
-                      <span className="text-primary">{displayPrice.toFixed(2)} €/m³{manual !== undefined && <span className="text-[8px] ml-0.5 opacity-60">M</span>}</span>
+                      <span className={manual !== undefined ? "text-cyan-300" : "text-primary"}>{displayPrice.toFixed(2)} €/m³</span>
+                      {manual !== undefined && (
+                        <span className="inline-flex items-center gap-0.5 bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded px-1 py-px text-[8px] font-bold leading-none">
+                          <PenLine className="w-2 h-2" />M
+                        </span>
+                      )}
                     </span>
                   </span>
                 )}
