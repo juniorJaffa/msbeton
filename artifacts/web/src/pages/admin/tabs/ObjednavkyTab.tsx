@@ -294,7 +294,7 @@ ${breakdownHtml ? `
     <div style="margin-top:4px;border-top:1px solid rgba(255,255,255,0.2);padding-top:4px">
       <div style="font-size:8pt;color:rgba(255,255,255,0.6)">Zaplatené</div>
       <div style="font-size:11pt;font-weight:bold;color:#fff">${fmtEurPdf(o.paidAmount)}</div>
-      ${Math.abs(o.paidAmount - o.totalSDph) > 0.01 ? `<div style="font-size:8pt;font-weight:bold;color:${o.paidAmount > o.totalSDph ? "#86efac" : "#fca5a5"}">${o.paidAmount > o.totalSDph ? `+${(o.paidAmount - o.totalSDph).toFixed(2)} € tringelt` : `${(o.paidAmount - o.totalSDph).toFixed(2)} € rozdiel`}</div>` : ""}
+      ${Math.abs(o.paidAmount - o.totalSDph) > 0.01 ? `<div style="font-size:9pt;font-weight:bold;color:${o.paidAmount > o.totalSDph ? "#86efac" : "#ef4444"}">${o.paidAmount > o.totalSDph ? `+${(o.paidAmount - o.totalSDph).toFixed(2)} € tringelt` : `${(o.paidAmount - o.totalSDph).toFixed(2)} € rozdiel`}</div>` : ""}
     </div>` : ""}
   </div>
 </div>
@@ -818,8 +818,8 @@ export default function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginI
                     <div className="text-right">
                       <div className="font-black text-secondary text-base tabular-nums leading-tight">{fmtEur(o.totalSDph)}</div>
                       {o.status === "vyplatena" && o.paidAmount !== undefined && Math.abs(o.paidAmount - o.totalSDph) > 0.01 && (
-                        <div className="text-[10px] tabular-nums text-teal-600 font-semibold leading-tight mt-0.5">
-                          {fmtEur(o.paidAmount)} <span className="text-teal-400 font-normal">{o.paidAmount > o.totalSDph ? `+${fmtEur(o.paidAmount - o.totalSDph)}` : fmtEur(o.paidAmount - o.totalSDph)}</span>
+                        <div className={`text-[10px] tabular-nums font-semibold leading-tight mt-0.5 ${o.paidAmount >= o.totalSDph ? "text-teal-600" : "text-red-600"}`}>
+                          {fmtEur(o.paidAmount)} <span className={`font-bold ${o.paidAmount > o.totalSDph ? "text-teal-500" : "text-red-500"}`}>{o.paidAmount > o.totalSDph ? `+${fmtEur(o.paidAmount - o.totalSDph)}` : fmtEur(o.paidAmount - o.totalSDph)}</span>
                         </div>
                       )}
                       <div className={cn("text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-sm mt-0.5 inline-block",
@@ -1056,21 +1056,24 @@ export default function ObjednavkyTab({ onGoToClient }: { onGoToClient?: (loginI
                                 <span className="text-xs font-bold text-white/70">{o.priceMode === "hotovost" ? "Spolu" : "Spolu s DPH"}</span>
                                 <span className="text-lg font-black text-primary">{fmtEur(o.totalSDph)}</span>
                               </div>
-                              {o.paidAmount !== undefined && o.status === "vyplatena" && (
-                                <div className="flex justify-between items-center bg-teal-50 border border-teal-200 rounded-sm px-3 py-2 mt-1.5">
-                                  <div>
-                                    <div className="text-xs font-bold text-teal-700">Vyplatená suma</div>
-                                    {Math.abs(o.paidAmount - o.totalSDph) > 0.01 && (
-                                      <div className="text-[10px] text-teal-500">
-                                        {o.paidAmount > o.totalSDph
-                                          ? `+${(o.paidAmount - o.totalSDph).toFixed(2)} € tringelt`
-                                          : `${(o.paidAmount - o.totalSDph).toFixed(2)} € rozdiel`}
-                                      </div>
-                                    )}
+                              {o.paidAmount !== undefined && o.status === "vyplatena" && (() => {
+                                const diff = o.paidAmount - o.totalSDph;
+                                const isNeg = Math.abs(diff) > 0.01 && diff < 0;
+                                const isPos = Math.abs(diff) > 0.01 && diff > 0;
+                                return (
+                                  <div className={`flex justify-between items-center rounded-sm px-3 py-2 mt-1.5 border ${isNeg ? "bg-red-50 border-red-200" : "bg-teal-50 border-teal-200"}`}>
+                                    <div>
+                                      <div className={`text-xs font-bold ${isNeg ? "text-red-700" : "text-teal-700"}`}>Vyplatená suma</div>
+                                      {Math.abs(diff) > 0.01 && (
+                                        <div className={`text-[10px] font-bold ${isNeg ? "text-red-600" : "text-teal-500"}`}>
+                                          {isPos ? `+${diff.toFixed(2)} € tringelt` : `${diff.toFixed(2)} € rozdiel`}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <span className={`text-lg font-black ${isNeg ? "text-red-700" : "text-teal-700"}`}>{fmtEur(o.paidAmount)}</span>
                                   </div>
-                                  <span className="text-lg font-black text-teal-700">{fmtEur(o.paidAmount)}</span>
-                                </div>
-                              )}
+                                );
+                              })()}
                             </div>
                           </div>
                         </div>
