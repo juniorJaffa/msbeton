@@ -214,8 +214,10 @@ function exportOrderPDF(o: Order) {
           ? `<span style="text-decoration:line-through;color:#aaa;font-size:7.5pt">${fmtRate(row.uOrig, row.uSuffix)}</span><br><span style="font-weight:bold">${fmtRate(row.u, row.uSuffix)}</span>`
           : fmtRate(row.u, row.uSuffix))
         : "—";
+      const hlavnaBadge = `<span style="display:inline-block;background:#1d4ed8;color:#fff;font-weight:900;font-size:6pt;padding:1px 4px;border-radius:3px;vertical-align:middle;margin-right:4px">&#9673;&nbsp;HLAVNÁ</span>`;
+      const rowLabel = row.l.startsWith("HLAVNÁ ") ? `${hlavnaBadge}${row.l.slice(7)}` : row.l;
       return `<tr>
-        <td style="padding:3px 8px;font-size:8.5pt;border-bottom:1px solid #f0f0f0;color:#444">${row.l}</td>
+        <td style="padding:3px 8px;font-size:8.5pt;border-bottom:1px solid #f0f0f0;color:#444">${rowLabel}</td>
         <td style="padding:3px 8px;font-size:8.5pt;border-bottom:1px solid #f0f0f0;text-align:right;color:#666;white-space:nowrap">${unitCell}</td>
         <td style="padding:3px 8px;font-size:8.5pt;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:bold;color:${row.o !== undefined ? "#b45309" : "#222"};white-space:nowrap">${orig}${fmtEurPdf(row.v)}</td>
       </tr>`;
@@ -1048,6 +1050,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                       const isRiskRow = row.l?.includes("Minusové pretaženie");
                                       const isPretazenieRow = !isRiskRow && row.l?.startsWith("★ Pretaženie");
                                       const isAddToMainRow = row.l?.startsWith("↑") && row.v === 0;
+                                      const isHlavnaTransport = row.l?.startsWith("HLAVNÁ ");
                                       if (isAddToMainRow) return (
                                         <div key={ri} className="flex items-center gap-1.5 text-xs py-0.5 pl-3 text-blue-600 bg-blue-50 rounded-sm">
                                           <span className="shrink-0 inline-flex items-center bg-blue-700 text-white text-[9px] font-black px-1 py-px rounded-sm">HLAVNÁ</span>
@@ -1061,7 +1064,9 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                           isRiskRow ? "bg-red-50 px-2 py-1 rounded-sm" : isPretazenieRow ? "bg-amber-50 px-2 py-1 rounded-sm" : ""
                                         )}>
                                           <span className={isRiskRow ? "text-red-600 font-semibold" : isPretazenieRow ? "text-amber-700 font-semibold" : "text-gray-500"}>
-                                            {row.l}
+                                            {isHlavnaTransport ? (
+                                              <><span className="inline-flex items-center bg-blue-700 text-white text-[9px] font-black px-1 py-px rounded-sm mr-1">HLAVNÁ</span>{row.l.slice(7)}</>
+                                            ) : row.l}
                                           </span>
                                           <span className="shrink-0 text-right">
                                             {row.o !== undefined && <span className="line-through text-gray-300 text-[10px] mr-1">{fmtEur(row.o)}</span>}

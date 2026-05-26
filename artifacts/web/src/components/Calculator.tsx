@@ -383,6 +383,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [loginLoading, setLoginLoading] = useState(false);
   const [smsCopied, setSmsCopied] = useState(false);
   const [smsOrderCreated, setSmsOrderCreated] = useState(false);
+  const [smsOrderWarning, setSmsOrderWarning] = useState(false);
   const [showPriceTable, setShowPriceTable] = useState(false);
   const [zimneOpatrenia, setZimneOpatrenia] = useState(false); // default OFF, user zapína manuálne
   const [revision, setRevision] = useState(0);
@@ -1891,10 +1892,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       rows.push({ l: ci.label, v: bDisc, ...(Math.abs(bOrig - bDisc) > 0.01 ? { o: bOrig } : {}), ...(uBeton !== undefined ? { u: uBeton, uSuffix: "€/m³", ...(uBetonOrig !== undefined && Math.abs(uBetonOrig - uBeton) > 0.001 ? { uOrig: uBetonOrig } : {}) } : {}) });
       if (ci.transport > 0) {
         const hasAddToMain = idx === 0 && extraItems.some(ei => ei.transportMode === "addToMain" && (parseFloat(ei.quantity) || 0) > 0);
-        const bdHlavnaBadge = hasAddToMain
-          ? `<span style="display:inline-block;background:#1d4ed8;color:#fff;font-weight:900;font-size:6pt;padding:1px 5px;border-radius:3px;vertical-align:middle;letter-spacing:0.04em;margin-right:5px">&#9673;&nbsp;HLAVNÁ</span>`
-          : "";
-        const dopravaLbl = `${bdHlavnaBadge}${ci.transportIsMin ? "Min. doprava" : "Doprava"}${zoneStr ? ` ${zoneStr}` : ""} · ${pdfTrucksLabel(ci, idx === 0)}`;
+        const addToMainQtyBd = hasAddToMain ? extraItems.reduce((s, ei) => { const q = parseFloat(ei.quantity) || 0; return (q > 0 && ei.transportMode === "addToMain") ? s + q : s; }, 0) : 0;
+        const qtyStr = addToMainQtyBd > 0 ? `${ci.qty}+${addToMainQtyBd} m³` : `${ci.qty} m³`;
+        const dopravaLbl = `${hasAddToMain ? "HLAVNÁ " : ""}${ci.transportIsMin ? "Min. doprava" : "Doprava"}${zoneStr ? ` ${zoneStr}` : ""} · ${pdfTrucksLabel(ci, idx === 0)} · ${qtyStr}`;
         const uTrans = ci.qty > 0 ? fmt2(tDisc / ci.qty) : undefined;
         const uTransOrig = ci.qty > 0 ? fmt2(tOrig / ci.qty) : undefined;
         rows.push({ l: dopravaLbl, v: tDisc, ...(Math.abs(tOrig - tDisc) > 0.01 ? { o: tOrig } : {}), ...(uTrans !== undefined ? { u: uTrans, uSuffix: "€/m³", ...(uTransOrig !== undefined && Math.abs(uTransOrig - uTrans) > 0.001 ? { uOrig: uTransOrig } : {}) } : {}) });
@@ -3795,7 +3795,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     </div>
                   </div>
                 ) : (
-                  <button onClick={() => { setOrderForm(f => ({ ...f, name: loggedClient?.name ?? f.name, phone: loggedClient?.phone ? formatPhone(loggedClient.phone) : f.phone })); setShowOrderModal(true); }}
+                  <button onClick={() => {
+                    if (smsOrderCreated) { setSmsOrderWarning(true); return; }
+                    setOrderForm(f => ({ ...f, name: loggedClient?.name ?? f.name, phone: loggedClient?.phone ? formatPhone(loggedClient.phone) : f.phone }));
+                    setShowOrderModal(true);
+                  }}
                     className="flex items-center justify-center gap-2 w-full py-3 bg-primary text-white font-bold text-sm tracking-wide hover:bg-primary/90 transition-all cursor-pointer">
                     <ShoppingCart className="w-4 h-4" /> Záväzne objednať →
                   </button>
@@ -4020,6 +4024,35 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
         </div>{/* /two-column grid */}
       </div>
+
+      {/* SMS duplicate order warning modal */}
+      {smsOrderWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70" onClick={e => { if (e.target === e.currentTarget) setSmsOrderWarning(false); }}>
+          <div className="bg-[#1e293b] border border-primary/30 rounded-xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="shrink-0 w-9 h-9 rounded-full bg-amber-500/20 border border-amber-400/30 flex items-center justify-center">
+                <MessageSquare className="w-4 h-4 text-amber-400" />
+              </div>
+              <div>
+                <h3 className="font-black text-white text-base">Objednávka automaticky vytvorená</h3>
+                <p className="text-white/55 text-sm mt-1">Pri exporte SMS bola táto kalkulácia automaticky zaznamenaná ako záväzná objednávka. Naozaj chcete vytvoriť ďalšiu objednávku?</p>
+              </div>
+            </div>
+            <div className="flex gap-3 pt-1">
+              <button onClick={() => setSmsOrderWarning(false)} className="flex-1 py-2.5 border border-white/20 text-white/70 text-sm font-semibold rounded-sm hover:border-white/40 transition-colors cursor-pointer">
+                Zrušiť
+              </button>
+              <button onClick={() => {
+                setSmsOrderWarning(false);
+                setOrderForm(f => ({ ...f, name: loggedClient?.name ?? f.name, phone: loggedClient?.phone ? formatPhone(loggedClient.phone) : f.phone }));
+                setShowOrderModal(true);
+              }} className="flex-1 py-2.5 bg-primary text-white text-sm font-bold rounded-sm hover:bg-primary/90 transition-colors cursor-pointer">
+                Áno, vytvoriť ďalšiu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Order modal */}
       <AnimatePresence>
