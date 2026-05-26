@@ -1890,7 +1890,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const uBetonOrig = ci.qty > 0 ? fmt2(bOrig / ci.qty) : undefined;
       rows.push({ l: ci.label, v: bDisc, ...(Math.abs(bOrig - bDisc) > 0.01 ? { o: bOrig } : {}), ...(uBeton !== undefined ? { u: uBeton, uSuffix: "€/m³", ...(uBetonOrig !== undefined && Math.abs(uBetonOrig - uBeton) > 0.001 ? { uOrig: uBetonOrig } : {}) } : {}) });
       if (ci.transport > 0) {
-        const dopravaLbl = `${ci.transportIsMin ? "Min. doprava" : "Doprava"}${zoneStr ? ` ${zoneStr}` : ""} · ${pdfTrucksLabel(ci, idx === 0)}`;
+        const hasAddToMain = idx === 0 && extraItems.some(ei => ei.transportMode === "addToMain" && (parseFloat(ei.quantity) || 0) > 0);
+        const bdHlavnaBadge = hasAddToMain
+          ? `<span style="display:inline-block;background:#1d4ed8;color:#fff;font-weight:900;font-size:6pt;padding:1px 5px;border-radius:3px;vertical-align:middle;letter-spacing:0.04em;margin-right:5px">&#9673;&nbsp;HLAVNÁ</span>`
+          : "";
+        const dopravaLbl = `${bdHlavnaBadge}${ci.transportIsMin ? "Min. doprava" : "Doprava"}${zoneStr ? ` ${zoneStr}` : ""} · ${pdfTrucksLabel(ci, idx === 0)}`;
         const uTrans = ci.qty > 0 ? fmt2(tDisc / ci.qty) : undefined;
         const uTransOrig = ci.qty > 0 ? fmt2(tOrig / ci.qty) : undefined;
         rows.push({ l: dopravaLbl, v: tDisc, ...(Math.abs(tOrig - tDisc) > 0.01 ? { o: tOrig } : {}), ...(uTrans !== undefined ? { u: uTrans, uSuffix: "€/m³", ...(uTransOrig !== undefined && Math.abs(uTransOrig - uTrans) > 0.001 ? { uOrig: uTransOrig } : {}) } : {}) });
