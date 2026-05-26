@@ -393,7 +393,15 @@ export async function syncFromServer(): Promise<void> {
 }
 
 export const adminData = {
-  getCategories: (): ConcreteCategory[] => loadData("msbeton_categories", DEFAULT_CATEGORIES),
+  getCategories: (): ConcreteCategory[] => {
+    const cats = loadData("msbeton_categories", DEFAULT_CATEGORIES);
+    const defaults = new Map(DEFAULT_CATEGORIES.map(c => [c.id, c] as const));
+    return cats.map(c => {
+      const def = defaults.get(c.id);
+      if (def?.noDoprava && c.noDoprava === undefined) return { ...c, noDoprava: true };
+      return c;
+    });
+  },
   saveCategories: (data: ConcreteCategory[]) => {
     saveData("msbeton_categories", data);
     adminApi.saveCategories(data);
