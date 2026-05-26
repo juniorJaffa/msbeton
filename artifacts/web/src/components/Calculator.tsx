@@ -120,8 +120,9 @@ function TypeSelectField({ label, value, onChange, options, discountFactor = 1, 
   const selDisplayPrice = selectedOpt ? (selManual !== undefined ? selManual : selectedOpt.price * discountFactor) : 0;
   const selShowStrike = selectedOpt ? Math.abs(selectedOpt.price - selDisplayPrice) > 0.001 : false;
   const cleanedVal = value ? cleanLabel(value) : "";
-  // ≤24 znakov → 1 riadok (názov + cena vedľa); dlhší → 2 riadky (wrap + cena pod)
-  const isShort = cleanedVal.length <= 24;
+  // ≤18 znakov → 1 riadok (názov + cena vedľa); dlhší → 2 riadky (wrap + cena pod)
+  // Reálne krátke názvy max 17 ch ("Betón C30/37R XF4"), prvý dlhý sufix 23 ch ("podlahový")
+  const isShort = cleanedVal.length <= 18;
 
   const priceNode = selectedOpt ? (
     <span className="flex items-center gap-1 text-xs font-bold shrink-0">

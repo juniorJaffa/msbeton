@@ -146,16 +146,16 @@ export default function BetonTab() {
           onDrop={e => onCatDrop(e, cat.id)}
           onDragEnd={onCatDragEnd}
           className={`border bg-white shadow-sm transition-all ${dragOverCat === cat.id ? "border-primary border-dashed bg-primary/5" : "border-gray-200"}`}>
-          <div className="flex items-center justify-between px-3 py-3 cursor-pointer hover:bg-gray-50 transition-colors select-none"
+          <div className="flex items-start justify-between px-3 py-3 cursor-pointer hover:bg-gray-50 transition-colors select-none"
             onClick={() => { setExpanded(expanded === cat.id ? null : cat.id); setRenamingCat(null); }}>
-            <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-start gap-2 min-w-0 flex-1">
               {/* Drag handle — category */}
-              <span className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing shrink-0 touch-none"
+              <span className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing shrink-0 touch-none mt-0.5"
                 onClick={e => e.stopPropagation()} draggable={false}>
                 <GripVertical className="w-4 h-4" />
               </span>
-              {expanded === cat.id ? <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" /> : <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />}
-              <span className="font-semibold text-secondary truncate">{cat.name}</span>
+              <span className="shrink-0 mt-0.5">{expanded === cat.id ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}</span>
+              <span className="font-semibold text-secondary break-words">{cat.name}</span>
             </div>
             <div className="flex items-center gap-2 shrink-0" onClick={e => e.stopPropagation()}>
               <span className="text-xs text-gray-400">{cat.types.length} typov</span>
