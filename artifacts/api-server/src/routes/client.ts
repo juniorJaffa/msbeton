@@ -243,10 +243,16 @@ router.post("/order", async (req, res) => {
     }
     const turnstileToken = order.turnstileToken as string | undefined;
     const ip = (req.headers["cf-connecting-ip"] as string) ?? req.ip ?? "";
-    if (process.env.TURNSTILE_SECRET && !turnstileToken) {
+    // Prihlásený klient (clientId overený voči DB) nepotrebuje Turnstile — token môže expiroval/chýbať
+    let isVerifiedClient = false;
+    if (order.clientId) {
+      const accounts = await getClientAccounts();
+      isVerifiedClient = accounts.some((a) => a.id === String(order.clientId) && a.active !== false);
+    }
+    if (process.env.TURNSTILE_SECRET && !turnstileToken && !isVerifiedClient) {
       return res.status(400).json({ ok: false, error: "Chýba overenie CAPTCHA" });
     }
-    if (turnstileToken) {
+    if (turnstileToken && !isVerifiedClient) {
       const ok = await verifyTurnstile(turnstileToken, ip);
       if (!ok) return res.status(400).json({ ok: false, error: "CAPTCHA overenie zlyhalo" });
     }
