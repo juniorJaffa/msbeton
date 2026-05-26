@@ -20,7 +20,8 @@ export function PriceModeToggle({ mode, onChange, showHotovost = true, size = "m
           mode === "faktura" ? "bg-primary text-navy shadow-sm" : "text-white/40 hover:text-white/70"
         )}
       >
-        FAKTÚRA
+        <span className="sm:hidden">FA</span>
+        <span className="hidden sm:inline">FAKTÚRA</span>
       </button>
       {showHotovost && (
         <button
