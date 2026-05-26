@@ -1868,8 +1868,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     if (!result) return JSON.stringify({ v: 2, s: [] });
     const fmt2 = (n: number) => parseFloat(n.toFixed(2));
     const isFakt = priceMode === "faktura";
-    const pdfTrucksLabel = (ci: typeof result.concreteBreakdown[0]) =>
-      tab === "pumpa" ? `1×Pumpa${ci.transportTrucks > 1 ? `+${ci.transportTrucks - 1}×Mix` : ""}` : `${ci.transportTrucks}×Mix`;
+    const totalBdTrucks = result.concreteBreakdown.reduce((s, c) => s + c.transportTrucks, 0);
+    const pdfTrucksLabel = (ci: typeof result.concreteBreakdown[0], isMain: boolean) => {
+      const n = isMain ? totalBdTrucks : ci.transportTrucks;
+      return tab === "pumpa" ? `1×Pumpa${n > 1 ? `+${n - 1}×Mix` : ""}` : `${n}×Mix`;
+    };
     const zoneStr = result.transportZone ? `${result.transportZone.fromKm}–${result.transportZone.toKm} km` : "";
     const bdSections: { h: string; rows: { l: string; v: number; o?: number; u?: number; uOrig?: number; uSuffix?: string }[] }[] = [];
 
@@ -1886,7 +1889,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const uBetonOrig = ci.qty > 0 ? fmt2(bOrig / ci.qty) : undefined;
       rows.push({ l: ci.label, v: bDisc, ...(Math.abs(bOrig - bDisc) > 0.01 ? { o: bOrig } : {}), ...(uBeton !== undefined ? { u: uBeton, uSuffix: "€/m³", ...(uBetonOrig !== undefined && Math.abs(uBetonOrig - uBeton) > 0.001 ? { uOrig: uBetonOrig } : {}) } : {}) });
       if (ci.transport > 0) {
-        const dopravaLbl = `${ci.transportIsMin ? "Min. doprava" : "Doprava"}${zoneStr ? ` ${zoneStr}` : ""} · ${pdfTrucksLabel(ci)}`;
+        const dopravaLbl = `${ci.transportIsMin ? "Min. doprava" : "Doprava"}${zoneStr ? ` ${zoneStr}` : ""} · ${pdfTrucksLabel(ci, idx === 0)}`;
         const uTrans = ci.qty > 0 ? fmt2(tDisc / ci.qty) : undefined;
         const uTransOrig = ci.qty > 0 ? fmt2(tOrig / ci.qty) : undefined;
         rows.push({ l: dopravaLbl, v: tDisc, ...(Math.abs(tOrig - tDisc) > 0.01 ? { o: tOrig } : {}), ...(uTrans !== undefined ? { u: uTrans, uSuffix: "€/m³", ...(uTransOrig !== undefined && Math.abs(uTransOrig - uTrans) > 0.001 ? { uOrig: uTransOrig } : {}) } : {}) });
