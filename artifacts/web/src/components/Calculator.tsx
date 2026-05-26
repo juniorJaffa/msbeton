@@ -1479,10 +1479,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         : `${ci.transportTrucks}×Mix`;
       const dopravaExtraLabel = `${ci.transportIsMin ? "Min. doprava" : "Doprava"}${pdfZone ? ` ${pdfZone}` : ""} · ${pdfExtraTrucks}`;
       const extraTransportUnitStr = buildTransportUnitStr(ci.transportIsMin, ci.qty);
-      const extraBetonLabel = ci.label.replace(/ – [\d.,]+ m³$/, "");
-      const extraCatPrefix = ci.categoryName ? `${ci.categoryName} · ` : "";
+      const extraTypeLabel = ci.label.replace(/ – [\d.,]+ m³$/, "");
+      const extraSectionLabel = ci.categoryName || extraTypeLabel;
       const isAddToMainExtra = idx < extraItems.length && extraItems[idx]?.transportMode === "addToMain";
-      let rows = sectionRow(`Pridaná položka ${idx + 1}${extraBetonLabel ? ` – ${extraCatPrefix}${extraBetonLabel}` : ""}`);
+      let rows = sectionRow(`Pridaná položka ${idx + 1}${extraSectionLabel ? ` – ${extraSectionLabel}` : ""}`);
       rows += trow(ci.label, `${ci.qty}&nbsp;m³`, unitStr, betonOrig, betonDisc, undefined, true);
       rows += trow(dopravaExtraLabel, `${ci.transportTrucks}&nbsp;${truckWord(ci.transportTrucks)}&nbsp;(${ci.qty}&nbsp;m³)`, extraTransportUnitStr, transOrig, transDisc);
       if (isAddToMainExtra && transOrig === 0) {
