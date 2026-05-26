@@ -115,12 +115,29 @@ function TypeSelectField({ label, value, onChange, options, discountFactor = 1, 
   manualPrices?: Record<string, number>;
 }) {
   const cleanLabel = (lbl: string) => lbl.replace(/ – [\d.]+ € \/ m³/, "").replace(/ – [\d,.]+ €\/m³/, "");
+  const selectedOpt = options.find(o => o.label === value);
+  const selManual = selectedOpt ? manualPrices?.[selectedOpt.id] : undefined;
+  const selDisplayPrice = selectedOpt ? (selManual !== undefined ? selManual : selectedOpt.price * discountFactor) : 0;
+  const selShowStrike = selectedOpt ? Math.abs(selectedOpt.price - selDisplayPrice) > 0.001 : false;
   return (
     <div>
       <label className="block text-sm font-semibold text-white/80 mb-2">{label}</label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="w-full bg-white/10 border border-white/10 border-b-2 border-b-primary text-white px-4 py-3 text-sm font-medium rounded-sm focus:ring-0 focus:ring-offset-0 h-auto">
-          <SelectValue placeholder="Vyberte typ betónu" />
+        <SelectTrigger className="w-full bg-white/10 border border-white/10 border-b-2 border-b-primary text-white px-4 py-3 text-sm font-medium rounded-sm focus:ring-0 focus:ring-offset-0 min-h-[50px]">
+          <div className="flex items-center gap-3 min-w-0 overflow-hidden flex-1">
+            <span className="truncate flex-1 min-w-0 text-left text-sm">
+              {value ? cleanLabel(value) : <span className="text-white/40 font-normal">Vyberte typ betónu</span>}
+            </span>
+            {selectedOpt && (
+              <span className="flex items-center gap-1.5 text-xs font-bold flex-shrink-0">
+                {selShowStrike && <s className="text-white/30 font-normal">{selectedOpt.price.toFixed(2)}</s>}
+                <span className="text-primary">
+                  {selDisplayPrice.toFixed(2)} €/m³
+                  {selManual !== undefined && <span className="text-[8px] ml-0.5 opacity-60">M</span>}
+                </span>
+              </span>
+            )}
+          </div>
         </SelectTrigger>
         <SelectContent className="bg-[#1e293b] border border-white/10 text-white z-[200]" side="bottom" position="popper" sideOffset={4}>
           {options.map((o) => {

@@ -30,7 +30,7 @@ export function EditableField({ value, onSave, type = "text" }: { value: string 
         onChange={e => setVal(e.target.value)}
         onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); save(); } if (e.key === "Escape") cancel(); }}
         onBlur={save}
-        className={`bg-amber-50 border-2 border-primary px-2.5 py-1 text-secondary text-sm focus:outline-none rounded-sm ${type === "number" ? "w-28 text-right" : "w-56 min-w-[120px]"}`}
+        className={`bg-amber-50 border-2 border-primary px-2.5 py-1 text-secondary text-sm focus:outline-none rounded-sm ${type === "number" ? "w-28 text-right" : "w-full min-w-[160px]"}`}
         autoFocus
         onFocus={e => e.target.select()}
       />
