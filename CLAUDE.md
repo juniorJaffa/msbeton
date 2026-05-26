@@ -436,6 +436,74 @@ Na serveri beží PostgreSQL — `DATABASE_URL` je nastavená v `ecosystem.confi
 
 ---
 
+## Cloudflare Turnstile — architektúra a known bugs
+
+### Ako funguje (2 cesty)
+
+| Situácia | Klient | Server |
+|----------|--------|--------|
+| Neprihlásený (anonymný) | Widget vygeneruje `turnstileToken`, odošle s objednávkou | Overí token cez Cloudflare API. Rate limit 5/h per IP. |
+| Prihlásený klient | `turnstileToken` odošle ak dostupný, inak `undefined` | Verifikuje `clientId` voči DB → ak aktívny klient, **Turnstile preskoč** |
+
+### Kritický invariant — `clientId` = `loginId`, nie UUID
+
+`LoggedClient.clientId` (z `/api/client/login` response) = **loginId** (napr. `"20"`), NIE UUID z databázy.
+
+Objednávky ukladajú: `clientId: loggedClient.clientId` → loginId.
+
+**Server-side Turnstile skip** (`client.ts`, endpoint `POST /order`):
+```typescript
+// SPRÁVNE — porovnávaj loginId (nie a.id):
+isVerifiedClient = accounts.some(a => (a.loginId === String(order.clientId) || a.id === String(order.clientId)) && a.active !== false);
+```
+
+**Klient štatistiky** (`KlientiTab.tsx`):
+```typescript
+// SPRÁVNE — c.loginId (nie c.id):
+const cOrders = allOrders.filter(o => o.clientId != null && (o.clientId === c.loginId || o.clientId === c.id));
+```
+
+**Bug história:** Pôvodne oboje porovnávalo `a.id`/`c.id` (UUID) s `order.clientId` (loginId) → Turnstile skip nefungoval, štatistiky boli vždy prázdne.
+
+### Honeypot + Rate limit
+
+- Pole `_hp: ""` posielané v objednávke (frontend). Boti ho vyplnia → server vráti 400.
+- Rate limit: 5 objednávok/hodinu per IP pre anonymných. Prihlásení klienti sú vyňatí.
+- Implementácia: `checkRate(key, max, windowMs)` v `client.ts`.
+
+---
+
+## Nginx — custom error stránky (produkcia)
+
+### Konfigurácia na serveri
+
+Nginx musí mať v `/etc/nginx/sites-available/msbeton`:
+```nginx
+error_page 500 502 503 504 /50x.html;
+location = /50x.html {
+  root /var/www/msbeton/artifacts/web/dist;
+  internal;
+}
+```
+
+### Súbor `artifacts/web/public/50x.html`
+
+- Animovaný betónomiešač SVG (valcový bubon, diagonálne lopatky, 3 kolesá)
+- Statický HTML bez externých závislostí — funguje aj keď Node.js API je dole
+- Vite kopíruje `public/` priamo do `dist/` → `50x.html` je v `dist/50x.html` po builde
+
+### Nasadenie na produkciu (keď sa migruje na msbeton.sk)
+
+1. Spustiť build (web): `pnpm --filter @workspace/web build`
+2. Overiť: `ls /var/www/msbeton/artifacts/web/dist/50x.html`
+3. Pridať nginx `error_page` direktívy (ak ešte nie sú)
+4. `nginx -t && systemctl reload nginx`
+5. Test: dočasne zastaviť PM2 (`pm2 stop msbeton-api`), navštíviť stránku → musí sa zobraziť 50x.html animácia, nie holý nginx error
+
+**POZOR pri migrácii domény:** nginx config pre `msbeton.sk` musí mať rovnaké `error_page` direktívy ako demo konfig.
+
+---
+
 ## TypeScript projektové referencie
 
 `tsconfig.json` v roote používa zložené projektové referencie. Každý balík má vlastný `tsconfig.json` s `"composite": true`. `tsc -b` z rootu typuje všetko v poradí závislostí.
