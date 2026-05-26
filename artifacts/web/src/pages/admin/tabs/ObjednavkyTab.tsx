@@ -314,20 +314,38 @@ ${breakdownHtml ? `
   if (!win) { const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.click(); }
 }
 
-export default function ObjednavkyTab({ onGoToClient, initialSearch }: { onGoToClient?: (loginId: string) => void; initialSearch?: string }) {
+export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClientId, focusOrderId }: { onGoToClient?: (loginId: string) => void; initialSearch?: string; initialClientId?: string; focusOrderId?: string }) {
   const [orders, setOrders] = useState<Order[]>(() => adminData.getOrders());
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(focusOrderId ?? null);
+  const [highlightedOrder, setHighlightedOrder] = useState<string | null>(focusOrderId ?? null);
   const [filterStatus, setFilterStatus] = useState<Order["status"] | "vsetky">("vsetky");
   const [filterTab, setFilterTab] = useState<Order["tab"] | "vsetky">("vsetky");
   const [filterPriceMode, setFilterPriceMode] = useState<"vsetky" | "faktura" | "hotovost">("vsetky");
   const [filterChannel, setFilterChannel] = useState<"vsetky" | "sms" | "kosarik">("vsetky");
   const [search, setSearch] = useState(initialSearch ?? "");
+  const [clientIdActive, setClientIdActive] = useState<string | null>(initialClientId ?? null);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [quickDate, setQuickDate] = useState("");
   const [quickDays, setQuickDays] = useState("7");
   const [quickMY, setQuickMY] = useState({ m: new Date().getMonth() + 1, y: new Date().getFullYear() });
   const [newBadge, setNewBadge] = useState(0);
+  useEffect(() => {
+    if (!focusOrderId) return;
+    const t1 = setTimeout(() => {
+      const container = document.getElementById("admin-content");
+      const el = document.getElementById(`order-card-${focusOrderId}`);
+      if (container && el) {
+        const filterEl = container.querySelector(".sticky.top-0");
+        const filterH = filterEl ? filterEl.getBoundingClientRect().height : 52;
+        const cR = container.getBoundingClientRect();
+        const eR = el.getBoundingClientRect();
+        container.scrollTo({ top: container.scrollTop + (eR.top - cR.top) - filterH - 8, behavior: "smooth" });
+      }
+    }, 120);
+    const t2 = setTimeout(() => setHighlightedOrder(null), 2800);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [focusOrderId]);
   const [filterOpen, setFilterOpen] = useState(false);
   const [copiedPlusCode, setCopiedPlusCode] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -432,6 +450,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch }: { onGoToC
     .filter(o => filterTab       === "vsetky" || o.tab       === filterTab)
     .filter(o => filterPriceMode === "vsetky" || o.priceMode === filterPriceMode)
     .filter(o => filterChannel   === "vsetky" || (filterChannel === "sms" ? !!o.viaSms : !o.viaSms))
+    .filter(o => !clientIdActive || o.clientId === clientIdActive)
     .filter(o => {
       if (!searchTerms.length) return true;
       const haystack = [o.clientName, o.company ?? "", o.phone ?? "", o.clientId ?? "", o.address ?? "", o.email ?? ""].join(" ");
@@ -492,12 +511,12 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch }: { onGoToC
   };
   const fmtEur = (n: number) => n.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
   const tabLabel: Record<Order["tab"], string> = { pumpa: "Pumpa", mix: "Mix", vlastnadoprava: "Vl. doprava" };
-  const activeFilters = [filterStatus !== "vsetky", filterTab !== "vsetky", filterPriceMode !== "vsetky", filterChannel !== "vsetky", !!search, !!(dateFrom || dateTo)].filter(Boolean).length;
+  const activeFilters = [filterStatus !== "vsetky", filterTab !== "vsetky", filterPriceMode !== "vsetky", filterChannel !== "vsetky", !!clientIdActive, !!search, !!(dateFrom || dateTo)].filter(Boolean).length;
   const sortedCount = sorted.length;
   const sortedCountLabel = sortedCount === 1 ? "objednávka" : sortedCount >= 2 && sortedCount <= 4 ? "objednávky" : "objednávok";
   const totalPages = Math.ceil(sortedCount / ORDERS_PAGE_SIZE);
   const pagedOrders = sorted.slice(ordersPage * ORDERS_PAGE_SIZE, (ordersPage + 1) * ORDERS_PAGE_SIZE);
-  useEffect(() => { setOrdersPage(0); }, [filterStatus, filterTab, filterPriceMode, filterChannel, search, dateFrom, dateTo]);
+  useEffect(() => { setOrdersPage(0); }, [filterStatus, filterTab, filterPriceMode, filterChannel, clientIdActive, search, dateFrom, dateTo]);
 
   // suppress unused import warning
   void useToast;
@@ -547,6 +566,14 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch }: { onGoToC
           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Filter</span>
           {activeFilters > 0 && (
             <span className="bg-secondary text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">{activeFilters}</span>
+          )}
+          {clientIdActive && (
+            <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+              Klient: {clientIdActive}
+              <button onClick={e => { e.stopPropagation(); setClientIdActive(null); }} className="hover:text-red-500 transition-colors leading-none">
+                <X className="w-2.5 h-2.5" />
+              </button>
+            </span>
           )}
           <span className="ml-auto text-xs font-bold text-secondary shrink-0">{sortedCount} {sortedCountLabel}</span>
           {newBadge > 0 && <span className="relative bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">{newBadge} nových</span>}
@@ -751,7 +778,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch }: { onGoToC
           {pagedOrders.map(o => {
             const isExp = expanded === o.id;
             return (
-              <div key={o.id} id={`order-card-${o.id}`} className={`border shadow-sm ${o.createdAt.slice(0,10) === todayStr ? "bg-gray-50 border-gray-300" : "bg-white border-gray-200"}`}>
+              <div key={o.id} id={`order-card-${o.id}`} className={`border shadow-sm transition-all duration-700 ${highlightedOrder === o.id ? "ring-2 ring-primary shadow-primary/30 shadow-md" : ""} ${o.createdAt.slice(0,10) === todayStr ? "bg-gray-50 border-gray-300" : "bg-white border-gray-200"}`}>
                 <div className={`flex gap-3 py-3.5 cursor-pointer transition-colors ${o.createdAt.slice(0,10) === todayStr ? "hover:bg-gray-100" : "hover:bg-gray-50"} ${o.status === "nova" ? "pl-3 pr-4" : "px-4"}`}
                   style={o.status === "nova" ? { borderLeft: "4px solid #3b82f6" } : undefined}
                   onClick={() => {

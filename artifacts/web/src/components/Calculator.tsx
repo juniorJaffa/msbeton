@@ -1046,7 +1046,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       if (t && q > 0) {
         const itemManual = mp[t.id];
         const extraTC = (isOwn || item.transportMode === "none" || item.transportMode === "addToMain") ? zeroTC : calcTransport(km, q, tab, clientDeliveryZone);
-        const extraTrucks = item.transportMode === "addToMain" ? 0 : (tab === "pumpa" ? calcPumpTrucks(q) : Math.ceil(q / mixCap));
+        const extraTrucks = (item.transportMode === "addToMain" || item.transportMode === "none") ? 0 : (tab === "pumpa" ? calcPumpTrucks(q) : Math.ceil(q / mixCap));
         // Per-item services
         let svcPumpHrs = 0, svcPumpMs = 0, svcPumpCost = 0;
         let svcHoseMeters = 0, svcHoseCost = 0;
