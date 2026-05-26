@@ -1442,21 +1442,15 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
           <div className="bg-gray-50 w-full max-w-3xl my-4 shadow-2xl rounded-sm border-4 border-amber-400 overflow-hidden">
 
             {/* Header — amber top stripe signalizuje edit mode */}
-            <div className="bg-secondary text-white px-6 py-4 flex items-center justify-between border-t-4 border-amber-400">
-              <div>
-                <div className="flex items-center gap-2">
-                  {tablePdfModal.isOwner && <Crown className="w-4 h-4 text-primary shrink-0" />}
-                  <div className="font-black text-base uppercase tracking-widest">Zľavové tabuľky klienta</div>
-                  <span className="inline-flex items-center bg-amber-400 text-secondary px-1.5 py-0.5 rounded-sm shrink-0" title="Editovateľné">
-                    <PenLine className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline text-[10px] font-black uppercase tracking-wide ml-1">Editovateľné</span>
-                  </span>
-                </div>
-                <div className="text-sm text-white/60 mt-0.5">
-                  {[tablePdfModal.firstName, tablePdfModal.lastName].filter(Boolean).join(" ")}
-                  {tablePdfModal.company && ` · ${tablePdfModal.company}`}
-                  {tablePdfModal.email && ` · ${tablePdfModal.email}`}
-                </div>
+            <div className="bg-secondary text-white px-6 pt-5 pb-4 border-t-4 border-amber-400">
+              <div className="flex items-center gap-2 mb-0.5">
+                {tablePdfModal.isOwner && <Crown className="w-4 h-4 text-primary shrink-0" />}
+                <div className="font-black text-base uppercase tracking-widest">Zľavové tabuľky klienta</div>
+              </div>
+              <div className="text-sm text-white/60">
+                {[tablePdfModal.firstName, tablePdfModal.lastName].filter(Boolean).join(" ")}
+                {tablePdfModal.company && ` · ${tablePdfModal.company}`}
+                {tablePdfModal.email && ` · ${tablePdfModal.email}`}
               </div>
             </div>
 
