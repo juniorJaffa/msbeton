@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, Mail } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, Mail, PenLine } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
@@ -1424,14 +1424,17 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
       {/* ── Popup: Zľavové tabuľky klienta ── */}
       {tablePdfModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center pt-14 px-4 pb-4 overflow-auto">
-          <div className="bg-gray-50 w-full max-w-3xl my-4 shadow-2xl rounded-sm">
+          <div className="bg-gray-50 w-full max-w-3xl my-4 shadow-2xl rounded-sm border-4 border-amber-400 overflow-hidden">
 
-            {/* Header */}
-            <div className="bg-secondary text-white px-6 py-4 flex items-center justify-between">
+            {/* Header — amber top stripe signalizuje edit mode */}
+            <div className="bg-secondary text-white px-6 py-4 flex items-center justify-between border-t-4 border-amber-400">
               <div>
                 <div className="flex items-center gap-2">
                   {tablePdfModal.isOwner && <Crown className="w-4 h-4 text-primary shrink-0" />}
                   <div className="font-black text-base uppercase tracking-widest">Zľavové tabuľky klienta</div>
+                  <span className="inline-flex items-center gap-1 bg-amber-400 text-secondary text-[10px] font-black px-2 py-0.5 rounded-sm uppercase tracking-wide shrink-0">
+                    <PenLine className="w-3 h-3" />Editovateľné
+                  </span>
                 </div>
                 <div className="text-sm text-white/60 mt-0.5">
                   {[tablePdfModal.firstName, tablePdfModal.lastName].filter(Boolean).join(" ")}
