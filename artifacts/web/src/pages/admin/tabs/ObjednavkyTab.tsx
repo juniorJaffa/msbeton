@@ -805,6 +805,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                       {o.company && <span className="text-sm text-gray-500 truncate max-w-[120px]">{o.company}</span>}
                     </div>
                     <div className="flex items-center gap-1.5 flex-wrap text-sm">
+                      {o.concreteCategory && <span className="text-[10px] font-black text-gray-400 uppercase tracking-wide">{o.concreteCategory}</span>}
                       <span className="font-medium text-gray-600">{o.concreteType.replace(/ – [\d.,]+ €.*/, "")}</span>
                       <span className="font-bold text-secondary">{o.totalQty} m³</span>
                       {o.km ? <span className="text-gray-400">{o.km} km</span> : null}

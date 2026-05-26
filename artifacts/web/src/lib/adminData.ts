@@ -91,6 +91,7 @@ export interface Order {
   note?: string;
   tab: "pumpa" | "mix" | "vlastnadoprava";
   concreteType: string;
+  concreteCategory?: string;
   quantity: number;
   totalQty: number;
   address?: string;

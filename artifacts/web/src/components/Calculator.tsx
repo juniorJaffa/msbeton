@@ -1787,6 +1787,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         phone: loggedClient.phone || undefined,
         tab,
         concreteType: selectedType.label,
+        concreteCategory: categoryName || undefined,
         quantity: result.qty,
         totalQty: result.totalQty,
         address: address || undefined,
@@ -1879,7 +1880,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const bDisc = fmt2(isFakt ? ci.bezDphFinal : ci.bezDphFinalHotovost);
       const tOrig = fmt2(ci.transport);
       const tDisc = fmt2(ci.transport * dopravaFactor);
-      const catLabel = ci.label.replace(/ – [\d.,]+ m³$/, "");
+      const typeLabel = ci.label.replace(/ – [\d.,]+ m³$/, "");
+      const catPrefix = ci.categoryName && ci.categoryName !== typeLabel ? `${ci.categoryName} · ` : "";
+      const catLabel = `${catPrefix}${typeLabel}`;
       const header = idx === 0 ? `Produkty – ${catLabel}` : `Pridaná položka ${idx} – ${catLabel}`;
       const rows: { l: string; v: number; o?: number; u?: number; uOrig?: number; uSuffix?: string }[] = [];
       const uBeton = ci.qty > 0 ? fmt2(bDisc / ci.qty) : undefined;
@@ -1954,6 +1957,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       note: orderForm.note.trim() || undefined,
       tab,
       concreteType: selectedType?.label ?? "",
+      concreteCategory: categoryName || undefined,
       quantity: result.qty,
       totalQty: result.totalQty,
       address: address || undefined,
