@@ -8,6 +8,7 @@ export default function BetonTab() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [renamingCat, setRenamingCat] = useState<string | null>(null);
   const [renameCatVal, setRenameCatVal] = useState("");
+  const [noDopravaCatVal, setNoDopravaCatVal] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [addingCat, setAddingCat] = useState(false);
   const [addingType, setAddingType] = useState<string | null>(null);
@@ -29,6 +30,7 @@ export default function BetonTab() {
     setNewCatName(""); setAddingCat(false);
   };
   const deleteCategory = (id: string) => { if (confirm("Vymazať kategóriu?")) save(cats.filter(c => c.id !== id)); };
+  const updateCat = (id: string, name: string, noDoprava: boolean) => save(cats.map(c => c.id === id ? { ...c, name, noDoprava: noDoprava || undefined } : c));
   const updateCatName = (id: string, name: string) => save(cats.map(c => c.id === id ? { ...c, name } : c));
 
   const addType = (catId: string) => {
@@ -156,10 +158,13 @@ export default function BetonTab() {
               </span>
               <span className="shrink-0 mt-0.5">{expanded === cat.id ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}</span>
               <span className="font-semibold text-secondary break-words">{cat.name}</span>
+              {cat.noDoprava && (
+                <span className="shrink-0 inline-flex items-center gap-0.5 bg-gray-200 text-gray-500 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wide">BEZ DOPRAVY</span>
+              )}
             </div>
             <div className="flex items-center gap-2 shrink-0" onClick={e => e.stopPropagation()}>
               <span className="text-xs text-gray-400">{cat.types.length} typov</span>
-              <button onClick={() => { setRenamingCat(renamingCat === cat.id ? null : cat.id); setRenameCatVal(cat.name); setExpanded(cat.id); }}
+              <button onClick={() => { setRenamingCat(renamingCat === cat.id ? null : cat.id); setRenameCatVal(cat.name); setNoDopravaCatVal(cat.noDoprava ?? false); setExpanded(cat.id); }}
                 className="p-2.5 bg-gray-100 text-gray-500 hover:bg-primary hover:text-secondary transition-colors rounded-sm" title="Premenovať">
                 <Pencil className="w-5 h-5" />
               </button>
@@ -169,14 +174,21 @@ export default function BetonTab() {
             </div>
           </div>
           {renamingCat === cat.id && (
-            <div className="flex gap-2 px-5 pb-3 border-b border-gray-100" onClick={e => e.stopPropagation()}>
-              <input value={renameCatVal} onChange={e => setRenameCatVal(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter") { updateCatName(cat.id, renameCatVal); setRenamingCat(null); } if (e.key === "Escape") setRenamingCat(null); }}
-                className="flex-1 border-2 border-primary px-3 py-1.5 text-sm focus:outline-none" autoFocus />
-              <button onClick={() => { updateCatName(cat.id, renameCatVal); setRenamingCat(null); }}
-                className="px-3 py-1.5 bg-primary text-secondary text-sm font-bold hover:bg-primary/90"><Check className="w-4 h-4" /></button>
-              <button onClick={() => setRenamingCat(null)}
-                className="px-3 py-1.5 bg-gray-100 text-gray-500 text-sm hover:bg-gray-200"><X className="w-4 h-4" /></button>
+            <div className="px-5 pb-3 border-b border-gray-100 space-y-2" onClick={e => e.stopPropagation()}>
+              <div className="flex gap-2">
+                <input value={renameCatVal} onChange={e => setRenameCatVal(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") { updateCat(cat.id, renameCatVal, noDopravaCatVal); setRenamingCat(null); } if (e.key === "Escape") setRenamingCat(null); }}
+                  className="flex-1 border-2 border-primary px-3 py-1.5 text-sm focus:outline-none" autoFocus />
+                <button onClick={() => { updateCat(cat.id, renameCatVal, noDopravaCatVal); setRenamingCat(null); }}
+                  className="px-3 py-1.5 bg-primary text-secondary text-sm font-bold hover:bg-primary/90"><Check className="w-4 h-4" /></button>
+                <button onClick={() => setRenamingCat(null)}
+                  className="px-3 py-1.5 bg-gray-100 text-gray-500 text-sm hover:bg-gray-200"><X className="w-4 h-4" /></button>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" checked={noDopravaCatVal} onChange={e => setNoDopravaCatVal(e.target.checked)} className="accent-gray-600 w-4 h-4" />
+                <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Vždy Bez dopravy</span>
+                <span className="text-[10px] text-gray-400">— extra položky v kalkulačke bez výberu dopravy</span>
+              </label>
             </div>
           )}
 

@@ -327,7 +327,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
     loginId: "", password: "1234",
     discountBeton: "20", discountDoprava: "0", discountSluzby: "0", discountCelkovo: "0",
     hotovostDph: "20",
-    canHotovost: true, canPridatBeton: true, canPridatBetonOwn: false, canZimneOpatrenia: false, active: true,
+    canHotovost: true, canPridatBeton: true, canPridatBetonOwn: true, canZimneOpatrenia: false, active: true,
     smsOrderDisabled: false, smsShareOnly: false, allowExtraOverload: true,
     deliveryZoneId: zones.find(z => (z.pricingType ?? "standard") === "standard")?.id ?? zones[0]?.id ?? "",
     sharedLink: "",
@@ -1265,7 +1265,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                             </div>
                           </label>
                           <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50 select-none">
-                            <input type="checkbox" checked={c.canPridatBetonOwn ?? false} onChange={e => update(c.id, { canPridatBetonOwn: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />
+                            <input type="checkbox" checked={c.canPridatBetonOwn ?? true} onChange={e => update(c.id, { canPridatBetonOwn: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />
                             <div className="flex-1 min-w-0">
                               <span className="text-sm text-gray-700">Pridať položku — Vlastná doprava</span>
                               <div className="text-[11px] text-gray-400">„+ Pridať položku" vo Vl. doprava tab</div>

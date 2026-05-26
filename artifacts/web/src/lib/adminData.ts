@@ -12,6 +12,7 @@ export interface ConcreteCategory {
   id: string;
   name: string;
   types: ConcreteType[];
+  noDoprava?: boolean; // true = vždy BEZ DOPRAVY (napr. Dodatočné prísady)
 }
 
 export interface DeliveryZone {
@@ -218,7 +219,7 @@ const DEFAULT_CATEGORIES: ConcreteCategory[] = [
     ]
   },
   {
-    id: "prisady", name: "Dodatočné prísady",
+    id: "prisady", name: "Dodatočné prísady", noDoprava: true,
     types: [
       { id: "c34", label: "Vlákna 0,8–1 kg", price: 9.38 },
       { id: "c35", label: "Drôtiky 1 Bal – 20 kg/m³", price: 32.50 },

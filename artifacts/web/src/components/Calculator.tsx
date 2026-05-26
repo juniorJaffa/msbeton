@@ -2683,7 +2683,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 <SelectField
                   label="Kategória betónu"
                   value={itemCat?.name ?? ""}
-                  onChange={(v) => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, categoryName: v, typeLabel: null } : i)); setShowResult(false); }}
+                  onChange={(v) => { const nd = allCategories.find(c => c.name === v)?.noDoprava; setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, categoryName: v, typeLabel: null, ...(nd ? { transportMode: "none" } : {}) } : i)); setShowResult(false); }}
                   options={allCategories.map((c) => c.name)}
                 />
                 <TypeSelectField
@@ -2713,40 +2713,49 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 {tab !== "vlastnadoprava" && (
                   <div>
                     <label className="block text-xs font-semibold text-white/50 uppercase tracking-wide mb-1.5">Doprava</label>
-                    <div className="flex bg-white/8 rounded-lg p-0.5 gap-0.5 border border-white/10 w-fit">
-                      <button type="button"
-                        onClick={() => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, transportMode: "own" } : i)); setShowResult(false); }}
-                        className={cn("px-3 py-1.5 rounded-md text-xs font-black tracking-wide transition-all flex items-center gap-1",
-                          (!item.transportMode || item.transportMode === "own") ? "bg-primary text-navy shadow-sm" : "text-white/40 hover:text-white/70"
-                        )}>
-                        <Truck className="w-3 h-3" /> Započítať
-                      </button>
-                      <button type="button"
-                        onClick={() => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, transportMode: "addToMain" } : i)); setShowResult(false); }}
-                        className={cn("px-3 py-1.5 rounded-md text-xs font-black tracking-wide transition-all flex items-center gap-1",
-                          item.transportMode === "addToMain" ? "bg-blue-500/80 text-white shadow-sm" : "text-white/40 hover:text-white/70"
-                        )}>
-                        <Plus className="w-3 h-3" /> K hlavnej
-                      </button>
-                      <button type="button"
-                        onClick={() => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, transportMode: "none" } : i)); setShowResult(false); }}
-                        className={cn("px-3 py-1.5 rounded-md text-xs font-black tracking-wide transition-all",
-                          item.transportMode === "none" ? "bg-white/20 text-white shadow-sm" : "text-white/40 hover:text-white/70"
-                        )}>
-                        Bez dopravy
-                      </button>
-                    </div>
-                    {(!item.transportMode || item.transportMode === "own") && (
-                      <p className="text-[10px] text-white/35 mt-1">Vlastná doprava — táto položka má vlastný výpočet km/vzdialenosti.</p>
-                    )}
-                    {item.transportMode === "addToMain" && item.quantity && (
-                      <p className="text-[10px] text-blue-400/80 mt-1">
-                        +{item.quantity} m³ bude zarátané do dopravy
-                        {selectedType ? <> <span className="font-black text-blue-300">Produktu – Betón {cleanType(selectedType.label)}</span></> : " Hlavného produktu"}.
-                      </p>
-                    )}
-                    {item.transportMode === "none" && (
-                      <p className="text-[10px] text-white/35 mt-1">Bez dopravy — táto položka nebude mať dopravu.</p>
+                    {itemCat?.noDoprava ? (
+                      <div className="flex items-center gap-2">
+                        <span className="px-3 py-1.5 rounded-md text-xs font-black tracking-wide bg-white/20 text-white">Bez dopravy</span>
+                        <span className="text-[10px] text-white/35">— kategória bez dopravy</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex bg-white/8 rounded-lg p-0.5 gap-0.5 border border-white/10 w-fit">
+                          <button type="button"
+                            onClick={() => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, transportMode: "own" } : i)); setShowResult(false); }}
+                            className={cn("px-3 py-1.5 rounded-md text-xs font-black tracking-wide transition-all flex items-center gap-1",
+                              (!item.transportMode || item.transportMode === "own") ? "bg-primary text-navy shadow-sm" : "text-white/40 hover:text-white/70"
+                            )}>
+                            <Truck className="w-3 h-3" /> Započítať
+                          </button>
+                          <button type="button"
+                            onClick={() => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, transportMode: "addToMain" } : i)); setShowResult(false); }}
+                            className={cn("px-3 py-1.5 rounded-md text-xs font-black tracking-wide transition-all flex items-center gap-1",
+                              item.transportMode === "addToMain" ? "bg-blue-500/80 text-white shadow-sm" : "text-white/40 hover:text-white/70"
+                            )}>
+                            <Plus className="w-3 h-3" /> K hlavnej
+                          </button>
+                          <button type="button"
+                            onClick={() => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, transportMode: "none" } : i)); setShowResult(false); }}
+                            className={cn("px-3 py-1.5 rounded-md text-xs font-black tracking-wide transition-all",
+                              item.transportMode === "none" ? "bg-white/20 text-white shadow-sm" : "text-white/40 hover:text-white/70"
+                            )}>
+                            Bez dopravy
+                          </button>
+                        </div>
+                        {(!item.transportMode || item.transportMode === "own") && (
+                          <p className="text-[10px] text-white/35 mt-1">Vlastná doprava — táto položka má vlastný výpočet km/vzdialenosti.</p>
+                        )}
+                        {item.transportMode === "addToMain" && item.quantity && (
+                          <p className="text-[10px] text-blue-400/80 mt-1">
+                            +{item.quantity} m³ bude zarátané do dopravy
+                            {selectedType ? <> <span className="font-black text-blue-300">Produktu – Betón {cleanType(selectedType.label)}</span></> : " Hlavného produktu"}.
+                          </p>
+                        )}
+                        {item.transportMode === "none" && (
+                          <p className="text-[10px] text-white/35 mt-1">Bez dopravy — táto položka nebude mať dopravu.</p>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
@@ -2836,7 +2845,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             </button>
           )}
           {/* Pridať položku — Vlastná doprava (bez dopravy a služieb) */}
-          {loggedClient?.canPridatBetonOwn && tab === "vlastnadoprava" && (
+          {(loggedClient?.canPridatBetonOwn ?? true) && tab === "vlastnadoprava" && (
             <button
               type="button"
               onClick={() => {
@@ -3518,7 +3527,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                                 {itemCatName && <span className="ml-1.5 font-normal text-white/40 normal-case tracking-normal">{itemCatName}</span>}
                               </div>
                             ) : itemCatName ? (
-                              <div className="text-[10px] text-white/45 font-black uppercase tracking-wider mb-0.5 leading-tight">{itemCatName}</div>
+                              <div className="text-[10px] text-primary/70 font-black uppercase tracking-wider mb-0.5 leading-tight">{itemCatName}</div>
                             ) : null}
                             <PriceRow label={ci.label} original={origVal} discounted={discVal} hasDiscount={Math.abs(origVal - discVal) > 0.001} alwaysShow={isExtra} />
 
