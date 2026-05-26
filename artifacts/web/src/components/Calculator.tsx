@@ -1025,7 +1025,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const mainTrucks = effTrucksOverride ?? (tab === "pumpa" ? calcPumpTrucks(qty + addToMainQty) : Math.ceil((qty + addToMainQty) / mixCap));
     concreteBreakdown.push({
       label: `Betón ${cleanType(selectedType.label)} – ${qty} m³`,
-      qty, categoryName: categoryName ?? "",
+      qty, categoryName: selectedCategory?.name ?? categoryName ?? "",
       bezDph: qty * selectedType.price,
       bezDphFinal: mainManual !== undefined ? qty * mainManual : qty * selectedType.price * betonFactor,
       bezDphFinalHotovost: mainManual !== undefined ? qty * mainManual * (1 + VAT_HOTOVOST) : qty * selectedType.price * betonFactor * (1 + VAT_HOTOVOST),
