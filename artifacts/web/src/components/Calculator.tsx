@@ -1000,7 +1000,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const isOwn = tab === "vlastnadoprava";
     const zeroTC = { cost: 0, isMin: false, fillupM3: 0, fillupCost: 0 };
     type BreakdownItem = {
-      label: string; qty: number;
+      label: string; qty: number; categoryName: string;
       bezDph: number; bezDphFinal: number; bezDphFinalHotovost: number;
       transport: number; transportFillup: number;
       transportFillupM3: number; transportFillupTarget: number;
@@ -1025,7 +1025,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const mainTrucks = effTrucksOverride ?? (tab === "pumpa" ? calcPumpTrucks(qty + addToMainQty) : Math.ceil((qty + addToMainQty) / mixCap));
     concreteBreakdown.push({
       label: `Betón ${cleanType(selectedType.label)} – ${qty} m³`,
-      qty,
+      qty, categoryName: categoryName ?? "",
       bezDph: qty * selectedType.price,
       bezDphFinal: mainManual !== undefined ? qty * mainManual : qty * selectedType.price * betonFactor,
       bezDphFinalHotovost: mainManual !== undefined ? qty * mainManual * (1 + VAT_HOTOVOST) : qty * selectedType.price * betonFactor * (1 + VAT_HOTOVOST),
@@ -1076,7 +1076,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         }
         concreteBreakdown.push({
           label: `Betón ${cleanType(t.label)} – ${q} m³`,
-          qty: q,
+          qty: q, categoryName: item.categoryName ?? "",
           bezDph: q * t.price,
           bezDphFinal: itemManual !== undefined ? q * itemManual : q * t.price * betonFactor,
           bezDphFinalHotovost: itemManual !== undefined ? q * itemManual * (1 + VAT_HOTOVOST) : q * t.price * betonFactor * (1 + VAT_HOTOVOST),
@@ -1332,7 +1332,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
     // Build rows — main item only (extras handled separately in extraRows)
     const mainCI = result.concreteBreakdown[0];
-    const mainBetonLabel = mainCI?.label.replace(/ – [\d.,]+ m³$/, "") ?? "";
+    const mainCatName = mainCI?.categoryName ?? "";
+    const mainBetonTypeName = mainCI?.label.replace(/ – [\d.,]+ m³$/, "") ?? "";
+    const mainBetonLabel = mainCatName && mainCatName !== mainBetonTypeName
+      ? `${mainCatName} · ${mainBetonTypeName}`
+      : mainBetonTypeName;
     const betonRows = (() => {
       if (!mainCI) return "";
       const origVal = isFaktura ? mainCI.bezDph : mainCI.bezDph * (1 + VAT_HOTOVOST);
@@ -1478,8 +1482,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const dopravaExtraLabel = `${ci.transportIsMin ? "Min. doprava" : "Doprava"}${pdfZone ? ` ${pdfZone}` : ""} · ${pdfExtraTrucks}`;
       const extraTransportUnitStr = buildTransportUnitStr(ci.transportIsMin, ci.qty);
       const extraBetonLabel = ci.label.replace(/ – [\d.,]+ m³$/, "");
+      const extraCatPrefix = ci.categoryName ? `${ci.categoryName} · ` : "";
       const isAddToMainExtra = idx < extraItems.length && extraItems[idx]?.transportMode === "addToMain";
-      let rows = sectionRow(`Pridaná položka ${idx + 1}${extraBetonLabel ? ` – ${extraBetonLabel}` : ""}`);
+      let rows = sectionRow(`Pridaná položka ${idx + 1}${extraBetonLabel ? ` – ${extraCatPrefix}${extraBetonLabel}` : ""}`);
       rows += trow(ci.label, `${ci.qty}&nbsp;m³`, unitStr, betonOrig, betonDisc, undefined, true);
       rows += trow(dopravaExtraLabel, `${ci.transportTrucks}&nbsp;${truckWord(ci.transportTrucks)}&nbsp;(${ci.qty}&nbsp;m³)`, extraTransportUnitStr, transOrig, transDisc);
       if (isAddToMainExtra && transOrig === 0) {
@@ -1664,6 +1669,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const concreteVal = isFaktura ? ci.bezDphFinal : ci.bezDphFinalHotovost;
       const unitPrice = ci.qty > 0 ? concreteVal / ci.qty : 0;
       const concreteName = ci.label.replace(/ – \d+(?:[.,]\d+)? m³$/, "");
+      if (ci.categoryName) lines.push(ci.categoryName);
       lines.push(concreteName);
       lines.push(rowUnit(`${ci.qty}m³`, unitPrice, concreteVal));
       if (!result.isOwn && ci.transport === 0 && result.concreteBreakdown.indexOf(ci) > 0) {
@@ -3503,18 +3509,16 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                           ? mainHasServices
                           : (ci.svcPumpCost > 0 || ci.svcHoseCost > 0 || ci.svcWashCost > 0 || ci.svcWaitCost > 0);
 
-                        const itemCatName = idx === 0
-                          ? categoryName
-                          : (extraItems[idx - 1]?.categoryName ?? null);
+                        const itemCatName = ci.categoryName || null;
                         return (
                           <div key={idx} className={cn(isExtra ? "mt-3 pt-2.5 border-t border-white/10" : "")}>
                             {isExtra ? (
                               <div className="text-[10px] text-primary/60 font-black uppercase tracking-wider mb-0.5">
                                 Pridaná položka {idx}
-                                {itemCatName && <span className="ml-1.5 font-normal text-white/35 normal-case tracking-normal">{itemCatName}</span>}
+                                {itemCatName && <span className="ml-1.5 font-normal text-white/40 normal-case tracking-normal">{itemCatName}</span>}
                               </div>
                             ) : itemCatName ? (
-                              <div className="text-[10px] text-white/35 mb-0.5 leading-tight">{itemCatName}</div>
+                              <div className="text-[10px] text-white/45 font-black uppercase tracking-wider mb-0.5 leading-tight">{itemCatName}</div>
                             ) : null}
                             <PriceRow label={ci.label} original={origVal} discounted={discVal} hasDiscount={Math.abs(origVal - discVal) > 0.001} alwaysShow={isExtra} />
 
