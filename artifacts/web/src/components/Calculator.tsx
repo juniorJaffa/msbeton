@@ -383,7 +383,6 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [loginLoading, setLoginLoading] = useState(false);
   const [smsCopied, setSmsCopied] = useState(false);
   const [smsOrderCreated, setSmsOrderCreated] = useState(false);
-  const [smsOrderWarning, setSmsOrderWarning] = useState(false);
   const [showPriceTable, setShowPriceTable] = useState(false);
   const [zimneOpatrenia, setZimneOpatrenia] = useState(false); // default OFF, user zapína manuálne
   const [revision, setRevision] = useState(0);
@@ -1876,7 +1875,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       return tab === "pumpa" ? `1×Pumpa${n > 1 ? `+${n - 1}×Mix` : ""}` : `${n}×Mix`;
     };
     const zoneStr = result.transportZone ? `${result.transportZone.fromKm}–${result.transportZone.toKm} km` : "";
-    const bdSections: { h: string; rows: { l: string; v: number; o?: number; u?: number; uOrig?: number; uSuffix?: string }[] }[] = [];
+    const bdSections: { h: string; rows: { l: string; v: number; o?: number; u?: number; uOrig?: number; uSuffix?: string; q?: string }[] }[] = [];
 
     result.concreteBreakdown.forEach((ci, idx) => {
       const bOrig = fmt2(isFakt ? ci.bezDph : ci.bezDph * (1 + VAT_HOTOVOST));
@@ -1886,50 +1885,51 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const typeLabel = ci.label.replace(/ – [\d.,]+ m³$/, "");
       const catLabel = ci.categoryName || typeLabel;
       const header = idx === 0 ? `Produkty – ${catLabel}` : `Pridaná položka ${idx} – ${catLabel}`;
-      const rows: { l: string; v: number; o?: number; u?: number; uOrig?: number; uSuffix?: string }[] = [];
+      const rows: { l: string; v: number; o?: number; u?: number; uOrig?: number; uSuffix?: string; q?: string }[] = [];
       const uBeton = ci.qty > 0 ? fmt2(bDisc / ci.qty) : undefined;
       const uBetonOrig = ci.qty > 0 ? fmt2(bOrig / ci.qty) : undefined;
-      rows.push({ l: ci.label, v: bDisc, ...(Math.abs(bOrig - bDisc) > 0.01 ? { o: bOrig } : {}), ...(uBeton !== undefined ? { u: uBeton, uSuffix: "€/m³", ...(uBetonOrig !== undefined && Math.abs(uBetonOrig - uBeton) > 0.001 ? { uOrig: uBetonOrig } : {}) } : {}) });
+      rows.push({ l: ci.label, q: `${ci.qty} m³`, v: bDisc, ...(Math.abs(bOrig - bDisc) > 0.01 ? { o: bOrig } : {}), ...(uBeton !== undefined ? { u: uBeton, uSuffix: "€/m³", ...(uBetonOrig !== undefined && Math.abs(uBetonOrig - uBeton) > 0.001 ? { uOrig: uBetonOrig } : {}) } : {}) });
       if (ci.transport > 0) {
         const hasAddToMain = idx === 0 && extraItems.some(ei => ei.transportMode === "addToMain" && (parseFloat(ei.quantity) || 0) > 0);
         const addToMainQtyBd = hasAddToMain ? extraItems.reduce((s, ei) => { const q = parseFloat(ei.quantity) || 0; return (q > 0 && ei.transportMode === "addToMain") ? s + q : s; }, 0) : 0;
         const qtyStr = addToMainQtyBd > 0 ? `${ci.qty}+${addToMainQtyBd} m³` : `${ci.qty} m³`;
-        const dopravaLbl = `${hasAddToMain ? "HLAVNÁ " : ""}${ci.transportIsMin ? "Min. doprava" : "Doprava"}${zoneStr ? ` ${zoneStr}` : ""} · ${pdfTrucksLabel(ci, idx === 0)} · ${qtyStr}`;
+        const nTrucks = idx === 0 ? totalBdTrucks : ci.transportTrucks;
+        const dopravaLbl = `${hasAddToMain ? "HLAVNÁ " : ""}${ci.transportIsMin ? "Min. doprava" : "Doprava"}${zoneStr ? ` ${zoneStr}` : ""} · ${pdfTrucksLabel(ci, idx === 0)}`;
         const uTrans = ci.qty > 0 ? fmt2(tDisc / ci.qty) : undefined;
         const uTransOrig = ci.qty > 0 ? fmt2(tOrig / ci.qty) : undefined;
-        rows.push({ l: dopravaLbl, v: tDisc, ...(Math.abs(tOrig - tDisc) > 0.01 ? { o: tOrig } : {}), ...(uTrans !== undefined ? { u: uTrans, uSuffix: "€/m³", ...(uTransOrig !== undefined && Math.abs(uTransOrig - uTrans) > 0.001 ? { uOrig: uTransOrig } : {}) } : {}) });
+        rows.push({ l: dopravaLbl, q: `${nTrucks} autá (${qtyStr})`, v: tDisc, ...(Math.abs(tOrig - tDisc) > 0.01 ? { o: tOrig } : {}), ...(uTrans !== undefined ? { u: uTrans, uSuffix: "€/m³", ...(uTransOrig !== undefined && Math.abs(uTransOrig - uTrans) > 0.001 ? { uOrig: uTransOrig } : {}) } : {}) });
       }
       if (ci.transportFillup > 0) {
         const fOrig = fmt2(ci.transportFillup);
         const fDisc = fmt2(ci.transportFillup * dopravaFactor);
         const uFill = ci.transportFillupM3 > 0 ? fmt2(fDisc / ci.transportFillupM3) : undefined;
         const uFillOrig = ci.transportFillupM3 > 0 ? fmt2(fOrig / ci.transportFillupM3) : undefined;
-        rows.push({ l: `Doťaženie do ${ci.transportFillupTarget} m³`, v: fDisc, ...(Math.abs(fOrig - fDisc) > 0.01 ? { o: fOrig } : {}), ...(uFill !== undefined ? { u: uFill, uSuffix: "€/m³", ...(uFillOrig !== undefined && Math.abs(uFillOrig - uFill) > 0.001 ? { uOrig: uFillOrig } : {}) } : {}) });
+        rows.push({ l: `Doťaženie do ${ci.transportFillupTarget} m³`, q: `${ci.transportFillupM3} m³`, v: fDisc, ...(Math.abs(fOrig - fDisc) > 0.01 ? { o: fOrig } : {}), ...(uFill !== undefined ? { u: uFill, uSuffix: "€/m³", ...(uFillOrig !== undefined && Math.abs(uFillOrig - uFill) > 0.001 ? { uOrig: uFillOrig } : {}) } : {}) });
       }
       if (idx > 0 && ci.transport === 0 && idx - 1 < extraItems.length && extraItems[idx - 1]?.transportMode === "addToMain") {
         const mainLabel = (result.concreteBreakdown[0]?.label ?? "").split("–")[0].trim() || "Hlavný produkt";
         rows.push({ l: `↑ +${ci.qty}m³ zarátané do dopravy HLAVNÁ – ${mainLabel}`, v: 0 });
       }
-      const svcRows: { l: string; v: number; o?: number; u?: number; uOrig?: number; uSuffix?: string }[] = [];
+      const svcRows: { l: string; v: number; o?: number; u?: number; uOrig?: number; uSuffix?: string; q?: string }[] = [];
       if (idx === 0) {
         const pumpBase = result.pumpHrs + result.pumpMs / 60;
         if (tab === "pumpa" && pumpBase > 0 && pumpServicePrice > 0) {
           const pOrig = fmt2(pumpBase * pumpServicePrice);
-          svcRows.push({ l: `Čerpanie betónu – ${result.pumpHrs} h${result.pumpMs > 0 ? ` ${result.pumpMs} min` : ""}`, v: fmt2(pOrig * fPump), ...(fPump < 1 ? { o: pOrig } : {}), u: fmt2(pumpServicePrice * fPump), uSuffix: "€/h", ...(fPump < 1 ? { uOrig: pumpServicePrice } : {}) });
+          svcRows.push({ l: `Čerpanie betónu – ${result.pumpHrs} h${result.pumpMs > 0 ? ` ${result.pumpMs} min` : ""}`, q: `${result.pumpHrs} h${result.pumpMs > 0 ? ` ${result.pumpMs} min` : ""}`, v: fmt2(pOrig * fPump), ...(fPump < 1 ? { o: pOrig } : {}), u: fmt2(pumpServicePrice * fPump), uSuffix: "€/h", ...(fPump < 1 ? { uOrig: pumpServicePrice } : {}) });
         }
-        if (hoseMeters > 0) { const ho = fmt2(hoseMeters * hoseServicePrice); svcRows.push({ l: `Prídavné hadice – ${hoseMeters} m`, v: fmt2(ho * fHose), ...(fHose < 1 ? { o: ho } : {}), u: fmt2(hoseServicePrice * fHose), uSuffix: "€/m", ...(fHose < 1 ? { uOrig: hoseServicePrice } : {}) }); }
-        if (tab === "pumpa" && chemServicePrice > 0) { const co = fmt2(chemServicePrice); svcRows.push({ l: "Rozbehová chémia", v: fmt2(co * fChem), ...(fChem < 1 ? { o: co } : {}), u: fmt2(chemServicePrice * fChem), uSuffix: "€", ...(fChem < 1 ? { uOrig: chemServicePrice } : {}) }); }
-        if (washing) { const wo = fmt2(washServicePrice); svcRows.push({ l: "Umývanie mimo stavby", v: fmt2(wo * fWash), ...(fWash < 1 ? { o: wo } : {}), u: fmt2(washServicePrice * fWash), uSuffix: "€", ...(fWash < 1 ? { uOrig: washServicePrice } : {}) }); }
+        if (hoseMeters > 0) { const ho = fmt2(hoseMeters * hoseServicePrice); svcRows.push({ l: `Prídavné hadice – ${hoseMeters} m`, q: `${hoseMeters} m`, v: fmt2(ho * fHose), ...(fHose < 1 ? { o: ho } : {}), u: fmt2(hoseServicePrice * fHose), uSuffix: "€/m", ...(fHose < 1 ? { uOrig: hoseServicePrice } : {}) }); }
+        if (tab === "pumpa" && chemServicePrice > 0) { const co = fmt2(chemServicePrice); svcRows.push({ l: "Rozbehová chémia", q: "1 ks", v: fmt2(co * fChem), ...(fChem < 1 ? { o: co } : {}), u: fmt2(chemServicePrice * fChem), uSuffix: "€", ...(fChem < 1 ? { uOrig: chemServicePrice } : {}) }); }
+        if (washing) { const wo = fmt2(washServicePrice); svcRows.push({ l: "Umývanie mimo stavby", q: "1 ks", v: fmt2(wo * fWash), ...(fWash < 1 ? { o: wo } : {}), u: fmt2(washServicePrice * fWash), uSuffix: "€", ...(fWash < 1 ? { uOrig: washServicePrice } : {}) }); }
         if (result.waitIntervals > 0) {
           const wFactor = tab === "pumpa" ? fWaitP : fWaitM;
           const wRate = tab === "pumpa" ? waitServicePricePumpa : waitServicePriceMix;
           const wOrig = fmt2(result.waitIntervals * wRate);
-          svcRows.push({ l: `Čakačky – ${result.waitLabel}`, v: fmt2(wOrig * wFactor), ...(wFactor < 1 ? { o: wOrig } : {}), u: fmt2(wRate * wFactor), uSuffix: "€/int.", ...(wFactor < 1 ? { uOrig: wRate } : {}) });
+          svcRows.push({ l: `Čakačky – ${result.waitLabel}`, q: `${result.waitIntervals} int.`, v: fmt2(wOrig * wFactor), ...(wFactor < 1 ? { o: wOrig } : {}), u: fmt2(wRate * wFactor), uSuffix: "€/int.", ...(wFactor < 1 ? { uOrig: wRate } : {}) });
         }
       } else {
-        if (ci.svcPumpCost > 0) { svcRows.push({ l: `Čerpanie betónu – ${ci.svcPumpHrs} h${ci.svcPumpMs > 0 ? ` ${ci.svcPumpMs} min` : ""}`, v: fmt2(ci.svcPumpCost * fPump), ...(fPump < 1 ? { o: fmt2(ci.svcPumpCost) } : {}), u: fmt2(pumpServicePrice * fPump), uSuffix: "€/h", ...(fPump < 1 ? { uOrig: pumpServicePrice } : {}) }); }
-        if (ci.svcHoseCost > 0) { svcRows.push({ l: `Prídavné hadice – ${ci.svcHoseMeters} m`, v: fmt2(ci.svcHoseCost * fHose), ...(fHose < 1 ? { o: fmt2(ci.svcHoseCost) } : {}), u: fmt2(hoseServicePrice * fHose), uSuffix: "€/m", ...(fHose < 1 ? { uOrig: hoseServicePrice } : {}) }); }
-        if (ci.svcWashCost > 0) { svcRows.push({ l: "Umývanie mimo stavby", v: fmt2(ci.svcWashCost * fWash), ...(fWash < 1 ? { o: fmt2(ci.svcWashCost) } : {}), u: fmt2(washServicePrice * fWash), uSuffix: "€", ...(fWash < 1 ? { uOrig: washServicePrice } : {}) }); }
+        if (ci.svcPumpCost > 0) { svcRows.push({ l: `Čerpanie betónu – ${ci.svcPumpHrs} h${ci.svcPumpMs > 0 ? ` ${ci.svcPumpMs} min` : ""}`, q: `${ci.svcPumpHrs} h${ci.svcPumpMs > 0 ? ` ${ci.svcPumpMs} min` : ""}`, v: fmt2(ci.svcPumpCost * fPump), ...(fPump < 1 ? { o: fmt2(ci.svcPumpCost) } : {}), u: fmt2(pumpServicePrice * fPump), uSuffix: "€/h", ...(fPump < 1 ? { uOrig: pumpServicePrice } : {}) }); }
+        if (ci.svcHoseCost > 0) { svcRows.push({ l: `Prídavné hadice – ${ci.svcHoseMeters} m`, q: `${ci.svcHoseMeters} m`, v: fmt2(ci.svcHoseCost * fHose), ...(fHose < 1 ? { o: fmt2(ci.svcHoseCost) } : {}), u: fmt2(hoseServicePrice * fHose), uSuffix: "€/m", ...(fHose < 1 ? { uOrig: hoseServicePrice } : {}) }); }
+        if (ci.svcWashCost > 0) { svcRows.push({ l: "Umývanie mimo stavby", q: "1 ks", v: fmt2(ci.svcWashCost * fWash), ...(fWash < 1 ? { o: fmt2(ci.svcWashCost) } : {}), u: fmt2(washServicePrice * fWash), uSuffix: "€", ...(fWash < 1 ? { uOrig: washServicePrice } : {}) }); }
         if (ci.svcWaitCost > 0) { const wfExtra = tab === "pumpa" ? fWaitP : fWaitM; const wRateExtra = tab === "pumpa" ? waitServicePricePumpa : waitServicePriceMix; svcRows.push({ l: `Čakačky – ${ci.svcWaitLabel}`, v: fmt2(ci.svcWaitCost * wfExtra), ...(wfExtra < 1 ? { o: fmt2(ci.svcWaitCost) } : {}), u: fmt2(wRateExtra * wfExtra), uSuffix: "€/int.", ...(wfExtra < 1 ? { uOrig: wRateExtra } : {}) }); }
       }
       if (podmienkyEnabled && idx === 0) {
@@ -3796,7 +3796,6 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                   </div>
                 ) : (
                   <button onClick={() => {
-                    if (smsOrderCreated) { setSmsOrderWarning(true); return; }
                     setOrderForm(f => ({ ...f, name: loggedClient?.name ?? f.name, phone: loggedClient?.phone ? formatPhone(loggedClient.phone) : f.phone }));
                     setShowOrderModal(true);
                   }}
@@ -4025,35 +4024,6 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         </div>{/* /two-column grid */}
       </div>
 
-      {/* SMS duplicate order warning modal */}
-      {smsOrderWarning && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70" onClick={e => { if (e.target === e.currentTarget) setSmsOrderWarning(false); }}>
-          <div className="bg-[#1e293b] border border-primary/30 rounded-xl shadow-2xl w-full max-w-sm p-6 space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="shrink-0 w-9 h-9 rounded-full bg-amber-500/20 border border-amber-400/30 flex items-center justify-center">
-                <MessageSquare className="w-4 h-4 text-amber-400" />
-              </div>
-              <div>
-                <h3 className="font-black text-white text-base">Objednávka automaticky vytvorená</h3>
-                <p className="text-white/55 text-sm mt-1">Pri exporte SMS bola táto kalkulácia automaticky zaznamenaná ako záväzná objednávka. Naozaj chcete vytvoriť ďalšiu objednávku?</p>
-              </div>
-            </div>
-            <div className="flex gap-3 pt-1">
-              <button onClick={() => setSmsOrderWarning(false)} className="flex-1 py-2.5 border border-white/20 text-white/70 text-sm font-semibold rounded-sm hover:border-white/40 transition-colors cursor-pointer">
-                Zrušiť
-              </button>
-              <button onClick={() => {
-                setSmsOrderWarning(false);
-                setOrderForm(f => ({ ...f, name: loggedClient?.name ?? f.name, phone: loggedClient?.phone ? formatPhone(loggedClient.phone) : f.phone }));
-                setShowOrderModal(true);
-              }} className="flex-1 py-2.5 bg-primary text-white text-sm font-bold rounded-sm hover:bg-primary/90 transition-colors cursor-pointer">
-                Áno, vytvoriť ďalšiu
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Order modal */}
       <AnimatePresence>
         {showOrderModal && (
@@ -4133,6 +4103,15 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                       </div>
                     );
                   })()}
+                  {smsOrderCreated && (
+                    <div className="flex items-start gap-2.5 bg-amber-500/10 border border-amber-400/25 rounded-lg px-3 py-2.5">
+                      <MessageSquare className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                      <div>
+                        <div className="text-[10px] font-black uppercase tracking-wider text-amber-400 mb-0.5">Objednávka vytvorená cez SMS</div>
+                        <div className="text-xs text-amber-200/65">Táto kalkulácia bola pred chvíľou automaticky zaznamenaná pri SMS exporte. Naozaj chcete vytvoriť ďalšiu záväznú objednávku?</div>
+                      </div>
+                    </div>
+                  )}
                   <div className="space-y-3">
                     <div>
                       <label className="text-xs text-white/60 mb-1 block">Meno a priezvisko *</label>
