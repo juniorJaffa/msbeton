@@ -1447,8 +1447,9 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                 <div className="flex items-center gap-2">
                   {tablePdfModal.isOwner && <Crown className="w-4 h-4 text-primary shrink-0" />}
                   <div className="font-black text-base uppercase tracking-widest">Zľavové tabuľky klienta</div>
-                  <span className="inline-flex items-center gap-1 bg-amber-400 text-secondary text-[10px] font-black px-2 py-0.5 rounded-sm uppercase tracking-wide shrink-0">
-                    <PenLine className="w-3 h-3" />Editovateľné
+                  <span className="inline-flex items-center bg-amber-400 text-secondary px-1.5 py-0.5 rounded-sm shrink-0" title="Editovateľné">
+                    <PenLine className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline text-[10px] font-black uppercase tracking-wide ml-1">Editovateľné</span>
                   </span>
                 </div>
                 <div className="text-sm text-white/60 mt-0.5">
