@@ -203,6 +203,11 @@ function exportOrderPDF(o: Order) {
       if (row.l.startsWith("★") && row.v === 0) {
         return `<tr><td colspan="3" style="padding:3px 8px 3px 14px;font-size:7.5pt;color:#92400e;background:#fffbeb;border-bottom:1px solid #fde68a">${row.l}</td></tr>`;
       }
+      if (row.l.startsWith("↑") && row.v === 0) {
+        const badge = `<span style="display:inline-block;background:#1d4ed8;color:#fff;font-weight:900;font-size:6pt;padding:1px 4px;border-radius:3px;vertical-align:middle;margin:0 3px">&#9673;&nbsp;HLAVNÁ</span>`;
+        const txt = row.l.replace("HLAVNÁ", badge);
+        return `<tr><td colspan="3" style="padding:3px 8px 3px 14px;font-size:7.5pt;color:#1d4ed8;background:#eff6ff;border-bottom:1px solid #bfdbfe">${txt}</td></tr>`;
+      }
       const orig = row.o !== undefined ? `<span style="text-decoration:line-through;color:#aaa;font-size:7.5pt">${fmtEurPdf(row.o)}</span> ` : "";
       const unitCell = row.u !== undefined
         ? (row.uOrig !== undefined
@@ -1042,6 +1047,13 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                     {sec.rows.map((row, ri) => {
                                       const isRiskRow = row.l?.includes("Minusové pretaženie");
                                       const isPretazenieRow = !isRiskRow && row.l?.startsWith("★ Pretaženie");
+                                      const isAddToMainRow = row.l?.startsWith("↑") && row.v === 0;
+                                      if (isAddToMainRow) return (
+                                        <div key={ri} className="flex items-center gap-1.5 text-xs py-0.5 pl-3 text-blue-600 bg-blue-50 rounded-sm">
+                                          <span className="shrink-0 inline-flex items-center bg-blue-700 text-white text-[9px] font-black px-1 py-px rounded-sm">HLAVNÁ</span>
+                                          <span>{row.l.replace("HLAVNÁ – ", "").replace("↑ ", "↑ ")}</span>
+                                        </div>
+                                      );
                                       return (
                                         <div key={ri} className={cn(
                                           "flex justify-between items-baseline text-xs gap-4 py-0.5 rounded-sm",

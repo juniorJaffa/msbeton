@@ -1906,6 +1906,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         const uFillOrig = ci.transportFillupM3 > 0 ? fmt2(fOrig / ci.transportFillupM3) : undefined;
         rows.push({ l: `Doťaženie do ${ci.transportFillupTarget} m³`, v: fDisc, ...(Math.abs(fOrig - fDisc) > 0.01 ? { o: fOrig } : {}), ...(uFill !== undefined ? { u: uFill, uSuffix: "€/m³", ...(uFillOrig !== undefined && Math.abs(uFillOrig - uFill) > 0.001 ? { uOrig: uFillOrig } : {}) } : {}) });
       }
+      if (idx > 0 && ci.transport === 0 && idx - 1 < extraItems.length && extraItems[idx - 1]?.transportMode === "addToMain") {
+        const mainLabel = (result.concreteBreakdown[0]?.label ?? "").split("–")[0].trim() || "Hlavný produkt";
+        rows.push({ l: `↑ +${ci.qty}m³ zarátané do dopravy HLAVNÁ – ${mainLabel}`, v: 0 });
+      }
       const svcRows: { l: string; v: number; o?: number; u?: number; uOrig?: number; uSuffix?: string }[] = [];
       if (idx === 0) {
         const pumpBase = result.pumpHrs + result.pumpMs / 60;
