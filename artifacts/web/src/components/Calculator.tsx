@@ -2760,7 +2760,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                   </div>
                 )}
                 {/* + Pridať Služby per extra item */}
-                {!item.svc && tab !== "vlastnadoprava" && (
+                {!item.svc && tab !== "vlastnadoprava" && !itemCat?.noDoprava && (
                   <button type="button"
                     onClick={() => {
                       const defaults: ExtraItemServices = { pumpHour: "0 h", pumpMin: "0 min", waitPiecesPumpa: 0, hoseMeters: 0, washing: false, waitHour: "0 h", waitMin: "0 min" };
@@ -2771,7 +2771,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     + Pridať Služby ({tab === "pumpa" ? "čerpanie, hadice, čakačky" : "čakačky"})
                   </button>
                 )}
-                {item.svc && tab !== "vlastnadoprava" && (
+                {item.svc && tab !== "vlastnadoprava" && !itemCat?.noDoprava && (
                   <div className="border border-primary/20 rounded-lg p-3 space-y-3 bg-primary/3">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-black text-primary/60 uppercase tracking-widest">
