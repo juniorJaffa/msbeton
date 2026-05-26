@@ -952,7 +952,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                   <button
                     onClick={(e) => { e.stopPropagation(); setTablePdfModal(c); setTablePdfMode("faktura"); }}
                     title="Zľavové tabuľky"
-                    className="p-1.5 text-gray-300 hover:text-secondary transition-colors">
+                    className="p-1.5 text-amber-400 hover:text-amber-600 transition-colors">
                     <Table2 className="w-5 h-5" />
                   </button>
                   {c.id !== SYSTEM_OWNER_ID && (
@@ -1347,7 +1347,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                       <button
                         onClick={() => setShowTableFor(showTableFor === c.id ? null : c.id)}
                         title={showTableFor === c.id ? "Skryť zľavové tabuľky" : "Zobraziť zľavové tabuľky"}
-                        className={cn("flex items-center gap-1 p-1.5 rounded transition-colors border shrink-0", showTableFor === c.id ? "bg-secondary text-primary border-secondary" : "text-gray-400 hover:text-secondary border-gray-200 hover:border-secondary")}
+                        className={cn("flex items-center gap-1 p-1.5 rounded transition-colors border shrink-0", showTableFor === c.id ? "bg-amber-400 text-secondary border-amber-400" : "text-amber-400 hover:text-amber-600 border-amber-200 hover:border-amber-400")}
                       >
                         <Table2 className="w-4 h-4" />
                         {showTableFor === c.id ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}

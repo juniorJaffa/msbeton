@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Pencil, X } from "lucide-react";
+import { Check, Pencil, X, PenLine } from "lucide-react";
 import { adminData } from "@/lib/adminData";
 import { cn } from "@/lib/utils";
 
@@ -183,6 +183,7 @@ export function ClientPriceTable({
   const clientDZone = deliveryZones.find(z => z.id === deliveryZoneId) ?? deliveryZones[0];
   const pType = clientDZone?.pricingType ?? "standard";
   const dark = variant === "dark";
+  const isEditable = !!onManualPriceChange;
 
   const tabs: { id: Section; label: string; disc: number }[] = [
     { id: "betony",  label: "BETÓNY",  disc: effectiveBeton },
@@ -191,7 +192,7 @@ export function ClientPriceTable({
   ];
 
   return (
-    <div className={cn("rounded-lg overflow-hidden border", dark ? "border-primary/20" : "border-gray-200 shadow-sm")}>
+    <div className={cn("rounded-lg overflow-hidden border", dark ? "border-primary/20" : isEditable ? "border-amber-400 border-t-4 shadow-sm" : "border-gray-200 shadow-sm")}>
       {/* Section tab bar */}
       <div className={cn("grid grid-cols-3 border-b text-xs", dark ? "border-primary/20" : "border-gray-200")}>
         {tabs.map((t) => (
@@ -215,6 +216,13 @@ export function ClientPriceTable({
           </button>
         ))}
       </div>
+
+      {isEditable && !dark && (
+        <div className="px-3 py-1 bg-amber-50 border-b border-amber-200 flex items-center gap-1.5">
+          <PenLine className="w-3 h-3 text-amber-500" />
+          <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wide">Manuálne ceny</span>
+        </div>
+      )}
 
       {/* Table content */}
       <div className={cn("overflow-y-auto", dark ? "" : "bg-white")} style={{ maxHeight: 320 }}>
