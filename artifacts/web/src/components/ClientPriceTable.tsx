@@ -218,9 +218,9 @@ export function ClientPriceTable({
       </div>
 
       {isEditable && !dark && (
-        <div className="px-3 py-1 bg-amber-50 border-b border-amber-200 flex items-center gap-1.5">
-          <PenLine className="w-3 h-3 text-amber-500" />
-          <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wide">Manuálne ceny</span>
+        <div className="px-3 py-1 bg-blue-50 border-b border-blue-100 flex items-center gap-1.5">
+          <PenLine className="w-3 h-3 text-blue-400" />
+          <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wide">Manuálne ceny</span>
         </div>
       )}
 
