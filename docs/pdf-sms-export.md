@@ -38,6 +38,72 @@ Items s `qty=0` (prázdne množstvo) **nie sú** v `concreteBreakdown` → nikdy
 
 > **Kľúčový bug pattern**: `origItems.transport` = **súčet všetkých** položiek. Pre hlavnú položku v PDF vždy použi `concreteBreakdown[0].transport * dopravaFactor`.
 
+---
+
+## buildBreakdown() — zdieľaný formát pre Objednávky
+
+`buildBreakdown()` v `Calculator.tsx` generuje JSON uložený pri každej objednávke. Rovnaký JSON čítajú:
+- **Objednávky detail UI** (expanded karta v admin)
+- **Objednávky PDF** (`exportOrderPDF` v `ObjednavkyTab.tsx`)
+
+### Štruktúra
+
+```typescript
+{ v: 2, s: Section[] }
+
+Section = { h: string; rows: Row[] }
+Row = { l: string; v: number; o?: number; u?: number; uOrig?: number; uSuffix?: string; q?: string }
+```
+
+| Pole | Popis |
+|------|-------|
+| `h`  | Hlavička sekcie: `"Produkty – {kategória}"` alebo `"Pridaná položka N – {kategória}"` |
+| `l`  | Label riadku |
+| `v`  | Hodnota (€) |
+| `o`  | Pôvodná hodnota pred zľavou (preškrtnutá) |
+| `u`  | Jednotková cena |
+| `uOrig` | Pôvodná jednotková cena |
+| `uSuffix` | Suffix jednotky (`"€/m³"`, `"€/h"`, ...) |
+| `q`  | **Množstvo** — zobrazuje sa v Množstvo stĺpci PDF |
+
+### Sentinelové prefixe v `row.l`
+
+| Prefix | Príklad | Spracovanie |
+|--------|---------|-------------|
+| `"HLAVNÁ "` | `"HLAVNÁ Doprava 10–20 km · 1×Pumpa+7×Mix"` | modrý badge `HLAVNÁ` + zvyšok textu |
+| `"↑"` + `v===0` | `"↑ +33m³ zarátané do dopravy HLAVNÁ – ..."` | modrý riadok (addToMain info) |
+| `"★"` + `v===0` | `"★ Pretaženie: ..."` | žltý riadok |
+| `"⚠"` + `v===0` | `"⚠ Minusové pretaženie ..."` | červený riadok |
+
+**NIKDY nevkladaj HTML do `row.l`** — ukladá sa do JSON a renderuje ako text.
+
+### Objednávky PDF (`ObjednavkyTab.tsx`) — tabuľka
+
+```
+thead: # | Popis | Množstvo | Jedn. cena | Spolu
+```
+
+Identická štruktúra ako Kalkulačka PDF. Číslovanie riadkov (`#`) je runtime counter — nepreskočí sentinelové riadky.
+
+### Retroaktívna oprava kategórie
+
+Staré objednávky mohli mať uložený type name namiesto category name v `sec.h`. Obaja renderers (UI + PDF) to opravujú pri zobrazení:
+
+```typescript
+// UI (ObjednavkyTab.tsx, detail renderer):
+const hNamePart = sec.h.includes(" – ") ? sec.h.split(" – ").slice(1).join(" – ") : "";
+const hFixed = hNamePart && !allCategories.some(c => c.name === hNamePart)
+  ? sec.h.replace(hNamePart, allCategories.find(c => c.types.some(t => t.label === hNamePart))?.name ?? hNamePart)
+  : sec.h;
+
+// PDF (exportOrderPDF):
+// rovnaká logika cez fixSecH() helper, používa adminData.getCategories()
+```
+
+### Konzistencia PDF — pravidlo
+
+**Kalkulačka PDF = Objednávky PDF** — rovnaký počet stĺpcov, rovnaké sentinelové riadky, rovnaké kategórie. Pri každej zmene `buildBreakdown()` skontroluj obe zobrazenia.
+
 ### Watermark / signing box
 
 - Background watermark: **ODSTRÁNENÝ** (spôsoboval prázdne strany)

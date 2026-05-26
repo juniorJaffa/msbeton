@@ -48,7 +48,34 @@ Lookup vždy: `mp[key] !== undefined ? mp[key] : baseFromZone` — rovnaké v UI
 
 ### PDF a SMS export
 
-→ **[docs/pdf-sms-export.md](docs/pdf-sms-export.md)** — štruktúra tabulky, watermark/signing box, `cleanType()`, SMS formát a `row()` zarovnanie.
+→ **[docs/pdf-sms-export.md](docs/pdf-sms-export.md)** — štruktúra tabulky, watermark/signing box, `cleanType()`, SMS formát a `row()` zarovnanie. **Vrátane buildBreakdown() JSON formátu a pravidla konzistencie PDF.**
+
+### buildBreakdown() — kritické pravidlá
+
+`buildBreakdown()` v `Calculator.tsx` generuje JSON uložený pri každej objednávke. Čítajú ho:
+- Objednávky detail UI (`ObjednavkyTab.tsx`)
+- Objednávky PDF (`exportOrderPDF`)
+
+**Tabuľka PDF — Kalkulačka = Objednávky (rovnaké stĺpce):**
+```
+# | Popis | Množstvo | Jedn. cena | Spolu
+```
+
+**Sentinelové prefixe v `row.l`** (renderers ich detekujú a stylejú):
+- `"HLAVNÁ "` — transport row hlavnej položky s addToMain extras (modrý badge)
+- `"↑"` + `v===0` — addToMain info riadok (modrý bg)
+- `"★"` + `v===0` — pretaženie info (žltý bg)
+- `"⚠"` + `v===0` — minusové pretaženie (červený bg)
+
+**NIKDY nevkladaj HTML do `row.l`** — ukladá sa do DB JSON a React ho renderuje ako text (XSS + literal tags).
+
+**Množstvo (`row.q`)** — každý riadok musí mať `q?: string`:
+- Betón: `"${ci.qty} m³"`
+- Doprava: `"${nTrucks} autá (${qty} m³)"` alebo `"${qty}+${addToMainQty} m³"` pre HLAVNÁ
+- Doťaženie: `"${fillupM3} m³"`
+- Čerpanie: `"${hrs} h [min]"`, Hadice: `"${m} m"`, Chémia/Umývanie: `"1 ks"`, Čakačky: `"${n} int."`
+
+**Retroaktívna oprava kategórie**: Staré objednávky mohli mať type name v `sec.h` namiesto category name. Oba renderers to opravujú runtime cez `allCategories` lookup (nie DB write).
 
 ### Admin vzory a schémy
 
