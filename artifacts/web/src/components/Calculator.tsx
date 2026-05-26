@@ -1803,7 +1803,6 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         ...(podmienkyEnabled ? { podmienky: { trucks: tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks, pumpa: tab === "pumpa" ? podmienkyPumpa : 0, mix: tab === "pumpa" ? podmienkyMixC : podmienkyTrucks, m3PerTruck: (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks) > 0 ? Math.round(((result!.qty + (result!.concreteBreakdown[0]?.transportFillupM3 ?? 0)) / (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks)) * 10) / 10 : 0, isRisk: tab === "pumpa" ? (podmienkyPumpa * pumpCap + podmienkyMixC * mixCap) < result!.qty : podmienkyTrucks * mixCap < result!.qty } } : {}),
       }).then(() => {
         setSmsOrderCreated(true);
-        setTimeout(() => setSmsOrderCreated(false), 5000);
         const w = window as Window & { turnstile?: { reset: (id: string) => void } };
         if (turnstileWidgetId.current && w.turnstile) w.turnstile.reset(turnstileWidgetId.current);
       }).catch(() => {});
@@ -1996,6 +1995,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     setOrderSubmitting(false);
     setOrderDone(true);
     setOrderSubmittedBanner(true);
+    setSmsOrderCreated(false);
     gtagEvent("order_submitted", { tab, quantity, type: selectedType?.label, priceMode });
     setTimeout(() => { setShowOrderModal(false); setOrderDone(false); }, 3000);
   }

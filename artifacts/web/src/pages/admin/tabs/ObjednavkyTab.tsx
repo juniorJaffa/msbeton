@@ -194,20 +194,22 @@ function exportOrderPDF(o: Order) {
   try { if (o.breakdown?.startsWith("{")) parsed = JSON.parse(o.breakdown); } catch { /* */ }
 
   const fmtRate = (n: number, suffix?: string) => n.toFixed(2) + " " + (suffix ?? "€");
+  let pdfRowIdx = 0;
   const breakdownHtml = parsed ? parsed.s.map(sec => {
     const isMain = sec.h.startsWith("Pridaná") || sec.h.startsWith("Produkty");
     const rows = sec.rows.map(row => {
       if (row.l.startsWith("⚠") && row.v === 0) {
-        return `<tr><td colspan="4" style="padding:4px 8px 4px 14px;font-size:7.5pt;font-weight:600;color:#991b1b;background:#fef2f2;border-top:1px solid #fca5a5;border-bottom:1px solid #fca5a5">${row.l}</td></tr>`;
+        return `<tr><td colspan="5" style="padding:4px 8px 4px 14px;font-size:7.5pt;font-weight:600;color:#991b1b;background:#fef2f2;border-top:1px solid #fca5a5;border-bottom:1px solid #fca5a5">${row.l}</td></tr>`;
       }
       if (row.l.startsWith("★") && row.v === 0) {
-        return `<tr><td colspan="4" style="padding:3px 8px 3px 14px;font-size:7.5pt;color:#92400e;background:#fffbeb;border-bottom:1px solid #fde68a">${row.l}</td></tr>`;
+        return `<tr><td colspan="5" style="padding:3px 8px 3px 14px;font-size:7.5pt;color:#92400e;background:#fffbeb;border-bottom:1px solid #fde68a">${row.l}</td></tr>`;
       }
       if (row.l.startsWith("↑") && row.v === 0) {
         const badge = `<span style="display:inline-block;background:#1d4ed8;color:#fff;font-weight:900;font-size:6pt;padding:1px 4px;border-radius:3px;vertical-align:middle;margin:0 3px">&#9673;&nbsp;HLAVNÁ</span>`;
         const txt = row.l.replace("HLAVNÁ", badge);
-        return `<tr><td colspan="4" style="padding:3px 8px 3px 14px;font-size:7.5pt;color:#1d4ed8;background:#eff6ff;border-bottom:1px solid #bfdbfe">${txt}</td></tr>`;
+        return `<tr><td colspan="5" style="padding:3px 8px 3px 14px;font-size:7.5pt;color:#1d4ed8;background:#eff6ff;border-bottom:1px solid #bfdbfe">${txt}</td></tr>`;
       }
+      pdfRowIdx++;
       const orig = row.o !== undefined ? `<span style="text-decoration:line-through;color:#aaa;font-size:7.5pt">${fmtEurPdf(row.o)}</span> ` : "";
       const unitCell = row.u !== undefined
         ? (row.uOrig !== undefined
@@ -217,13 +219,14 @@ function exportOrderPDF(o: Order) {
       const hlavnaBadge = `<span style="display:inline-block;background:#1d4ed8;color:#fff;font-weight:900;font-size:6pt;padding:1px 4px;border-radius:3px;vertical-align:middle;margin-right:4px">&#9673;&nbsp;HLAVNÁ</span>`;
       const rowLabel = row.l.startsWith("HLAVNÁ ") ? `${hlavnaBadge}${row.l.slice(7)}` : row.l;
       return `<tr>
+        <td style="padding:3px 8px;font-size:8pt;border-bottom:1px solid #f0f0f0;color:#aaa;text-align:center;width:22px">${pdfRowIdx}</td>
         <td style="padding:3px 8px;font-size:8.5pt;border-bottom:1px solid #f0f0f0;color:#444">${rowLabel}</td>
         <td style="padding:3px 8px;font-size:8.5pt;border-bottom:1px solid #f0f0f0;text-align:right;color:#666;white-space:nowrap">${(row as { q?: string }).q ?? "—"}</td>
         <td style="padding:3px 8px;font-size:8.5pt;border-bottom:1px solid #f0f0f0;text-align:right;color:#666;white-space:nowrap">${unitCell}</td>
         <td style="padding:3px 8px;font-size:8.5pt;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:bold;color:${row.o !== undefined ? "#b45309" : "#222"};white-space:nowrap">${orig}${fmtEurPdf(row.v)}</td>
       </tr>`;
     }).join("");
-    return `<tr><td colspan="4" style="padding:4px 8px;font-size:8.5pt;font-weight:bold;background:${isMain ? "#001D3D" : "#EDC531"};color:${isMain ? "#EDC531" : "#001D3D"}">${sec.h}</td></tr>${rows}`;
+    return `<tr><td colspan="5" style="padding:4px 8px;font-size:8.5pt;font-weight:bold;background:${isMain ? "#001D3D" : "#EDC531"};color:${isMain ? "#EDC531" : "#001D3D"}">${sec.h}</td></tr>${rows}`;
   }).join("") : "";
 
   const discountInfo = [
@@ -287,7 +290,7 @@ function exportOrderPDF(o: Order) {
 ${breakdownHtml ? `
 <div style="margin-bottom:5mm">
   <div style="font-size:9.5pt;font-weight:bold;color:#001D3D;border-bottom:2px solid #EDC531;padding-bottom:2px;margin-bottom:4px">KALKULÁCIA</div>
-  <table><thead><tr style="background:#001D3D;color:#fff;font-size:8pt"><th style="padding:4px 8px;text-align:left;font-weight:bold">Popis</th><th style="padding:4px 8px;text-align:right;font-weight:bold">Množstvo</th><th style="padding:4px 8px;text-align:right;font-weight:bold">Jedn.&nbsp;cena</th><th style="padding:4px 8px;text-align:right;font-weight:bold">Spolu</th></tr></thead><tbody>${breakdownHtml}</tbody></table>
+  <table><thead><tr style="background:#001D3D;color:#fff;font-size:8pt"><th style="padding:4px 8px;width:22px;text-align:center;font-weight:bold">#</th><th style="padding:4px 8px;text-align:left;font-weight:bold">Popis</th><th style="padding:4px 8px;text-align:right;font-weight:bold">Množstvo</th><th style="padding:4px 8px;text-align:right;font-weight:bold">Jedn.&nbsp;cena</th><th style="padding:4px 8px;text-align:right;font-weight:bold">Spolu</th></tr></thead><tbody>${breakdownHtml}</tbody></table>
 </div>` : ""}
 
 <div style="background:#001D3D;color:#fff;padding:4mm;border-radius:2px;display:flex;justify-content:space-between;align-items:center">
