@@ -134,7 +134,7 @@ export default function ClientLogin() {
   // ── BIOMETRIC PENDING ──
   if (screen === "bio-pending") return (
     <>
-      <SEOHead title="Prihlásenie klienta – MS-BETON" noIndex />
+      <SEOHead title="Prihlásenie klienta – MS-BETON" noindex />
       <Navbar />
       <div className="min-h-screen concrete-navy flex items-center justify-center p-4">
         <div className="w-full max-w-sm bg-secondary/95 rounded-2xl shadow-2xl border border-white/10 p-10 text-center">
@@ -151,7 +151,7 @@ export default function ClientLogin() {
   // ── BIOMETRIC FAILED ──
   if (screen === "bio-failed") return (
     <>
-      <SEOHead title="Prihlásenie klienta – MS-BETON" noIndex />
+      <SEOHead title="Prihlásenie klienta – MS-BETON" noindex />
       <Navbar />
       <div className="min-h-screen concrete-navy flex items-center justify-center p-4">
         <div className="w-full max-w-sm bg-secondary/95 rounded-2xl shadow-2xl border border-white/10 overflow-hidden">
@@ -180,7 +180,7 @@ export default function ClientLogin() {
   // ── BIOMETRIC REGISTER ──
   if (screen === "bio-register") return (
     <>
-      <SEOHead title="Prihlásenie klienta – MS-BETON" noIndex />
+      <SEOHead title="Prihlásenie klienta – MS-BETON" noindex />
       <Navbar />
       <div className="min-h-screen concrete-navy flex items-center justify-center p-4">
         <div className="w-full max-w-sm bg-secondary/95 rounded-2xl shadow-2xl border border-white/10 overflow-hidden">
@@ -209,7 +209,7 @@ export default function ClientLogin() {
   // ── MAIN FORM ──
   return (
     <>
-      <SEOHead title="Prihlásenie klienta – MS-BETON" noIndex />
+      <SEOHead title="Prihlásenie klienta – MS-BETON" noindex />
       <Navbar />
       <div className="min-h-screen concrete-navy flex items-center justify-center p-4">
         <div className="w-full max-w-sm">

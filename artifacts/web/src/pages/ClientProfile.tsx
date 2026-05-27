@@ -152,7 +152,7 @@ export default function ClientProfile() {
 
   return (
     <>
-      <SEOHead title="Môj profil – MS-BETON" noIndex />
+      <SEOHead title="Môj profil – MS-BETON" noindex />
       <Navbar />
       <main className="min-h-screen concrete-light">
 

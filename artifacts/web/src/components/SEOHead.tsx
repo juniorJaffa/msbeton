@@ -58,14 +58,16 @@ export function LocalBusinessSchema() {
     "image": OG_IMAGE,
     "address": {
       "@type": "PostalAddress",
-      "addressLocality": "Žilina",
+      "streetAddress": "Turie 468",
+      "postalCode": "013 12",
+      "addressLocality": "Turie",
       "addressRegion": "Žilinský kraj",
       "addressCountry": "SK"
     },
     "geo": {
       "@type": "GeoCoordinates",
-      "latitude": 49.2232,
-      "longitude": 18.7394
+      "latitude": 49.1503,
+      "longitude": 18.6681
     },
     "areaServed": {
       "@type": "GeoCircle",
@@ -97,9 +99,7 @@ export function LocalBusinessSchema() {
       "areaServed": "SK",
       "availableLanguage": "Slovak"
     },
-    "sameAs": [
-      "https://www.google.com/maps?cid=MS-BETON"
-    ],
+    "sameAs": [],
     "hasOfferCatalog": {
       "@type": "OfferCatalog",
       "name": "Služby MS-BETON",
