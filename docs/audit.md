@@ -1,6 +1,6 @@
 # MS-BETON — Audit stav projektu
 
-> Aktualizované: 2026-05-25 (iterácia #3)
+> Aktualizované: 2026-05-27 (iterácia #4)
 > Prostredie: demo.msbeton.sk → migrácia na msbeton.sk (plánovaná)
 
 **Legenda:** ✅ Hotovo | ⏳ Čaká (externá podmienka) | ❌ Plánované | ⚠ Čiastočne
@@ -117,6 +117,17 @@
 ---
 
 ## Changelog
+
+### Iterácia #4 — 2026-05-27
+- buildBreakdown: sentinel prefix `"HLAVNÁ "` (HTML badge z `row.l` odstránený → čistý JSON), `q?` field pre Množstvo stĺpec
+- Objednávky PDF: `#` + Množstvo stĺpce → konzistencia s Kalkulačka PDF (5 stĺpcov)
+- Objednávky detail + PDF: retroaktívna oprava kategórie pre staré objednávky (type name → category name lookup pri zobrazení)
+- SMS duplicate warning: amber banner v záväznej objednávke modal (`smsOrderCreated` + timeout fix)
+- Extra položky: `categoryName` správne inicializovaný pri vytvorení (bol `null`)
+- SEO: `robots.txt` prod-ready (`Allow: /`, `Disallow: /admin/ /api/`)
+- SEO: `LocalBusinessSchema` adresa Turie (streetAddress, postalCode, geo coords 49.1503/18.6681, odstránené falošné Maps URL)
+- SEO: `noindex` bug fix — `ClientLogin` + `ClientProfile` (prop `noIndex` → `noindex`)
+- SEO: `sitemap.xml` lastmod dátumy pridané
 
 ### Iterácia #3 — 2026-05-25
 - #8 Fix: `allowExtraOverload` — `?? true` fallback → anonymní vždy `false`
