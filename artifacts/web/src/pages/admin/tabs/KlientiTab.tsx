@@ -6,7 +6,7 @@ import { PriceModeToggle } from "@/components/PriceModeToggle";
 import { PhoneInput } from "@/components/PhoneInput";
 import { cn, formatPhone } from "@/lib/utils";
 import { adminData, adminApi, Client, TransportSettings, Order, SYSTEM_OWNER_ID } from "@/lib/adminData";
-import { EditableField } from "./_shared";
+import { EditableField, authFetch } from "./_shared";
 
 function genPassword() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -339,6 +339,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
   const [emailStatus, setEmailStatus] = useState<"idle" | "sending" | "ok" | "error">("idle");
   const [sysDphOpen, setSysDphOpen] = useState(false);
   const [editingLinkFor, setEditingLinkFor] = useState<string | null>(null);
+  const [addSuccessMsg, setAddSuccessMsg] = useState<string | null>(null);
   const [linkDraft, setLinkDraft] = useState("");
 
   const save = (data: Client[]) => { setClients(data); adminData.saveClients(data); };
@@ -442,7 +443,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
     }]);
     if (sendRegEmail && form.email.trim()) {
       setEmailStatus("sending");
-      const res = await fetch("/api/admin/send-registration-email", {
+      const res = await authFetch("/api/admin/send-registration-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ toEmail: form.email.trim(), clientName, clientId: newLoginId, password: form.password.trim() }),
@@ -451,6 +452,10 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
       setTimeout(() => setEmailStatus("idle"), 4000);
     }
     setForm(emptyForm); setAdding(false);
+    setAddSuccessMsg(clientName);
+    setExpanded(newId);
+    setTimeout(() => scrollToClientCard(newId, true), 120);
+    setTimeout(() => setAddSuccessMsg(null), 5000);
   };
 
   const normK = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -493,6 +498,12 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
 
   return (
     <div className="space-y-4">
+      {addSuccessMsg && (
+        <div className="flex items-center gap-2.5 bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-700 font-semibold shadow-sm">
+          <Check className="w-4 h-4 text-green-500 shrink-0" />
+          Klient <span className="font-black">{addSuccessMsg}</span> bol úspešne pridaný
+        </div>
+      )}
       {/* Systémová DPH — collapsible */}
       <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
         <button
@@ -1131,7 +1142,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                                   onClick={async () => {
                                     setSendCredState(s => ({ ...s, [c.id]: "loading" }));
                                     try {
-                                      const r = await fetch(`/api/admin/clients/${c.id}/send-credentials`, { method: "POST" });
+                                      const r = await authFetch(`/api/admin/clients/${c.id}/send-credentials`, { method: "POST" });
                                       const json = await r.json() as { ok: boolean; error?: string };
                                       setSendCredState(s => ({ ...s, [c.id]: json.ok ? "ok" : "error" }));
                                       setTimeout(() => setSendCredState(s => ({ ...s, [c.id]: "idle" })), 3500);
