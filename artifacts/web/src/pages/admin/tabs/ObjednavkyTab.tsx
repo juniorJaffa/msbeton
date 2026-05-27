@@ -3,7 +3,6 @@ import { createPortal } from "react-dom";
 import { SlidersHorizontal, ShoppingCart, MessageSquare, MapPin, Navigation, Copy, Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, AlertTriangle, FileText, Calculator, Users } from "lucide-react";
 import { adminData, adminApi, Order, TransportSettings } from "@/lib/adminData";
 import { cn, formatPhone } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
 
 const ORDER_STATUSES: { key: Order["status"]; label: string; color: string }[] = [
   { key: "nova",        label: "Nová",        color: "bg-blue-100 text-blue-700" },
@@ -537,9 +536,6 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const totalPages = Math.ceil(sortedCount / ORDERS_PAGE_SIZE);
   const pagedOrders = sorted.slice(ordersPage * ORDERS_PAGE_SIZE, (ordersPage + 1) * ORDERS_PAGE_SIZE);
   useEffect(() => { setOrdersPage(0); }, [filterStatus, filterTab, filterPriceMode, filterChannel, clientIdActive, search, dateFrom, dateTo]);
-
-  // suppress unused import warning
-  void useToast;
 
   return (
     <div className="space-y-3">
