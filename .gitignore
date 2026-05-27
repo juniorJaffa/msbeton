@@ -56,3 +56,6 @@ deploy.sh
 # Claude Token Monitor data
 .claude-monitor/
 .gstack/
+
+# Claude Code runtime files
+.claude/scheduled_tasks.lock
