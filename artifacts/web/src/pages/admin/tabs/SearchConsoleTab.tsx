@@ -75,15 +75,15 @@ export default function SearchConsoleTab() {
       {/* KPI */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Kliky (28 dní)", val: data.summary.clicks28.toLocaleString("sk"), sub: "Organické kliky zo SERPu" },
-          { label: "Impresie (28 dní)", val: data.summary.impressions28.toLocaleString("sk"), sub: "Koľkokrát sa objavil v Google" },
-          { label: "Priem. CTR", val: `${(data.summary.avgCtr28 * 100).toFixed(1)} %`, sub: "Click-through rate z impresií" },
-          { label: "Priem. pozícia", val: data.summary.avgPosition28.toFixed(1), sub: "Priemerná pozícia v Google" },
+          { label: "Kliky (28 dní)", val: data.summary.clicks28.toLocaleString("sk"), sub: "Koľkokrát niekto klikol na váš výsledok v Google Searchi" },
+          { label: "Impresie (28 dní)", val: data.summary.impressions28.toLocaleString("sk"), sub: "Koľkokrát sa web zobrazil vo výsledkoch vyhľadávania" },
+          { label: "Priem. CTR", val: `${(data.summary.avgCtr28 * 100).toFixed(1)} %`, sub: "% impresií, kde klikli — čím vyšší, tým lákavejší nadpis" },
+          { label: "Priem. pozícia", val: data.summary.avgPosition28 > 0 ? data.summary.avgPosition28.toFixed(1) : "—", sub: "Poradie vo výsledkoch — 1 = prvý, 10 = koniec 1. strany" },
         ].map(k => (
           <div key={k.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
             <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">{k.label}</div>
             <div className="text-3xl font-black text-secondary">{k.val}</div>
-            <div className="text-[10px] text-gray-400 mt-1 leading-tight">{k.sub}</div>
+            <div className="text-[10px] text-gray-500 mt-1 leading-tight">{k.sub}</div>
           </div>
         ))}
       </div>
