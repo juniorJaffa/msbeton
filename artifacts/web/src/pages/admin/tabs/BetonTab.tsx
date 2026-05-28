@@ -25,6 +25,15 @@ export default function BetonTab() {
   // Touch/Pointer drag state (mobile)
   const ptrDrag = useRef<{ kind: "cat" | "type"; fromCatId: string; fromTypeId?: string } | null>(null);
   const ptrMoved = useRef(false);
+  // Visual feedback states
+  const [liftedCatId, setLiftedCatId] = useState<string | null>(null);
+  const [liftedTypeId, setLiftedTypeId] = useState<string | null>(null);
+  const [flashId, setFlashId] = useState<string | null>(null);
+
+  const flashSuccess = (id: string) => {
+    setFlashId(id);
+    setTimeout(() => setFlashId(null), 700);
+  };
 
   const onHandlePointerDown = (
     e: React.PointerEvent,
@@ -32,12 +41,14 @@ export default function BetonTab() {
     fromCatId: string,
     fromTypeId?: string,
   ) => {
-    if (e.pointerType === "mouse") return; // desktop: HTML5 drag handles it
+    if (e.pointerType === "mouse") return;
     e.preventDefault();
     e.stopPropagation();
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     ptrDrag.current = { kind, fromCatId, fromTypeId };
     ptrMoved.current = false;
+    if (kind === "cat") setLiftedCatId(fromCatId);
+    else setLiftedTypeId(fromTypeId ?? null);
   };
 
   const onHandlePointerMove = (e: React.PointerEvent) => {
@@ -45,7 +56,6 @@ export default function BetonTab() {
     e.preventDefault();
     ptrMoved.current = true;
 
-    // Temporarily hide handle so elementFromPoint sees the list row beneath
     const handle = e.currentTarget as HTMLElement;
     handle.style.visibility = "hidden";
     const under = document.elementFromPoint(e.clientX, e.clientY);
@@ -68,24 +78,29 @@ export default function BetonTab() {
     const moved = ptrMoved.current;
     ptrDrag.current = null;
     ptrMoved.current = false;
+    setLiftedCatId(null);
+    setLiftedTypeId(null);
 
     if (!moved) { setDragOverCat(null); setDragOverType(null); return; }
 
     if (kind === "cat" && dragOverCat) {
+      const toId = dragOverCat;
       const arr = [...cats];
       const from = arr.findIndex(c => c.id === fromCatId);
-      const to = arr.findIndex(c => c.id === dragOverCat);
-      if (from >= 0 && to >= 0) { const [m] = arr.splice(from, 1); arr.splice(to, 0, m); save(arr); }
+      const to = arr.findIndex(c => c.id === toId);
+      if (from >= 0 && to >= 0) { const [m] = arr.splice(from, 1); arr.splice(to, 0, m); save(arr); flashSuccess(fromCatId); }
     } else if (kind === "type" && dragOverType && fromTypeId) {
+      const toTypeId = dragOverType;
       save(cats.map(c => {
         if (c.id !== fromCatId) return c;
         const types = [...c.types];
         const from = types.findIndex(t => t.id === fromTypeId);
-        const to = types.findIndex(t => t.id === dragOverType);
+        const to = types.findIndex(t => t.id === toTypeId);
         if (from < 0 || to < 0) return c;
         const [m] = types.splice(from, 1); types.splice(to, 0, m);
         return { ...c, types };
       }));
+      flashSuccess(fromTypeId);
     }
     setDragOverCat(null);
     setDragOverType(null);
@@ -217,17 +232,31 @@ export default function BetonTab() {
           onDragOver={e => onCatDragOver(e, cat.id)}
           onDrop={e => onCatDrop(e, cat.id)}
           onDragEnd={onCatDragEnd}
-          className={`border bg-white shadow-sm transition-all ${dragOverCat === cat.id ? "border-primary border-dashed bg-primary/5" : "border-gray-200"}`}>
+          style={{ transition: "transform 180ms, box-shadow 180ms, opacity 180ms" }}
+          className={[
+            "border bg-white shadow-sm",
+            dragOverCat === cat.id
+              ? "border-primary border-2 bg-primary/5 shadow-[0_0_0_3px_rgba(237,197,49,0.25)]"
+              : flashId === cat.id
+                ? "border-green-400 border-2 bg-green-50 shadow-[0_0_0_3px_rgba(74,222,128,0.25)]"
+                : liftedCatId === cat.id
+                  ? "border-primary border-2 opacity-50 scale-[0.985] shadow-xl"
+                  : "border-gray-200",
+          ].join(" ")}>
           <div className="flex items-start justify-between px-3 py-3 cursor-pointer hover:bg-gray-50 transition-colors select-none"
             onClick={() => { setExpanded(expanded === cat.id ? null : cat.id); setRenamingCat(null); }}>
             <div className="flex items-start gap-2 min-w-0 flex-1">
               {/* Drag handle — category (mouse: HTML5 drag / touch: Pointer Events) */}
-              <span className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing shrink-0 touch-none mt-0.5 p-1 -m-1"
+              <span
+                className={[
+                  "shrink-0 touch-none mt-0.5 p-2 -m-1 rounded-md transition-colors cursor-grab active:cursor-grabbing",
+                  liftedCatId === cat.id ? "text-primary bg-primary/15" : "text-gray-300 hover:text-gray-500 hover:bg-gray-100",
+                ].join(" ")}
                 onClick={e => e.stopPropagation()} draggable={false}
                 onPointerDown={e => onHandlePointerDown(e, "cat", cat.id)}
                 onPointerMove={onHandlePointerMove}
                 onPointerUp={onHandlePointerUp}>
-                <GripVertical className="w-4 h-4" />
+                <GripVertical className="w-5 h-5" />
               </span>
               <span className="shrink-0 mt-0.5">{expanded === cat.id ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}</span>
               <span className="font-semibold text-secondary break-words">{cat.name}</span>
@@ -285,14 +314,27 @@ export default function BetonTab() {
                       onDragOver={e => onTypeDragOver(e, t.id)}
                       onDrop={e => onTypeDrop(e, cat.id, t.id)}
                       onDragEnd={onTypeDragEnd}
-                      className={`border-t border-gray-100 transition-colors ${dragOverType === t.id ? "bg-primary/8 border-primary border-dashed" : ""}`}>
+                      style={{ transition: "background 180ms, opacity 180ms, box-shadow 180ms" }}
+                      className={
+                        dragOverType === t.id
+                          ? "border-t-2 border-primary bg-primary/8 shadow-[inset_3px_0_0_0_#EDC531]"
+                          : flashId === t.id
+                            ? "border-t border-gray-100 bg-green-50"
+                            : liftedTypeId === t.id
+                              ? "border-t border-gray-100 opacity-40"
+                              : "border-t border-gray-100"
+                      }>
                       {/* Drag handle — type (mouse: HTML5 / touch: Pointer Events) */}
-                      <td className="py-2 pr-1 w-6">
-                        <span className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing flex items-center justify-center touch-none p-1 -m-1"
+                      <td className="py-2 pr-1 w-8">
+                        <span
+                          className={[
+                            "flex items-center justify-center touch-none p-2 rounded-md transition-colors cursor-grab active:cursor-grabbing",
+                            liftedTypeId === t.id ? "text-primary bg-primary/15" : "text-gray-300 hover:text-gray-500 hover:bg-gray-100",
+                          ].join(" ")}
                           onPointerDown={e => onHandlePointerDown(e, "type", cat.id, t.id)}
                           onPointerMove={onHandlePointerMove}
                           onPointerUp={onHandlePointerUp}>
-                          <GripVertical className="w-3.5 h-3.5" />
+                          <GripVertical className="w-4 h-4" />
                         </span>
                       </td>
                       <td className="py-2 font-medium text-secondary">
