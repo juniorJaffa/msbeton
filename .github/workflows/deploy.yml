@@ -35,13 +35,14 @@ jobs:
       - name: Health check
         run: |
           sleep 8
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://msbeton.sk)
+          # TODO: zmeniť na https://msbeton.sk po DNS switch + certbot
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://178.105.242.17)
           if [ "$STATUS" != "200" ]; then
             echo "Web health check FAILED — HTTP $STATUS"
             exit 1
           fi
           echo "Web OK — HTTP $STATUS"
-          API=$(curl -s https://msbeton.sk/api/healthz | grep -c '"ok"' || true)
+          API=$(curl -s http://178.105.242.17/api/healthz | grep -c '"ok"' || true)
           if [ "$API" = "0" ]; then
             echo "API health check FAILED"
             exit 1
