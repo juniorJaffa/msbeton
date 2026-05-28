@@ -1,4 +1,4 @@
-name: Deploy na Hetzner
+name: Deploy na Hetzner (ms-beton)
 
 on:
   push:
@@ -21,7 +21,7 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
             git lfs pull
-            pnpm install --frozen-lockfile
+            pnpm install --frozen-lockfile --ignore-scripts
             pnpm --filter @workspace/api-server run build
             PORT=3001 BASE_PATH=/ pnpm --filter @workspace/web run build
             mkdir -p artifacts/web/dist/public/videos
@@ -35,13 +35,13 @@ jobs:
       - name: Health check
         run: |
           sleep 8
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://demo.msbeton.sk)
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://msbeton.sk)
           if [ "$STATUS" != "200" ]; then
             echo "Web health check FAILED — HTTP $STATUS"
             exit 1
           fi
           echo "Web OK — HTTP $STATUS"
-          API=$(curl -s https://demo.msbeton.sk/api/healthz | grep -c '"ok"' || true)
+          API=$(curl -s https://msbeton.sk/api/healthz | grep -c '"ok"' || true)
           if [ "$API" = "0" ]; then
             echo "API health check FAILED"
             exit 1
