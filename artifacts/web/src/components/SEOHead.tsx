@@ -46,6 +46,76 @@ export function SEOHead({ title, description, canonical, noindex = false }: SEOH
   );
 }
 
+export function WebSiteSchema() {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": SITE_NAME,
+    "alternateName": "MS-BETON",
+    "url": SITE_URL,
+    "description": DEFAULT_DESCRIPTION,
+    "inLanguage": "sk",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": `${SITE_URL}/?q={search_term_string}`
+      },
+      "query-input": "required name=search_term_string"
+    }
+  };
+
+  const navSchema = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Hlavná navigácia MS-BETON",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Kalkulačka betónu",
+        "description": "Okamžitá kalkulácia ceny betónu vrátane dopravy a služieb – pumpa, domiešavač, vlastná doprava",
+        "url": `${SITE_URL}/`
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Cenník betónu",
+        "description": "Aktuálny cenník betónu podľa triedy: C16/20, C20/25, C25/30, C30/37, C35/45 a ďalšie",
+        "url": `${SITE_URL}/cennik`
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": "Vozový park",
+        "description": "Betónová pumpa s dosahom 28 m a domiešavače s kapacitou 9 m³",
+        "url": `${SITE_URL}/vozovy-park`
+      },
+      {
+        "@type": "ListItem",
+        "position": 4,
+        "name": "Prihlásenie klienta",
+        "description": "Prihlásenie pre firemných klientov – osobné ceny a zľavy automaticky v kalkulačke",
+        "url": `${SITE_URL}/prihlasenie`
+      },
+      {
+        "@type": "ListItem",
+        "position": 5,
+        "name": "Objednávka betónu",
+        "description": "Záväzná objednávka betónu priamo z kalkulačky – rýchla a bez telefonátu",
+        "url": `${SITE_URL}/#objednavka`
+      }
+    ]
+  };
+
+  return (
+    <Helmet>
+      <script type="application/ld+json">{JSON.stringify(schema)}</script>
+      <script type="application/ld+json">{JSON.stringify(navSchema)}</script>
+    </Helmet>
+  );
+}
+
 export function LocalBusinessSchema() {
   const schema = {
     "@context": "https://schema.org",

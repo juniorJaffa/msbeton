@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { SEOHead, LocalBusinessSchema } from "@/components/SEOHead";
+import { SEOHead, LocalBusinessSchema, WebSiteSchema } from "@/components/SEOHead";
 import {
   ArrowRight,
   CheckCircle2,
@@ -139,6 +139,7 @@ export default function Home() {
     <div className="min-h-screen">
       <SEOHead />
       <LocalBusinessSchema />
+      <WebSiteSchema />
       <Navbar />
 
       {/* HERO SECTION */}
