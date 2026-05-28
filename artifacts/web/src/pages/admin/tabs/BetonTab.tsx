@@ -235,7 +235,7 @@ export default function BetonTab() {
           onDragOver={e => onCatDragOver(e, cat.id)}
           onDrop={e => onCatDrop(e, cat.id)}
           onDragEnd={onCatDragEnd}
-          style={{ transition: "transform 180ms, box-shadow 180ms, opacity 180ms" }}
+          style={{ transition: "transform 180ms, box-shadow 180ms, opacity 180ms", userSelect: "none", WebkitUserSelect: "none", WebkitTouchCallout: "none" } as any}
           className={[
             "border bg-white shadow-sm",
             dragOverCat === cat.id
@@ -246,28 +246,32 @@ export default function BetonTab() {
                   ? "border-primary border-2 opacity-50 scale-[0.985] shadow-xl"
                   : "border-gray-200",
           ].join(" ")}>
-          <div className="flex items-start justify-between px-3 py-3 cursor-pointer hover:bg-gray-50 transition-colors select-none"
+          <div className="flex items-stretch cursor-pointer hover:bg-gray-50 transition-colors"
             onClick={() => { setExpanded(expanded === cat.id ? null : cat.id); setRenamingCat(null); }}>
-            <div className="flex items-start gap-2 min-w-0 flex-1">
-              {/* Drag handle — category (mouse: HTML5 drag / touch: Pointer Events) */}
+            {/* Grip zone — separated column */}
+            <div className="w-12 shrink-0 border-r border-gray-200 bg-gray-50/70 flex items-center justify-center"
+              onClick={e => e.stopPropagation()}>
               <span
                 className={[
-                  "shrink-0 touch-none mt-0.5 p-2 -m-1 rounded-md transition-colors cursor-grab active:cursor-grabbing",
-                  liftedCatId === cat.id ? "text-primary bg-primary/15" : "text-gray-300 hover:text-gray-500 hover:bg-gray-100",
+                  "touch-none py-2 px-2.5 transition-colors cursor-grab active:cursor-grabbing",
+                  liftedCatId === cat.id ? "text-primary" : "text-gray-300 hover:text-gray-500",
                 ].join(" ")}
-                onClick={e => e.stopPropagation()} draggable={false}
+                draggable={false}
                 onPointerDown={e => onHandlePointerDown(e, "cat", cat.id)}
                 onPointerMove={onHandlePointerMove}
                 onPointerUp={onHandlePointerUp}>
                 <GripVertical className="w-5 h-5" />
               </span>
-              <span className="shrink-0 mt-0.5">{expanded === cat.id ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}</span>
+            </div>
+            {/* Main content */}
+            <div className="flex items-center gap-2 min-w-0 flex-1 px-3 py-3">
+              <span className="shrink-0">{expanded === cat.id ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}</span>
               <span className="font-semibold text-secondary break-words">{cat.name}</span>
               {cat.noDoprava && (
                 <span className="shrink-0 inline-flex items-center gap-0.5 bg-gray-200 text-gray-500 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wide">BEZ DOPRAVY</span>
               )}
             </div>
-            <div className="flex items-center gap-2 shrink-0" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-2 shrink-0 px-3 py-3" onClick={e => e.stopPropagation()}>
               <span className="text-xs text-gray-400">{cat.types.length} typov</span>
               <button onClick={() => { setRenamingCat(renamingCat === cat.id ? null : cat.id); setRenameCatVal(cat.name); setNoDopravaCatVal(cat.noDoprava ?? false); setExpanded(cat.id); }}
                 className="p-2.5 bg-gray-100 text-gray-500 hover:bg-primary hover:text-secondary transition-colors rounded-sm" title="Premenovať">
