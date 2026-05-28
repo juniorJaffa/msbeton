@@ -1152,15 +1152,15 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
 
       {/* ── Pagination ── */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between bg-white border border-gray-200 px-4 py-2.5">
-          <span className="text-xs text-gray-400">
+        <div className="bg-white border border-gray-200 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <span className="text-sm text-gray-400 text-center sm:text-left">
             Strana {ordersPage + 1} z {totalPages} · {sortedCount} {sortedCountLabel}
           </span>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center justify-center gap-1.5">
             <button onClick={() => setOrdersPage(0)} disabled={ordersPage === 0}
-              className="px-2 py-1 text-xs font-bold text-gray-500 hover:text-secondary disabled:opacity-30 disabled:cursor-not-allowed transition-colors">«</button>
+              className="h-11 min-w-[44px] px-2 flex items-center justify-center text-base font-bold text-gray-500 hover:text-secondary hover:bg-gray-100 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer">«</button>
             <button onClick={() => setOrdersPage(p => Math.max(0, p - 1))} disabled={ordersPage === 0}
-              className="px-2 py-1 text-xs font-bold text-gray-500 hover:text-secondary disabled:opacity-30 disabled:cursor-not-allowed transition-colors">‹</button>
+              className="h-11 min-w-[44px] px-2 flex items-center justify-center text-base font-bold text-gray-500 hover:text-secondary hover:bg-gray-100 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer">‹</button>
             {Array.from({ length: totalPages }, (_, i) => i)
               .filter(i => i === 0 || i === totalPages - 1 || Math.abs(i - ordersPage) <= 1)
               .reduce<(number | "…")[]>((acc, i, idx, arr) => {
@@ -1169,16 +1169,16 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                 return acc;
               }, [])
               .map((item, idx) => item === "…"
-                ? <span key={`e${idx}`} className="px-1 text-xs text-gray-300">…</span>
+                ? <span key={`e${idx}`} className="h-11 min-w-[44px] flex items-center justify-center text-sm text-gray-300">…</span>
                 : <button key={item} onClick={() => setOrdersPage(item as number)}
-                    className={`min-w-[28px] px-1.5 py-1 text-xs font-bold rounded transition-colors ${ordersPage === item ? "bg-secondary text-white" : "text-gray-500 hover:text-secondary"}`}>
+                    className={`h-11 min-w-[44px] px-2 flex items-center justify-center text-sm font-bold rounded-lg transition-colors cursor-pointer ${ordersPage === item ? "bg-secondary text-white" : "text-gray-500 hover:text-secondary hover:bg-gray-100"}`}>
                     {(item as number) + 1}
                   </button>
               )}
             <button onClick={() => setOrdersPage(p => Math.min(totalPages - 1, p + 1))} disabled={ordersPage === totalPages - 1}
-              className="px-2 py-1 text-xs font-bold text-gray-500 hover:text-secondary disabled:opacity-30 disabled:cursor-not-allowed transition-colors">›</button>
+              className="h-11 min-w-[44px] px-2 flex items-center justify-center text-base font-bold text-gray-500 hover:text-secondary hover:bg-gray-100 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer">›</button>
             <button onClick={() => setOrdersPage(totalPages - 1)} disabled={ordersPage === totalPages - 1}
-              className="px-2 py-1 text-xs font-bold text-gray-500 hover:text-secondary disabled:opacity-30 disabled:cursor-not-allowed transition-colors">»</button>
+              className="h-11 min-w-[44px] px-2 flex items-center justify-center text-base font-bold text-gray-500 hover:text-secondary hover:bg-gray-100 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer">»</button>
           </div>
         </div>
       )}
