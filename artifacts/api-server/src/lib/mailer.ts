@@ -1,5 +1,58 @@
 import nodemailer from "nodemailer";
 
+// ── Shared email shell ─────────────────────────────────────────────────────────
+function emailShell(bodyHtml: string): string {
+  return `<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="color-scheme" content="light">
+</head>
+<body style="margin:0;padding:0;background:#edeef0;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#edeef0;padding:32px 16px">
+<tr><td align="center">
+<table width="520" cellpadding="0" cellspacing="0" role="presentation" style="max-width:520px;width:100%">
+
+<!-- HEADER -->
+<tr><td style="background:#001D3D;border-radius:14px 14px 0 0;padding:40px 40px 32px;text-align:center">
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+    <tr><td align="center" style="padding-bottom:14px">
+      <!-- Logo hex icon -->
+      <table cellpadding="0" cellspacing="0" role="presentation">
+        <tr><td style="background:rgba(237,197,49,0.12);border:2px solid rgba(237,197,49,0.35);border-radius:14px;padding:10px 18px">
+          <span style="color:#EDC531;font-size:13px;font-weight:900;letter-spacing:3px;text-transform:uppercase">&#9899; MS&#183;BETON</span>
+        </td></tr>
+      </table>
+    </td></tr>
+    <tr><td align="center">
+      <h1 style="margin:0;color:#EDC531;font-size:34px;font-weight:900;letter-spacing:5px;line-height:1">MS&#183;BETON</h1>
+      <p style="margin:8px 0 0;color:rgba(255,255,255,0.45);font-size:11px;letter-spacing:3px;text-transform:uppercase">Kalkulačka betónu</p>
+    </td></tr>
+  </table>
+</td></tr>
+
+<!-- GOLD LINE -->
+<tr><td style="background:linear-gradient(90deg,#c9a820,#EDC531,#c9a820);height:3px;font-size:0;line-height:0">&nbsp;</td></tr>
+
+<!-- BODY -->
+<tr><td style="background:#ffffff;padding:36px 40px">
+${bodyHtml}
+</td></tr>
+
+<!-- FOOTER -->
+<tr><td style="background:#001D3D;border-radius:0 0 14px 14px;padding:22px 40px;text-align:center">
+  <p style="margin:0 0 6px;color:rgba(255,255,255,0.35);font-size:11px;letter-spacing:1px">MS-BETON, spol. s r.o. &nbsp;·&nbsp; Turie 468, 013 12 Turie</p>
+  <a href="mailto:peter@msbeton.sk" style="color:#EDC531;text-decoration:none;font-size:11px">peter@msbeton.sk</a>
+</td></tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+}
+
 function createTransport() {
   const host = process.env["SMTP_HOST"];
   const port = Number(process.env["SMTP_PORT"] ?? 587);
@@ -81,32 +134,39 @@ export async function sendRegistrationEmail(opts: {
 
   const { toEmail, clientName, clientId, password, loginUrl = "https://demo.msbeton.sk/prihlasenie" } = opts;
 
-  const html = `
-<!DOCTYPE html>
-<html lang="sk">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Registrácia klienta – MS-BETON</title></head>
-<body style="font-family:Arial,sans-serif;background:#f5f5f5;margin:0;padding:20px;">
-  <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.1)">
-    <div style="background:#001D3D;padding:28px 32px;text-align:center">
-      <h1 style="color:#EDC531;font-size:28px;margin:0;letter-spacing:2px">MS-BETON</h1>
-      <p style="color:#fff;margin:6px 0 0;font-size:13px;opacity:.7">Kalkulačka betónu</p>
-    </div>
-    <div style="padding:32px">
-      <h2 style="color:#001D3D;margin:0 0 8px">Vitajte, ${clientName}!</h2>
-      <p style="color:#555;margin:0 0 24px">Váš klientský účet bol vytvorený. Nižšie sú prihlasovacie údaje pre kalkulačku betónu.</p>
-      <div style="background:#f8f8f8;border-radius:8px;padding:20px 24px;margin-bottom:24px;border-left:4px solid #EDC531">
-        <p style="margin:0 0 8px;font-size:13px;color:#888;text-transform:uppercase;letter-spacing:1px">Prihlasovacie údaje</p>
-        <p style="margin:0 0 6px;font-size:16px"><strong>ID:</strong> <span style="font-family:monospace;background:#fff;padding:2px 8px;border-radius:4px;border:1px solid #ddd">${clientId}</span></p>
-        <p style="margin:0;font-size:16px"><strong>Heslo:</strong> <span style="font-family:monospace;background:#fff;padding:2px 8px;border-radius:4px;border:1px solid #ddd">${password}</span></p>
-      </div>
-      <a href="${loginUrl}" style="display:inline-block;background:#EDC531;color:#001D3D;text-decoration:none;font-weight:bold;padding:12px 28px;border-radius:8px;font-size:15px">Prihlásiť sa do kalkulačky</a>
-      <hr style="border:none;border-top:1px solid #eee;margin:28px 0">
-      <p style="color:#999;font-size:12px;margin:0">MS-BETON, spol. s r.o. · Turie 468, 013 12 Turie · peter@msbeton.sk</p>
-    </div>
-  </div>
-</body>
-</html>`;
+  const body = `
+<h2 style="margin:0 0 6px;color:#001D3D;font-size:22px;font-weight:900">Vitajte, ${clientName}! 🎉</h2>
+<p style="margin:0 0 24px;color:#666;font-size:15px;line-height:1.6">Váš klientský účet bol vytvorený. Tu sú prihlasovacie údaje do kalkulačky betónu — s cenami nastavenými priamo pre vás.</p>
+
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 16px">
+<tr><td style="background:#f8f9fb;border:2px solid #EDC531;border-radius:10px;padding:20px 24px">
+  <p style="margin:0 0 14px;color:#999;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase">Prihlasovacie údaje</p>
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+    <tr>
+      <td style="padding:4px 0;color:#888;font-size:13px;width:70px">ID</td>
+      <td><span style="font-family:monospace;background:#fff;border:1px solid #e0e0e0;border-radius:5px;padding:3px 10px;font-size:16px;font-weight:700;color:#001D3D">${clientId}</span></td>
+    </tr>
+    <tr>
+      <td style="padding:4px 0;color:#888;font-size:13px">Heslo</td>
+      <td><span style="font-family:monospace;background:#fff;border:1px solid #e0e0e0;border-radius:5px;padding:3px 10px;font-size:16px;font-weight:700;color:#001D3D">${password}</span></td>
+    </tr>
+  </table>
+</td></tr>
+</table>
+
+<table cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 24px">
+<tr><td style="background:#EDC531;border-radius:8px">
+  <a href="${loginUrl}" style="display:inline-block;color:#001D3D;text-decoration:none;font-weight:900;font-size:15px;letter-spacing:0.5px;padding:14px 32px">Prihlásiť sa do kalkulačky &rarr;</a>
+</td></tr>
+</table>
+
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+<tr><td style="background:#f0f7ff;border-radius:8px;border-left:4px solid #001D3D;padding:14px 18px">
+  <p style="margin:0;color:#444;font-size:13px;line-height:1.5">&#128161; <strong>Tip:</strong> Odporúčame si heslo po prvom prihlásení zmeniť v sekcii Môj profil.</p>
+</td></tr>
+</table>`;
+
+  const html = emailShell(body);
 
   try {
     await conn.transport.sendMail({
@@ -129,24 +189,30 @@ export async function sendPasswordResetEmail(opts: {
   const conn = createTransport();
   if (!conn) return { ok: false, error: "SMTP not configured" };
   const { toEmail, clientName, resetUrl } = opts;
-  const html = `<!DOCTYPE html><html lang="sk"><head><meta charset="UTF-8">
-<title>Reset hesla – MS-BETON</title></head>
-<body style="font-family:Arial,sans-serif;background:#f5f5f5;margin:0;padding:20px">
-<div style="max-width:520px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.1)">
-  <div style="background:#001D3D;padding:28px 32px;text-align:center">
-    <h1 style="color:#EDC531;font-size:28px;margin:0;letter-spacing:2px">MS-BETON</h1>
-    <p style="color:#fff;margin:6px 0 0;font-size:13px;opacity:.7">Kalkulačka betónu</p>
-  </div>
-  <div style="padding:32px">
-    <h2 style="color:#001D3D;margin:0 0 8px">Reset hesla</h2>
-    <p style="color:#555;margin:0 0 16px">Dobrý deň, ${clientName}. Dostali sme požiadavku na reset hesla pre váš účet.</p>
-    <p style="color:#555;margin:0 0 24px">Kliknite na tlačidlo nižšie a nastavte si nové heslo. Odkaz je platný <strong>1 hodinu</strong>.</p>
-    <a href="${resetUrl}" style="display:inline-block;background:#EDC531;color:#001D3D;text-decoration:none;font-weight:bold;padding:12px 28px;border-radius:8px;font-size:15px">Nastaviť nové heslo</a>
-    <hr style="border:none;border-top:1px solid #eee;margin:28px 0">
-    <p style="color:#999;font-size:12px;margin:0">Ak ste o reset nepožiadali, tento email ignorujte.<br>MS-BETON, spol. s r.o. · Turie 468, 013 12 Turie · peter@msbeton.sk</p>
-  </div>
-</div>
-</body></html>`;
+
+  const body = `
+<h2 style="margin:0 0 6px;color:#001D3D;font-size:22px;font-weight:900">&#128274; Reset hesla</h2>
+<p style="margin:0 0 20px;color:#666;font-size:15px;line-height:1.6">Dobrý deň, <strong>${clientName}</strong>. Dostali sme požiadavku na reset hesla pre váš účet.</p>
+
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 24px">
+<tr><td style="background:#fff8e6;border:2px solid #EDC531;border-radius:10px;padding:18px 22px">
+  <p style="margin:0;color:#7a5f00;font-size:14px;line-height:1.5">&#9201; Kliknite na tlačidlo nižšie a nastavte si nové heslo. Odkaz je platný <strong>1 hodinu</strong>.</p>
+</td></tr>
+</table>
+
+<table cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 28px">
+<tr><td style="background:#EDC531;border-radius:8px">
+  <a href="${resetUrl}" style="display:inline-block;color:#001D3D;text-decoration:none;font-weight:900;font-size:15px;letter-spacing:0.5px;padding:14px 32px">Nastaviť nové heslo &rarr;</a>
+</td></tr>
+</table>
+
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+<tr><td style="border-top:1px solid #f0f0f0;padding-top:20px">
+  <p style="margin:0;color:#aaa;font-size:12px;line-height:1.6">Ak ste o reset nepožiadali, tento email ignorujte — váš účet je v bezpečí. Odkaz vyprší automaticky po 1 hodine.</p>
+</td></tr>
+</table>`;
+
+  const html = emailShell(body);
   try {
     await conn.transport.sendMail({ from: conn.from, to: toEmail, subject: "Reset hesla – MS-BETON kalkulačka", html });
     return { ok: true };
@@ -211,28 +277,33 @@ export async function sendCredentialsEmail(opts: {
   const conn = createTransport();
   if (!conn) return { ok: false, error: "SMTP not configured" };
   const { toEmail, clientName, loginId, resetUrl } = opts;
-  const html = `<!DOCTYPE html><html lang="sk"><head><meta charset="UTF-8">
-<title>Prihlasovacie údaje – MS-BETON</title></head>
-<body style="font-family:Arial,sans-serif;background:#f5f5f5;margin:0;padding:20px">
-<div style="max-width:520px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.1)">
-  <div style="background:#001D3D;padding:28px 32px;text-align:center">
-    <h1 style="color:#EDC531;font-size:28px;margin:0;letter-spacing:2px">MS-BETON</h1>
-    <p style="color:#fff;margin:6px 0 0;font-size:13px;opacity:.7">Kalkulačka betónu</p>
-  </div>
-  <div style="padding:32px">
-    <h2 style="color:#001D3D;margin:0 0 8px">Prihlasovacie údaje</h2>
-    <p style="color:#555;margin:0 0 20px">Dobrý deň, ${clientName}. Tu sú vaše prihlasovacie údaje do kalkulačky MS-BETON.</p>
-    <div style="background:#f8f8f8;border:1px solid #eee;border-radius:8px;padding:16px 20px;margin:0 0 24px">
-      <p style="margin:0 0 8px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:1px">Prihlasovacie ID</p>
-      <p style="margin:0;color:#001D3D;font-size:22px;font-weight:900;letter-spacing:1px">${loginId}</p>
-    </div>
-    <p style="color:#555;margin:0 0 20px">Pre nastavenie hesla kliknite na tlačidlo nižšie. Odkaz je platný <strong>1 hodinu</strong>.</p>
-    <a href="${resetUrl}" style="display:inline-block;background:#EDC531;color:#001D3D;text-decoration:none;font-weight:bold;padding:12px 28px;border-radius:8px;font-size:15px">Nastaviť heslo a prihlásiť sa</a>
-    <hr style="border:none;border-top:1px solid #eee;margin:28px 0">
-    <p style="color:#999;font-size:12px;margin:0">MS-BETON, spol. s r.o. · Turie 468, 013 12 Turie · peter@msbeton.sk</p>
-  </div>
-</div>
-</body></html>`;
+
+  const body = `
+<h2 style="margin:0 0 6px;color:#001D3D;font-size:22px;font-weight:900">Váš prístup je pripravený! &#127881;</h2>
+<p style="margin:0 0 24px;color:#666;font-size:15px;line-height:1.6">Dobrý deň, <strong>${clientName}</strong>. Tu sú vaše prihlasovacie údaje do kalkulačky MS-BETON — betón objednáte za 5 minút.</p>
+
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 24px">
+<tr><td style="background:#f8f9fb;border:2px solid #EDC531;border-radius:10px;padding:22px 26px">
+  <p style="margin:0 0 8px;color:#aaa;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase">Prihlasovacie ID</p>
+  <p style="margin:0;color:#001D3D;font-size:30px;font-weight:900;letter-spacing:2px;font-family:monospace">${loginId}</p>
+</td></tr>
+</table>
+
+<p style="margin:0 0 20px;color:#666;font-size:14px;line-height:1.6">Pre nastavenie hesla kliknite na tlačidlo nižšie. Odkaz je platný <strong>1 hodinu</strong>.</p>
+
+<table cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 28px">
+<tr><td style="background:#EDC531;border-radius:8px;box-shadow:0 4px 12px rgba(237,197,49,0.35)">
+  <a href="${resetUrl}" style="display:inline-block;color:#001D3D;text-decoration:none;font-weight:900;font-size:15px;letter-spacing:0.5px;padding:15px 34px">Nastaviť heslo a prihlásiť sa &rarr;</a>
+</td></tr>
+</table>
+
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+<tr><td style="background:#f0f7ff;border-radius:8px;border-left:4px solid #001D3D;padding:14px 18px">
+  <p style="margin:0;color:#444;font-size:13px;line-height:1.5">&#128161; <strong>Vedeli ste?</strong> V kalkulačke vidíte ceny a zľavy nastavené priamo pre vás — bez nutnosti volať alebo písať email.</p>
+</td></tr>
+</table>`;
+
+  const html = emailShell(body);
   try {
     await conn.transport.sendMail({ from: conn.from, to: toEmail, subject: "Prihlasovacie údaje – MS-BETON kalkulačka", html });
     return { ok: true };
