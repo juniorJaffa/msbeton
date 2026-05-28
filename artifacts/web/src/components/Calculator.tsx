@@ -391,6 +391,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [orderForm, setOrderForm] = useState({ name: loggedClientBase?.name ?? "", phone: loggedClientBase?.phone ? formatPhone(loggedClientBase.phone) : "", email: "", note: "" });
   const [orderSubmitting, setOrderSubmitting] = useState(false);
   const [orderDone, setOrderDone] = useState(false);
+  const [orderError, setOrderError] = useState<string | null>(null);
   const [orderSubmittedBanner, setOrderSubmittedBanner] = useState(false);
   const turnstileRef = useRef<HTMLDivElement>(null);
   const turnstileWidgetId = useRef<string | null>(null);
@@ -1951,10 +1952,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   async function handleSubmitOrder() {
     if (!result || !orderForm.name.trim()) return;
     setOrderSubmitting(true);
+    setOrderError(null);
     const breakdown = buildBreakdown();
 
     const isFakt = priceMode === "faktura";
-    await clientApi.submitOrder({
+    const res = await clientApi.submitOrder({
       id: Math.random().toString(36).slice(2, 10),
       status: "nova",
       clientName: orderForm.name.trim(),
@@ -1993,6 +1995,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     if (turnstileWidgetId.current && w.turnstile) { w.turnstile.reset(turnstileWidgetId.current); }
     setTurnstileToken("");
     setOrderSubmitting(false);
+    if (!res?.ok) {
+      setOrderError(res?.error ?? "Objednávku sa nepodarilo odoslať. Skúste neskôr.");
+      return;
+    }
     setOrderDone(true);
     setOrderSubmittedBanner(true);
     setSmsOrderCreated(false);
@@ -4138,6 +4144,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                         className="w-full bg-white/10 border-b-2 border-b-primary/60 text-white px-3 py-2 text-sm focus:outline-none focus:border-b-primary placeholder:text-white/30 rounded-sm resize-none" />
                     </div>
                   </div>
+                  {orderError && (
+                    <div className="flex items-start gap-2 bg-red-500/15 border border-red-500/40 rounded-lg px-3 py-2.5 text-sm text-red-300">
+                      <span className="mt-0.5 shrink-0">⚠</span>
+                      <span>{orderError}</span>
+                    </div>
+                  )}
                   <button
                     onClick={handleSubmitOrder}
                     disabled={orderSubmitting || !orderForm.name.trim() || !orderForm.phone.trim() || !isValidSvkPhone(orderForm.phone)}
