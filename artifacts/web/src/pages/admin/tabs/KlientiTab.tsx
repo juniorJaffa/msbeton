@@ -899,7 +899,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
 
                 {/* Meno + mobile badges */}
                 <div className="flex-1 min-w-0">
-                  <div className="font-bold text-secondary text-sm truncate">{fullName}</div>
+                  <div className="font-bold text-secondary text-sm break-words leading-tight">{fullName}</div>
                   {c.company && <div className="text-xs text-gray-400 truncate">{c.company}</div>}
                   {/* Mobile-only badges — vždy vlastný riadok */}
                   <div className="sm:hidden flex items-center gap-1 mt-0.5 flex-wrap">
