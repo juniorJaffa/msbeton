@@ -302,8 +302,8 @@ export default function BetonTab() {
               <table className="w-full text-sm mb-3">
                 <thead>
                   <tr className="text-xs text-gray-400 uppercase tracking-wide">
-                    <th className="w-6" />
-                    <th className="text-left pb-2 font-semibold">Typ betónu</th>
+                    <th className="w-12" />
+                    <th className="text-left pb-2 font-semibold pl-2">Typ betónu</th>
                     <th className="text-right pb-2 font-semibold">Cena (€/m³)</th>
                     <th className="w-10" />
                   </tr>
@@ -313,7 +313,7 @@ export default function BetonTab() {
                     <tr key={t.id}
                       data-type-drag-id={t.id}
                       onContextMenu={e => e.preventDefault()}
-                      style={{ transition: "background 180ms, opacity 180ms, box-shadow 180ms", userSelect: "none" }}
+                      style={{ transition: "background 180ms, opacity 180ms, box-shadow 180ms", userSelect: "none", WebkitUserSelect: "none", WebkitTouchCallout: "none" } as any}
                       className={
                         dragOverType === t.id
                           ? "border-t-2 border-primary bg-primary/8 shadow-[inset_3px_0_0_0_#EDC531]"
@@ -323,12 +323,12 @@ export default function BetonTab() {
                               ? "border-t border-gray-100 opacity-40"
                               : "border-t border-gray-100"
                       }>
-                      {/* Drag handle — type (mouse: HTML5 / touch: Pointer Events) */}
-                      <td className="py-2 pr-1 w-8">
+                      {/* Drag handle — type. Separated column prevents thumb hitting label text. */}
+                      <td className="w-12 border-r border-gray-200 bg-gray-50/70">
                         <span
                           className={[
-                            "flex items-center justify-center touch-none p-2 rounded-md transition-colors cursor-grab active:cursor-grabbing",
-                            liftedTypeId === t.id ? "text-primary bg-primary/15" : "text-gray-300 hover:text-gray-500 hover:bg-gray-100",
+                            "flex items-center justify-center touch-none py-2 px-2.5 transition-colors cursor-grab active:cursor-grabbing",
+                            liftedTypeId === t.id ? "text-primary" : "text-gray-300 hover:text-gray-500",
                           ].join(" ")}
                           onPointerDown={e => onHandlePointerDown(e, "type", cat.id, t.id)}
                           onPointerMove={onHandlePointerMove}
@@ -336,7 +336,7 @@ export default function BetonTab() {
                           <GripVertical className="w-4 h-4" />
                         </span>
                       </td>
-                      <td className="py-2 font-medium text-secondary">
+                      <td className="py-2 pl-2 font-medium text-secondary">
                         <EditableField value={t.label} onSave={v => updateType(cat.id, t.id, "label", v)} />
                       </td>
                       <td className="py-2 text-right">
