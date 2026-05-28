@@ -41,7 +41,8 @@ export default function BetonTab() {
     fromCatId: string,
     fromTypeId?: string,
   ) => {
-    if (e.pointerType === "mouse") return;
+    // Cat rows: mouse handled by HTML5 drag; Type rows: Pointer Events handle ALL (avoids draggable conflict on mobile)
+    if (kind === "cat" && e.pointerType === "mouse") return;
     e.preventDefault();
     e.stopPropagation();
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -52,7 +53,8 @@ export default function BetonTab() {
   };
 
   const onHandlePointerMove = (e: React.PointerEvent) => {
-    if (!ptrDrag.current || e.pointerType === "mouse") return;
+    if (!ptrDrag.current) return;
+    if (ptrDrag.current.kind === "cat" && e.pointerType === "mouse") return;
     e.preventDefault();
     ptrMoved.current = true;
 
@@ -73,7 +75,8 @@ export default function BetonTab() {
   };
 
   const onHandlePointerUp = (e: React.PointerEvent) => {
-    if (!ptrDrag.current || e.pointerType === "mouse") return;
+    if (!ptrDrag.current) return;
+    if (ptrDrag.current.kind === "cat" && e.pointerType === "mouse") return;
     const { kind, fromCatId, fromTypeId } = ptrDrag.current;
     const moved = ptrMoved.current;
     ptrDrag.current = null;
@@ -309,12 +312,8 @@ export default function BetonTab() {
                   {cat.types.map(t => (
                     <tr key={t.id}
                       data-type-drag-id={t.id}
-                      draggable
-                      onDragStart={e => onTypeDragStart(e, cat.id, t.id)}
-                      onDragOver={e => onTypeDragOver(e, t.id)}
-                      onDrop={e => onTypeDrop(e, cat.id, t.id)}
-                      onDragEnd={onTypeDragEnd}
-                      style={{ transition: "background 180ms, opacity 180ms, box-shadow 180ms" }}
+                      onContextMenu={e => e.preventDefault()}
+                      style={{ transition: "background 180ms, opacity 180ms, box-shadow 180ms", userSelect: "none" }}
                       className={
                         dragOverType === t.id
                           ? "border-t-2 border-primary bg-primary/8 shadow-[inset_3px_0_0_0_#EDC531]"
