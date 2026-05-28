@@ -12,9 +12,9 @@ jobs:
       - name: SSH deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.HETZNER_HOST }}
-          username: ${{ secrets.HETZNER_USER }}
-          key: ${{ secrets.HETZNER_SSH_KEY }}
+          host: ${{ secrets.HETZNER_MS_BETON_HOST }}
+          username: ${{ secrets.HETZNER_MS_BETON_USER }}
+          key: ${{ secrets.HETZNER_MS_BETON_SSH_KEY }}
           script: |
             set -e
             cd /var/www/msbeton
