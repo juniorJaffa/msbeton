@@ -43,7 +43,7 @@ ${bodyHtml}
 <!-- FOOTER -->
 <tr><td style="background:#001D3D;border-radius:0 0 14px 14px;padding:22px 40px;text-align:center">
   <p style="margin:0 0 6px;color:rgba(255,255,255,0.35);font-size:11px;letter-spacing:1px">MS-BETON, spol. s r.o. &nbsp;·&nbsp; Turie 468, 013 12 Turie</p>
-  <a href="mailto:peter@msbeton.sk" style="color:#EDC531;text-decoration:none;font-size:11px">peter@msbeton.sk</a>
+  <a href="mailto:info@msbeton.sk" style="color:#EDC531;text-decoration:none;font-size:11px">info@msbeton.sk</a>
 </td></tr>
 
 </table>
