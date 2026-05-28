@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Navbar } from "@/components/Navbar";
 import { SEOHead } from "@/components/SEOHead";
@@ -64,6 +64,12 @@ function PasswordInput({ value, onChange, placeholder, show, onToggle, autoCompl
 export default function ClientProfile() {
   const [, navigate] = useLocation();
   const client = clientAuth.getLoggedClient();
+
+  useEffect(() => {
+    const handler = () => { if (!clientAuth.getLoggedClient()) navigate("/prihlasenie"); };
+    window.addEventListener("client-session-changed", handler);
+    return () => window.removeEventListener("client-session-changed", handler);
+  }, [navigate]);
 
   const [loginId, setLoginId] = useState(client?.clientId ?? "");
   const [email, setEmail] = useState(client?.email ?? "");
