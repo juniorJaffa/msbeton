@@ -529,9 +529,34 @@ location = /50x.html {
 
 **Overenie po nasadení:**
 ```bash
-curl -s https://demo.msbeton.sk/admin/login | grep manifest
+curl -s https://msbeton.sk/admin/login | grep manifest
 # Musí vrátiť: href="/admin-manifest.json"
 ```
+
+### PWA standalone — known issues a pravidlá
+
+Testovanie iOS PWA odkazu odhalilo tieto problémy (opravené 2026-05-29):
+
+**1. Navigácia cez `<a href="...">` v admin**
+
+Wouter interceptuje všetky `<a>` tagy v SPA. V PWA standalone mode to spôsobí, že klik na logo (href="/") neopustí admin view.
+
+**Pravidlo:** Každý link v admin UI, ktorý má vyjsť z admin kontextu, musí použiť `window.location.href`:
+```tsx
+<a href="/" onClick={(e) => { e.preventDefault(); window.location.href = "/"; }}>
+```
+
+**2. NIKDY nedávaj auto-redirect z `/` v standalone mode**
+
+`App.tsx` mal `useEffect` ktorý pri `display-mode: standalone + adminLoggedIn + pathname="/"` presmeroval na `/admin/dashboard`. Spôsoboval blink pri kliku na logo — navigácia na `/` sa okamžite vrátila späť. **Tento pattern je zakázaný.** Standalone PWA si pamätá poslednú URL — redirect pri každom načítaní `/` je nesprávny.
+
+**3. Admin PWA ikona je iná ako klientská**
+
+- Klientská ikona: `icon-192.png`, `icon-512.png`, `apple-touch-icon.png` (navy bg)
+- Admin ikona: `admin-icon-192.png`, `admin-icon-512.png`, `admin-apple-touch-icon.png` (navy bg + gold shield+fingerprint badge vpravo dole)
+- `admin-manifest.json` referencuje admin ikony
+
+**4. Po zmene ikony treba na iPhone zmazať starý odkaz a pridať nový** — iOS cachuje ikony pri vytvorení odkazu, neaktualizuje ich automaticky.
 
 ## Nginx — custom error stránky (produkcia)
 
