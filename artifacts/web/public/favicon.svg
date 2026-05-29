@@ -1,6 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
   <rect width="180" height="180" rx="36" fill="#001D3D"/>
-  <text x="90" y="68" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="68" fill="#EDC531" text-anchor="middle" dominant-baseline="middle">MS</text>
-  <rect x="24" y="92" width="132" height="2" rx="1" fill="#EDC531" opacity="0.35"/>
-  <text x="90" y="128" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="34" fill="white" text-anchor="middle" dominant-baseline="middle">BETON</text>
+  <text x="90" y="70" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="60" fill="#EDC531" text-anchor="middle" dominant-baseline="middle">MS-</text>
+  <text x="90" y="122" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="38" fill="white" text-anchor="middle" dominant-baseline="middle">BETON</text>
 </svg>
