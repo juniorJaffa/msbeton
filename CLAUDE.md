@@ -500,6 +500,39 @@ const cOrders = allOrders.filter(o => o.clientId != null && (o.clientId === c.lo
 
 ---
 
+## Nginx — povinná konfigurácia (pri každej novej inštalácii servera)
+
+**KRITICKÉ:** Tieto `location` bloky sú povinné na každom novom VPS. Bez nich nefunguje admin PWA ani error stránky.
+
+```nginx
+# Povinné location bloky v /etc/nginx/sites-available/msbeton:
+
+# Admin PWA — musí servovať admin-index.html (iný manifest pre Add to Home Screen)
+location /admin {
+    try_files $uri $uri/ /admin-index.html;
+}
+
+# Klientská SPA — fallback na index.html
+location / {
+    try_files $uri $uri/ /index.html;
+}
+
+# Error stránky
+error_page 500 502 503 504 /50x.html;
+location = /50x.html {
+    root /var/www/msbeton/artifacts/web/dist/public;
+    internal;
+}
+```
+
+**Prečo admin-index.html:** Build script (`package.json`) generuje `admin-index.html` — kópiu `index.html` s `href="/admin-manifest.json"` namiesto klientského manifestu. iOS Safari číta manifest link pri "Pridať na plochu" → bez tejto location by admin dostal klientský manifest a shortcut by spúšťal klientskú app namiesto admin dashboardu. `admin-manifest.json` má `scope: "/"` — celý web v scope, navigácia na `/` zostane v standalone mode.
+
+**Overenie po nasadení:**
+```bash
+curl -s https://demo.msbeton.sk/admin/login | grep manifest
+# Musí vrátiť: href="/admin-manifest.json"
+```
+
 ## Nginx — custom error stránky (produkcia)
 
 ### Konfigurácia na serveri
