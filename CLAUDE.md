@@ -564,6 +564,46 @@ location = /50x.html {
 
 ---
 
+## Databázové zálohy a rollback (produkcia)
+
+### Skripty na serveri (`root@178.105.242.17`)
+
+| Skript | Účel |
+|--------|------|
+| `/root/backup-db.sh` | Manuálny backup + integrity check (gzip pg_dump, overí `admin_config` hits) |
+| `/root/rollback-db.sh` | Zoznam backupov / obnova zo zálohy (pred obnovou automaticky uloží pre-rollback snapshot) |
+
+### Cron — automatický backup
+
+```
+0 2 * * *  /root/backup-db.sh >> /root/backups/db/backup.log 2>&1
+```
+Logy: `/root/backups/db/backup.log` — každý riadok: `YYYY-MM-DD HH:MM:SS OK file (size)`.  
+Rotácia: posledných 14 kópií, staršie sa mažú automaticky.
+
+### Postup rollbacku
+
+```bash
+# 1. Zoznam dostupných backupov
+/root/rollback-db.sh
+
+# 2. Obnova z konkrétneho súboru
+/root/rollback-db.sh /root/backups/db/msbeton_20260529_065514.sql.gz
+
+# 3. Po rollbacku reštartovať API (PM2 načíta čerstvé dáta)
+pm2 restart msbeton-api
+```
+
+Skript automaticky vezme pre-rollback snapshot pred obnovou (prefix `pre_rollback_`) — možnosť vrátenia aj rollbacku samotného.
+
+### Obmedzenia a TODO
+
+- **Zálohy sú iba lokálne** (single point of failure). Pri strate VPS sú zálohy stratené.
+- TODO: nastaviť remote backup (Hetzner Object Storage / Backblaze B2 / rsync na druhý server)
+- Aktuálna DB je malá (~12KB) → email backup cez SMTP je reálna možnosť
+
+---
+
 ## TypeScript projektové referencie
 
 `tsconfig.json` v roote používa zložené projektové referencie. Každý balík má vlastný `tsconfig.json` s `"composite": true`. `tsc -b` z rootu typuje všetko v poradí závislostí.
