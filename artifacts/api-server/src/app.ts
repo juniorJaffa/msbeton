@@ -10,7 +10,6 @@ const app: Express = express();
 
 const allowedOrigins = [
   "https://msbeton.sk",
-  "https://demo.msbeton.sk",
   "https://www.msbeton.sk",
   "http://localhost:5173",
 ];

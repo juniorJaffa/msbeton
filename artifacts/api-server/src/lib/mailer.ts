@@ -132,7 +132,7 @@ export async function sendRegistrationEmail(opts: {
   const conn = createTransport();
   if (!conn) return { ok: false, error: "SMTP not configured" };
 
-  const { toEmail, clientName, clientId, password, loginUrl = "https://demo.msbeton.sk/prihlasenie" } = opts;
+  const { toEmail, clientName, clientId, password, loginUrl = "https://msbeton.sk/prihlasenie" } = opts;
 
   const body = `
 <h2 style="margin:0 0 6px;color:#001D3D;font-size:22px;font-weight:900">Vitajte, ${clientName}! 🎉</h2>

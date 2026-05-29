@@ -385,7 +385,7 @@ router.post("/clients/:id/send-credentials", async (req, res) => {
       .onConflictDoUpdate({ target: adminConfig.key, set: { data: tokens, updatedAt: new Date() } });
 
     const name = [client.firstName, client.lastName].filter(Boolean).join(" ") || (client.name as string) || "Klient";
-    const resetUrl = `${process.env["APP_URL"] ?? "https://demo.msbeton.sk"}/klient-reset?token=${token}`;
+    const resetUrl = `${process.env["APP_URL"] ?? "https://msbeton.sk"}/klient-reset?token=${token}`;
     const result = await sendCredentialsEmail({ toEmail: email, clientName: name, loginId, resetUrl });
     if (!result.ok) return res.status(502).json({ ok: false, error: result.error ?? "Chyba odoslania emailu" });
     return res.json({ ok: true });

@@ -344,7 +344,7 @@ router.post("/password-reset-request", async (req, res) => {
       await db.insert(adminConfig).values({ key: "password_reset_tokens", data: tokens })
         .onConflictDoUpdate({ target: adminConfig.key, set: { data: tokens, updatedAt: new Date() } });
       const name = [account.firstName, account.lastName].filter(Boolean).join(" ") || account.name || "Klient";
-      const resetUrl = `${process.env["APP_URL"] ?? "https://demo.msbeton.sk"}/klient-reset?token=${token}`;
+      const resetUrl = `${process.env["APP_URL"] ?? "https://msbeton.sk"}/klient-reset?token=${token}`;
       sendPasswordResetEmail({ toEmail: account.email, clientName: name, resetUrl }).catch(() => {});
     }
     // Always return ok — prevents email enumeration
