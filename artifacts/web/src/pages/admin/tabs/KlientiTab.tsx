@@ -344,9 +344,12 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
 
   const save = (data: Client[]) => { setClients(data); adminData.saveClients(data); };
 
-  // Refresh ts from external changes (e.g. Doprava tab) without remounting/closing expanded
+  // Refresh from external changes (sync, Doprava tab) without remounting/closing expanded
   useEffect(() => {
-    const handler = () => setTs(adminData.getTransportSettings());
+    const handler = () => {
+      setTs(adminData.getTransportSettings());
+      setClients(adminData.getClients());
+    };
     window.addEventListener("admin-data-synced", handler);
     return () => window.removeEventListener("admin-data-synced", handler);
   }, []);
