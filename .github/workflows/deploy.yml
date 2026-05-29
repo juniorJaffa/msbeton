@@ -35,13 +35,13 @@ jobs:
       - name: Health check
         run: |
           sleep 8
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://demo.msbeton.sk)
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://msbeton.sk)
           if [ "$STATUS" != "200" ]; then
             echo "Web health check FAILED — HTTP $STATUS"
             exit 1
           fi
           echo "Web OK — HTTP $STATUS"
-          API=$(curl -s https://demo.msbeton.sk/api/healthz | grep -c '"ok"' || true)
+          API=$(curl -s https://msbeton.sk/api/healthz | grep -c '"ok"' || true)
           if [ "$API" = "0" ]; then
             echo "API health check FAILED"
             exit 1
