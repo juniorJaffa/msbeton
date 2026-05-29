@@ -129,7 +129,7 @@ export default function AdminDashboard() {
       {/* Combined sticky header — logo row + desktop tab row */}
       <header className="bg-secondary shadow-lg fixed top-0 left-0 right-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-12">
-          <a href="/" className="flex items-center gap-0.5 select-none">
+          <a href="/" onClick={(e) => { e.preventDefault(); window.location.href = "/"; }} className="flex items-center gap-0.5 select-none cursor-pointer">
             <motion.span
               className="font-black text-2xl tracking-tighter text-primary relative"
               style={{ display: "inline-block" }}
