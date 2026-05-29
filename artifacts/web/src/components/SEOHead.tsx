@@ -46,6 +46,15 @@ export function SEOHead({ title, description, canonical, noindex = false }: SEOH
   );
 }
 
+export function AdminPWAMeta() {
+  return (
+    <Helmet>
+      <link rel="manifest" href="/admin-manifest.json" />
+      <meta name="apple-mobile-web-app-title" content="MS-BETON Admin" />
+    </Helmet>
+  );
+}
+
 export function WebSiteSchema() {
   const schema = {
     "@context": "https://schema.org",

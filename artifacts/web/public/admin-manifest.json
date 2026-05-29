@@ -3,6 +3,7 @@
   "short_name": "MS-BETON Admin",
   "description": "MS-BETON administrácia",
   "start_url": "/admin/dashboard",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#001D3D",
   "theme_color": "#001D3D",
