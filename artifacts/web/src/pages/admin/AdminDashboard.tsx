@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { LogOut, Users, Truck, Wrench, Layers, RefreshCw, ClipboardList, BarChart2, TrendingUp, MoreHorizontal, Search, Fingerprint } from "lucide-react";
+import { LogOut, Users, Truck, Wrench, Layers, RefreshCw, ClipboardList, BarChart2, TrendingUp, MoreHorizontal, Search, Fingerprint, Server } from "lucide-react";
 import { VersionBadge } from "@/components/VersionBadge";
 import { useToast } from "@/hooks/use-toast";
 import { isLoggedIn, logout, isBiometricAvailable, hasStoredCredential } from "@/lib/adminAuth";
 import { adminData, adminApi, syncFromServer, Order } from "@/lib/adminData";
 
-type Tab = "betony" | "sluzby" | "doprava" | "klienti" | "objednavky" | "analytics" | "statistiky" | "gsc";
+type Tab = "betony" | "sluzby" | "doprava" | "klienti" | "objednavky" | "analytics" | "statistiky" | "gsc" | "server";
 
 const BetonTab       = lazy(() => import("./tabs/BetonTab"));
 const SluzbyTab      = lazy(() => import("./tabs/SluzbyTab"));
@@ -17,6 +17,7 @@ const ObjednavkyTab  = lazy(() => import("./tabs/ObjednavkyTab"));
 const AnalyticsTab   = lazy(() => import("./tabs/AnalyticsTab"));
 const StatistikyTab  = lazy(() => import("./tabs/StatistikyTab"));
 const SearchConsoleTab = lazy(() => import("./tabs/SearchConsoleTab"));
+const ServerTab      = lazy(() => import("./tabs/ServerTab"));
 
 function TabSpinner() {
   return (
@@ -30,7 +31,7 @@ export default function AdminDashboard() {
   const [, navigate] = useLocation();
   const [tab, setTab] = useState<Tab>(() => {
     const hash = window.location.hash.slice(1) as Tab;
-    const valid: Tab[] = ["betony", "sluzby", "doprava", "klienti", "objednavky", "analytics", "statistiky", "gsc"];
+    const valid: Tab[] = ["betony", "sluzby", "doprava", "klienti", "objednavky", "analytics", "statistiky", "gsc", "server"];
     return valid.includes(hash) ? hash : "klienti";
   });
   const [syncKey, setSyncKey] = useState(0);
@@ -208,7 +209,7 @@ export default function AdminDashboard() {
             <button
               onClick={() => setMoreOpen(o => !o)}
               className={`w-full flex flex-col items-center justify-center py-1.5 gap-0.5 border-b-2 transition-all ${
-                (tab === "analytics" || tab === "statistiky" || tab === "gsc") ? "text-primary border-primary" : moreOpen ? "text-secondary border-transparent" : "text-gray-400 border-transparent"
+                (tab === "analytics" || tab === "statistiky" || tab === "gsc" || tab === "server") ? "text-primary border-primary" : moreOpen ? "text-secondary border-transparent" : "text-gray-400 border-transparent"
               }`}>
               <MoreHorizontal className="w-5 h-5" />
               <span className="text-[8px] font-bold uppercase leading-none">VIAC</span>
@@ -226,6 +227,10 @@ export default function AdminDashboard() {
                 <button onClick={() => { setTab("gsc"); window.location.hash = "gsc"; setMoreOpen(false); }}
                   className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-bold transition-colors border-t border-gray-100 ${tab === "gsc" ? "text-primary bg-primary/5" : "text-gray-600 hover:bg-gray-50"}`}>
                   <Search className="w-4 h-4 shrink-0" /> SEO
+                </button>
+                <button onClick={() => { setTab("server"); window.location.hash = "server"; setMoreOpen(false); }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-bold transition-colors border-t border-gray-100 ${tab === "server" ? "text-primary bg-primary/5" : "text-gray-600 hover:bg-gray-50"}`}>
+                  <Server className="w-4 h-4 shrink-0" /> Server
                 </button>
               </div>
             )}
@@ -245,6 +250,7 @@ export default function AdminDashboard() {
             {tab === "analytics" && <AnalyticsTab />}
             {tab === "statistiky" && <StatistikyTab />}
             {tab === "gsc" && <SearchConsoleTab />}
+            {tab === "server" && <ServerTab />}
           </Suspense>
         </div>
       </div>

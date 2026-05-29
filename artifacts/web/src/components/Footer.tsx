@@ -38,29 +38,33 @@ export function Footer() {
             <h3 className="text-base font-bold text-white mb-6 tracking-widest uppercase">Kontakt</h3>
             <ul className="space-y-4 text-sm">
               <li className="flex items-start gap-3">
-                <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                <div>
-                  <div className="font-semibold text-white/80 mb-0.5">Prevádzka</div>
-                  <span className="text-white/55">Kamenná 3, 010 01 Žilina</span>
-                </div>
+                <a href="https://maps.google.com/?q=Kamenná+3,+010+01+Žilina" target="_blank" rel="noopener noreferrer" className="flex items-start gap-3 group hover:opacity-80 transition-opacity cursor-pointer">
+                  <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-semibold text-white/80 mb-0.5 group-hover:text-primary transition-colors">Prevádzka</div>
+                    <span className="text-white/55">Kamenná 3, 010 01 Žilina</span>
+                  </div>
+                </a>
               </li>
               <li className="flex items-start gap-3">
-                <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                <div>
-                  <div className="font-semibold text-white/80 mb-0.5">Sídlo</div>
-                  <span className="text-white/55">Turie 468, 013 12 Turie</span>
-                </div>
-              </li>
-              <li className="flex items-center gap-3">
-                <Phone className="w-4 h-4 text-primary shrink-0" />
-                <a href="tel:+421909205205" className="hover:text-primary transition-colors font-semibold">
-                  +421 909 205 205
+                <a href="https://maps.google.com/?q=Turie+468,+013+12+Turie" target="_blank" rel="noopener noreferrer" className="flex items-start gap-3 group hover:opacity-80 transition-opacity cursor-pointer">
+                  <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-semibold text-white/80 mb-0.5 group-hover:text-primary transition-colors">Sídlo</div>
+                    <span className="text-white/55">Turie 468, 013 12 Turie</span>
+                  </div>
                 </a>
               </li>
               <li className="flex items-center gap-3">
-                <Mail className="w-4 h-4 text-primary shrink-0" />
-                <a href="mailto:info@msbeton.sk" className="hover:text-primary transition-colors">
-                  info@msbeton.sk
+                <a href="tel:+421909205205" className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
+                  <Phone className="w-4 h-4 text-primary shrink-0" />
+                  <span className="hover:text-primary transition-colors font-semibold">+421 909 205 205</span>
+                </a>
+              </li>
+              <li className="flex items-center gap-3">
+                <a href="mailto:info@msbeton.sk" className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
+                  <Mail className="w-4 h-4 text-primary shrink-0" />
+                  <span className="hover:text-primary transition-colors">info@msbeton.sk</span>
                 </a>
               </li>
             </ul>

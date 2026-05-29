@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { db, adminConfig } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, sql as drizzleSql } from "drizzle-orm";
+import { execSync } from "child_process";
+import { readdirSync, statSync } from "fs";
 import { randomBytes } from "crypto";
 import { invalidateClientCache } from "./client";
 import { sendRegistrationEmail, sendCredentialsEmail } from "../lib/mailer";
@@ -426,6 +428,62 @@ router.get("/analytics/realtime", async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "GA4 realtime error");
     res.status(502).json({ error: "GA4 realtime failed" });
+  }
+});
+
+router.get("/server-status", async (req, res) => {
+  const safe = <T>(fn: () => T, fallback: T): T => {
+    try { return fn(); } catch { return fallback; }
+  };
+
+  // PM2
+  const pm2Raw = safe(() => execSync("pm2 jlist 2>/dev/null", { encoding: "utf-8", timeout: 4000 }), "[]");
+  let pm2 = { status: "unknown", uptimeMs: 0, restarts: 0, memoryBytes: 0 };
+  try {
+    type PM2Proc = { name: string; pm2_env: { status: string; pm_uptime: number; pm_restarts: number }; monit: { memory: number } };
+    const procs = JSON.parse(pm2Raw) as PM2Proc[];
+    const p = procs.find(x => x.name === "msbeton-api") ?? procs[0];
+    if (p) pm2 = { status: p.pm2_env.status, uptimeMs: Date.now() - (p.pm2_env.pm_uptime ?? 0), restarts: p.pm2_env.pm_restarts ?? 0, memoryBytes: p.monit?.memory ?? 0 };
+  } catch {}
+
+  // Disk
+  const diskRaw = safe(() => execSync("df -h / | tail -1", { encoding: "utf-8", timeout: 2000 }).trim(), "");
+  const dp = diskRaw.split(/\s+/);
+  const disk = { total: dp[1] ?? "?", used: dp[2] ?? "?", avail: dp[3] ?? "?", percent: dp[4] ?? "?", percentNum: parseInt(dp[4] ?? "0") };
+
+  // DB size
+  let dbSize = "?";
+  try {
+    const r = await db.execute(drizzleSql`SELECT pg_size_pretty(pg_database_size('msbeton')) as size`);
+    dbSize = (r.rows[0] as { size: string }).size;
+  } catch {}
+
+  // System uptime
+  const uptime = safe(() => execSync("uptime -p 2>/dev/null", { encoding: "utf-8", timeout: 2000 }).trim().replace(/^up\s+/, ""), "?");
+
+  // Backups
+  const BACKUP_DIR = "/root/backups/db";
+  const backups = safe(() =>
+    readdirSync(BACKUP_DIR)
+      .filter(f => f.endsWith(".sql.gz") && !f.startsWith("pre_rollback_"))
+      .sort().reverse().slice(0, 10)
+      .map(f => {
+        const st = statSync(`${BACKUP_DIR}/${f}`);
+        return { file: f, sizeKb: Math.round(st.size / 1024), mtime: st.mtime.toISOString() };
+      }),
+  [] as { file: string; sizeKb: number; mtime: string }[]);
+
+  const lastLog = safe(() => execSync(`tail -3 ${BACKUP_DIR}/backup.log 2>/dev/null`, { encoding: "utf-8", timeout: 2000 }).trim(), "");
+
+  res.json({ pm2, disk, dbSize, uptime, backups, lastLog });
+});
+
+router.post("/server-backup", async (req, res) => {
+  try {
+    const out = execSync("/root/backup-db.sh 2>&1", { encoding: "utf-8", timeout: 30000 });
+    res.json({ ok: true, output: out.trim() });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err instanceof Error ? err.message : String(err) });
   }
 });
 
