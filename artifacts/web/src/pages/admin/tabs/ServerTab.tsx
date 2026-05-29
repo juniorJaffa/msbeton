@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, HardDrive, Database, Activity, Server, Download, CheckCircle, XCircle, Clock, Archive, Shield, Trash2 } from "lucide-react";
+import { RefreshCw, HardDrive, Database, Activity, Server, Download, CheckCircle, XCircle, Clock, Archive, Shield, Trash2, AlertTriangle, ShieldAlert } from "lucide-react";
 
 interface ServerStatus {
   pm2: { status: string; uptimeMs: number; restarts: number; memoryBytes: number };
@@ -10,6 +10,14 @@ interface ServerStatus {
   lastLog: string;
   sslExpiry: string | null;
   backupCron: string;
+  security: {
+    hits4xx: number;
+    hits5xx: number;
+    wpProbes: number;
+    rateLimitHits: number;
+    bannedIps: number;
+    topIps: { ip: string; count: number }[];
+  };
 }
 
 function fmtUptime(ms: number): string {
@@ -225,6 +233,53 @@ export default function ServerTab() {
         <div className="text-sm font-bold text-white">{data?.uptime ?? "—"}</div>
         <div className="text-xs text-white/40">Hetzner · 178.105.242.17</div>
       </div>
+
+      {/* Security */}
+      {data?.security && (
+        <div className="bg-secondary rounded-xl overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10">
+            <ShieldAlert className="w-3.5 h-3.5 text-white/60" />
+            <span className="text-white/60 text-xs font-black uppercase tracking-widest">Bezpečnosť — dnes</span>
+          </div>
+          <div className="grid grid-cols-2 gap-0 divide-x divide-white/10">
+            <div className="px-4 py-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-white/40">4xx chyby</span>
+                <span className={`text-sm font-black ${data.security.hits4xx > 50 ? "text-amber-400" : "text-white/70"}`}>{data.security.hits4xx}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-white/40">5xx chyby</span>
+                <span className={`text-sm font-black ${data.security.hits5xx > 0 ? "text-red-400" : "text-white/70"}`}>{data.security.hits5xx}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-white/40">WP skeny</span>
+                <span className={`text-sm font-black ${data.security.wpProbes > 0 ? "text-amber-400" : "text-white/70"}`}>{data.security.wpProbes}</span>
+              </div>
+            </div>
+            <div className="px-4 py-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-white/40">Rate limit (429)</span>
+                <span className={`text-sm font-black ${data.security.rateLimitHits > 0 ? "text-amber-400" : "text-white/70"}`}>{data.security.rateLimitHits}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-white/40">Fail2ban ban</span>
+                <span className={`text-sm font-black ${data.security.bannedIps > 0 ? "text-red-400" : "text-green-400"}`}>{data.security.bannedIps}</span>
+              </div>
+            </div>
+          </div>
+          {data.security.topIps.length > 0 && (
+            <div className="px-4 py-2 border-t border-white/10 space-y-1">
+              <div className="text-[10px] text-white/30 uppercase tracking-wider mb-1">Top IP (4xx/5xx/WP skeny dnes)</div>
+              {data.security.topIps.map(({ ip, count }) => (
+                <div key={ip} className="flex items-center justify-between">
+                  <span className="text-xs font-mono text-white/60">{ip}</span>
+                  <span className="text-xs font-bold text-amber-400">{count}×</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Backups */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">

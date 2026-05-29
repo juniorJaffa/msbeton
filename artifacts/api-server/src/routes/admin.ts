@@ -486,7 +486,48 @@ router.get("/server-status", async (req, res) => {
   // Next backup cron (hardcoded: daily 02:00)
   const backupCron = "0 2 * * * (každý deň 02:00)";
 
-  res.json({ pm2, disk, dbSize, uptime, backups, lastLog, sslExpiry, backupCron });
+  // Security: nginx 4xx/5xx, WP probes, PM2 rate limits, fail2ban
+  const security = (() => {
+    const d = new Date();
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const todayNginx = `${String(d.getDate()).padStart(2,"0")}/${months[d.getMonth()]}/${d.getFullYear()}`;
+
+    let hits4xx = 0, hits5xx = 0, wpProbes = 0;
+    const ipCounts: Record<string, number> = {};
+
+    const nginxLog = safe(() => execSync("tail -n 3000 /var/log/nginx/access.log 2>/dev/null", { encoding: "utf-8", timeout: 4000 }), "");
+    for (const line of nginxLog.split("\n")) {
+      if (!line.includes(todayNginx)) continue;
+      const m = line.match(/^(\S+) .+ (\d{3}) /);
+      if (!m) continue;
+      const ip = m[1], status = parseInt(m[2]);
+      const isWp = line.includes("/wp-login.php") || line.includes("/xmlrpc.php") || line.includes("/.env");
+      if (isWp) { wpProbes++; ipCounts[ip] = (ipCounts[ip] ?? 0) + 1; }
+      if (status >= 400 && status < 500) { hits4xx++; ipCounts[ip] = (ipCounts[ip] ?? 0) + 1; }
+      if (status >= 500) { hits5xx++; ipCounts[ip] = (ipCounts[ip] ?? 0) + 1; }
+    }
+
+    let rateLimitHits = 0;
+    const pm2Log = safe(() => execSync("tail -n 1000 ~/.pm2/logs/msbeton-api-out.log 2>/dev/null", { encoding: "utf-8", timeout: 3000 }), "");
+    for (const line of pm2Log.split("\n")) {
+      if (line.includes('"statusCode":429') || line.includes('"status":429')) rateLimitHits++;
+    }
+
+    const bannedIps = safe(() => {
+      const out = execSync("fail2ban-client status sshd 2>/dev/null", { encoding: "utf-8", timeout: 3000 });
+      const m = out.match(/Currently banned:\s*(\d+)/);
+      return m ? parseInt(m[1]) : 0;
+    }, 0);
+
+    const topIps = Object.entries(ipCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([ip, count]) => ({ ip, count }));
+
+    return { hits4xx, hits5xx, wpProbes, rateLimitHits, bannedIps, topIps };
+  })();
+
+  res.json({ pm2, disk, dbSize, uptime, backups, lastLog, sslExpiry, backupCron, security });
 });
 
 router.post("/server-backup", async (req, res) => {
