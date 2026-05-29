@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { syncFromServer } from "@/lib/adminData";
 import { clientAuth } from "@/lib/clientAuth";
-import * as adminAuth from "@/lib/adminAuth";
 
 import Home from "@/pages/Home";
 const Cennik = lazy(() => import("@/pages/Cennik"));
@@ -50,14 +49,6 @@ function App() {
   useEffect(() => {
     syncFromServer();
     clientAuth.refreshSession();
-    // PWA standalone: ak admin prihlásený a otvori sa "/" → presmeruj na admin dashboard
-    if (
-      window.matchMedia("(display-mode: standalone)").matches &&
-      adminAuth.isLoggedIn() &&
-      window.location.pathname === "/"
-    ) {
-      window.location.replace("/admin/dashboard");
-    }
   }, []);
 
   return (
