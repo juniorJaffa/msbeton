@@ -120,6 +120,7 @@ export default function AdminDashboard() {
     { id: "statistiky", label: "ŠTATISTIKY", short: "ŠTAT.",    icon: <TrendingUp className="w-5 h-5" /> },
     { id: "analytics",  label: "ANALÝZY",    short: "ANAL.",    icon: <BarChart2 className="w-5 h-5" /> },
     { id: "gsc",        label: "SEO",        short: "SEO",      icon: <Search className="w-5 h-5" /> },
+    { id: "server",     label: "SERVER",     short: "SERVER",   icon: <Server className="w-5 h-5" /> },
   ];
 
   return (

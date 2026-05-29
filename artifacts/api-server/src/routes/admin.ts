@@ -475,7 +475,18 @@ router.get("/server-status", async (req, res) => {
 
   const lastLog = safe(() => execSync(`tail -3 ${BACKUP_DIR}/backup.log 2>/dev/null`, { encoding: "utf-8", timeout: 2000 }).trim(), "");
 
-  res.json({ pm2, disk, dbSize, uptime, backups, lastLog });
+  // SSL cert expiry
+  const sslExpiry = safe(() => {
+    const out = execSync("openssl x509 -enddate -noout -in /etc/letsencrypt/live/msbeton.sk/fullchain.pem 2>/dev/null", { encoding: "utf-8", timeout: 3000 }).trim();
+    // notAfter=Aug 27 09:25:48 2026 GMT
+    const m = out.match(/notAfter=(.+)/);
+    return m ? new Date(m[1]).toISOString() : null;
+  }, null as string | null);
+
+  // Next backup cron (hardcoded: daily 02:00)
+  const backupCron = "0 2 * * * (každý deň 02:00)";
+
+  res.json({ pm2, disk, dbSize, uptime, backups, lastLog, sslExpiry, backupCron });
 });
 
 router.post("/server-backup", async (req, res) => {

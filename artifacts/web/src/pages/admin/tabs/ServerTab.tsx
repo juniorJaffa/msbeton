@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, HardDrive, Database, Activity, Server, Download, CheckCircle, XCircle, Clock, Archive } from "lucide-react";
+import { RefreshCw, HardDrive, Database, Activity, Server, Download, CheckCircle, XCircle, Clock, Archive, Shield } from "lucide-react";
 
 interface ServerStatus {
   pm2: { status: string; uptimeMs: number; restarts: number; memoryBytes: number };
@@ -8,6 +8,8 @@ interface ServerStatus {
   uptime: string;
   backups: { file: string; sizeKb: number; mtime: string }[];
   lastLog: string;
+  sslExpiry: string | null;
+  backupCron: string;
 }
 
 function fmtUptime(ms: number): string {
@@ -84,6 +86,11 @@ export default function ServerTab() {
   const online = data?.pm2.status === "online";
   const diskPct = data?.disk.percentNum ?? 0;
   const diskColor = diskPct >= 85 ? "bg-red-500" : diskPct >= 70 ? "bg-amber-400" : "bg-green-500";
+
+  const sslDaysLeft = data?.sslExpiry
+    ? Math.ceil((new Date(data.sslExpiry).getTime() - Date.now()) / 86400000)
+    : null;
+  const sslColor = sslDaysLeft === null ? "text-gray-400" : sslDaysLeft < 14 ? "text-red-400" : sslDaysLeft < 30 ? "text-amber-400" : "text-green-400";
 
   return (
     <div className="p-4 max-w-2xl mx-auto space-y-4">
@@ -168,20 +175,33 @@ export default function ServerTab() {
           )}
         </div>
 
-        {/* Uptime */}
+        {/* SSL */}
         <div className="bg-secondary rounded-xl p-4 space-y-2">
           <div className="flex items-center gap-2 text-white/60 text-xs font-bold uppercase tracking-wider">
-            <Server className="w-3.5 h-3.5" />
-            Uptime VPS
+            <Shield className="w-3.5 h-3.5" />
+            SSL Certifikát
           </div>
-          <div className="text-base font-black text-white leading-tight">
-            {data?.uptime ?? "—"}
+          <div className={`text-base font-black leading-tight ${sslColor}`}>
+            {sslDaysLeft !== null ? `${sslDaysLeft} dní` : "—"}
           </div>
           <div className="text-xs text-white/40 space-y-0.5">
-            <div className="text-white/70">Hetzner VPS</div>
-            <div>178.105.242.17</div>
+            {data?.sslExpiry && (
+              <div>Exp: <span className="text-white/70">{new Date(data.sslExpiry).toLocaleDateString("sk-SK")}</span></div>
+            )}
+            <div className="text-white/70">Let's Encrypt</div>
+            <div>Auto-renew: <span className="text-green-400 font-bold">aktívny</span></div>
           </div>
         </div>
+      </div>
+
+      {/* VPS info */}
+      <div className="bg-secondary rounded-xl px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-white/60 text-xs font-bold uppercase tracking-wider">
+          <Server className="w-3.5 h-3.5" />
+          VPS Uptime
+        </div>
+        <div className="text-sm font-bold text-white">{data?.uptime ?? "—"}</div>
+        <div className="text-xs text-white/40">Hetzner · 178.105.242.17</div>
       </div>
 
       {/* Backups */}
@@ -237,7 +257,7 @@ export default function ServerTab() {
           </button>
           <p className="text-[11px] text-gray-400 text-center flex items-center justify-center gap-1">
             <Clock className="w-3 h-3" />
-            Automatická záloha každý deň o 02:00
+            {data?.backupCron ?? "Automatická záloha každý deň o 02:00"}
           </p>
         </div>
       </div>
