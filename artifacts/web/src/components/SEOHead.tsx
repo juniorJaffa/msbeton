@@ -128,14 +128,23 @@ export function WebSiteSchema() {
 export function LocalBusinessSchema() {
   const schema = {
     "@context": "https://schema.org",
-    "@type": "LocalBusiness",
-    "name": SITE_NAME,
+    "@type": ["LocalBusiness", "ConcreteContractor"],
+    "name": "MS-BETON",
+    "alternateName": ["MS BETON", "MS-BETON s.r.o.", "MS-BETON Žilina"],
     "description": DEFAULT_DESCRIPTION,
     "url": SITE_URL,
     "telephone": "+421909205205",
     "email": "info@msbeton.sk",
     "image": OG_IMAGE,
     "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Kamenná 3",
+      "postalCode": "010 01",
+      "addressLocality": "Žilina",
+      "addressRegion": "Žilinský kraj",
+      "addressCountry": "SK"
+    },
+    "location": {
       "@type": "PostalAddress",
       "streetAddress": "Turie 468",
       "postalCode": "013 12",
@@ -145,18 +154,16 @@ export function LocalBusinessSchema() {
     },
     "geo": {
       "@type": "GeoCoordinates",
-      "latitude": 49.1503,
-      "longitude": 18.6681
+      "latitude": 49.2232,
+      "longitude": 18.7394
     },
-    "areaServed": {
-      "@type": "GeoCircle",
-      "geoMidpoint": {
-        "@type": "GeoCoordinates",
-        "latitude": 49.2232,
-        "longitude": 18.7394
-      },
-      "geoRadius": "50000"
-    },
+    "areaServed": [
+      { "@type": "City", "name": "Žilina" },
+      { "@type": "City", "name": "Bytča" },
+      { "@type": "City", "name": "Kysucké Nové Mesto" },
+      { "@type": "City", "name": "Rajec" },
+      { "@type": "GeoCircle", "geoMidpoint": { "@type": "GeoCoordinates", "latitude": 49.2232, "longitude": 18.7394 }, "geoRadius": "50000" }
+    ],
     "foundingDate": "2020",
     "legalName": "MS-BETON, spol. s r.o.",
     "vatID": "SK2122074603",
