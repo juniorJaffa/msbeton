@@ -1,10 +1,15 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronDown, ChevronUp, Pencil, Trash2, Check, X, Plus, GripVertical } from "lucide-react";
 import { adminData, ConcreteCategory, ConcreteType } from "@/lib/adminData";
 import { EditableField } from "./_shared";
 
 export default function BetonTab() {
   const [cats, setCats] = useState<ConcreteCategory[]>(adminData.getCategories());
+  useEffect(() => {
+    const handler = () => setCats(adminData.getCategories());
+    window.addEventListener("admin-data-synced", handler);
+    return () => window.removeEventListener("admin-data-synced", handler);
+  }, []);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [renamingCat, setRenamingCat] = useState<string | null>(null);
   const [renameCatVal, setRenameCatVal] = useState("");

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Trash2, Plus, Check, X, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import { adminData, DeliveryZone, TransportPricingZone, TransportSettings } from "@/lib/adminData";
 import { EditableField } from "./_shared";
@@ -83,6 +83,16 @@ export default function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void
   const [stdDotazenieOpen, setStdDotazenieOpen] = useState(false);
   const [podmienkyOpen, setPodmienkyOpen] = useState(false);
   const [expandedTypes, setExpandedTypes] = useState<Record<string, boolean>>({ standard: true, km: true, auto: true });
+
+  useEffect(() => {
+    const handler = () => {
+      setZones(adminData.getDelivery());
+      setPZones(adminData.getTransportZones());
+      setTs(adminData.getTransportSettings());
+    };
+    window.addEventListener("admin-data-synced", handler);
+    return () => window.removeEventListener("admin-data-synced", handler);
+  }, []);
 
   const savePZ = (data: TransportPricingZone[]) => { setPZones(data); adminData.saveTransportZones(data); };
   const saveTs = (data: TransportSettings) => { setTs(data); adminData.saveTransportSettings(data); };

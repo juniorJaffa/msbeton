@@ -61,6 +61,11 @@ function MixTruckIcon() {
 
 export default function SluzbyTab({ onGoToDoprava, scrollToPumpa, onScrollDone }: { onGoToDoprava?: () => void; scrollToPumpa?: boolean; onScrollDone?: () => void }) {
   const [services, setServices] = useState<Service[]>(adminData.getServices());
+  useEffect(() => {
+    const handler = () => setServices(adminData.getServices());
+    window.addEventListener("admin-data-synced", handler);
+    return () => window.removeEventListener("admin-data-synced", handler);
+  }, []);
   const doScrollRef = useRef(scrollToPumpa ?? false);
   useEffect(() => {
     if (!doScrollRef.current) return;

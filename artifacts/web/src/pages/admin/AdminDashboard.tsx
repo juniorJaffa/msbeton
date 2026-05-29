@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { LogOut, Users, Truck, Wrench, Layers, RefreshCw, ClipboardList, BarChart2, TrendingUp, MoreHorizontal, Search, Fingerprint } from "lucide-react";
 import { VersionBadge } from "@/components/VersionBadge";
@@ -127,7 +128,23 @@ export default function AdminDashboard() {
       <header className="bg-secondary shadow-lg fixed top-0 left-0 right-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-12">
           <a href="/" className="flex items-center gap-0.5 select-none">
-            <span className="font-black text-2xl tracking-tighter text-primary">MS</span>
+            <motion.span
+              className="font-black text-2xl tracking-tighter text-primary relative"
+              style={{ display: "inline-block" }}
+            >
+              MS
+              <span className="absolute inset-0 overflow-hidden pointer-events-none">
+                <motion.span
+                  className="absolute inset-0"
+                  style={{
+                    background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.65) 50%, transparent 70%)",
+                    display: "block",
+                  }}
+                  animate={{ x: ["-150%", "250%"] }}
+                  transition={{ duration: 1.2, repeat: Infinity, repeatDelay: 3.8, ease: "easeInOut" }}
+                />
+              </span>
+            </motion.span>
             <span className="font-black text-2xl tracking-tighter text-primary/40">-</span>
             <span className="font-black text-2xl tracking-tighter text-white">BETON</span>
             <span className="ml-3 text-primary text-xs font-bold uppercase tracking-widest">Admin</span>

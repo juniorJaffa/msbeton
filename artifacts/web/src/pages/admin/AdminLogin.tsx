@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { SEOHead } from "@/components/SEOHead";
 import { Eye, EyeOff, Lock, User, AlertCircle, Clock, Fingerprint } from "lucide-react";
@@ -152,9 +153,25 @@ export default function AdminLogin() {
 
       <div className="relative z-10 w-full max-w-md">
         <a href="/" className="flex items-center justify-center gap-0.5 mb-8 select-none">
-          <span className="font-black text-4xl tracking-tighter text-primary" style={{ fontFamily: "Montserrat, sans-serif" }}>MS</span>
+          <motion.span
+            className="font-black text-4xl tracking-tighter text-primary relative"
+            style={{ fontFamily: "Montserrat, sans-serif", display: "inline-block" }}
+          >
+            MS
+            <span className="absolute inset-0 overflow-hidden pointer-events-none">
+              <motion.span
+                className="absolute inset-0"
+                style={{
+                  background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.65) 50%, transparent 70%)",
+                  display: "block",
+                }}
+                animate={{ x: ["-150%", "250%"] }}
+                transition={{ duration: 1.2, repeat: Infinity, repeatDelay: 3.8, ease: "easeInOut" }}
+              />
+            </span>
+          </motion.span>
           <span className="font-black text-4xl tracking-tighter text-primary/40" style={{ fontFamily: "Montserrat, sans-serif" }}>-</span>
-          <span className="font-black text-4xl tracking-tighter text-white" style={{ fontFamily: "Montserrat, sans-serif" }}>BETON</span>
+          <span className="font-black text-4xl tracking-tighter text-white" style={{ fontFamily: "Montserrat, sans-serif", textShadow: "0 2px 4px rgba(0,0,0,0.6), 0 -1px 0 rgba(255,255,255,0.08)" }}>BETON</span>
           <span className="ml-2 self-end mb-1 text-[10px] font-black text-primary/60 border border-primary/30 px-1.5 py-0.5 rounded-sm tracking-widest">ADMIN</span>
         </a>
 
