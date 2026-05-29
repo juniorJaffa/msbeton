@@ -498,4 +498,20 @@ router.post("/server-backup", async (req, res) => {
   }
 });
 
+router.delete("/server-backup/:filename", (req, res) => {
+  const { filename } = req.params;
+  if (!/^msbeton_\d{8}_\d{6}\.sql\.gz$/.test(filename)) {
+    res.status(400).json({ ok: false, error: "Neplatný názov súboru" });
+    return;
+  }
+  const { unlinkSync } = require("fs") as typeof import("fs");
+  const path = `/root/backups/db/${filename}`;
+  try {
+    unlinkSync(path);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
 export default router;

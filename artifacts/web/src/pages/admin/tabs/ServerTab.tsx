@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, HardDrive, Database, Activity, Server, Download, CheckCircle, XCircle, Clock, Archive, Shield } from "lucide-react";
+import { RefreshCw, HardDrive, Database, Activity, Server, Download, CheckCircle, XCircle, Clock, Archive, Shield, Trash2 } from "lucide-react";
 
 interface ServerStatus {
   pm2: { status: string; uptimeMs: number; restarts: number; memoryBytes: number };
@@ -46,13 +46,14 @@ export default function ServerTab() {
   const [error, setError] = useState<string | null>(null);
   const [backupRunning, setBackupRunning] = useState(false);
   const [backupMsg, setBackupMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [deletingFile, setDeletingFile] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const r = await fetch("/api/admin/server-status", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("msbeton_admin_token") ?? ""}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem("msbeton_admin_token") ?? ""}` } as HeadersInit,
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       setData(await r.json() as ServerStatus);
@@ -65,13 +66,16 @@ export default function ServerTab() {
 
   useEffect(() => { load(); }, [load]);
 
+  const authHeader = () => ({ Authorization: `Bearer ${localStorage.getItem("msbeton_admin_token") ?? ""}` });
+
   const runBackup = async () => {
+    if (!confirm("Spustiť manuálnu zálohu databázy teraz?")) return;
     setBackupRunning(true);
     setBackupMsg(null);
     try {
       const r = await fetch("/api/admin/server-backup", {
         method: "POST",
-        headers: { Authorization: `Bearer ${localStorage.getItem("msbeton_admin_token") ?? ""}` },
+        headers: authHeader(),
       });
       const j = await r.json() as { ok: boolean; output?: string; error?: string };
       setBackupMsg({ ok: j.ok, text: j.ok ? (j.output ?? "OK") : (j.error ?? "Chyba") });
@@ -80,6 +84,24 @@ export default function ServerTab() {
       setBackupMsg({ ok: false, text: e instanceof Error ? e.message : "Chyba" });
     } finally {
       setBackupRunning(false);
+    }
+  };
+
+  const deleteBackup = async (filename: string) => {
+    if (!confirm(`Vymazať zálohu?\n${filename}`)) return;
+    setDeletingFile(filename);
+    try {
+      const r = await fetch(`/api/admin/server-backup/${encodeURIComponent(filename)}`, {
+        method: "DELETE",
+        headers: authHeader(),
+      });
+      const j = await r.json() as { ok: boolean; error?: string };
+      if (j.ok) await load();
+      else setBackupMsg({ ok: false, text: j.error ?? "Chyba pri mazaní" });
+    } catch (e) {
+      setBackupMsg({ ok: false, text: e instanceof Error ? e.message : "Chyba" });
+    } finally {
+      setDeletingFile(null);
     }
   };
 
@@ -219,17 +241,34 @@ export default function ServerTab() {
         )}
 
         <div className="divide-y divide-gray-100">
-          {data?.backups.map((b, i) => (
-            <div key={b.file} className="flex items-center gap-3 px-4 py-2.5">
-              <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-mono text-secondary font-semibold">{fmtBackupName(b.file)}</div>
-                <div className="text-xs text-gray-400 truncate">{b.file}</div>
+          {data?.backups.map((b, i) => {
+            const isLast = i === 0;
+            const isDeleting = deletingFile === b.file;
+            return (
+              <div key={b.file} className="flex items-center gap-3 px-4 py-2.5">
+                <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-mono text-secondary font-semibold">{fmtBackupName(b.file)}</div>
+                  <div className="text-xs text-gray-400 truncate">{b.file}</div>
+                </div>
+                <div className="text-xs text-gray-500 font-mono shrink-0">{b.sizeKb} KB</div>
+                {isLast && <span className="text-[10px] bg-green-100 text-green-700 font-bold px-1.5 py-0.5 rounded shrink-0">LAST</span>}
+                <button
+                  onClick={() => deleteBackup(b.file)}
+                  disabled={isLast || isDeleting}
+                  title={isLast ? "Posledná záloha — nedá sa vymazať" : "Vymazať zálohu"}
+                  className="p-1 text-gray-300 hover:text-red-500 disabled:opacity-20 disabled:cursor-not-allowed transition-colors cursor-pointer shrink-0"
+                >
+                  <Trash2 className={`w-3.5 h-3.5 ${isDeleting ? "animate-spin" : ""}`} />
+                </button>
               </div>
-              <div className="text-xs text-gray-500 font-mono shrink-0">{b.sizeKb} KB</div>
-              {i === 0 && <span className="text-[10px] bg-green-100 text-green-700 font-bold px-1.5 py-0.5 rounded">LAST</span>}
-            </div>
-          ))}
+            );
+          })}
+        </div>
+
+        <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+          <span className="text-[11px] text-gray-400">Automatická rotácia: max 14 kópií</span>
+          <span className="text-[11px] text-gray-400">{data?.backups.length ?? 0} / 14</span>
         </div>
 
         {/* Last log */}
