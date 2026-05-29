@@ -1,15 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
-  <rect width="180" height="180" rx="36" fill="#EDC531"/>
-  <!-- MS- text -->
-  <text x="90" y="62" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="58" fill="#001D3D" text-anchor="middle" dominant-baseline="middle">MS-</text>
-  <!-- BETON text -->
-  <text x="90" y="108" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="34" fill="#001D3D" text-anchor="middle" dominant-baseline="middle">BETON</text>
-  <!-- Lock icon at bottom -->
-  <!-- shackle (arc) -->
-  <path d="M72 138 v-10 a18 18 0 0 1 36 0 v10" fill="none" stroke="#001D3D" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-  <!-- lock body -->
-  <rect x="66" y="136" width="48" height="34" rx="7" fill="#001D3D"/>
-  <!-- keyhole -->
-  <circle cx="90" cy="150" r="5" fill="#EDC531"/>
-  <rect x="87.5" y="150" width="5" height="9" rx="2.5" fill="#EDC531"/>
+  <rect width="180" height="180" rx="36" fill="#001D3D"/>
+  <!-- MS- same as main -->
+  <text x="90" y="68" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="58" fill="#EDC531" text-anchor="middle" dominant-baseline="middle">MS-</text>
+  <!-- BETON same as main -->
+  <text x="90" y="118" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="36" fill="white" text-anchor="middle" dominant-baseline="middle">BETON</text>
+  <!-- Badge: gold circle bottom-right -->
+  <circle cx="143" cy="143" r="28" fill="#001D3D"/>
+  <circle cx="143" cy="143" r="24" fill="#EDC531"/>
+  <!-- Shield inside badge -->
+  <path d="M143 129 L132 133.5 L132 144 C132 150.5 137 154.5 143 156.5 C149 154.5 154 150.5 154 144 L154 133.5 Z" fill="#001D3D"/>
+  <!-- Fingerprint arcs inside shield -->
+  <path d="M143 136 C140 136 138 138 138 141 C138 143.5 139.5 145.5 142 146" fill="none" stroke="#EDC531" stroke-width="2" stroke-linecap="round"/>
+  <path d="M143 139 C141.5 139 140.5 140 140.5 141 C140.5 142.5 141.5 143.5 143 144" fill="none" stroke="#EDC531" stroke-width="2" stroke-linecap="round"/>
+  <path d="M143 133 C138 133 134.5 136.5 134.5 141 C134.5 144.5 136.5 147.5 139.5 149" fill="none" stroke="#EDC531" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="143" cy="141" r="1.5" fill="#EDC531"/>
 </svg>
