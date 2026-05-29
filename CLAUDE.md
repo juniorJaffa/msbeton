@@ -444,7 +444,7 @@ Standard má dve nezávislé collapsible sekcie: `stdZonesOpen` (Zóny dopravy) 
 
 ### Produkčný deployment
 
-Produkcia: [demo.msbeton.sk](https://demo.msbeton.sk), server `root@178.105.242.17`, adresár `/var/www/msbeton`.
+Produkcia: [msbeton.sk](https://msbeton.sk), server `root@178.105.242.17`, adresár `/var/www/msbeton`. DNS migrovaný 2026-05-29 — `msbeton.sk` ukazuje na VPS. `demo.msbeton.sk` ukazuje na starú Webglobe hosting (už nie VPS).
 
 **GitHub Action nasadzuje automaticky** pri každom `git push origin main`. Manuálny deploy len ak Action zlyhá alebo commity neboli pushnuté:
 
