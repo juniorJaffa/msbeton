@@ -444,20 +444,20 @@ Standard má dve nezávislé collapsible sekcie: `stdZonesOpen` (Zóny dopravy) 
 
 ### Produkčný deployment
 
-Produkcia: [demo.msbeton.sk](https://demo.msbeton.sk), server `root@178.104.62.115`, adresár `/var/www/msbeton`.
+Produkcia: [demo.msbeton.sk](https://demo.msbeton.sk), server `root@178.105.242.17`, adresár `/var/www/msbeton`.
 
 **GitHub Action nasadzuje automaticky** pri každom `git push origin main`. Manuálny deploy len ak Action zlyhá alebo commity neboli pushnuté:
 
 ```bash
 # Manuálny deploy
-ssh -i ~/.ssh/id_ed25519_claude root@178.104.62.115 "cd /var/www/msbeton && git pull && PORT=3000 BASE_PATH=/ pnpm --filter @workspace/web build && pnpm --filter @workspace/api-server build && DATABASE_URL='postgresql://msbeton:vPk83o1ITFyjeheEjgkeT4sucEea4Z@localhost:5432/msbeton' pnpm --filter @workspace/db push && pm2 restart msbeton-api --update-env && echo OK"
+ssh -i ~/.ssh/id_ed25519_ms_beton root@178.105.242.17 "cd /var/www/msbeton && git pull && PORT=3000 BASE_PATH=/ pnpm --filter @workspace/web build && pnpm --filter @workspace/api-server build && DATABASE_URL='postgresql://msbeton:vPk83o1ITFyjeheEjgkeT4sucEea4Z@localhost:5432/msbeton' pnpm --filter @workspace/db push && pm2 restart msbeton-api --update-env && echo OK"
 ```
 
 - `pnpm run build` na serveri ZLYHÁ kvôli pre-existujúcim framer-motion TS chybám v `Home.tsx` — vždy build web + API zvlášť
 - `DATABASE_URL` je v `ecosystem.config.cjs` (nie v `.env` súbore)
 - SMTP je v `ecosystem.config.cjs`: `SMTP_HOST: 'mail.webglobe.sk'`, port `587` STARTTLS. Port 465 je na VPS blokovaný.
 - PM2 `--update-env` **nenačíta** nové env z `ecosystem.config.cjs` — treba `pm2 delete msbeton-api && pm2 start ecosystem.config.cjs`
-- SSH kľúč: `id_ed25519_claude` (GitHub Secret: `itikon-claude-code`)
+- SSH kľúč: `id_ed25519_ms_beton` (GitHub Secret: `itikon-claude-code`)
 
 Na serveri beží PostgreSQL — `DATABASE_URL` je nastavená v `ecosystem.config.cjs` pre pm2.
 
@@ -566,7 +566,7 @@ location = /50x.html {
 
 ## Databázové zálohy a rollback (produkcia)
 
-### Skripty na serveri (`root@178.105.242.17`)
+### Skripty na serveri (`root@178.105.242.17`, kľúč `id_ed25519_ms_beton`)
 
 | Skript | Účel |
 |--------|------|
