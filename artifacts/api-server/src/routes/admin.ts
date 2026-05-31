@@ -514,17 +514,26 @@ router.get("/server-status", async (req, res) => {
     }
 
     const bannedIps = safe(() => {
-      const out = execSync("fail2ban-client status sshd 2>/dev/null", { encoding: "utf-8", timeout: 3000 });
-      const m = out.match(/Currently banned:\s*(\d+)/);
-      return m ? parseInt(m[1]) : 0;
+      const sshd = execSync("fail2ban-client status sshd 2>/dev/null", { encoding: "utf-8", timeout: 3000 });
+      const wp   = execSync("fail2ban-client status nginx-wp-scan 2>/dev/null", { encoding: "utf-8", timeout: 3000 });
+      const m1 = sshd.match(/Currently banned:\s*(\d+)/);
+      const m2 = wp.match(/Currently banned:\s*(\d+)/);
+      return (m1 ? parseInt(m1[1]) : 0) + (m2 ? parseInt(m2[1]) : 0);
     }, 0);
+
+    const wpBannedList = safe(() => {
+      const out = execSync("fail2ban-client status nginx-wp-scan 2>/dev/null", { encoding: "utf-8", timeout: 3000 });
+      const m = out.match(/Banned IP list:\s*(.+)/);
+      if (!m || !m[1].trim()) return [] as string[];
+      return m[1].trim().split(/\s+/).slice(0, 10);
+    }, [] as string[]);
 
     const topIps = Object.entries(ipCounts)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([ip, count]) => ({ ip, count }));
 
-    return { hits4xx, hits5xx, wpProbes, rateLimitHits, bannedIps, topIps };
+    return { hits4xx, hits5xx, wpProbes, rateLimitHits, bannedIps, wpBannedList, topIps };
   })();
 
   res.json({ pm2, disk, dbSize, uptime, backups, lastLog, sslExpiry, backupCron, security });

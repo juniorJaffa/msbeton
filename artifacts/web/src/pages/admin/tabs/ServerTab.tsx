@@ -16,6 +16,7 @@ interface ServerStatus {
     wpProbes: number;
     rateLimitHits: number;
     bannedIps: number;
+    wpBannedList: string[];
     topIps: { ip: string; count: number }[];
   };
 }
@@ -267,6 +268,19 @@ export default function ServerTab() {
               </div>
             </div>
           </div>
+          {data.security.wpBannedList.length > 0 && (
+            <div className="px-4 py-2 border-t border-white/10 space-y-1">
+              <div className="text-[10px] text-red-400/70 uppercase tracking-wider mb-1 flex items-center gap-1">
+                <Shield className="w-3 h-3" /> Banované IP (WP skeny)
+              </div>
+              {data.security.wpBannedList.map(ip => (
+                <div key={ip} className="flex items-center justify-between">
+                  <span className="text-xs font-mono text-white/60">{ip}</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 font-bold">BAN 24h</span>
+                </div>
+              ))}
+            </div>
+          )}
           {data.security.topIps.length > 0 && (
             <div className="px-4 py-2 border-t border-white/10 space-y-1">
               <div className="text-[10px] text-white/30 uppercase tracking-wider mb-1">Top IP (4xx/5xx/WP skeny dnes)</div>
