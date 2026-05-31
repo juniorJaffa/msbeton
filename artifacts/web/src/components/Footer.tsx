@@ -61,7 +61,7 @@ export function Footer() {
                 { href: SOCIAL_LINKS.linkedin,  label: "LinkedIn",  Icon: LinkedInIcon },
               ].map(({ href, label, Icon }) => (
                 <a key={label} href={href} target={href !== "#" ? "_blank" : undefined} rel="noopener noreferrer"
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${href !== "#" ? "bg-white/8 hover:bg-primary hover:text-secondary text-white/50" : "bg-white/5 text-white/20 cursor-default"}`}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${href !== "#" ? "bg-white/8 hover:bg-primary hover:text-secondary text-white/50" : "bg-white/8 text-white/30 cursor-default"}`}
                   aria-label={label}>
                   <Icon />
                 </a>
