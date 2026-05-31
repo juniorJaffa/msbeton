@@ -1201,7 +1201,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                                   {[
                                     { v: String(cOrders.length), l: "Objednávky" },
                                     { v: totalM3.toFixed(1) + " m³", l: "Celkom m³" },
-                                    { v: "€ " + Math.round(totalEur), l: "Bez DPH" },
+                                    { v: "€ " + Math.round(totalEur).toLocaleString("sk"), l: "Bez DPH" },
                                   ].map(({ v, l }) => (
                                     <div key={l} className="bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-center">
                                       <div className="text-sm font-black text-secondary">{v}</div>
