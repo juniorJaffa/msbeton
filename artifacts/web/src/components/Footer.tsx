@@ -61,45 +61,36 @@ export function Footer() {
               Žilina betón
             </p>
 
-            {/* Social icons */}
-            <div className="flex items-center gap-2 pt-1">
-              {SOCIAL_LINKS.facebook !== "#" && (
-                <a href={SOCIAL_LINKS.facebook} target="_blank" rel="noopener noreferrer"
-                  className="w-8 h-8 rounded-full bg-white/8 hover:bg-primary hover:text-secondary text-white/50 flex items-center justify-center transition-all duration-200"
-                  aria-label="Facebook">
-                  <FacebookIcon />
-                </a>
-              )}
-              {SOCIAL_LINKS.instagram !== "#" && (
-                <a href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer"
-                  className="w-8 h-8 rounded-full bg-white/8 hover:bg-primary hover:text-secondary text-white/50 flex items-center justify-center transition-all duration-200"
-                  aria-label="Instagram">
-                  <InstagramIcon />
-                </a>
-              )}
-              {SOCIAL_LINKS.linkedin !== "#" && (
-                <a href={SOCIAL_LINKS.linkedin} target="_blank" rel="noopener noreferrer"
-                  className="w-8 h-8 rounded-full bg-white/8 hover:bg-primary hover:text-secondary text-white/50 flex items-center justify-center transition-all duration-200"
-                  aria-label="LinkedIn">
-                  <LinkedInIcon />
-                </a>
-              )}
-              <a href={SOCIAL_LINKS.google} target="_blank" rel="noopener noreferrer"
-                className="w-8 h-8 rounded-full bg-white/8 hover:bg-primary hover:text-secondary text-white/50 flex items-center justify-center transition-all duration-200"
-                aria-label="Google Maps">
-                <GoogleMapsIcon />
-              </a>
-            </div>
+            {/* Social icons — zobrazí sa len keď URL nie je "#" */}
+            {[
+              { href: SOCIAL_LINKS.facebook,  label: "Facebook",  Icon: FacebookIcon },
+              { href: SOCIAL_LINKS.instagram, label: "Instagram", Icon: InstagramIcon },
+              { href: SOCIAL_LINKS.linkedin,  label: "LinkedIn",  Icon: LinkedInIcon },
+            ].some(s => s.href !== "#") && (
+              <div className="flex items-center gap-2 pt-1">
+                {[
+                  { href: SOCIAL_LINKS.facebook,  label: "Facebook",  Icon: FacebookIcon },
+                  { href: SOCIAL_LINKS.instagram, label: "Instagram", Icon: InstagramIcon },
+                  { href: SOCIAL_LINKS.linkedin,  label: "LinkedIn",  Icon: LinkedInIcon },
+                ].filter(s => s.href !== "#").map(({ href, label, Icon }) => (
+                  <a key={label} href={href} target="_blank" rel="noopener noreferrer"
+                    className="w-8 h-8 rounded-full bg-white/8 hover:bg-primary hover:text-secondary text-white/50 flex items-center justify-center transition-all duration-200"
+                    aria-label={label}>
+                    <Icon />
+                  </a>
+                ))}
+              </div>
+            )}
 
             {/* Review CTA */}
             <a href={REVIEW_URL} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 mt-1 px-3 py-1.5 rounded-full border border-primary/40 hover:border-primary hover:bg-primary/10 transition-all duration-200 group">
-              <div className="flex">
+              className="inline-flex items-center gap-2 pt-1 group">
+              <div className="flex gap-0.5">
                 {[1,2,3,4,5].map(i => (
-                  <Star key={i} className="w-3 h-3 text-primary fill-primary" />
+                  <Star key={i} className="w-3.5 h-3.5 text-primary fill-primary" />
                 ))}
               </div>
-              <span className="text-xs text-white/60 group-hover:text-white transition-colors">Ohodnoťte nás</span>
+              <span className="text-xs text-white/50 group-hover:text-white transition-colors underline underline-offset-2 decoration-white/20 group-hover:decoration-white/60">Ohodnoťte nás na Google</span>
             </a>
           </div>
 
@@ -140,7 +131,7 @@ export function Footer() {
               <li className="flex items-center gap-3">
                 <a href="tel:+421909205205" className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
                   <Phone className="w-4 h-4 text-primary shrink-0" />
-                  <span className="hover:text-primary transition-colors font-semibold">+421 909 205 205</span>
+                  <span className="hover:text-primary transition-colors font-semibold whitespace-nowrap">+421 909 205 205</span>
                 </a>
               </li>
               <li className="flex items-center gap-3">
