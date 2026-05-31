@@ -2,12 +2,12 @@ import { Mail, MapPin, Phone } from "lucide-react";
 
 export function Footer() {
   return (
-    <footer className="concrete-navy text-white/80 pt-16 pb-8 border-t-[4px] border-primary">
+    <footer className="concrete-navy text-white/80 pt-8 md:pt-16 pb-8 border-t-[4px] border-primary">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-6 md:gap-12 mb-8 md:mb-12">
 
           {/* Brand */}
-          <div className="space-y-4">
+          <div className="col-span-2 md:col-span-1 space-y-3 md:space-y-4">
             <div className="flex items-center select-none">
               <span className="font-display font-black text-3xl tracking-tighter text-primary">MS</span>
               <span className="font-display font-black text-3xl tracking-tighter text-primary/40">-</span>
@@ -36,7 +36,7 @@ export function Footer() {
           {/* Contact Info */}
           <div>
             <h3 className="text-base font-bold text-white mb-6 tracking-widest uppercase">Kontakt</h3>
-            <ul className="space-y-4 text-sm">
+            <ul className="space-y-3 text-sm">
               <li className="flex items-start gap-3">
                 <a href="https://maps.google.com/?q=Kamenná+3,+010+01+Žilina" target="_blank" rel="noopener noreferrer" className="flex items-start gap-3 group hover:opacity-80 transition-opacity cursor-pointer">
                   <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
