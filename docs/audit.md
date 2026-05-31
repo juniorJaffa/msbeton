@@ -1,7 +1,7 @@
 # MS-BETON — Audit stav projektu
 
-> Aktualizované: 2026-05-27 (iterácia #4)
-> Prostredie: demo.msbeton.sk → migrácia na msbeton.sk (plánovaná)
+> Aktualizované: 2026-05-31 (iterácia #5)
+> Prostredie: msbeton.sk (VPS 178.105.242.17) — DNS migrácia dokončená 2026-05-29
 
 **Legenda:** ✅ Hotovo | ⏳ Čaká (externá podmienka) | ❌ Plánované | ⚠ Čiastočne
 
@@ -20,7 +20,7 @@
 | 7 | 🔐 Bezpečnosť | Rate limit IPv6 crash | `keyGenerator` nevracal string pre IPv6 → `ValidationError`. Opravené cez `ipKeyGenerator()` helper. | ✅ |
 | 8 | 🔐 Bezpečnosť | allowExtraOverload bug | Neprihlásený používateľ / admin bez klienta mohol aktivovať "minusové pretaženie" (`?? true` fallback). Opravené: `false` pre všetkých bez explicitného povolenia. | ✅ |
 | 9 | 🔐 Bezpečnosť | PODMIENKY Mix stepper min clamp | Mix stepper v PODMIENKY paneli dovolil ísť na 0 vozidiel aj bez povolenia extraOverload. Teraz minimum = `autoMixP` (štandardné min) keď klient nemá povolenie. | ✅ |
-| 10 | 🔐 Bezpečnosť | Cloudflare WAF + CDN | Firewall, Bot Fight Mode, GeoIP blocking SK/CZ, DDoS ochrana. | ⏳ Čaká na DNS migráciu na msbeton.sk |
+| 10 | 🔐 Bezpečnosť | Cloudflare WAF + CDN | Firewall, Bot Fight Mode, GeoIP blocking SK/CZ, DDoS ochrana. | ⏳ DNS migrovaný, čaká na prepnutie NS na Cloudflare |
 | 11 | 🔐 Bezpečnosť | HttpOnly session cookie | Klientská session v localStorage (XSS riziko). Presunúť na HttpOnly cookie. | ❌ ~2h |
 | 12 | ⚖️ GDPR | GA4 Consent Mode v2 | GA4 sa spúšťal vždy. Pridaný cookie banner + Consent Mode v2 — GA4 len po súhlase. | ✅ |
 | 13 | ⚖️ GDPR | Stránka OÚ | Chýbala povinná politika GDPR. Vytvorená `/ochrana-osobnych-udajov` s kompletným znením. | ✅ |
@@ -34,7 +34,7 @@
 | 21 | 🔍 SEO | Self-host Montserrat | Písmo z Google CDN (latencia + GDPR). Nahradené `@fontsource/montserrat` — 6 váh, žiadny CDN. | ✅ |
 | 22 | 🔍 SEO | Google Maps lazy load | Maps API sa načítaval pri každom otvorení webu (LCP penalizácia). Lazy load — len keď klik na Mapa. | ✅ |
 | 23 | 🔍 SEO | GSC SEO tab v admin nave | Tab chýbal v desktop nav poli `tabs`. Pridaný. | ✅ |
-| 24 | 🔍 SEO | Cloudflare CDN | Rýchlejšie načítanie pre SR — statické assets cez CDN cache. | ⏳ Čaká na DNS migráciu |
+| 24 | 🔍 SEO | Cloudflare CDN | Rýchlejšie načítanie pre SR — statické assets cez CDN cache. | ⏳ Čaká na Cloudflare NS prepnutie |
 | 25 | 🧮 Kalkulačka | Tri módy dopravy | Pumpa, Domiešavač (mix), Vlastná doprava — každý s vlastnou cenovou logikou a UI. | ✅ |
 | 26 | 🧮 Kalkulačka | Extra položky (addToMain) | "+ Pridať položku" — viac typov betónu v jednej objednávke. addToMain zlučuje m³ do dopravy hlavnej položky bez phantom vozidiel. | ✅ |
 | 27 | 🧮 Kalkulačka | Zóny dopravy Standard/km/auto | Tri typy zón s vlastnými sadzbami a per pumpa/mix minimálnymi poplatkami. | ✅ |
@@ -77,6 +77,12 @@
 | 64 | 🚀 CI/CD | PM2 `--update-env` fix | `--update-env` nenačítal nové env z `ecosystem.config.cjs`. Deploy skript používa `pm2 delete + start`. | ✅ |
 | 65 | 🔐 Admin login | WebAuthn biometria | Jednoduchý btoa formulár. Pridaný WebAuthn (Touch ID / Face ID) + math captcha + lockout po 5 pokusoch. | ✅ |
 | 66 | ⚡ Výkon | Code splitting — Admin taby | AdminDashboard.tsx (~4500 riadkov) načíta všetkých 8 tabov naraz (~1MB bundle). Rozbiť na samostatné súbory + React.lazy(). Mobile FCP: 7.3s → ~4s, initial bundle -40%. | ❌ ~2-3h |
+| 67 | 🔍 SEO | Google Business Profile | GBP profil vytvorený 2026-05-29. Kategória: Ready-Mix Concrete Supplier + Concrete contractor. 6 fotiek, logo, popis, 7 services. Čaká na overenie. | ⏳ Overenie do 5 dní |
+| 68 | 🔍 SEO | Sociálne siete (FB/IG/LinkedIn) | Facebook page, Instagram, LinkedIn — sameAs linky v LocalBusiness JSON-LD. Ikony v footeri. Zdroj dopravy + brand awareness. | ❌ ~2h |
+| 69 | 🔍 SEO | Reviews stratégia | Žiadne Google recenzie. QR kód na dodacom liste, email follow-up po objednávke, review link na stránke. Cieľ: 10+ recenzií za 3 mesiace. | ❌ ~1h |
+| 70 | 🔍 SEO | GBP Posts (po overení) | Pravidelné posty na GBP — ponuky, aktuality. Zvyšuje viditeľnosť v Maps. | ⏳ Čaká na overenie GBP |
+| 71 | 🔐 Bezpečnosť | fail2ban HTTP jail | Nginx logy plné WP scan pokusov (wp-login.php, xmlrpc.php). fail2ban HTTP jail — ban IP po 5 pokusoch. | ❌ ~30min |
+| 72 | 🗄️ CI/CD | Remote DB backup | Zálohy iba lokálne na VPS (single point of failure). Rsync na druhý server alebo Hetzner Object Storage. | ❌ ~1h |
 
 ---
 
@@ -85,9 +91,9 @@
 | Stav | Počet |
 |------|-------|
 | ✅ Hotovo | 54 |
-| ⏳ Čaká (externá podmienka) | 4 |
-| ❌ Plánované | 8 |
-| **Celkom** | **66** |
+| ⏳ Čaká (externá podmienka) | 6 |
+| ❌ Plánované | 12 |
+| **Celkom** | **72** |
 
 ---
 
@@ -117,6 +123,20 @@
 ---
 
 ## Changelog
+
+### Iterácia #5 — 2026-05-31
+- DNS migrácia msbeton.sk → VPS 178.105.242.17 dokončená 2026-05-29
+- Nginx: merged msbeton-prod config do single `msbeton` (cleanup)
+- Admin PWA: apple-touch-icon fix (iOS bral klientsku ikonu, nie admin)
+- Admin PWA: auto-redirect z `/` v standalone mode odstránený (blink bug)
+- Admin nav mobile: SERVER zobrazený 2x (main tab + VIAC) — opravené
+- Footer mobile: 2-stĺpcový layout (Brand full-width, Odkazy|Kontakt vedľa seba)
+- Footer: vertikálna deliaca čiara medzi Odkazy a Kontakt
+- Klient štatistiky: oddeľovač tisícov pre € hodnotu (`toLocaleString`)
+- SEO: LocalBusiness schema — Žilina adresa prevádzky + ConcreteContractor + areaServed
+- GBP: profil vytvorený — Ready-Mix Concrete Supplier, 6 fotiek, logo, popis, 7 services
+- Server security logs: nginx 4xx/5xx/WP probes/rate limits/fail2ban v ServerTab
+- Nové položky: #67 GBP, #68 Sociálne siete, #69 Reviews, #70 GBP Posts, #71 fail2ban HTTP, #72 Remote backup
 
 ### Iterácia #4 — 2026-05-27
 - buildBreakdown: sentinel prefix `"HLAVNÁ "` (HTML badge z `row.l` odstránený → čistý JSON), `q?` field pre Množstvo stĺpec
@@ -159,8 +179,11 @@
 
 ## Ďalšie priority (odporúčané poradie)
 
-1. **#16 GDPR consent banner (rozšírený)** — právna povinnosť (~3h)
-2. **#11 HttpOnly session cookie** — bezpečnosť (~2h)
-3. **#50 CSV export objednávok** — accounting need (~1h)
-4. **#10, 24 Cloudflare** — čaká na migráciu domény (externé)
-5. **#53 Admin nav grouping** — UX (~30min)
+1. **#69 Reviews stratégia** — QR kód + review link na stránke — priamy vplyv na GBP ranking (~1h)
+2. **#68 Sociálne siete** — FB page minimálne, pre sameAs + GBP prepojenie (~2h)
+3. **#71 fail2ban HTTP jail** — WP skenery zapĺňajú logy (~30min)
+4. **#16 GDPR consent banner (rozšírený)** — právna povinnosť (~3h)
+5. **#11 HttpOnly session cookie** — bezpečnosť (~2h)
+6. **#50 CSV export objednávok** — accounting need (~1h)
+7. **#10, 24 Cloudflare** — čaká na NS prepnutie (externé)
+8. **#72 Remote DB backup** — single point of failure (~1h)
