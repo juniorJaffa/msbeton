@@ -310,7 +310,7 @@ export default function AdminLogin() {
         <div className="bg-[#32334a] border border-white/10 p-4 space-y-3">
           <p className="text-white/60 text-xs font-bold uppercase tracking-widest">Overenie – nie ste robot</p>
           <div className="flex items-center gap-3">
-            <div className="flex-1 bg-[#1e1f2e] px-4 py-2 text-white font-bold text-sm text-center border border-white/10">
+            <div className="flex-1 bg-[#1e1f2e] px-2 py-2 text-white font-bold text-sm text-center border border-white/10 whitespace-nowrap">
               Koľko je <span className="text-primary">{captcha.a}</span> + <span className="text-primary">{captcha.b}</span> ?
             </div>
             <input type="number" value={captchaInput} onChange={e => setCaptchaInput(e.target.value)}

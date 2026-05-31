@@ -2071,11 +2071,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                   </span>
                 )}
               </div>
-              {(t === "pumpa" || t === "mix") && (
-                <span className={cn("text-[10px] font-medium transition-colors text-center px-1", tab === t ? "text-white/70" : "text-white/30 group-hover:text-white/50")}>
-                  {t === "pumpa" ? `${pumpCap}m³ · 28m` : `${mixCap}m³`}
-                </span>
-              )}
+              <span className={cn("text-[10px] font-medium transition-colors text-center px-1", tab === t ? "text-white/70" : "text-white/30 group-hover:text-white/50")}>
+                {t === "pumpa" ? `${pumpCap}m³ · 28m` : t === "mix" ? `${mixCap}m³` : "bez dopravy"}
+              </span>
             </button>
           ))}
         </div>
