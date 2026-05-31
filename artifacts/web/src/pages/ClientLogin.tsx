@@ -276,7 +276,7 @@ export default function ClientLogin() {
                   <div className="bg-white/5 border border-white/10 rounded-lg px-4 py-3">
                     <div className="flex items-center gap-3">
                       <div className="flex-1">
-                        <p className="text-white/50 text-xs mb-2 uppercase tracking-wider">Koľko je <span className="text-primary font-black">{captcha.a}</span> + <span className="text-primary font-black">{captcha.b}</span> ?</p>
+                        <p className="text-white/50 text-xs mb-2 uppercase tracking-wider whitespace-nowrap">Koľko je <span className="text-primary font-black">{captcha.a}</span> + <span className="text-primary font-black">{captcha.b}</span> ?</p>
                         <input
                           type="number"
                           value={captchaInput}

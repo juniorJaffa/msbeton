@@ -22,8 +22,8 @@ function MathCheck({ captcha, input, setInput, onRefresh }: { captcha: { a: numb
         <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">Nie ste robot</p>
         <button type="button" onClick={onRefresh} className="text-white/30 hover:text-primary transition-colors cursor-pointer text-sm leading-none" title="Nová otázka">↺</button>
       </div>
-      <div className="px-3 py-3 flex items-center gap-3">
-        <span className="text-white/70 text-sm font-medium shrink-0">Koľko je</span>
+      <div className="px-3 py-3 flex items-center gap-2 flex-nowrap">
+        <span className="text-white/70 text-sm font-medium shrink-0 whitespace-nowrap">Koľko je</span>
         <span className="text-primary font-black text-xl">{captcha.a}</span>
         <span className="text-white/40 font-bold">+</span>
         <span className="text-primary font-black text-xl">{captcha.b}</span>
