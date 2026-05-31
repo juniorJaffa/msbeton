@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --config vite.config.ts --host 0.0.0.0",
-    "build": "vite build --config vite.config.ts && sed 's|href=\"/manifest.json\"|href=\"/admin-manifest.json\"|g' dist/public/index.html > dist/public/admin-index.html",
+    "build": "vite build --config vite.config.ts && sed 's|href=\"/manifest.json\"|href=\"/admin-manifest.json\"|g; s|href=\"/apple-touch-icon-v2.png\"|href=\"/admin-apple-touch-icon.png\"|g' dist/public/index.html > dist/public/admin-index.html",
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
