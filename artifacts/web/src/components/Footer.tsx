@@ -7,7 +7,7 @@ const SOCIAL_LINKS = {
   google:    "https://share.google/v0karW4pcckzNpeY",
 };
 
-const REVIEW_URL = "https://share.google/v0karW4pcckzNpeY";
+const REVIEW_URL = "https://g.page/r/CeTg2gjXL3dWEBM/review";
 
 function FacebookIcon() {
   return (
