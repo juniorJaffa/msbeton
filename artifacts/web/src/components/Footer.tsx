@@ -53,26 +53,20 @@ export function Footer() {
               Žilina betón
             </p>
 
-            {/* Social icons — zobrazí sa len keď URL nie je "#" */}
-            {[
-              { href: SOCIAL_LINKS.facebook,  label: "Facebook",  Icon: FacebookIcon },
-              { href: SOCIAL_LINKS.instagram, label: "Instagram", Icon: InstagramIcon },
-              { href: SOCIAL_LINKS.linkedin,  label: "LinkedIn",  Icon: LinkedInIcon },
-            ].some(s => s.href !== "#") && (
-              <div className="flex items-center gap-2 pt-1">
-                {[
-                  { href: SOCIAL_LINKS.facebook,  label: "Facebook",  Icon: FacebookIcon },
-                  { href: SOCIAL_LINKS.instagram, label: "Instagram", Icon: InstagramIcon },
-                  { href: SOCIAL_LINKS.linkedin,  label: "LinkedIn",  Icon: LinkedInIcon },
-                ].filter(s => s.href !== "#").map(({ href, label, Icon }) => (
-                  <a key={label} href={href} target="_blank" rel="noopener noreferrer"
-                    className="w-8 h-8 rounded-full bg-white/8 hover:bg-primary hover:text-secondary text-white/50 flex items-center justify-center transition-all duration-200"
-                    aria-label={label}>
-                    <Icon />
-                  </a>
-                ))}
-              </div>
-            )}
+            {/* Social icons */}
+            <div className="flex items-center gap-2 pt-1">
+              {[
+                { href: SOCIAL_LINKS.facebook,  label: "Facebook",  Icon: FacebookIcon },
+                { href: SOCIAL_LINKS.instagram, label: "Instagram", Icon: InstagramIcon },
+                { href: SOCIAL_LINKS.linkedin,  label: "LinkedIn",  Icon: LinkedInIcon },
+              ].map(({ href, label, Icon }) => (
+                <a key={label} href={href} target={href !== "#" ? "_blank" : undefined} rel="noopener noreferrer"
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${href !== "#" ? "bg-white/8 hover:bg-primary hover:text-secondary text-white/50" : "bg-white/5 text-white/20 cursor-default"}`}
+                  aria-label={label}>
+                  <Icon />
+                </a>
+              ))}
+            </div>
 
             {/* Review CTA */}
             <a href={REVIEW_URL} target="_blank" rel="noopener noreferrer"
