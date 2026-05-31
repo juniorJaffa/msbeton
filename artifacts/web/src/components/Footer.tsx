@@ -4,7 +4,6 @@ const SOCIAL_LINKS = {
   facebook:  "#",      // TODO: https://facebook.com/msbeton
   instagram: "#",      // TODO: https://instagram.com/msbeton
   linkedin:  "#",      // TODO: https://linkedin.com/company/msbeton
-  google:    "https://share.google/v0karW4pcckzNpeY",
 };
 
 const REVIEW_URL = "https://g.page/r/CeTg2gjXL3dWEBM/review";
@@ -33,13 +32,6 @@ function LinkedInIcon() {
   );
 }
 
-function GoogleMapsIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-      <path d="M12 0C7.802 0 4 3.403 4 7.602 4 11.8 7.469 16.812 12 24c4.531-7.188 8-12.2 8-16.398C20 3.403 16.199 0 12 0zm0 11a3 3 0 110-6 3 3 0 010 6z"/>
-    </svg>
-  );
-}
 
 export function Footer() {
   return (

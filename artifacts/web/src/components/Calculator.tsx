@@ -2061,8 +2061,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                   <circle cx="49" cy="40" r="4.5" strokeWidth="1.8" />
                 </svg>
               )}
-              <div className="flex items-center gap-1 justify-center">
-                <span className={cn("font-black text-xs tracking-widest transition-colors", tab === t ? "text-primary" : "text-white/50 group-hover:text-white/80")}>
+              <div className="flex items-center gap-1 justify-center flex-nowrap">
+                <span className={cn("font-black text-xs tracking-widest transition-colors whitespace-nowrap", tab === t ? "text-primary" : "text-white/50 group-hover:text-white/80")}>
                   {t === "pumpa" ? "PUMPA" : t === "mix" ? "MIX" : "VL. DOPRAVA"}
                 </span>
                 {tab === t && (

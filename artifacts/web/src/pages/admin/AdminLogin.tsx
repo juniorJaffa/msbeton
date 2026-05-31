@@ -283,7 +283,7 @@ export default function AdminLogin() {
           style={{ position: "absolute", left: "-9999px", opacity: 0, height: 0 }} aria-hidden="true" />
         <div>
           <label className="block text-white/70 text-xs font-bold uppercase tracking-widest mb-2">
-            E-mail alebo užívateľské meno
+            Prihlasovacie meno
           </label>
           <div className="relative">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />

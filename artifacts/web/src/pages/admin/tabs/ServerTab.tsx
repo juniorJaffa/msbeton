@@ -340,12 +340,32 @@ export default function ServerTab() {
           <span className="text-[11px] text-gray-400">{data?.backups.length ?? 0} / 14</span>
         </div>
 
-        {/* Last log */}
-        {data?.lastLog && (
-          <div className="px-4 py-2 bg-gray-50 border-t border-gray-100">
-            <div className="text-[11px] font-mono text-gray-500 whitespace-pre-wrap leading-relaxed">{data.lastLog}</div>
-          </div>
-        )}
+        {/* Last log — parsed */}
+        {data?.lastLog && (() => {
+          const lines = data.lastLog.trim().split("\n").filter(Boolean);
+          const parsed = lines.map(line => {
+            const m = line.match(/(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}):\d{2} (OK|FAIL) [^\s]+ \((\d+[KMG]?)\)/);
+            if (!m) return null;
+            const [, date, time, status, size] = m;
+            const [y, mo, d] = date.split("-");
+            return { label: `${d}.${mo}.${y} ${time}`, ok: status === "OK", size };
+          }).filter(Boolean);
+          if (!parsed.length) return null;
+          return (
+            <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 space-y-1">
+              <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Cron história</div>
+              {parsed.map((p, i) => p && (
+                <div key={i} className="flex items-center justify-between text-xs">
+                  <span className="font-mono text-gray-600">{p.label}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-400">{p.size}</span>
+                    <span className={p.ok ? "text-green-600 font-bold" : "text-red-600 font-bold"}>{p.ok ? "✓ OK" : "✗ FAIL"}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* Trigger backup */}
         <div className="px-4 py-3 border-t border-gray-200 space-y-2">
@@ -365,7 +385,12 @@ export default function ServerTab() {
           </button>
           <p className="text-[11px] text-gray-400 text-center flex items-center justify-center gap-1">
             <Clock className="w-3 h-3" />
-            {data?.backupCron ?? "Automatická záloha každý deň o 02:00"}
+            {data?.backupCron ? (() => {
+              const c = data.backupCron.trim();
+              const m = c.match(/^(\d+)\s+(\d+)\s+\*\s+\*\s+\*$/);
+              if (m) return `Automatická záloha každý deň o ${m[2].padStart(2,"0")}:${m[1].padStart(2,"0")}`;
+              return `Automatická záloha (${c})`;
+            })() : "Automatická záloha každý deň o 02:00"}
           </p>
         </div>
       </div>
