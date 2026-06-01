@@ -222,7 +222,7 @@ export default function Cennik() {
     <div className="min-h-screen bg-secondary">
       <SEOHead
         title="Cenník betónu"
-        description="Aktuálny cenník betónu MS-BETON s.r.o. – drvené a okrúhle kamenivo, všetky triedy pevnosti. Ceny dopravy a čerpania betónu pumpa Žilina."
+        description="Aktuálny cenník betónu MS-BETON, spol. s r.o. – drvené a okrúhle kamenivo, všetky triedy pevnosti. Ceny dopravy a čerpania betónu pumpa Žilina."
         canonical="/cennik"
       />
       <Navbar />

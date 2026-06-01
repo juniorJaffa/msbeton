@@ -227,7 +227,7 @@ export default function VozovyPark() {
     <div className="min-h-screen bg-secondary">
       <SEOHead
         title="Vozový park"
-        description="Vozový park MS-BETON s.r.o. – betón pumpa s dosahom 28 m a domiešavač 9 m³. Moderná technika pre spoľahlivú dopravu betónu v Žilinskom kraji."
+        description="Vozový park MS-BETON, spol. s r.o. – betón pumpa s dosahom 28 m a domiešavač 9 m³. Moderná technika pre spoľahlivú dopravu betónu v Žilinskom kraji."
         canonical="/vozovy-park"
       />
       <Navbar />

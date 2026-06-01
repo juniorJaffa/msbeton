@@ -13,7 +13,7 @@ const ADMIN_CLIENT: LoggedClient = {
   id: "admin",
   clientId: "msbeton",
   name: "Admin",
-  company: "MS-BETON s.r.o.",
+  company: "MS-BETON, spol. s r.o.",
   discountBeton: 0,
   discountDoprava: 0,
   discountSluzby: 0,

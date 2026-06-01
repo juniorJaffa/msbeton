@@ -268,7 +268,7 @@ export default function AdminLogin() {
         </div>
 
         <p className="text-center text-white/30 text-xs mt-6 flex items-center justify-center gap-2">
-          <span>© {new Date().getFullYear()} MS-BETON s.r.o. — Administrácia</span>
+          <span>© {new Date().getFullYear()} MS-BETON, spol. s r.o. — Administrácia</span>
           <VersionBadge className="text-white/30" />
         </p>
       </div>

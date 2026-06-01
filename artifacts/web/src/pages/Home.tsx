@@ -223,7 +223,7 @@ export default function Home() {
                 KVALITA, NA KTORÚ SA MÔŽETE <span className="text-gradient">SPOĽAHNÚŤ</span>
               </motion.h3>
               <motion.p variants={fadeInUp} className="text-gray-700 text-lg mb-6 leading-relaxed">
-                Spoločnosť MS-BETON s.r.o. patrí medzi popredných poskytovateľov riešení pre dovoz betónu v Žiline. Vďaka modernému vozovému parku – od betónových mixérov až po pumpy – zvládame projekty všetkých veľkostí. Zabezpečujeme kvalitný betón presne tam, kde a kedy ho potrebujete.
+                Spoločnosť MS-BETON, spol. s r.o. patrí medzi popredných poskytovateľov riešení pre dovoz betónu v Žiline. Vďaka modernému vozovému parku – od betónových mixérov až po pumpy – zvládame projekty všetkých veľkostí. Zabezpečujeme kvalitný betón presne tam, kde a kedy ho potrebujete.
               </motion.p>
               <motion.ul variants={staggerContainer} className="space-y-2.5 mb-5">
                 {[

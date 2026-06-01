@@ -1,1 +1,2 @@
 - [Git commits — author pravidlo](feedback_git_author.md) — nikdy Co-Authored-By Claude; commit author = kubincanek@gmail.com
+- [DNS migrácia msbeton.sk](project_dns_migration.md) — plán krokov, DNS záznamy, post-migration SEO checklist

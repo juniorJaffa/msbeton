@@ -1,7 +1,7 @@
 import { Helmet } from "react-helmet-async";
 
 const SITE_URL = "https://msbeton.sk";
-const SITE_NAME = "MS-BETON s.r.o.";
+const SITE_NAME = "MS-BETON, spol. s r.o.";
 const DEFAULT_DESCRIPTION =
   "Výroba a doprava betónu v Žiline a okolí. Betón pumpa 28 m, domiešavač 9 m³. Rýchla doprava, spoľahlivý servis. Kontaktujte nás pre cenovú ponuku.";
 const OG_IMAGE = `${SITE_URL}/opengraph.jpg`;

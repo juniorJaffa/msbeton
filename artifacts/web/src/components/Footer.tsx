@@ -132,7 +132,7 @@ export function Footer() {
         </div>
 
         <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-white/40">
-          <p>© {new Date().getFullYear()} MS-BETON s.r.o. Všetky práva vyhradené.</p>
+          <p>© {new Date().getFullYear()} MS-BETON, spol. s r.o. Všetky práva vyhradené.</p>
           <div className="flex gap-4 mt-4 md:mt-0">
             <a href="/ochrana-osobnych-udajov" className="hover:text-white transition-colors">Ochrana osobných údajov</a>
             <a href="/vop" className="hover:text-white transition-colors">VOP</a>
