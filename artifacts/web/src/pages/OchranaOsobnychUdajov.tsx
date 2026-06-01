@@ -8,6 +8,7 @@ export default function OchranaOsobnychUdajov() {
       <SEOHead
         title="Ochrana osobných údajov | MS-BETON"
         description="Zásady ochrany osobných údajov spoločnosti MS-BETON, spol. s r.o."
+        canonical="/ochrana-osobnych-udajov"
       />
       <Navbar />
       <main className="flex-1 max-w-3xl mx-auto px-4 py-12 sm:py-16">

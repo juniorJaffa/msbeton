@@ -8,6 +8,7 @@ export default function VOP() {
       <SEOHead
         title="Všeobecné obchodné podmienky | MS-BETON"
         description="Všeobecné obchodné podmienky spoločnosti MS-BETON, spol. s r.o."
+        canonical="/vop"
       />
       <Navbar />
       <main className="flex-1 max-w-3xl mx-auto px-4 py-12 sm:py-16">
