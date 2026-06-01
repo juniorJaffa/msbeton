@@ -1,4 +1,4 @@
-const CACHE = "msbeton-v1";
+const CACHE = "msbeton-v2";
 const OFFLINE = "/offline.html";
 
 self.addEventListener("install", e => {
@@ -32,7 +32,7 @@ self.addEventListener("fetch", e => {
         return res;
       })
       .catch(() =>
-        caches.match(e.request).then(cached => cached ?? caches.match(OFFLINE))
+        caches.match(e.request, { ignoreSearch: true }).then(cached => cached ?? caches.match(OFFLINE))
       )
   );
 });
