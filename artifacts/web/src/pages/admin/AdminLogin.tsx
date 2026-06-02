@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { SEOHead } from "@/components/SEOHead";
 import { Eye, EyeOff, Lock, User, AlertCircle, Clock, Fingerprint } from "lucide-react";
 import {
-  loginWithApi, isLoggedIn, getAttemptInfo, recordFailedAttempt, resetAttempts,
+  loginWithApi, login, isLoggedIn, getAttemptInfo, recordFailedAttempt, resetAttempts,
   isBiometricAvailable, hasStoredCredential, authenticateBiometric, registerBiometric, clearBiometric,
 } from "@/lib/adminAuth";
 import { VersionBadge } from "@/components/VersionBadge";
