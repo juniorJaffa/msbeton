@@ -89,7 +89,7 @@ export default function SluzbyTab({ onGoToDoprava, scrollToPumpa, onScrollDone }
   const toggle = (id: string) => save(services.map(s => s.id === id ? { ...s, active: !s.active } : s));
   const remove = (id: string) => { if (confirm("Vymazať službu?")) save(services.filter(s => s.id !== id)); };
   const update = (id: string, field: keyof Service, value: string) =>
-    save(services.map(s => s.id === id ? { ...s, [field]: (field === "price" || field === "maxMeters") ? (parseFloat(value) || 0) : (value === "—" ? undefined : value) } : s));
+    save(services.map(s => s.id === id ? { ...s, [field]: (field === "price" || field === "maxMeters") ? Math.max(0, parseFloat(value) || 0) : (value === "—" ? undefined : value) } : s));
 
   const parsePeriodDate = (v: string) => { const [dd, mm] = v.split("."); return dd && mm ? `${mm}-${dd}` : ""; };
   const add = () => {

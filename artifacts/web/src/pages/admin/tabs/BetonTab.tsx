@@ -127,12 +127,12 @@ export default function BetonTab() {
 
   const addType = (catId: string) => {
     if (!newTypeName.trim() || !newTypePrice) return;
-    save(cats.map(c => c.id === catId ? { ...c, types: [...c.types, { id: adminData.generateId(), label: newTypeName.trim(), price: parseFloat(newTypePrice) }] } : c));
+    save(cats.map(c => c.id === catId ? { ...c, types: [...c.types, { id: adminData.generateId(), label: newTypeName.trim(), price: Math.max(0, parseFloat(newTypePrice) || 0) }] } : c));
     setNewTypeName(""); setNewTypePrice(""); setAddingType(null);
   };
   const deleteType = (catId: string, typeId: string) => save(cats.map(c => c.id === catId ? { ...c, types: c.types.filter(t => t.id !== typeId) } : c));
   const updateType = (catId: string, typeId: string, field: keyof ConcreteType, value: string) =>
-    save(cats.map(c => c.id === catId ? { ...c, types: c.types.map(t => t.id === typeId ? { ...t, [field]: field === "price" ? parseFloat(value) : value } : t) } : c));
+    save(cats.map(c => c.id === catId ? { ...c, types: c.types.map(t => t.id === typeId ? { ...t, [field]: field === "price" ? Math.max(0, parseFloat(value) || 0) : value } : t) } : c));
 
   // Category drag handlers
   const onCatDragStart = (e: React.DragEvent, id: string) => {

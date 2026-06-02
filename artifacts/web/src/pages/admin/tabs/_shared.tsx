@@ -27,10 +27,12 @@ export function EditableField({ value, onSave, type = "text" }: { value: string 
       {type === "number" ? (
         <input
           type="number"
+          min="0"
+          step="any"
           value={val}
           onChange={e => setVal(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); save(); } if (e.key === "Escape") cancel(); }}
-          onBlur={save}
+          onBlur={e => { if (parseFloat(e.target.value) < 0) setVal("0"); save(); }}
           className="bg-amber-50 border-2 border-primary px-2.5 py-1 text-secondary text-sm focus:outline-none rounded-sm w-28 text-right"
           autoFocus
           onFocus={e => e.target.select()}
