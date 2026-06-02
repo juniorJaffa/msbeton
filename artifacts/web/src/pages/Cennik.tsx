@@ -35,7 +35,7 @@ function BetonovyTab() {
             >
               <span className="font-bold text-sm tracking-widest uppercase text-primary">{cat.name}</span>
               <div className="flex items-center gap-2.5">
-                <span className="text-[11px] text-white/30">{cat.types.filter(t => t.price > 0 && t.label.trim()).length} typov</span>
+                <span className="text-[11px] text-white/30">{cat.types.filter(t => t.label.trim()).length} typov</span>
                 <ChevronDown
                   className={`w-4 h-4 transition-transform duration-200 ${open === cat.id ? "rotate-180 text-primary" : "text-white/40"}`}
                 />
@@ -60,7 +60,7 @@ function BetonovyTab() {
                       </tr>
                     </thead>
                     <tbody>
-                      {cat.types.filter(t => t.price > 0 && t.label.trim()).map((t, i) => (
+                      {cat.types.filter(t => t.label.trim()).map((t, i) => (
                         <tr key={t.id} className={`border-b border-white/5 hover:bg-primary/5 transition-colors ${i % 2 === 0 ? "bg-white/3" : "bg-white/5"}`}>
                           <td className="px-5 py-3 text-white/85 font-medium">{t.label}</td>
                           <td className="px-4 py-3 text-center text-white/30 hidden sm:table-cell text-xs">1 m³</td>
