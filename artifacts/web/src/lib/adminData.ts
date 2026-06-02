@@ -360,37 +360,44 @@ function saveData<T>(key: string, data: T): void {
 }
 
 export async function syncFromServer(): Promise<void> {
-  // Bez platného admin JWT → preskočiť API volania, použiť localStorage/defaults
-  if (!isLoggedIn()) return;
+  const hasData = (v: unknown) => v !== null && v !== undefined && !(Array.isArray(v) && v.length === 0);
+  const hasDataOrEmpty = (v: unknown) => v !== null && v !== undefined && Array.isArray(v);
+  let updated = false;
   try {
-    const [cats, delivery, services, clients, tzones, tsettings, orders] = await Promise.all([
+    // Public endpoints — vždy fetchovať (kalkulačka potrebuje aktuálne dáta aj bez admin loginu)
+    const [cats, delivery, services, tzones, tsettings] = await Promise.all([
       adminApi.getCategories(),
       adminApi.getDelivery(),
       adminApi.getServices(),
-      adminApi.getClients(),
       adminApi.getTransportZones(),
       adminApi.getTransportSettings(),
-      adminApi.getOrders(),
     ]);
-    const hasData = (v: unknown) => v !== null && v !== undefined && !(Array.isArray(v) && v.length === 0);
-    const hasDataOrEmpty = (v: unknown) => v !== null && v !== undefined && Array.isArray(v);
-    let updated = false;
     if (hasData(cats?.data)) { saveData("msbeton_categories", cats!.data); updated = true; }
     else { const local = loadData<unknown>("msbeton_categories", null); if (local) adminApi.saveCategories(local); }
     if (hasData(delivery?.data)) { saveData("msbeton_delivery", delivery!.data); updated = true; }
     else { const local = loadData<unknown>("msbeton_delivery", null); if (local) adminApi.saveDelivery(local); }
     if (hasData(services?.data)) { saveData("msbeton_services", services!.data); updated = true; }
     else { const local = loadData<unknown>("msbeton_services", null); if (local) adminApi.saveServices(local); }
-    if (hasDataOrEmpty(clients?.data)) { saveData("msbeton_clients", clients!.data); updated = true; }
-    else { const local = loadData<Client[]>("msbeton_clients", []); if (local.length > 0) adminApi.saveClients(local); }
     if (hasData(tzones?.data)) { saveData("msbeton_transport_zones", tzones!.data); updated = true; }
     else { const local = loadData<unknown>("msbeton_transport_zones", null); if (local) adminApi.saveTransportZones(local); }
     if (hasData(tsettings?.data)) { saveData("msbeton_transport_settings", tsettings!.data); updated = true; }
     else { const local = loadData<unknown>("msbeton_transport_settings", null); if (local) adminApi.saveTransportSettings(local); }
-    if (hasDataOrEmpty(orders?.data)) { saveData("msbeton_orders", orders!.data); updated = true; }
-    if (updated) window.dispatchEvent(new Event("admin-data-synced"));
   } catch {
   }
+  // Admin-only endpoints — len s platným JWT
+  if (isLoggedIn()) {
+    try {
+      const [clients, orders] = await Promise.all([
+        adminApi.getClients(),
+        adminApi.getOrders(),
+      ]);
+      if (hasDataOrEmpty(clients?.data)) { saveData("msbeton_clients", clients!.data); updated = true; }
+      else { const local = loadData<Client[]>("msbeton_clients", []); if (local.length > 0) adminApi.saveClients(local); }
+      if (hasDataOrEmpty(orders?.data)) { saveData("msbeton_orders", orders!.data); updated = true; }
+    } catch {
+    }
+  }
+  if (updated) window.dispatchEvent(new Event("admin-data-synced"));
 }
 
 export const adminData = {

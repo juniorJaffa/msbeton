@@ -27,8 +27,6 @@ router.post("/login", loginRateLimit, async (req, res) => {
   res.json({ ok: true, token: signAdminToken() });
 });
 
-router.use(requireAdminJwt);
-
 const KEYS = {
   categories: "categories",
   delivery: "delivery",
@@ -55,28 +53,40 @@ async function setConfig(key: string, data: unknown): Promise<void> {
     });
 }
 
+// Public read-only endpoints — kalkulačka ich potrebuje bez admin JWT
 router.get("/categories", async (req, res) => {
   try { res.json({ data: await getConfig(KEYS.categories) }); }
   catch (err) { req.log.error({ err }, "Failed to get categories"); res.status(500).json({ error: "Internal server error" }); }
 });
+router.get("/delivery", async (req, res) => {
+  try { res.json({ data: await getConfig(KEYS.delivery) }); }
+  catch (err) { req.log.error({ err }, "Failed to get delivery"); res.status(500).json({ error: "Internal server error" }); }
+});
+router.get("/services", async (req, res) => {
+  try { res.json({ data: await getConfig(KEYS.services) }); }
+  catch (err) { req.log.error({ err }, "Failed to get services"); res.status(500).json({ error: "Internal server error" }); }
+});
+router.get("/transport-zones", async (req, res) => {
+  try { res.json({ data: await getConfig(KEYS.transportZones) }); }
+  catch (err) { req.log.error({ err }, "Failed to get transport zones"); res.status(500).json({ error: "Internal server error" }); }
+});
+router.get("/transport-settings", async (req, res) => {
+  try { res.json({ data: await getConfig(KEYS.transportSettings) }); }
+  catch (err) { req.log.error({ err }, "Failed to get transport settings"); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.use(requireAdminJwt);
+
 router.put("/categories", async (req, res) => {
   try { await setConfig(KEYS.categories, req.body); res.json({ ok: true }); }
   catch (err) { req.log.error({ err }, "Failed to save categories"); res.status(500).json({ error: "Internal server error" }); }
 });
 
-router.get("/delivery", async (req, res) => {
-  try { res.json({ data: await getConfig(KEYS.delivery) }); }
-  catch (err) { req.log.error({ err }, "Failed to get delivery"); res.status(500).json({ error: "Internal server error" }); }
-});
 router.put("/delivery", async (req, res) => {
   try { await setConfig(KEYS.delivery, req.body); res.json({ ok: true }); }
   catch (err) { req.log.error({ err }, "Failed to save delivery"); res.status(500).json({ error: "Internal server error" }); }
 });
 
-router.get("/services", async (req, res) => {
-  try { res.json({ data: await getConfig(KEYS.services) }); }
-  catch (err) { req.log.error({ err }, "Failed to get services"); res.status(500).json({ error: "Internal server error" }); }
-});
 router.put("/services", async (req, res) => {
   try { await setConfig(KEYS.services, req.body); res.json({ ok: true }); }
   catch (err) { req.log.error({ err }, "Failed to save services"); res.status(500).json({ error: "Internal server error" }); }
@@ -91,19 +101,11 @@ router.put("/clients", async (req, res) => {
   catch (err) { req.log.error({ err }, "Failed to save clients"); res.status(500).json({ error: "Internal server error" }); }
 });
 
-router.get("/transport-zones", async (req, res) => {
-  try { res.json({ data: await getConfig(KEYS.transportZones) }); }
-  catch (err) { req.log.error({ err }, "Failed to get transport zones"); res.status(500).json({ error: "Internal server error" }); }
-});
 router.put("/transport-zones", async (req, res) => {
   try { await setConfig(KEYS.transportZones, req.body); res.json({ ok: true }); }
   catch (err) { req.log.error({ err }, "Failed to save transport zones"); res.status(500).json({ error: "Internal server error" }); }
 });
 
-router.get("/transport-settings", async (req, res) => {
-  try { res.json({ data: await getConfig(KEYS.transportSettings) }); }
-  catch (err) { req.log.error({ err }, "Failed to get transport settings"); res.status(500).json({ error: "Internal server error" }); }
-});
 router.put("/transport-settings", async (req, res) => {
   try { await setConfig(KEYS.transportSettings, req.body); res.json({ ok: true }); }
   catch (err) { req.log.error({ err }, "Failed to save transport settings"); res.status(500).json({ error: "Internal server error" }); }
