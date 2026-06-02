@@ -342,7 +342,7 @@ export default function ServerTab() {
 
         {/* Last log — parsed */}
         {data?.lastLog && (() => {
-          const lines = data.lastLog.trim().split("\n").filter(Boolean);
+          const lines = data.lastLog.trim().split("\n").filter(Boolean).reverse();
           const parsed = lines.map(line => {
             const m = line.match(/(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}):\d{2} (OK|FAIL) [^\s]+ \((\d+[KMG]?)\)/);
             if (!m) return null;
