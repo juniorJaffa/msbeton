@@ -49,6 +49,16 @@ function App() {
   useEffect(() => {
     syncFromServer();
     clientAuth.refreshSession();
+
+    // Refresh dát pri návrate na tab + každé 2 minúty
+    const onVisible = () => { if (document.visibilityState === "visible") syncFromServer(); };
+    document.addEventListener("visibilitychange", onVisible);
+    const interval = setInterval(syncFromServer, 2 * 60 * 1000);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      clearInterval(interval);
+    };
   }, []);
 
   return (
