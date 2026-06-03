@@ -884,7 +884,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
           const clientZone = c.deliveryZoneId ? zones.find(z => z.id === c.deliveryZoneId) : zones[0];
           const zonePricingType = clientZone?.pricingType ?? "standard";
           return (
-            <div key={c.id} id={`client-card-${c.id}`} className={cn("border shadow-sm overflow-hidden transition-opacity", c.isOwner ? "bg-amber-50 border-primary/40" : "bg-white border-gray-200", !c.active && !c.isOwner && "opacity-50")}>
+            <div key={c.id} id={`client-card-${c.id}`} className={cn("border shadow-sm overflow-hidden transition-opacity border-l-4", c.isOwner ? "bg-amber-50 border-primary/40 border-l-primary" : !c.active ? "bg-white border-gray-200 border-l-red-400 opacity-50" : "bg-white border-gray-200 border-l-green-500")}>
               {/* Card header */}
               <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => { const next = isExpanded ? null : c.id; setExpanded(next); if (next) scrollToClientCard(next, true); }}>
                 {/* Avatar + active dot */}
@@ -947,7 +947,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                     </span>
                   )}
                   {hasLogin ? (
-                    <span className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase rounded-sm ${c.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                    <span className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase rounded-sm ${c.active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>
                       {c.active ? <ShieldCheck className="w-4 h-4" /> : <ShieldOff className="w-4 h-4" />}
                       {c.active ? "Aktívny" : "Neaktívny"}
                     </span>
