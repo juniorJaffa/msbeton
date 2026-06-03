@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Pencil, Check, X } from "lucide-react";
 import { getAdminToken } from "@/lib/adminAuth";
+import { useToast } from "@/hooks/use-toast";
 
 export function authFetch(url: string, opts?: RequestInit): Promise<Response> {
   const token = getAdminToken();
@@ -13,7 +14,17 @@ export function authFetch(url: string, opts?: RequestInit): Promise<Response> {
 export function EditableField({ value, onSave, type = "text" }: { value: string | number; onSave: (v: string) => void; type?: string }) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(String(value));
-  const save = () => { onSave(val); setEditing(false); };
+  const { toast } = useToast();
+  const save = () => {
+    if (type === "number" && parseFloat(val) < 0) {
+      toast({ title: "Záporná hodnota nie je povolená", description: "Minimálna hodnota je 0.", variant: "destructive", duration: 3000 });
+      setVal("0");
+      onSave("0");
+      setEditing(false);
+      return;
+    }
+    onSave(val); setEditing(false);
+  };
   const cancel = () => { setVal(String(value)); setEditing(false); };
   const startEdit = () => { setVal(String(value)); setEditing(true); };
   if (!editing) return (

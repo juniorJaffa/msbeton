@@ -877,13 +877,14 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
         {filtered.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">Žiadni klienti.</p>}
         {filtered.map(c => {
           const isExpanded = expanded === c.id;
+          const isHashedPass = c.password?.startsWith("$2b$") || c.password?.startsWith("$2a$");
           const hasLogin = !!(c.loginId && c.password);
           const fullName = [c.firstName, c.lastName].filter(Boolean).join(" ") || "—";
           const maxDisc = Math.max(c.discountBeton ?? 0, c.discountDoprava ?? 0, c.discountSluzby ?? 0, c.discountCelkovo ?? 0);
           const clientZone = c.deliveryZoneId ? zones.find(z => z.id === c.deliveryZoneId) : zones[0];
           const zonePricingType = clientZone?.pricingType ?? "standard";
           return (
-            <div key={c.id} id={`client-card-${c.id}`} className={cn("border shadow-sm overflow-hidden", c.isOwner ? "bg-amber-50 border-primary/40" : "bg-white border-gray-200")}>
+            <div key={c.id} id={`client-card-${c.id}`} className={cn("border shadow-sm overflow-hidden transition-opacity", c.isOwner ? "bg-amber-50 border-primary/40" : "bg-white border-gray-200", !c.active && !c.isOwner && "opacity-50")}>
               {/* Card header */}
               <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => { const next = isExpanded ? null : c.id; setExpanded(next); if (next) scrollToClientCard(next, true); }}>
                 {/* Avatar + active dot */}
@@ -1118,7 +1119,9 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                           <div className="flex items-center gap-2 px-3 py-2">
                             <span className="text-gray-400 text-xs w-14 shrink-0">Heslo</span>
                             <span className="font-mono text-secondary text-sm flex-1">
-                              {showPass.has(c.id) ? (c.password || "—") : (c.password ? "••••••" : "—")}
+                              {isHashedPass
+                                ? <span className="text-gray-400 text-xs italic">Zmenené klientom</span>
+                                : showPass.has(c.id) ? (c.password || "—") : (c.password ? "••••••" : "—")}
                             </span>
                             <button onClick={() => togglePassVis(c.id)} className="text-gray-400 hover:text-secondary shrink-0">
                               {showPass.has(c.id) ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
