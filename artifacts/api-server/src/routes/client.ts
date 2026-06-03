@@ -165,6 +165,8 @@ function buildClientResponse(account: UnifiedClient) {
     phone: account.phone ?? "",
     canHotovost: account.canHotovost ?? true,
     canPridatBeton: account.canPridatBeton ?? true,
+    canPridatBetonOwn: account.canPridatBetonOwn ?? true,
+    allowExtraOverload: account.allowExtraOverload ?? false,
     deliveryZoneId: account.deliveryZoneId,
     canZimneOpatrenia: account.canZimneOpatrenia ?? false,
     hotovostDph: account.hotovostDph,
