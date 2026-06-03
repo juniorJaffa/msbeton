@@ -140,7 +140,7 @@ function exportClientPricePDF(client: Client, priceMode: "faktura" | "hotovost",
   // Betóny
   const betonHtml = categories.map(cat => {
     const rows: Array<[string, string, string, string?]> = cat.types
-      .filter(t => t.price > 0 && t.label.trim())
+      .filter(t => t.label.trim())
       .map(t => {
         const orig = t.price * hotovostMult;
         const manual = mp[t.id] !== undefined ? mp[t.id] * hotovostMult : undefined;

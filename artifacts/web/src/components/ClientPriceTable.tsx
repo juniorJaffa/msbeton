@@ -237,7 +237,7 @@ export function ClientPriceTable({
               {cat.name}
               <DiscBadge pct={effectiveBeton} dark={dark} />
             </div>
-            {cat.types.filter((t) => t.price > 0 && t.label.trim()).map((t, i) => {
+            {cat.types.filter((t) => t.label.trim()).map((t, i) => {
               const betonOrig = t.price * hotovostMult;
               const betonManual = manualPrices?.[t.id] !== undefined ? manualPrices[t.id] * hotovostMult : undefined;
               const betonEdit = onManualPriceChange
