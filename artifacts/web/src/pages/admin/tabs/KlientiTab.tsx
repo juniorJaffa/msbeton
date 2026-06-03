@@ -434,7 +434,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
       discountCelkovo: parseFloat(form.discountCelkovo) || 0,
       hotovostDph: (() => { const v = parseFloat(form.hotovostDph); return Number.isNaN(v) ? 0.20 : v / 100; })(),
       canHotovost: form.canHotovost, canPridatBeton: form.canPridatBeton,
-      canPridatBetonOwn: form.canPridatBetonOwn || undefined,
+      canPridatBetonOwn: form.canPridatBetonOwn,
       canZimneOpatrenia: form.canZimneOpatrenia,
       smsOrderDisabled: form.smsOrderDisabled || undefined,
       smsShareOnly: form.smsShareOnly || undefined,
