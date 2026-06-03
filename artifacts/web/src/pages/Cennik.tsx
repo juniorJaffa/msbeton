@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, Phone, ArrowRight } from "lucide-react";
 import { SEOHead } from "@/components/SEOHead";
@@ -217,6 +217,12 @@ type TabId = typeof TABS[number]["id"];
 
 export default function Cennik() {
   const [activeTab, setActiveTab] = useState<TabId>("betony");
+  const [, setRevision] = useState(0);
+  useEffect(() => {
+    const h = () => setRevision(r => r + 1);
+    window.addEventListener("admin-data-synced", h);
+    return () => window.removeEventListener("admin-data-synced", h);
+  }, []);
 
   return (
     <div className="min-h-screen bg-secondary">

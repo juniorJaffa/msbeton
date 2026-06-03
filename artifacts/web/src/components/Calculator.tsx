@@ -791,15 +791,19 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     if (!fresh) return loggedClientState;
     return {
       ...loggedClientState,
-      manualPrices:      fresh.manualPrices,
-      discountBeton:     fresh.discountBeton     ?? loggedClientState.discountBeton,
-      discountDoprava:   fresh.discountDoprava   ?? loggedClientState.discountDoprava,
-      discountSluzby:    fresh.discountSluzby    ?? loggedClientState.discountSluzby,
-      discountCelkovo:   fresh.discountCelkovo   ?? loggedClientState.discountCelkovo,
-      canHotovost:       fresh.canHotovost       ?? loggedClientState.canHotovost,
-      hotovostDph:       fresh.hotovostDph,
-      deliveryZoneId:    fresh.deliveryZoneId,
-      sharedLink:        fresh.sharedLink        ?? loggedClientState.sharedLink,
+      manualPrices:        fresh.manualPrices,
+      discountBeton:       fresh.discountBeton       ?? loggedClientState.discountBeton,
+      discountDoprava:     fresh.discountDoprava     ?? loggedClientState.discountDoprava,
+      discountSluzby:      fresh.discountSluzby      ?? loggedClientState.discountSluzby,
+      discountCelkovo:     fresh.discountCelkovo     ?? loggedClientState.discountCelkovo,
+      canHotovost:         fresh.canHotovost         ?? loggedClientState.canHotovost,
+      canPridatBeton:      fresh.canPridatBeton      ?? loggedClientState.canPridatBeton,
+      canPridatBetonOwn:   fresh.canPridatBetonOwn   ?? loggedClientState.canPridatBetonOwn,
+      canZimneOpatrenia:   fresh.canZimneOpatrenia   ?? loggedClientState.canZimneOpatrenia,
+      allowExtraOverload:  fresh.allowExtraOverload  ?? loggedClientState.allowExtraOverload,
+      hotovostDph:         fresh.hotovostDph,
+      deliveryZoneId:      fresh.deliveryZoneId,
+      sharedLink:          fresh.sharedLink          ?? loggedClientState.sharedLink,
     };
   }, [clientOverride, loggedClientState, allClients]);
 
@@ -1664,6 +1668,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     lines.push(`Čas vystavenia   - ${fmtTime}`);
     lines.push(div);
 
+    const smsAddToMainQty = result.concreteBreakdown.slice(1).reduce((s, c, i) => {
+      const q = parseFloat(extraItems[i]?.quantity ?? "0") || 0;
+      return (q > 0 && extraItems[i]?.transportMode === "addToMain") ? s + c.qty : s;
+    }, 0);
+
     result.concreteBreakdown.forEach((ci, ciIdx) => {
       const concreteVal = isFaktura ? ci.bezDphFinal : ci.bezDphFinalHotovost;
       const unitPrice = ci.qty > 0 ? concreteVal / ci.qty : 0;
@@ -1689,7 +1698,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
           const zone = result.transportZone;
           const effectiveRate = zone.ratePerM3 * result.fTransport;
           lines.push(`Doprava od ${zone.fromKm}km do ${zone.toKm}km`);
-          lines.push(rowUnit(`${ci.qty}m³`, effectiveRate, transportDisc));
+          const smsQtyStr = ciIdx === 0 && smsAddToMainQty > 0 ? `${ci.qty}+${smsAddToMainQty}m³` : `${ci.qty}m³`;
+          lines.push(rowUnit(smsQtyStr, effectiveRate, transportDisc));
           if (ci.transportFillup > 0) {
             const fillupDisc = ci.transportFillup * result.fFillup;
             lines.push(`Doťaženie do ${ci.transportFillupTarget}m³`);
