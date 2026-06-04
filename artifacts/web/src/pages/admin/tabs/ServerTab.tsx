@@ -319,7 +319,7 @@ export default function ServerTab() {
           <div className="px-4 py-6 text-center text-sm text-gray-400">Žiadne zálohy nenájdené</div>
         )}
 
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-gray-100 max-h-[280px] overflow-y-auto">
           {data?.backups.map((b, i) => {
             const isLast = i === 0;
             const isDeleting = deletingFile === b.file;
@@ -346,8 +346,8 @@ export default function ServerTab() {
         </div>
 
         <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-          <span className="text-[11px] text-gray-400">Automatická rotácia: max 14 kópií</span>
-          <span className="text-[11px] text-gray-400">{data?.backups.length ?? 0} / 14</span>
+          <span className="text-[11px] text-gray-400">Automatická rotácia: max 10 kópií</span>
+          <span className="text-[11px] text-gray-400">{data?.backups.length ?? 0} / 10</span>
         </div>
 
         {/* Last log — parsed */}
