@@ -1660,7 +1660,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       `${(qty + " x " + unit.toFixed(2) + " €").padEnd(22)}= ${total.toFixed(2)} €`;
 
     const lines: string[] = [];
-    lines.push(div, "          MS-BETON", "      Cenová ponuka", div);
+    lines.push(div, "    MS-BETON, spol. s r.o.", "      Cenová ponuka", div);
     if (mapPlusCode) lines.push(`${mapPlusCode}${mapLocality ? " · " + mapLocality : ""} – ${result.km}km`);
     else if (address) lines.push(`${address} – ${result.km}km`);
     else if (result.km > 0) lines.push(`${result.km}km`);
