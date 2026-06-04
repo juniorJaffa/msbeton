@@ -804,6 +804,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       hotovostDph:         fresh.hotovostDph,
       deliveryZoneId:      fresh.deliveryZoneId,
       sharedLink:          fresh.sharedLink          ?? loggedClientState.sharedLink,
+      smsOrderDisabled:    fresh.smsOrderDisabled    ?? loggedClientState.smsOrderDisabled,
+      smsShareOnly:        fresh.smsShareOnly        ?? loggedClientState.smsShareOnly,
     };
   }, [clientOverride, loggedClientState, allClients]);
 

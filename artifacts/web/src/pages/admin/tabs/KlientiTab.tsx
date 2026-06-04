@@ -1431,6 +1431,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                         clientId: c.loginId ?? "",
                         name: [c.firstName, c.lastName].filter(Boolean).join(" ") || c.company || c.id,
                         company: c.company ?? "",
+                        email: c.email,
                         phone: c.phone ?? "",
                         discountBeton: c.discountBeton ?? 0,
                         discountDoprava: c.discountDoprava ?? 0,
@@ -1445,6 +1446,8 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                         deliveryZoneId: c.deliveryZoneId,
                         manualPrices: c.manualPrices,
                         sharedLink: c.sharedLink,
+                        smsOrderDisabled: c.smsOrderDisabled ?? false,
+                        smsShareOnly: c.smsShareOnly ?? false,
                       }} />
                     </div>
                   )}
