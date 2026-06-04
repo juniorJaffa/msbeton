@@ -536,12 +536,17 @@ router.get("/server-status", async (req, res) => {
       return m[1].trim().split(/\s+/).slice(0, 10);
     }, [] as string[]);
 
+    const wpBantime = safe(() => {
+      const out = execSync("fail2ban-client get nginx-wp-scan bantime 2>/dev/null", { encoding: "utf-8", timeout: 3000 });
+      return parseInt(out.trim()) || 86400;
+    }, 86400);
+
     const topIps = Object.entries(ipCounts)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([ip, count]) => ({ ip, count }));
 
-    return { hits4xx, hits5xx, wpProbes, rateLimitHits, bannedIps, wpBannedList, topIps };
+    return { hits4xx, hits5xx, wpProbes, rateLimitHits, bannedIps, wpBannedList, wpBantime, topIps };
   })();
 
   res.json({ pm2, disk, dbSize, uptime, backups, lastLog, sslExpiry, backupCron, security });

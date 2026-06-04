@@ -17,8 +17,18 @@ interface ServerStatus {
     rateLimitHits: number;
     bannedIps: number;
     wpBannedList: string[];
+    wpBantime: number;
     topIps: { ip: string; count: number }[];
   };
+}
+
+function fmtBantime(secs: number): string {
+  if (secs < 0) return "∞";
+  const h = Math.floor(secs / 3600);
+  const d = Math.floor(h / 24);
+  if (d > 0) return `BAN ${d}d`;
+  if (h > 0) return `BAN ${h}h`;
+  return `BAN ${Math.floor(secs / 60)}m`;
 }
 
 function fmtUptime(ms: number): string {
@@ -276,7 +286,7 @@ export default function ServerTab() {
               {data.security.wpBannedList.map(ip => (
                 <div key={ip} className="flex items-center justify-between">
                   <span className="text-xs font-mono text-white/60">{ip}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 font-bold">BAN 24h</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 font-bold">{fmtBantime(data.security.wpBantime ?? 86400)}</span>
                 </div>
               ))}
             </div>
