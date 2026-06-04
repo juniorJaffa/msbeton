@@ -495,7 +495,7 @@ router.get("/server-status", async (req, res) => {
   const backupCron = "0 2 * * * (každý deň 02:00)";
 
   // Security: nginx 4xx/5xx, WP probes, PM2 rate limits, fail2ban
-  const security = (() => {
+  const security = await (async () => {
     const d = new Date();
     const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     const todayNginx = `${String(d.getDate()).padStart(2,"0")}/${months[d.getMonth()]}/${d.getFullYear()}`;
