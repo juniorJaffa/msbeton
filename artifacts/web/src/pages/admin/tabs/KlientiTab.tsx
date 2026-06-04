@@ -593,8 +593,15 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
       <div id="klienti-sticky" className="sticky top-0 z-20">
       <div id="klienti-toolbar" className="shadow-sm">
         <div className="py-2 px-1 bg-white border-b border-gray-100">
-          <input placeholder="Hľadať klienta..." value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full bg-gray-50 text-secondary placeholder:text-gray-400 px-4 py-2.5 text-sm focus:outline-none rounded border border-gray-200 focus:border-primary" />
+          <div className="relative">
+            <input placeholder="Hľadať klienta..." value={search} onChange={e => setSearch(e.target.value)}
+              className="w-full bg-gray-50 text-secondary placeholder:text-gray-400 px-4 py-2.5 pr-9 text-sm focus:outline-none rounded border border-gray-200 focus:border-primary" />
+            {search && (
+              <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors" aria-label="Vyčistiť hľadanie">
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-3 px-4 py-2 bg-secondary text-white text-xs font-black uppercase tracking-widest">
           <div className="w-9 shrink-0 flex items-center justify-center">
