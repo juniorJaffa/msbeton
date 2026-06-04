@@ -24,8 +24,11 @@ jobs:
             pnpm install --frozen-lockfile --ignore-scripts
             pnpm --filter @workspace/api-server run build
             PORT=3001 BASE_PATH=/ pnpm --filter @workspace/web run build
-            mkdir -p artifacts/web/dist/public/videos
-            cp artifacts/web/public/videos/hero-video.mp4 artifacts/web/dist/public/videos/hero-video.mp4
+            # Nginx servuje /images/ a /videos/ priamo z public/ — dist kópie nepotrebné
+            rm -rf artifacts/web/dist/public/images artifacts/web/dist/public/videos
+            # Permissions pre nginx alias (git reset --hard ich resetuje na 700/600)
+            chmod -R o+rX artifacts/web/public/images/ 2>/dev/null || true
+            chmod -R o+rX artifacts/web/public/videos/ 2>/dev/null || true
             DATABASE_URL=$(node -e "const c=require('./ecosystem.config.cjs');console.log(c.apps[0].env.DATABASE_URL)") \
               pnpm --filter @workspace/db run push
             pm2 delete msbeton-api || true
