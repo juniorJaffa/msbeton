@@ -1438,6 +1438,8 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                         discountCelkovo: c.discountCelkovo ?? 0,
                         canHotovost: c.canHotovost ?? true,
                         canPridatBeton: c.canPridatBeton ?? true,
+                        canPridatBetonOwn: c.canPridatBetonOwn ?? true,
+                        allowExtraOverload: c.allowExtraOverload ?? false,
                         canZimneOpatrenia: c.canZimneOpatrenia ?? false,
                         hotovostDph: c.hotovostDph,
                         deliveryZoneId: c.deliveryZoneId,
