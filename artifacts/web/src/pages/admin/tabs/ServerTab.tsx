@@ -386,6 +386,27 @@ export default function ServerTab() {
           );
         })()}
 
+        {/* Pravidlá retenie */}
+        <div className="px-4 py-2 bg-blue-50 border-t border-blue-100 space-y-1">
+          <div className="text-[10px] text-blue-500 uppercase tracking-wider font-bold mb-1">Pravidlá</div>
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-gray-500">DB zálohy</span>
+            <span className="text-gray-700 font-mono">max 10 kópií · denná 02:00</span>
+          </div>
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-gray-500">Systemd journal</span>
+            <span className="text-gray-700 font-mono">max 7 dní · auto vacuum</span>
+          </div>
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-gray-500">Nginx / syslog logy</span>
+            <span className="text-gray-700 font-mono">max 7 dní · logrotate daily</span>
+          </div>
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-gray-500">pnpm store prune</span>
+            <span className="text-gray-700 font-mono">každú nedeľu 03:30</span>
+          </div>
+        </div>
+
         {/* Trigger backup */}
         <div className="px-4 py-3 border-t border-gray-200 space-y-2">
           {backupMsg && (
