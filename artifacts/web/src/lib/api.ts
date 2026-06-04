@@ -63,6 +63,7 @@ export interface LoggedClient {
   canHotovost: boolean;
   canPridatBeton: boolean;
   canPridatBetonOwn?: boolean;
+  allowExtraOverload?: boolean;
   deliveryZoneId?: string;
   canZimneOpatrenia?: boolean;
   hotovostDph?: number;

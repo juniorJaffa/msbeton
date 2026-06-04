@@ -4,8 +4,8 @@ import { useLocation } from "wouter";
 import { SEOHead } from "@/components/SEOHead";
 import { Eye, EyeOff, Lock, User, AlertCircle, Clock, Fingerprint } from "lucide-react";
 import {
-  loginWithApi, login, isLoggedIn, getAttemptInfo, recordFailedAttempt, resetAttempts,
-  isBiometricAvailable, hasStoredCredential, authenticateBiometric, registerBiometric, clearBiometric,
+  loginWithApi, isLoggedIn, getAttemptInfo, recordFailedAttempt, resetAttempts,
+  isBiometricAvailable, hasStoredCredential, authenticateBiometricAndGetToken, registerBiometric, clearBiometric,
 } from "@/lib/adminAuth";
 import { VersionBadge } from "@/components/VersionBadge";
 
@@ -57,9 +57,8 @@ export default function AdminLogin() {
 
     if (isBiometricAvailable() && hasStoredCredential()) {
       setScreen("bio-pending");
-      authenticateBiometric().then(result => {
+      authenticateBiometricAndGetToken().then(result => {
         if (result.ok) {
-          login();
           navigate("/admin/dashboard");
         } else {
           setScreen("bio-failed");
@@ -91,8 +90,8 @@ export default function AdminLogin() {
 
   const retryBiometric = () => {
     setScreen("bio-pending");
-    authenticateBiometric().then(result => {
-      if (result.ok) { login(); navigate("/admin/dashboard"); }
+    authenticateBiometricAndGetToken().then(result => {
+      if (result.ok) { navigate("/admin/dashboard"); }
       else setScreen("bio-failed");
     });
   };

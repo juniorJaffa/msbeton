@@ -179,3 +179,21 @@ export async function authenticateBiometric(): Promise<{ ok: boolean; error?: st
     return { ok: false, error: msg };
   }
 }
+
+// Combines WebAuthn challenge + server JWT issuance.
+// Replaces the old pattern of authenticateBiometric() + login() (noop).
+export async function authenticateBiometricAndGetToken(): Promise<{ ok: boolean; error?: string }> {
+  const bioResult = await authenticateBiometric();
+  if (!bioResult.ok) return bioResult;
+  try {
+    const res = await fetch("/api/admin/biometric-token", { method: "POST" });
+    const data = await res.json() as { ok: boolean; token?: string };
+    if (data.ok && data.token) {
+      localStorage.setItem(TOKEN_KEY, data.token);
+      return { ok: true };
+    }
+    return { ok: false, error: "Token refresh failed" };
+  } catch {
+    return { ok: false, error: "Server nedostupný" };
+  }
+}

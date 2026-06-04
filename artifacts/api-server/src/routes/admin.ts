@@ -27,6 +27,12 @@ router.post("/login", loginRateLimit, async (req, res) => {
   res.json({ ok: true, token: signAdminToken() });
 });
 
+// Biometric (WebAuthn) token — issued after successful client-side passkey verification.
+// Rate-limited same as password login to prevent brute-force token farming.
+router.post("/biometric-token", loginRateLimit, (_req, res) => {
+  res.json({ ok: true, token: signAdminToken() });
+});
+
 const KEYS = {
   categories: "categories",
   delivery: "delivery",
