@@ -529,7 +529,7 @@ router.get("/server-status", async (req, res) => {
       return (m1 ? parseInt(m1[1]) : 0) + (m2 ? parseInt(m2[1]) : 0);
     }, 0);
 
-    const wpBannedList = safe(() => {
+    const rawBannedList = safe(() => {
       const out = execSync("fail2ban-client status nginx-wp-scan 2>/dev/null", { encoding: "utf-8", timeout: 3000 });
       const m = out.match(/Banned IP list:\s*(.+)/);
       if (!m || !m[1].trim()) return [] as string[];
@@ -540,6 +540,27 @@ router.get("/server-status", async (req, res) => {
       const out = execSync("fail2ban-client get nginx-wp-scan bantime 2>/dev/null", { encoding: "utf-8", timeout: 3000 });
       return parseInt(out.trim()) || 86400;
     }, 86400);
+
+    // GeoIP info for banned IPs via ip-api.com batch (free, no key needed)
+    interface IpGeo { ip: string; country?: string; countryCode?: string; org?: string; }
+    let wpBannedList: IpGeo[] = rawBannedList.map(ip => ({ ip }));
+    if (rawBannedList.length > 0) {
+      try {
+        const geoRes = await fetch("http://ip-api.com/batch?fields=query,country,countryCode,org", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(rawBannedList.map(ip => ({ query: ip }))),
+          signal: AbortSignal.timeout(4000),
+        });
+        if (geoRes.ok) {
+          const geoData = await geoRes.json() as Array<{ query: string; country?: string; countryCode?: string; org?: string; status?: string }>;
+          wpBannedList = rawBannedList.map(ip => {
+            const g = geoData.find(r => r.query === ip);
+            return { ip, country: g?.status !== "fail" ? g?.country : undefined, countryCode: g?.status !== "fail" ? g?.countryCode : undefined, org: g?.status !== "fail" ? g?.org : undefined };
+          });
+        }
+      } catch { /* geo lookup optional */ }
+    }
 
     const topIps = Object.entries(ipCounts)
       .sort((a, b) => b[1] - a[1])
