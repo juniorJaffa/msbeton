@@ -4,7 +4,7 @@ import type { Request, Response, NextFunction } from "express";
 const SECRET = process.env.ADMIN_JWT_SECRET ?? "dev-insecure-change-in-prod";
 
 export function signAdminToken(): string {
-  return jwt.sign({ role: "admin" }, SECRET, { expiresIn: "8h" });
+  return jwt.sign({ role: "admin" }, SECRET, { expiresIn: "30d" });
 }
 
 export function requireAdminJwt(req: Request, res: Response, next: NextFunction): void {
