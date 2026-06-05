@@ -230,6 +230,7 @@ export default function Cennik() {
         title="Cenník betónu"
         description="Aktuálny cenník betónu MS-BETON, spol. s r.o. – drvené a okrúhle kamenivo, všetky triedy pevnosti. Ceny dopravy a čerpania betónu pumpa Žilina."
         canonical="/cennik"
+        image="/images/concrete-pure.jpg"
       />
       <Navbar />
 

@@ -11,12 +11,14 @@ interface SEOHeadProps {
   description?: string;
   canonical?: string;
   noindex?: boolean;
+  image?: string;
 }
 
-export function SEOHead({ title, description, canonical, noindex = false }: SEOHeadProps) {
+export function SEOHead({ title, description, canonical, noindex = false, image }: SEOHeadProps) {
   const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} | Žilina – betón, pumpa, domiešavač`;
   const metaDesc = description ?? DEFAULT_DESCRIPTION;
   const canonicalUrl = canonical ? `${SITE_URL}${canonical}` : SITE_URL;
+  const ogImage = image ? `${SITE_URL}${image}` : OG_IMAGE;
 
   return (
     <Helmet>
@@ -33,7 +35,7 @@ export function SEOHead({ title, description, canonical, noindex = false }: SEOH
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={metaDesc} />
       <meta property="og:url" content={canonicalUrl} />
-      <meta property="og:image" content={OG_IMAGE} />
+      <meta property="og:image" content={ogImage} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
       <meta property="og:locale" content="sk_SK" />
