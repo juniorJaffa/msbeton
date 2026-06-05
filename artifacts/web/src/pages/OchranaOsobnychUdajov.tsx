@@ -9,7 +9,7 @@ export default function OchranaOsobnychUdajov() {
         title="Ochrana osobných údajov | MS-BETON"
         description="Zásady ochrany osobných údajov spoločnosti MS-BETON, spol. s r.o. – GDPR informácie o spracúvaní osobných údajov."
         canonical="/ochrana-osobnych-udajov"
-        image="/images/vozovy-park/ms-beton-man-cifa-pumpa-oporny-mur-horsky-teren.jpg"
+        image="/images/vozovy-park/ms-beton-man-pumpa-zrubovy-dom-betonaz.jpg"
       />
       <Navbar />
       <main className="flex-1 max-w-3xl mx-auto px-4 py-12 sm:py-16">
