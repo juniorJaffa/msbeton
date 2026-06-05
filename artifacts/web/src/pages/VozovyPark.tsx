@@ -15,12 +15,12 @@ const stagger = { show: { transition: { staggerChildren: 0.07 } } };
 const PF = "brightness(0.88) contrast(1.18) saturate(1.12)";
 
 const HERO_SLIDES = [
-  { src: "ms-beton-pumpa-scania-hory-cerpanie-betonu-zilina.jpg", pos: "28% 36%" },
-  { src: "ms-beton-man-pumpa-logo-cesta-lesny-teren-zilina.jpg", pos: "35% 40%" },
+  { src: "ms-beton-pumpa-cerpanie-priemyselny-objekt.jpg", pos: "28% 36%" },
+  { src: "ms-beton-pumpa-mixer-sumrak.jpg", pos: "46% 32%" },
   { src: "ms-beton-pumpa-scania-zilinsky-kraj.jpg", pos: "25% 34%", flip: true },
-  { src: "ms-beton-man-cifa-pumpa-oporny-mur-horsky-teren.jpg", pos: "25% 33%" },
-  { src: "ms-beton-pumpa-scania-priemyselna-hala-armovanie.jpg", pos: "40% 37%" },
-  { src: "ms-beton-man-pumpa-zrubova-chata-horska-zakazka.jpg", pos: "42% 37%" },
+  { src: "ms-beton-pumpa-scania-rodinny-dom.jpg", pos: "50% 40%" },
+  { src: "ms-beton-pumpa-man-mixer-jarne-zakazky.jpg", pos: "25% 33%", flip: true },
+  { src: "ms-beton-pumpa-mixer-hruba-stavba.jpg", pos: "42% 37%" },
 ];
 
 const MARQUEE_PHOTOS = [
