@@ -1,7 +1,7 @@
 import { Mail, MapPin, Phone, Star } from "lucide-react";
 
 const SOCIAL_LINKS = {
-  facebook:  "#",      // TODO: https://facebook.com/msbeton
+  facebook:  "https://www.facebook.com/msbetonzilina",
   instagram: "https://www.instagram.com/msbeton_sro",
   linkedin:  "#",      // TODO: https://linkedin.com/company/msbeton
 };
