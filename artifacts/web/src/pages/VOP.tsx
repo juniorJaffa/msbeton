@@ -7,8 +7,9 @@ export default function VOP() {
     <div className="min-h-screen flex flex-col" style={{ fontFamily: "Montserrat, sans-serif" }}>
       <SEOHead
         title="Všeobecné obchodné podmienky | MS-BETON"
-        description="Všeobecné obchodné podmienky spoločnosti MS-BETON, spol. s r.o."
+        description="Všeobecné obchodné podmienky spoločnosti MS-BETON, spol. s r.o. – podmienky dodávky betónu, dopravy a súvisiacich služieb."
         canonical="/vop"
+        image="/ms-beton-pumpa-betonu-zilina-scania.jpg"
       />
       <Navbar />
       <main className="flex-1 max-w-3xl mx-auto px-4 py-12 sm:py-16">

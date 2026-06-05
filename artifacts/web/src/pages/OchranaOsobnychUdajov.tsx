@@ -7,8 +7,9 @@ export default function OchranaOsobnychUdajov() {
     <div className="min-h-screen flex flex-col" style={{ fontFamily: "Montserrat, sans-serif" }}>
       <SEOHead
         title="Ochrana osobných údajov | MS-BETON"
-        description="Zásady ochrany osobných údajov spoločnosti MS-BETON, spol. s r.o."
+        description="Zásady ochrany osobných údajov spoločnosti MS-BETON, spol. s r.o. – GDPR informácie o spracúvaní osobných údajov."
         canonical="/ochrana-osobnych-udajov"
+        image="/ms-beton-doprava-betonu-zilinsky-kraj.jpg"
       />
       <Navbar />
       <main className="flex-1 max-w-3xl mx-auto px-4 py-12 sm:py-16">
