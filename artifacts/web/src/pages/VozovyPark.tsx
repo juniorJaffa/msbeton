@@ -15,22 +15,24 @@ const stagger = { show: { transition: { staggerChildren: 0.07 } } };
 const PF = "brightness(0.88) contrast(1.18) saturate(1.12)";
 
 const HERO_SLIDES = [
-  { src: "ms-beton-pumpa-cerpanie-priemyselny-objekt.jpg", pos: "28% 36%" },
-  { src: "ms-beton-pumpa-mixer-sumrak.jpg", pos: "46% 32%" },
+  { src: "ms-beton-pumpa-scania-hory-cerpanie-betonu-zilina.jpg", pos: "28% 36%" },
+  { src: "ms-beton-man-pumpa-logo-cesta-lesny-teren-zilina.jpg", pos: "35% 40%" },
   { src: "ms-beton-pumpa-scania-zilinsky-kraj.jpg", pos: "25% 34%", flip: true },
-  { src: "ms-beton-pumpa-scania-rodinny-dom.jpg", pos: "50% 40%" },
-  { src: "ms-beton-pumpa-man-mixer-jarne-zakazky.jpg", pos: "25% 33%", flip: true },
-  { src: "ms-beton-pumpa-mixer-hruba-stavba.jpg", pos: "42% 37%" },
+  { src: "ms-beton-man-cifa-pumpa-oporny-mur-horsky-teren.jpg", pos: "25% 33%" },
+  { src: "ms-beton-pumpa-scania-priemyselna-hala-armovanie.jpg", pos: "40% 37%" },
+  { src: "ms-beton-man-pumpa-zrubova-chata-horska-zakazka.jpg", pos: "42% 37%" },
 ];
 
 const MARQUEE_PHOTOS = [
-  { src: "/images/vozovy-park/ms-beton-pumpa-man-tga-reprezentativna.jpg",    pos: "center 40%" },
-  { src: "/images/vozovy-park/ms-beton-domiesavac-beton-krajina.jpg",         pos: "center 32%" },
-  { src: "/images/vozovy-park/ms-beton-man-tga-prijazd-na-zakazku.jpg",       pos: "center 35%" },
-  { src: "/images/vozovy-park/ms-beton-pumpa-mixer-hruba-stavba.jpg",         pos: "center 40%" },
-  { src: "/images/vozovy-park/ms-beton-pumpa-mixer-zakazka-z-vysky.jpg",      pos: "center 38%" },
-  { src: "/images/vozovy-park/ms-beton-pumpa-scania-rodinny-dom.jpg",         pos: "center 36%" },
-  { src: "/images/vozovy-park/ms-beton-2-pumpy-mixer-kompletna-zakazka.jpg",  pos: "center 30%" },
+  { src: "/images/vozovy-park/ms-beton-pumpa-man-tga-reprezentativna.jpg",                   pos: "center 40%" },
+  { src: "/images/vozovy-park/ms-beton-pumpa-scania-hory-cerpanie-betonu-zilina.jpg",        pos: "center 38%" },
+  { src: "/images/vozovy-park/ms-beton-man-pumpa-logo-cesta-lesny-teren-zilina.jpg",         pos: "center 42%" },
+  { src: "/images/vozovy-park/ms-beton-domiesavac-beton-krajina.jpg",                        pos: "center 32%" },
+  { src: "/images/vozovy-park/ms-beton-man-cifa-pumpa-oporny-mur-horsky-teren.jpg",          pos: "center 35%" },
+  { src: "/images/vozovy-park/ms-beton-pumpa-scania-priemyselna-hala-armovanie.jpg",         pos: "center 40%" },
+  { src: "/images/vozovy-park/ms-beton-man-pumpa-zrubova-chata-horska-zakazka.jpg",          pos: "center 38%" },
+  { src: "/images/vozovy-park/ms-beton-pumpa-mixer-zakazka-z-vysky.jpg",                     pos: "center 38%" },
+  { src: "/images/vozovy-park/ms-beton-2-pumpy-mixer-kompletna-zakazka.jpg",                 pos: "center 30%" },
 ];
 
 type GalleryCat = "vsetko" | "pumpa" | "mix" | "spolu" | "hadice";
@@ -90,6 +92,15 @@ const GALLERY_PHOTOS: GalleryPhoto[] = [
   { src: "ms-beton-pumpa-pohladz-na-stavenisko.jpg",      cat: "pumpa",  label: "Zákazka s pumpou — pohľad na celé stavenisko",       sub: "Pumpa",             pos: "center 45%" },
   { src: "ms-beton-pumpa-scania-rodinny-dom.jpg",         cat: "pumpa",  label: "Pumpa Scania — čerpanie pri rodinnom dome",          sub: "Pumpa · Scania",    top: true, pos: "center 48%" },
   { src: "ms-beton-man-tga-prijazd-na-zakazku.jpg",       cat: "pumpa",  label: "MS-BETON MAN TGA — príjazd na zákazku",             sub: "Pumpa · MAN",       pos: "center 45%" },
+  { src: "ms-beton-pumpa-scania-hory-cerpanie-betonu-zilina.jpg",    cat: "pumpa",  label: "Pumpa Scania — čerpanie betónu s horami v pozadí",     sub: "Pumpa · Scania",    top: true, pos: "center 38%" },
+  { src: "ms-beton-cifa-magnum-pumpa-betonaz-zakladova-doska.jpg",   cat: "spolu",  label: "CIFA Magnum — betonáž základovej dosky",                sub: "Pumpa + Mix",       top: true, pos: "center 50%" },
+  { src: "ms-beton-pumpa-scania-cerpanie-nad-domom.jpg",             cat: "pumpa",  label: "Pumpa Scania — čerpanie nad rodinným domom",            sub: "Pumpa · Scania",    pos: "center 45%" },
+  { src: "ms-beton-pumpa-scania-priemyselna-hala-armovanie.jpg",     cat: "pumpa",  label: "Pumpa Scania — priemyselná hala, armovanie v popredí",  sub: "Pumpa · Scania",    top: true, pos: "center 42%" },
+  { src: "ms-beton-man-cifa-pumpa-oporny-mur-horsky-teren.jpg",      cat: "spolu",  label: "MAN + CIFA — oporný múr v horskom teréne",              sub: "Pumpa + Mix",       top: true, pos: "center 40%" },
+  { src: "ms-beton-man-pumpa-komercny-objekt-moderna-stavba.jpg",    cat: "pumpa",  label: "MS-BETON MAN — komerčný objekt, moderná stavba",        sub: "Pumpa · MAN",       pos: "center 40%" },
+  { src: "ms-beton-man-pumpa-zrubova-chata-horska-zakazka.jpg",      cat: "pumpa",  label: "MS-BETON MAN — zrubová chata, horská zákazka",          sub: "Pumpa · MAN",       top: true, pos: "center 45%" },
+  { src: "ms-beton-man-cifa-betonaz-tehlovej-hruby-stavby.jpg",      cat: "spolu",  label: "MAN + 2× CIFA — betonáž tehlovej hrubej stavby",        sub: "Pumpa + Mix",       pos: "center 48%" },
+  { src: "ms-beton-man-pumpa-logo-cesta-lesny-teren-zilina.jpg",     cat: "pumpa",  label: "MS-BETON MAN — pumpa na ceste, lesný terén Žilina",     sub: "Pumpa · MAN",       top: true, pos: "center 42%" },
 ];
 
 const TABS: { id: GalleryCat | "videa"; label: string }[] = [
@@ -229,7 +240,7 @@ export default function VozovyPark() {
         title="Vozový park"
         description="Vozový park MS-BETON, spol. s r.o. – betón pumpa s dosahom 28 m a domiešavač 9 m³. Moderná technika pre spoľahlivú dopravu betónu v Žilinskom kraji."
         canonical="/vozovy-park"
-        image="/ms-beton-vozovy-park-pumpa-mixer-zilina.jpg"
+        image="/images/vozovy-park/ms-beton-pumpa-scania-hory-cerpanie-betonu-zilina.jpg"
       />
       <Navbar />
 

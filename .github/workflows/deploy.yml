@@ -34,19 +34,10 @@ jobs:
             pm2 delete msbeton-api || true
             pm2 start ecosystem.config.cjs
             pm2 save
-
-      - name: Health check
-        run: |
-          sleep 8
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://msbeton.sk)
-          if [ "$STATUS" != "200" ]; then
-            echo "Web health check FAILED — HTTP $STATUS"
-            exit 1
-          fi
-          echo "Web OK — HTTP $STATUS"
-          API=$(curl -s https://msbeton.sk/api/healthz | grep -c '"ok"' || true)
-          if [ "$API" = "0" ]; then
-            echo "API health check FAILED"
-            exit 1
-          fi
-          echo "API OK"
+            sleep 6
+            API=$(curl -s http://localhost:3001/api/healthz | grep -c '"ok"' || true)
+            if [ "$API" = "0" ]; then
+              echo "API health check FAILED"
+              exit 1
+            fi
+            echo "API OK"

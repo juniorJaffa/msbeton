@@ -9,7 +9,7 @@ export default function VOP() {
         title="Všeobecné obchodné podmienky | MS-BETON"
         description="Všeobecné obchodné podmienky spoločnosti MS-BETON, spol. s r.o. – podmienky dodávky betónu, dopravy a súvisiacich služieb."
         canonical="/vop"
-        image="/ms-beton-pumpa-betonu-zilina-scania.jpg"
+        image="/images/vozovy-park/ms-beton-man-pumpa-zrubova-chata-horska-zakazka.jpg"
       />
       <Navbar />
       <main className="flex-1 max-w-3xl mx-auto px-4 py-12 sm:py-16">
