@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, HardDrive, Database, Activity, Server, Download, CheckCircle, XCircle, Clock, Archive, Shield, Trash2, AlertTriangle, ShieldAlert } from "lucide-react";
+import { RefreshCw, HardDrive, Database, Activity, Server, Download, CheckCircle, XCircle, Clock, Archive, Shield, Trash2, AlertTriangle, ShieldAlert, Info } from "lucide-react";
 
 interface ServerStatus {
   pm2: { status: string; uptimeMs: number; restarts: number; memoryBytes: number };
@@ -66,6 +66,7 @@ export default function ServerTab() {
   const [backupRunning, setBackupRunning] = useState(false);
   const [backupMsg, setBackupMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [deletingFile, setDeletingFile] = useState<string | null>(null);
+  const [wpInfoOpen, setWpInfoOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -282,7 +283,23 @@ export default function ServerTab() {
             <div className="px-4 py-2 border-t border-white/10 space-y-1">
               <div className="text-[10px] text-red-400/70 uppercase tracking-wider mb-1 flex items-center gap-1">
                 <Shield className="w-3 h-3" /> Banované IP (WP skeny)
+                <button
+                  type="button"
+                  onClick={() => setWpInfoOpen(o => !o)}
+                  className="ml-1 text-white/30 hover:text-white/60 transition-colors"
+                  aria-label="Info o fail2ban"
+                >
+                  <Info className="w-3 h-3" />
+                </button>
               </div>
+              {wpInfoOpen && (
+                <div className="mb-2 px-2.5 py-2 rounded bg-white/5 border border-white/10 text-[10px] text-white/50 leading-relaxed space-y-1">
+                  <div><span className="text-red-400 font-bold">∞ = trvalý zákaz</span> (bantime −1) — zámerné nastavenie, nie chyba.</div>
+                  <div>Všetky IP sú <span className="text-white/70">cloudové VPS</span> (Hetzner, DigitalOcean, Oracle, Azure…) = automatické botnety skenujúce WordPress. Nie sú to ľudia.</div>
+                  <div><span className="text-amber-400">Hetzner IP v zozname ≠ tvoj server</span> — tvoj server má inú IP. Hetzner prenajíma VPS aj útočníkom.</div>
+                  <div className="text-white/30">Zrušiť ručne: <code className="text-white/50">fail2ban-client unban &lt;IP&gt;</code></div>
+                </div>
+              )}
               {data.security.wpBannedList.map(b => {
                 const flag = b.countryCode ? String.fromCodePoint(...b.countryCode.split("").map(c => 0x1F1E6 - 65 + c.charCodeAt(0))) : "";
                 const orgShort = b.org ? b.org.replace(/^AS\d+\s*/i, "").slice(0, 28) : "";
