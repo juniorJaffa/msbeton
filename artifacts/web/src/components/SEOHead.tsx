@@ -4,7 +4,7 @@ const SITE_URL = "https://msbeton.sk";
 const SITE_NAME = "MS-BETON, spol. s r.o.";
 const DEFAULT_DESCRIPTION =
   "Výroba a doprava betónu v Žiline a okolí. Betón pumpa 28 m, domiešavač 9 m³. Rýchla doprava, spoľahlivý servis. Kontaktujte nás pre cenovú ponuku.";
-const OG_IMAGE = `${SITE_URL}/opengraph.jpg`;
+const OG_IMAGE = `${SITE_URL}/ms-beton-spol-sro-zilina-beton-pumpa-domiesavac.jpg`;
 
 interface SEOHeadProps {
   title?: string;
