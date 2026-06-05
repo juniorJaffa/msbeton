@@ -75,8 +75,6 @@ const GALLERY_PHOTOS: GalleryPhoto[] = [
   { src: "ms-beton-betonovanie-s-celym-timom.jpg",        cat: "spolu",  label: "Betonáž — pumpa, domiešavač, celý tím",                 sub: "Pumpa + Mix" },
   { src: "ms-beton-pridavne-hadice-dosah-pumpy.jpg",      cat: "hadice", label: "Prídavné hadice — dosah aj tam kde pumpa nestačí", sub: "Prídavné hadice",      top: true, pos: "center 50%" },
   { src: "ms-beton-hadice-tazko-dostupne-miesta.jpg",     cat: "hadice", label: "Hadice — betonáž ťažko dostupných miest",          sub: "Prídavné hadice" },
-  { src: "ms-beton-cerpanie-pridavne-hadice.jpg",         cat: "hadice", label: "Čerpanie cez prídavné hadice",              sub: "Hadice" },
-  { src: "ms-beton-betonaz-s-hadicami.jpg",               cat: "hadice", label: "Betonáž s hadicami",                        sub: "Hadice" },
   { src: "ms-beton-hadice-rozsireny-dosah.jpg",           cat: "hadice", label: "Rozšírenie dosahu — prídavné hadice",                  sub: "Hadice" },
   { src: "ms-beton-pumpa-cerpanie-priemyselny-objekt.jpg", cat: "pumpa", label: "Pumpa MS-BETON — čerpanie pri priemyselnom objekte",  sub: "Pumpa",     pos: "center 40%" },
   { src: "ms-beton-pumpa-mixer-hruba-stavba.jpg",         cat: "spolu",  label: "Pumpa MAN + domiešavač — betonáž hrubej stavby",     sub: "Pumpa + Mix",       top: true, pos: "center 48%" },
