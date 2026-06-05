@@ -548,7 +548,32 @@ export default function VozovyPark() {
               {activeTab === "videa" ? (
                 <VideasSection />
               ) : (
-                <GalleryGrid photos={filteredPhotos} />
+                <>
+                  <GalleryGrid photos={filteredPhotos} />
+                  {activeTab === "hadice" && (
+                    <motion.div
+                      className="mt-4 relative overflow-hidden rounded-lg"
+                      initial={{ opacity: 0, y: 16 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.4, ease }}
+                    >
+                      <video
+                        src="/images/vozovy-park/ms-beton-hadice-cerpanie-betonu-video.mp4"
+                        poster="/images/vozovy-park/ms-beton-hadice-cerpanie-betonu-poster.jpg"
+                        controls
+                        preload="none"
+                        playsInline
+                        className="w-full rounded-lg object-cover max-h-[420px]"
+                        style={{ filter: "brightness(0.95) contrast(1.08)" }}
+                      />
+                      <div className="mt-1.5 px-1 flex items-center gap-2">
+                        <span className="text-primary text-[9px] font-bold uppercase tracking-[0.25em]">Prídavné hadice</span>
+                        <span className="text-white/40 text-[10px]">— betonáž cez hadice, rozšírenie dosahu pumpy</span>
+                      </div>
+                    </motion.div>
+                  )}
+                </>
               )}
             </motion.div>
           </AnimatePresence>
