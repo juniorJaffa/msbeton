@@ -171,7 +171,7 @@ function TypeSelectField({ label, value, onChange, options, discountFactor = 1, 
           </div>
         </SelectTrigger>
         {/* Mobile scroll: bez position="popper" → Radix item-aligned mode, touch scroll funguje */}
-        <SelectContent className="bg-[#1e293b] border border-white/10 text-white z-[200] max-h-[65vh] overflow-y-auto">
+        <SelectContent className="bg-[#1e293b] border border-white/10 text-white z-[200] max-h-[65vh] overflow-y-auto w-[var(--radix-select-trigger-width)]">
           {options.map((o) => {
             const manual = manualPrices?.[o.id];
             const displayPrice = manual !== undefined ? manual : o.price * discountFactor;
