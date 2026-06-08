@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { SlidersHorizontal, ShoppingCart, MessageSquare, MapPin, Navigation, Copy, Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, AlertTriangle, FileText, Calculator, Users } from "lucide-react";
-import { adminData, adminApi, Order, TransportSettings } from "@/lib/adminData";
+import { SlidersHorizontal, ShoppingCart, MessageSquare, MapPin, Navigation, Copy, Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, AlertTriangle, FileText, Calculator, Users, Mountain, Waves } from "lucide-react";
+import { adminData, adminApi, Order, TransportSettings, getKamenivoGroup } from "@/lib/adminData";
 import { cn, formatPhone } from "@/lib/utils";
 
 const ORDER_STATUSES: { key: Order["status"]; label: string; color: string }[] = [
@@ -822,7 +822,12 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                     </div>
                     {(() => {
                       const cat = o.concreteCategory ?? allCategories.find(c => c.types.some(t => t.label === o.concreteType))?.name;
-                      return cat ? <div className="text-[10px] font-black uppercase tracking-wider text-gray-900">{cat}</div> : null;
+                      const kg = cat ? getKamenivoGroup(cat) : null;
+                      return cat ? <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-gray-900">
+                        {kg === 'drvene' && <Mountain className="w-3 h-3 shrink-0 text-stone-500" />}
+                        {kg === 'riecne' && <Waves className="w-3 h-3 shrink-0 text-blue-400" />}
+                        {cat}
+                      </div> : null;
                     })()}
                     <div className="flex items-center gap-1.5 flex-wrap text-sm">
                       <span className="font-medium text-gray-600">{o.concreteType.replace(/ – [\d.,]+ €.*/, "")}</span>

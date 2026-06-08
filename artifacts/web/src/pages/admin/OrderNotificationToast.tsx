@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from "react";
-import { X, MapPin, Package, CreditCard } from "lucide-react";
+import { X, MapPin, Package, CreditCard, Mountain, Waves } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Order } from "@/lib/adminData";
+import { getKamenivoGroup } from "@/lib/adminData";
 
 interface Props {
   orders: Order[];
@@ -155,9 +156,16 @@ export function OrderNotificationToast({ orders, onDismiss, onOpen }: Props) {
                 <div className="border-t border-white/8 px-2.5 py-1.5 flex items-center gap-2" style={{ background: "rgba(255,255,255,0.02)" }}>
                   <span className="text-white/30 text-[9px] font-bold uppercase tracking-wide shrink-0">Betón</span>
                   <span className="text-white/75 text-[10px] font-bold truncate">{order.concreteType}</span>
-                  {order.concreteCategory && (
-                    <span className="text-primary/60 text-[9px] font-bold shrink-0 truncate">· {order.concreteCategory}</span>
-                  )}
+                  {order.concreteCategory && (() => {
+                    const kg = getKamenivoGroup(order.concreteCategory);
+                    return (
+                      <span className="text-primary/60 text-[9px] font-bold shrink-0 flex items-center gap-0.5">
+                        {kg === 'drvene' && <Mountain className="w-2.5 h-2.5" />}
+                        {kg === 'riecne' && <Waves className="w-2.5 h-2.5" />}
+                        · {order.concreteCategory}
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 {order.phone && (

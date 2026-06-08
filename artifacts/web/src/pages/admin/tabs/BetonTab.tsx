@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronDown, ChevronUp, Pencil, Trash2, Check, X, Plus, GripVertical } from "lucide-react";
-import { adminData, ConcreteCategory, ConcreteType } from "@/lib/adminData";
+import { ChevronDown, ChevronUp, Pencil, Trash2, Check, X, Plus, GripVertical, Mountain, Waves } from "lucide-react";
+import { adminData, ConcreteCategory, ConcreteType, getKamenivoGroup } from "@/lib/adminData";
 import { EditableField } from "./_shared";
 
 export default function BetonTab() {
@@ -271,6 +271,7 @@ export default function BetonTab() {
             {/* Main content */}
             <div className="flex items-center gap-2 min-w-0 flex-1 px-3 py-3">
               <span className="shrink-0">{expanded === cat.id ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}</span>
+              {(() => { const kg = getKamenivoGroup(cat.name); return kg === 'drvene' ? <Mountain className="w-4 h-4 shrink-0 text-stone-500" /> : kg === 'riecne' ? <Waves className="w-4 h-4 shrink-0 text-blue-400" /> : null; })()}
               <span className="font-semibold text-secondary break-words">{cat.name}</span>
               {cat.noDoprava && (
                 <span className="shrink-0 inline-flex items-center gap-0.5 bg-gray-200 text-gray-500 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wide">BEZ DOPRAVY</span>

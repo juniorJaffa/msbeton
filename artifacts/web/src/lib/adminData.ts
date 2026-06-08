@@ -461,3 +461,10 @@ export const adminData = {
 
   generateId: () => Math.random().toString(36).slice(2, 10),
 };
+
+export function getKamenivoGroup(name: string): 'drvene' | 'riecne' | null {
+  const u = name.toUpperCase();
+  if (u.includes('DRVEN')) return 'drvene';
+  if (u.includes('RIEČNE') || u.includes('RIECNE')) return 'riecne';
+  return null;
+}

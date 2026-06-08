@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Truck, LogIn, LogOut, FileText, FileSpreadsheet, FileType2, MessageSquare, Minus, Plus, Trash2, Table2, ShoppingCart, X, Info, Check, ExternalLink, MapPin, Copy, Navigation, Settings2, AlertTriangle, Timer, PenLine } from "lucide-react";
+import { ChevronDown, Truck, LogIn, LogOut, FileText, FileSpreadsheet, FileType2, MessageSquare, Minus, Plus, Trash2, Table2, ShoppingCart, X, Info, Check, ExternalLink, MapPin, Copy, Navigation, Settings2, AlertTriangle, Timer, PenLine, Mountain, Waves } from "lucide-react";
 import { OpenLocationCode } from "open-location-code";
 import { cn, formatPhone, isValidSvkPhone } from "@/lib/utils";
 
@@ -40,7 +40,7 @@ function adjustHHMM(t: string, deltaMins: number): string {
 }
 
 import { PhoneInput } from "@/components/PhoneInput";
-import { adminData } from "@/lib/adminData";
+import { adminData, getKamenivoGroup } from "@/lib/adminData";
 import { clientAuth, type LoggedClient } from "@/lib/clientAuth";
 import * as adminAuth from "@/lib/adminAuth";
 import { clientApi } from "@/lib/api";
@@ -100,6 +100,48 @@ function SelectField({ label, value, onChange, options }: {
           {options.map((o) => (
             <SelectItem key={o} value={o} className="text-white focus:bg-white/10 focus:text-primary cursor-pointer">
               {o}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+function kamenivoPrefix(name: string | null | undefined): string {
+  if (!name) return '';
+  const kg = getKamenivoGroup(name);
+  return kg === 'drvene' ? '▲ ' : kg === 'riecne' ? '≋ ' : '';
+}
+
+function KamenivoIcon({ name, size = "sm" }: { name: string; size?: "sm" | "xs" }) {
+  const kg = getKamenivoGroup(name);
+  const cls = size === "xs" ? "w-3 h-3" : "w-3.5 h-3.5";
+  if (kg === 'drvene') return <Mountain className={`${cls} shrink-0 text-stone-400`} />;
+  if (kg === 'riecne') return <Waves className={`${cls} shrink-0 text-blue-400`} />;
+  return null;
+}
+
+function CategorySelectField({ label, value, onChange, options }: {
+  label: string; value: string; onChange: (v: string) => void; options: string[];
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-white/80 mb-2">{label}</label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="w-full bg-white/10 border border-white/10 border-b-2 border-b-primary text-white px-4 py-3 text-sm font-medium rounded-sm focus:ring-0 focus:ring-offset-0 h-auto">
+          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+            <KamenivoIcon name={value} size="xs" />
+            <span className="truncate">{value || <span className="text-white/40 font-normal">Vyberte kategóriu</span>}</span>
+          </div>
+        </SelectTrigger>
+        <SelectContent className="bg-[#1e293b] border border-white/10 text-white z-[200]" side="bottom" position="popper" sideOffset={4}>
+          {options.map((o) => (
+            <SelectItem key={o} value={o} className="text-white focus:bg-white/10 focus:text-primary cursor-pointer">
+              <span className="flex items-center gap-1.5">
+                <KamenivoIcon name={o} size="xs" />
+                {o}
+              </span>
             </SelectItem>
           ))}
         </SelectContent>
@@ -1323,7 +1365,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const mainCI = result.concreteBreakdown[0];
     const mainCatName = mainCI?.categoryName ?? "";
     const mainBetonTypeName = mainCI?.label.replace(/ – [\d.,]+ m³$/, "") ?? "";
-    const mainBetonLabel = mainCatName || mainBetonTypeName;
+    const mainBetonLabel = mainCatName ? kamenivoPrefix(mainCatName) + mainCatName : mainBetonTypeName;
     const betonRows = (() => {
       if (!mainCI) return "";
       const origVal = isFaktura ? mainCI.bezDph : mainCI.bezDph * (1 + VAT_HOTOVOST);
@@ -1469,7 +1511,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const dopravaExtraLabel = `${ci.transportIsMin ? "Min. doprava" : "Doprava"}${pdfZone ? ` ${pdfZone}` : ""} · ${pdfExtraTrucks}`;
       const extraTransportUnitStr = buildTransportUnitStr(ci.transportIsMin, ci.qty);
       const extraTypeLabel = ci.label.replace(/ – [\d.,]+ m³$/, "");
-      const extraSectionLabel = ci.categoryName || extraTypeLabel;
+      const extraSectionLabel = ci.categoryName ? kamenivoPrefix(ci.categoryName) + ci.categoryName : extraTypeLabel;
       const isAddToMainExtra = idx < extraItems.length && extraItems[idx]?.transportMode === "addToMain";
       let rows = sectionRow(`Pridaná položka ${idx + 1}${extraSectionLabel ? ` – ${extraSectionLabel}` : ""}`);
       rows += trow(ci.label, `${ci.qty}&nbsp;m³`, unitStr, betonOrig, betonDisc, undefined, true);
@@ -1662,7 +1704,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const unitPrice = ci.qty > 0 ? concreteVal / ci.qty : 0;
       const concreteName = ci.label.replace(/ – \d+(?:[.,]\d+)? m³$/, "");
       if (ciIdx > 0) lines.push(div);
-      if (ci.categoryName) lines.push(ci.categoryName);
+      if (ci.categoryName) lines.push(kamenivoPrefix(ci.categoryName) + ci.categoryName);
       lines.push(concreteName);
       lines.push(rowUnit(`${ci.qty}m³`, unitPrice, concreteVal));
       if (!result.isOwn && ci.transport === 0 && result.concreteBreakdown.indexOf(ci) > 0) {
@@ -1877,7 +1919,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const tOrig = fmt2(ci.transport);
       const tDisc = fmt2(ci.transport * dopravaFactor);
       const typeLabel = ci.label.replace(/ – [\d.,]+ m³$/, "");
-      const catLabel = ci.categoryName || typeLabel;
+      const catLabel = ci.categoryName ? kamenivoPrefix(ci.categoryName) + ci.categoryName : typeLabel;
       const header = idx === 0 ? `Produkty – ${catLabel}` : `Pridaná položka ${idx} – ${catLabel}`;
       const rows: { l: string; v: number; o?: number; u?: number; uOrig?: number; uSuffix?: string; q?: string }[] = [];
       const uBeton = ci.qty > 0 ? fmt2(bDisc / ci.qty) : undefined;
@@ -2449,7 +2491,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
           </div>}
 
           {/* Category */}
-          <SelectField
+          <CategorySelectField
             label="Kategória betónu"
             value={selectedCategory?.name ?? ""}
             onChange={handleCategoryChange}
@@ -2691,7 +2733,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
-                <SelectField
+                <CategorySelectField
                   label="Kategória betónu"
                   value={itemCat?.name ?? ""}
                   onChange={(v) => { const nd = allCategories.find(c => c.name === v)?.noDoprava; setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, categoryName: v, typeLabel: null, ...(nd ? { transportMode: "none" } : {}) } : i)); setShowResult(false); }}
