@@ -269,23 +269,30 @@ export default function BetonTab() {
               </span>
             </div>
             {/* Main content */}
-            <div className="flex items-center gap-2 min-w-0 flex-1 px-3 py-3">
-              <span className="shrink-0">{expanded === cat.id ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}</span>
-              {(() => { const kg = getKamenivoGroup(cat.name); return kg === 'drvene' ? <Mountain className="w-4 h-4 shrink-0 text-stone-500" /> : kg === 'riecne' ? <Waves className="w-4 h-4 shrink-0 text-blue-400" /> : null; })()}
-              <span className="font-semibold text-secondary break-words min-w-0">{cat.name}</span>
+            <div className="flex items-center gap-1.5 min-w-0 flex-1 px-2 sm:px-3 py-3">
+              <span className="shrink-0">{expanded === cat.id ? <ChevronUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" /> : <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />}</span>
+              {(() => { const kg = getKamenivoGroup(cat.name); return kg === 'drvene' ? <Mountain className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 text-stone-500" /> : kg === 'riecne' ? <Waves className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 text-blue-400" /> : null; })()}
+              <span className="font-semibold text-secondary text-sm sm:text-base truncate min-w-0">{cat.name}</span>
             </div>
-            <div className="flex items-center gap-2 shrink-0 px-3 py-3" onClick={e => e.stopPropagation()}>
-              {cat.noDoprava && (
-                <span className="inline-flex items-center gap-0.5 bg-gray-200 text-gray-500 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wide">BEZ DOPRAVY</span>
-              )}
-              <span className="text-xs text-gray-400">{cat.types.length} typov</span>
-              <button onClick={() => { setRenamingCat(renamingCat === cat.id ? null : cat.id); setRenameCatVal(cat.name); setNoDopravaCatVal(cat.noDoprava ?? false); setExpanded(cat.id); }}
-                className="p-2.5 bg-gray-100 text-gray-500 hover:bg-primary hover:text-secondary transition-colors rounded-sm" title="Premenovať">
-                <Pencil className="w-5 h-5" />
-              </button>
-              <button onClick={() => deleteCategory(cat.id)} className="p-2.5 bg-secondary text-primary hover:bg-secondary/80 transition-colors rounded-sm">
-                <Trash2 className="w-5 h-5" />
-              </button>
+            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1 sm:gap-2 shrink-0 px-2 sm:px-3 py-2 sm:py-3" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center gap-1 sm:gap-2">
+                {cat.noDoprava && (
+                  <span className="hidden sm:inline-flex items-center gap-0.5 bg-gray-200 text-gray-500 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wide">BEZ DOPRAVY</span>
+                )}
+                <span className="text-[10px] sm:text-xs text-gray-400 whitespace-nowrap">{cat.types.length} typ.</span>
+              </div>
+              <div className="flex items-center gap-1">
+                {cat.noDoprava && (
+                  <span className="sm:hidden inline-flex items-center bg-gray-200 text-gray-500 text-[8px] font-black px-1 py-0.5 rounded uppercase tracking-wide">BEZ D.</span>
+                )}
+                <button onClick={() => { setRenamingCat(renamingCat === cat.id ? null : cat.id); setRenameCatVal(cat.name); setNoDopravaCatVal(cat.noDoprava ?? false); setExpanded(cat.id); }}
+                  className="p-2 sm:p-2.5 bg-gray-100 text-gray-500 hover:bg-primary hover:text-secondary transition-colors rounded-sm" title="Premenovať">
+                  <Pencil className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+                <button onClick={() => deleteCategory(cat.id)} className="p-2 sm:p-2.5 bg-secondary text-primary hover:bg-secondary/80 transition-colors rounded-sm">
+                  <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+              </div>
             </div>
           </div>
           {renamingCat === cat.id && (
