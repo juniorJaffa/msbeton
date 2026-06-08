@@ -269,12 +269,12 @@ export default function BetonTab() {
               </span>
             </div>
             {/* Main content */}
-            <div className="flex items-center gap-1.5 min-w-0 flex-1 px-2 sm:px-3 py-3">
-              <span className="shrink-0">{expanded === cat.id ? <ChevronUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" /> : <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />}</span>
-              {(() => { const kg = getKamenivoGroup(cat.name); return kg === 'drvene' ? <Mountain className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 text-stone-500" /> : kg === 'riecne' ? <Waves className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 text-blue-400" /> : null; })()}
-              <span className="font-semibold text-secondary text-sm sm:text-base truncate min-w-0">{cat.name}</span>
+            <div className="flex items-start gap-1.5 min-w-0 flex-1 px-2 sm:px-3 py-3">
+              <span className="shrink-0 mt-0.5">{expanded === cat.id ? <ChevronUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" /> : <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />}</span>
+              <span className="shrink-0 mt-0.5">{(() => { const kg = getKamenivoGroup(cat.name); return kg === 'drvene' ? <Mountain className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-stone-500" /> : kg === 'riecne' ? <Waves className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-400" /> : null; })()}</span>
+              <span className="font-semibold text-secondary text-sm sm:text-base break-words min-w-0 leading-snug">{cat.name}</span>
             </div>
-            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1 sm:gap-2 shrink-0 px-2 sm:px-3 py-2 sm:py-3" onClick={e => e.stopPropagation()}>
+            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1 sm:gap-2 shrink-0 px-2 sm:px-3 py-2 sm:py-3 self-start" onClick={e => e.stopPropagation()}>
               <div className="flex items-center gap-1 sm:gap-2">
                 {cat.noDoprava && (
                   <span className="hidden sm:inline-flex items-center gap-0.5 bg-gray-200 text-gray-500 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wide">BEZ DOPRAVY</span>
