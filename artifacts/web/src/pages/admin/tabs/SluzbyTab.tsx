@@ -127,6 +127,66 @@ export default function SluzbyTab({ onGoToDoprava, scrollToPumpa, onScrollDone }
 
   return (
     <div className="space-y-3">
+      {adding ? (
+        <div className="bg-white border-2 border-primary p-5">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Nová služba</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+            <input placeholder="Názov služby *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
+              className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary sm:col-span-2" autoFocus />
+            <input placeholder="Popis (nepovinné)" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
+              className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary sm:col-span-2" />
+            <input placeholder="Jednotka (napr. 1 ks, 1 h)" value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })}
+              className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+            <input placeholder="Cena bez DPH (€)" type="number" step="0.01" min="0" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })}
+              className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+          </div>
+
+          {/* Režim kalkulačky */}
+          <div className="mb-4">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Režim kalkulačky</p>
+            <div className="flex gap-1 flex-wrap">
+              {([["", "Všetky režimy"], ["pumpa", "Iba Pumpa"], ["mix", "Iba Mixér"]] as const).map(([val, label]) => (
+                <button key={val} type="button" onClick={() => setForm({ ...form, serviceMode: val })}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold transition-colors ${form.serviceMode === val ? "bg-secondary text-primary" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
+                  {val === "pumpa" && <PumpTruckIcon />}{val === "mix" && <MixTruckIcon />}{label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Voliteľné atribúty */}
+          <div className="mb-4 border-t border-gray-100 pt-4">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Voliteľné</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Max. dĺžka hadice (m)</label>
+                <input placeholder="napr. 32" type="number" min="0" value={form.maxMeters} onChange={e => setForm({ ...form, maxMeters: e.target.value })}
+                  className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary w-full" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Aktívne obdobie (DD.MM – DD.MM)</label>
+                <div className="flex gap-2">
+                  <input placeholder="od DD.MM" value={form.activePeriodFrom} onChange={e => setForm({ ...form, activePeriodFrom: e.target.value })}
+                    className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary flex-1 min-w-0" />
+                  <input placeholder="do DD.MM" value={form.activePeriodTo} onChange={e => setForm({ ...form, activePeriodTo: e.target.value })}
+                    className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary flex-1 min-w-0" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <button onClick={add} className="px-4 py-2 bg-primary text-secondary font-bold text-sm hover:bg-primary/90">Pridať službu</button>
+            <button onClick={() => { setForm(emptyForm); setAdding(false); }} className="px-4 py-2 bg-gray-100 text-gray-500 text-sm">Zrušiť</button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={() => setAdding(true)}
+          className="flex items-center gap-2 w-full border-2 border-dashed border-gray-400 bg-white shadow-sm text-gray-600 hover:border-primary hover:text-primary font-bold text-sm py-4 justify-center transition-colors rounded-md">
+          <Plus className="w-4 h-4" /> Pridať službu
+        </button>
+      )}
+
       {/* Mobile cards */}
       <div className="sm:hidden space-y-2">
         {displayServices.map((s) => (
@@ -210,65 +270,6 @@ export default function SluzbyTab({ onGoToDoprava, scrollToPumpa, onScrollDone }
         </table>
       </div>
 
-      {adding ? (
-        <div className="bg-white border-2 border-primary p-5">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Nová služba</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-            <input placeholder="Názov služby *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-              className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary sm:col-span-2" autoFocus />
-            <input placeholder="Popis (nepovinné)" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
-              className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary sm:col-span-2" />
-            <input placeholder="Jednotka (napr. 1 ks, 1 h)" value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })}
-              className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-            <input placeholder="Cena bez DPH (€)" type="number" step="0.01" min="0" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })}
-              className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-          </div>
-
-          {/* Režim kalkulačky */}
-          <div className="mb-4">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Režim kalkulačky</p>
-            <div className="flex gap-1 flex-wrap">
-              {([["", "Všetky režimy"], ["pumpa", "Iba Pumpa"], ["mix", "Iba Mixér"]] as const).map(([val, label]) => (
-                <button key={val} type="button" onClick={() => setForm({ ...form, serviceMode: val })}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold transition-colors ${form.serviceMode === val ? "bg-secondary text-primary" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
-                  {val === "pumpa" && <PumpTruckIcon />}{val === "mix" && <MixTruckIcon />}{label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Voliteľné atribúty */}
-          <div className="mb-4 border-t border-gray-100 pt-4">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Voliteľné</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-gray-500 block mb-1">Max. dĺžka hadice (m)</label>
-                <input placeholder="napr. 32" type="number" min="0" value={form.maxMeters} onChange={e => setForm({ ...form, maxMeters: e.target.value })}
-                  className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary w-full" />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 block mb-1">Aktívne obdobie (DD.MM – DD.MM)</label>
-                <div className="flex gap-2">
-                  <input placeholder="od DD.MM" value={form.activePeriodFrom} onChange={e => setForm({ ...form, activePeriodFrom: e.target.value })}
-                    className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary flex-1 min-w-0" />
-                  <input placeholder="do DD.MM" value={form.activePeriodTo} onChange={e => setForm({ ...form, activePeriodTo: e.target.value })}
-                    className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary flex-1 min-w-0" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            <button onClick={add} className="px-4 py-2 bg-primary text-secondary font-bold text-sm hover:bg-primary/90">Pridať službu</button>
-            <button onClick={() => { setForm(emptyForm); setAdding(false); }} className="px-4 py-2 bg-gray-100 text-gray-500 text-sm">Zrušiť</button>
-          </div>
-        </div>
-      ) : (
-        <button onClick={() => setAdding(true)}
-          className="flex items-center gap-2 w-full border-2 border-dashed border-gray-400 bg-white shadow-sm text-gray-600 hover:border-primary hover:text-primary font-bold text-sm py-4 justify-center transition-colors rounded-md">
-          <Plus className="w-4 h-4" /> Pridať službu
-        </button>
-      )}
     </div>
   );
 }
