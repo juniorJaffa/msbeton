@@ -859,7 +859,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                     {(() => {
                       const cat = o.concreteCategory ?? allCategories.find(c => c.types.some(t => t.label === o.concreteType))?.name;
                       const kg = cat ? getKamenivoGroup(cat) : null;
-                      return cat ? <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-gray-900">
+                      return cat ? <div className="flex items-center gap-1 text-[10px] font-black tracking-wide text-gray-900">
                         {kg === 'drvene' && <Mountain className="w-3 h-3 shrink-0 text-stone-500" />}
                         {kg === 'riecne' && <Waves className="w-3 h-3 shrink-0 text-blue-400" />}
                         {cat}
