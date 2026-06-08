@@ -179,18 +179,18 @@ function TypeSelectField({ label, value, onChange, options, discountFactor = 1, 
             const itemClean = cleanLabel(o.label);
             const itemShort = itemClean.length <= 28;
             return (
-              <SelectItem key={o.label} value={o.label} className="text-white focus:bg-white/10 focus:text-primary cursor-pointer py-2">
-                <span className="whitespace-normal break-words leading-snug">
-                  {itemClean}{" "}
-                  {showStrike && <s className="text-white/30 font-normal text-xs">{o.price.toFixed(2)}</s>}{" "}
-                  <span className={`text-xs font-bold ${manual !== undefined ? "text-sky-400" : "text-primary"}`}>
-                    {displayPrice.toFixed(2)} €/m³
+              <SelectItem key={o.label} value={o.label} className="text-white focus:bg-white/10 focus:text-primary cursor-pointer py-2 !items-start">
+                <span className="flex gap-2 w-full">
+                  <span className="flex-1 min-w-0 whitespace-normal break-words leading-snug">{itemClean}</span>
+                  <span className="shrink-0 flex items-center gap-1 text-xs font-bold pt-px">
+                    {showStrike && <s className="text-white/30 font-normal">{o.price.toFixed(2)}</s>}
+                    <span className={manual !== undefined ? "text-sky-400" : "text-primary"}>{displayPrice.toFixed(2)} €/m³</span>
+                    {manual !== undefined && (
+                      <span className="inline-flex items-center gap-0.5 bg-sky-400/20 text-sky-400 border border-sky-400/30 rounded px-1 py-px text-[8px] font-bold leading-none">
+                        <PenLine className="w-2 h-2" />M
+                      </span>
+                    )}
                   </span>
-                  {manual !== undefined && (
-                    <span className="inline-flex items-center gap-0.5 bg-sky-400/20 text-sky-400 border border-sky-400/30 rounded px-1 py-px text-[8px] font-bold leading-none ml-1">
-                      <PenLine className="w-2 h-2" />M
-                    </span>
-                  )}
                 </span>
               </SelectItem>
             );
