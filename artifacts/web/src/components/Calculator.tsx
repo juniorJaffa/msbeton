@@ -3584,10 +3584,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                             {isExtra ? (
                               <div className="text-[10px] font-black uppercase tracking-wider mb-0.5" style={{ color: "#EDC531" }}>
                                 Pridaná položka {idx}
-                                {itemCatName && <span className="ml-1.5 font-normal normal-case tracking-normal" style={{ color: "rgba(255,255,255,0.45)" }}>{itemCatName}</span>}
+                                {itemCatName && <span className="ml-1.5 font-normal normal-case tracking-normal inline-flex items-center gap-0.5" style={{ color: "rgba(255,255,255,0.45)" }}><KamenivoIcon name={itemCatName} size="xs" />{itemCatName}</span>}
                               </div>
                             ) : itemCatName ? (
-                              <div className="text-[10px] font-black tracking-wide mb-1 leading-tight" style={{ color: "#EDC531", opacity: 0.85 }}>{itemCatName}</div>
+                              <div className="text-[10px] font-black tracking-wide mb-1 leading-tight flex items-center gap-1" style={{ color: "#EDC531", opacity: 0.85 }}><KamenivoIcon name={itemCatName} size="xs" />{itemCatName}</div>
                             ) : null}
                             <PriceRow label={ci.label} original={origVal} discounted={discVal} hasDiscount={Math.abs(origVal - discVal) > 0.001} alwaysShow={isExtra} />
 

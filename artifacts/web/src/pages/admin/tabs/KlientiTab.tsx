@@ -5,7 +5,7 @@ import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
 import { PhoneInput } from "@/components/PhoneInput";
 import { cn, formatPhone } from "@/lib/utils";
-import { adminData, adminApi, Client, TransportSettings, Order, SYSTEM_OWNER_ID } from "@/lib/adminData";
+import { adminData, adminApi, Client, TransportSettings, Order, SYSTEM_OWNER_ID, getKamenivoGroup } from "@/lib/adminData";
 import { EditableField, authFetch } from "./_shared";
 
 function genPassword() {
@@ -174,6 +174,13 @@ function exportClientPricePDF(client: Client, priceMode: "faktura" | "hotovost",
 
   const discHdr = hasDiscount ? ["Názov", "Množstvo", "Pôvodná cena", "Zľavnená cena"] : ["Názov", "Množstvo", "Cena"];
 
+  const kamenivoSvgPdf = (name: string): string => {
+    const kg = getKamenivoGroup(name);
+    if (kg === 'drvene') return `<svg style="display:inline-block;vertical-align:middle;margin-right:4px;margin-bottom:1px" width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3L2 21h20L12 3z"/></svg>`;
+    if (kg === 'riecne') return `<svg style="display:inline-block;vertical-align:middle;margin-right:4px;margin-bottom:1px" width="13" height="11" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M2 5 Q6 2 10 5 Q14 8 18 5 Q22 2 26 5"/><path d="M2 11 Q6 8 10 11 Q14 14 18 11 Q22 8 26 11"/><path d="M2 17 Q6 14 10 17 Q14 20 18 17 Q22 14 26 17"/></svg>`;
+    return '';
+  };
+
   // Betóny
   const betonHtml = categories.map(cat => {
     const rows: Array<[string, string, string, string?]> = cat.types
@@ -188,7 +195,7 @@ function exportClientPricePDF(client: Client, priceMode: "faktura" | "hotovost",
           ? [lbl, "1 m³", fmtP(orig), hasItemDisc ? fmtP(disc) : undefined] as [string, string, string, string?]
           : [lbl, "1 m³", fmtP(orig)] as [string, string, string];
       });
-    return `<h3 style="font-size:9.5pt;color:#001D3D;margin:14px 0 3px;border-bottom:2px solid #EDC531;padding-bottom:3px">${cat.name}</h3>
+    return `<h3 style="font-size:9.5pt;color:#001D3D;margin:14px 0 3px;border-bottom:2px solid #EDC531;padding-bottom:3px">${kamenivoSvgPdf(cat.name)}${cat.name}</h3>
       ${buildTable(discHdr, rows)}`;
   }).join("");
 
