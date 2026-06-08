@@ -180,9 +180,9 @@ function TypeSelectField({ label, value, onChange, options, discountFactor = 1, 
             const itemShort = itemClean.length <= 28;
             return (
               <SelectItem key={o.label} value={o.label} className="text-white focus:bg-white/10 focus:text-primary cursor-pointer py-2 !items-start">
-                <span className="flex gap-2 w-full">
+                <span className="flex gap-2 items-start">
                   <span className="flex-1 min-w-0 whitespace-normal break-words leading-snug">{itemClean}</span>
-                  <span className="shrink-0 flex items-center gap-1 text-xs font-bold pt-px">
+                  <span className="shrink-0 whitespace-nowrap flex items-center gap-1 text-xs font-bold pt-0.5">
                     {showStrike && <s className="text-white/30 font-normal">{o.price.toFixed(2)}</s>}
                     <span className={manual !== undefined ? "text-sky-400" : "text-primary"}>{displayPrice.toFixed(2)} €/m³</span>
                     {manual !== undefined && (
