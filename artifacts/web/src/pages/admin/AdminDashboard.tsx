@@ -100,7 +100,7 @@ export default function AdminDashboard() {
         }
       } catch {}
     };
-    const interval = setInterval(poll, 30000);
+    const interval = setInterval(poll, 8000);
     return () => clearInterval(interval);
   }, [tab]);
 

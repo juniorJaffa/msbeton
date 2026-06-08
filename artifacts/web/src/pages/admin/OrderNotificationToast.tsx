@@ -156,7 +156,7 @@ export function OrderNotificationToast({ orders, onDismiss, onOpen }: Props) {
                   <span className="text-white/30 text-[9px] font-bold uppercase tracking-wide shrink-0">Betón</span>
                   <span className="text-white/75 text-[10px] font-bold truncate">{order.concreteType}</span>
                   {order.concreteCategory && (
-                    <span className="text-white/25 text-[9px] shrink-0">· {order.concreteCategory}</span>
+                    <span className="text-primary/60 text-[9px] font-bold shrink-0 truncate">· {order.concreteCategory}</span>
                   )}
                 </div>
 
@@ -173,6 +173,13 @@ export function OrderNotificationToast({ orders, onDismiss, onOpen }: Props) {
                   </div>
                 )}
 
+                {order.km ? (
+                  <div className="border-t border-white/8 px-2.5 py-1.5 flex items-center gap-2" style={{ background: "rgba(255,255,255,0.02)" }}>
+                    <span className="text-white/30 text-[9px] font-bold uppercase tracking-wide shrink-0">Km</span>
+                    <span className="text-white/75 text-[10px] font-bold">{order.km} km</span>
+                  </div>
+                ) : null}
+
                 {location && (
                   <div
                     className="border-t border-white/8 px-2.5 py-1.5 flex items-start gap-1.5"
@@ -181,9 +188,6 @@ export function OrderNotificationToast({ orders, onDismiss, onOpen }: Props) {
                     <MapPin className="w-2.5 h-2.5 text-primary shrink-0 mt-px" />
                     <div className="text-white/65 text-[10px] font-semibold leading-snug line-clamp-2">
                       {location}
-                      {order.km ? (
-                        <span className="text-white/30 ml-1 text-[9px]">· {order.km} km</span>
-                      ) : null}
                     </div>
                   </div>
                 )}
