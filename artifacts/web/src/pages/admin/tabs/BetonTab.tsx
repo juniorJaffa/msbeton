@@ -272,12 +272,12 @@ export default function BetonTab() {
             <div className="flex items-center gap-2 min-w-0 flex-1 px-3 py-3">
               <span className="shrink-0">{expanded === cat.id ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}</span>
               {(() => { const kg = getKamenivoGroup(cat.name); return kg === 'drvene' ? <Mountain className="w-4 h-4 shrink-0 text-stone-500" /> : kg === 'riecne' ? <Waves className="w-4 h-4 shrink-0 text-blue-400" /> : null; })()}
-              <span className="font-semibold text-secondary break-words">{cat.name}</span>
-              {cat.noDoprava && (
-                <span className="shrink-0 inline-flex items-center gap-0.5 bg-gray-200 text-gray-500 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wide">BEZ DOPRAVY</span>
-              )}
+              <span className="font-semibold text-secondary break-words min-w-0">{cat.name}</span>
             </div>
             <div className="flex items-center gap-2 shrink-0 px-3 py-3" onClick={e => e.stopPropagation()}>
+              {cat.noDoprava && (
+                <span className="inline-flex items-center gap-0.5 bg-gray-200 text-gray-500 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wide">BEZ DOPRAVY</span>
+              )}
               <span className="text-xs text-gray-400">{cat.types.length} typov</span>
               <button onClick={() => { setRenamingCat(renamingCat === cat.id ? null : cat.id); setRenameCatVal(cat.name); setNoDopravaCatVal(cat.noDoprava ?? false); setExpanded(cat.id); }}
                 className="p-2.5 bg-gray-100 text-gray-500 hover:bg-primary hover:text-secondary transition-colors rounded-sm" title="Premenovať">

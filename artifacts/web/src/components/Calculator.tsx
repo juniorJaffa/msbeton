@@ -1722,7 +1722,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
           lines.push(rowUnit(`${ci.transportTrucks}x auto`, carCost, transportDisc));
         } else if (result.transportZone) {
           const zone = result.transportZone;
-          const effectiveRate = zone.ratePerM3 * result.fTransport;
+          const baseRateSms = mp[zone.id] !== undefined ? mp[zone.id] : zone.ratePerM3;
+          const effectiveRate = baseRateSms * result.fTransport;
           lines.push(`Doprava od ${zone.fromKm}km do ${zone.toKm}km`);
           const smsQtyStr = ciIdx === 0 && smsAddToMainQty > 0 ? `${ci.qty}+${smsAddToMainQty}m³` : `${ci.qty}m³`;
           lines.push(rowUnit(smsQtyStr, effectiveRate, transportDisc));
