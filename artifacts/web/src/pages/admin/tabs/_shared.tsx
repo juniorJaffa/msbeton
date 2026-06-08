@@ -11,7 +11,7 @@ export function authFetch(url: string, opts?: RequestInit): Promise<Response> {
 }
 
 // ── Inline editable cell ──────────────────────────────────────────────────────
-export function EditableField({ value, onSave, type = "text" }: { value: string | number; onSave: (v: string) => void; type?: string }) {
+export function EditableField({ value, onSave, type = "text", suggestionSuffixes }: { value: string | number; onSave: (v: string) => void; type?: string; suggestionSuffixes?: string[] }) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(String(value));
   const { toast } = useToast();
@@ -27,6 +27,9 @@ export function EditableField({ value, onSave, type = "text" }: { value: string 
   };
   const cancel = () => { setVal(String(value)); setEditing(false); };
   const startEdit = () => { setVal(String(value)); setEditing(true); };
+  const activeSuggs = suggestionSuffixes && val.trim() && !suggestionSuffixes.some(s => val.trimEnd().endsWith(s.trim()))
+    ? suggestionSuffixes.map(s => val.trim() + s)
+    : [];
   if (!editing) return (
     <span className="cursor-pointer hover:text-primary transition-colors group flex items-center gap-1.5 min-w-0" onClick={e => { e.stopPropagation(); startEdit(); }}>
       <span className="break-words min-w-0 leading-snug">{value}</span>
@@ -49,16 +52,37 @@ export function EditableField({ value, onSave, type = "text" }: { value: string 
           onFocus={e => e.target.select()}
         />
       ) : (
-        <textarea
-          value={val}
-          rows={Math.max(2, Math.ceil(val.length / 38))}
-          onChange={e => setVal(e.target.value)}
-          onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); save(); } if (e.key === "Escape") cancel(); }}
-          onBlur={save}
-          className="bg-amber-50 border-2 border-primary px-2.5 py-1 text-secondary text-sm focus:outline-none rounded-sm w-full min-w-[160px] resize-none leading-snug"
-          autoFocus
-          onFocus={e => e.target.select()}
-        />
+        <span className="relative flex-1 min-w-0">
+          <textarea
+            value={val}
+            rows={Math.max(2, Math.ceil(val.length / 38))}
+            onChange={e => setVal(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                if (activeSuggs.length > 0) { e.preventDefault(); e.stopPropagation(); setVal(activeSuggs[0]); return; }
+                e.preventDefault(); e.stopPropagation(); save();
+              }
+              if (e.key === "Escape") cancel();
+            }}
+            onBlur={e => { setTimeout(() => save(), 160); }}
+            className="bg-amber-50 border-2 border-primary px-2.5 py-1 text-secondary text-sm focus:outline-none rounded-sm w-full min-w-[160px] resize-none leading-snug"
+            autoFocus
+            onFocus={e => e.target.select()}
+          />
+          {activeSuggs.length > 0 && (
+            <ul className="absolute z-50 left-0 right-0 top-full mt-0.5 bg-white border border-gray-200 shadow-lg text-sm overflow-hidden">
+              {activeSuggs.map(s => (
+                <li
+                  key={s}
+                  onMouseDown={e => { e.preventDefault(); setVal(s); }}
+                  className="px-3 py-2 cursor-pointer hover:bg-amber-50 hover:text-secondary truncate border-b border-gray-100 last:border-0"
+                >
+                  {s}
+                </li>
+              ))}
+            </ul>
+          )}
+        </span>
       )}
       <button onMouseDown={e => e.preventDefault()} onClick={save} className="p-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors" aria-label="Uložiť">
         <Check className="w-4 h-4" />

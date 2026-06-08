@@ -12,6 +12,43 @@ function genPassword() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
 }
 
+const COMPANY_SUFFIXES = [", s.r.o.", ", spol. s r.o.", ", a.s.", ", k.s.", ", v.o.s."];
+
+function CompanyInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const hasNoSuffix = value.trim() && !COMPANY_SUFFIXES.some(s => value.trimEnd().endsWith(s.trim()));
+  const suggs = hasNoSuffix ? COMPANY_SUFFIXES.map(s => value.trim() + s) : [];
+  return (
+    <div className="relative sm:col-span-2">
+      <input
+        placeholder="Spoločnosť"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        onKeyDown={e => {
+          if (e.key === "Enter" && suggs.length > 0) { e.preventDefault(); onChange(suggs[0]); setOpen(false); }
+          if (e.key === "Escape") setOpen(false);
+        }}
+        className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary"
+      />
+      {open && suggs.length > 0 && (
+        <ul className="absolute z-50 left-0 right-0 top-full mt-0.5 bg-white border border-gray-200 shadow-lg text-sm overflow-hidden">
+          {suggs.map(s => (
+            <li
+              key={s}
+              onMouseDown={e => { e.preventDefault(); onChange(s); setOpen(false); }}
+              className="px-3 py-2 cursor-pointer hover:bg-primary/10 hover:text-secondary truncate border-b border-gray-100 last:border-0"
+            >
+              {s}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function DiscountInput({ label, value, onChange, disabled }: { label: string; value: string; onChange: (v: string) => void; disabled?: boolean }) {
   return (
     <div>
@@ -669,8 +706,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                 <PhoneInput value={form.phone} onChange={v => setForm({ ...form, phone: v })}
                   placeholder="0944 xxx xxx"
                   className={`px-3 py-2 text-sm focus:outline-none transition-all duration-300 ${phoneHighlight ? "border-2 border-teal-400 bg-teal-50 shadow-[0_0_0_3px_rgba(45,212,191,0.25)]" : "border border-gray-200 focus:border-primary"}`} />
-                <input placeholder="Spoločnosť" value={form.company} onChange={e => setForm({ ...form, company: e.target.value })}
-                  className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary sm:col-span-2" />
+                <CompanyInput value={form.company} onChange={v => setForm({ ...form, company: v })} />
                 <div className="relative sm:col-span-2">
                   <ExternalLink className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
                   <input placeholder="Zdielaný odkaz (Google Sheet, PDF…)" value={form.sharedLink} onChange={e => setForm({ ...form, sharedLink: e.target.value })}
@@ -1052,7 +1088,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                         ] as { label: string; field: keyof Client }[]).map(({ label, field }) => (
                           <div key={field} className="flex gap-2 items-start">
                             <span className="text-gray-400 text-xs w-20 shrink-0 pt-0.5">{label}</span>
-                            <EditableField value={field === "phone" ? formatPhone((c[field] as string) || "") || "—" : (c[field] as string) || "—"} type={field === "phone" ? "tel" : "text"} onSave={v => update(c.id, { [field]: field === "phone" ? formatPhone(v) : v })} />
+                            <EditableField value={field === "phone" ? formatPhone((c[field] as string) || "") || "—" : (c[field] as string) || "—"} type={field === "phone" ? "tel" : "text"} onSave={v => update(c.id, { [field]: field === "phone" ? formatPhone(v) : v })} suggestionSuffixes={field === "company" ? COMPANY_SUFFIXES : undefined} />
                           </div>
                         ))}
                         {c.createdAt && (
