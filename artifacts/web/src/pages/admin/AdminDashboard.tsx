@@ -258,7 +258,7 @@ export default function AdminDashboard() {
             {tab === "sluzby" && <SluzbyTab key={syncKey} onGoToDoprava={() => { setTab("doprava"); window.location.hash = "doprava"; }} scrollToPumpa={sluzbyScrollPumpa} onScrollDone={() => setSluzbyScrollPumpa(false)} />}
             {tab === "doprava" && <DopravaTab key={syncKey} onGoToSluzby={() => { setTab("sluzby"); setSluzbyScrollPumpa(true); window.location.hash = "sluzby"; }} />}
             {tab === "klienti" && <KlientiTab expandClientId={goToClientId} onExpanded={() => setGoToClientId(null)} onGoToOrders={(loginId, focusId) => { setGoToOrdersSearch(loginId); setGoToOrdersFocusId(focusId); setTab("objednavky"); window.location.hash = "objednavky"; }} />}
-            {tab === "objednavky" && <ObjednavkyTab key={syncKey} initialClientId={goToOrdersSearch} focusOrderId={goToOrdersFocusId} onGoToClient={(loginId) => { setGoToOrdersSearch(undefined); setGoToOrdersFocusId(undefined); setTab("klienti"); setGoToClientId(loginId); }} />}
+            {tab === "objednavky" && <ObjednavkyTab initialClientId={goToOrdersSearch} focusOrderId={goToOrdersFocusId} onGoToClient={(loginId) => { setGoToOrdersSearch(undefined); setGoToOrdersFocusId(undefined); setTab("klienti"); setGoToClientId(loginId); }} />}
             {tab === "analytics" && <AnalyticsTab />}
             {tab === "statistiky" && <StatistikyTab />}
             {tab === "gsc" && <SearchConsoleTab />}

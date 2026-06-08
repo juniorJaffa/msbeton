@@ -334,7 +334,12 @@ ${breakdownHtml ? `
 
 export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClientId, focusOrderId }: { onGoToClient?: (loginId: string) => void; initialSearch?: string; initialClientId?: string; focusOrderId?: string }) {
   const [orders, setOrders] = useState<Order[]>(() => adminData.getOrders());
-  const allCategories = useMemo(() => adminData.getCategories(), []);
+  const [allCategories, setAllCategories] = useState(() => adminData.getCategories());
+  useEffect(() => {
+    const handler = () => setAllCategories(adminData.getCategories());
+    window.addEventListener("admin-data-synced", handler);
+    return () => window.removeEventListener("admin-data-synced", handler);
+  }, []);
   const [expanded, setExpanded] = useState<string | null>(focusOrderId ?? null);
   const [highlightedOrder, setHighlightedOrder] = useState<string | null>(focusOrderId ?? null);
   const [filterStatus, setFilterStatus] = useState<Order["status"] | "vsetky">("vsetky");
