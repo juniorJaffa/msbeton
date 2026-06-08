@@ -5,6 +5,19 @@ import { eq } from "drizzle-orm";
 import { createHash, randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { loginRateLimit } from "../lib/rateLimits";
+import {
+  generateRegistrationOptions,
+  verifyRegistrationResponse,
+  generateAuthenticationOptions,
+  verifyAuthenticationResponse,
+} from "@simplewebauthn/server";
+
+function toB64url(buf: Uint8Array): string { return Buffer.from(buf).toString("base64url"); }
+function fromB64url(s: string): Uint8Array<ArrayBuffer> {
+  const buf = Buffer.from(s, "base64url");
+  return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength) as Uint8Array<ArrayBuffer>;
+}
+import type { RegistrationResponseJSON, AuthenticationResponseJSON } from "@simplewebauthn/types";
 
 const ITOA64 = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
@@ -63,6 +76,32 @@ function checkRate(key: string, max = RATE_MAX, window = RATE_WINDOW): boolean {
 interface ResetToken { clientId: string; expires: number; }
 type ResetTokens = Record<string, ResetToken>;
 
+// ── WebAuthn config ───────────────────────────────────────────────────────────
+const APP_URL = process.env.APP_URL ?? "http://localhost:5173";
+const rpId = (() => { try { return new URL(APP_URL).hostname; } catch { return "localhost"; } })();
+const expectedOrigins = rpId === "localhost"
+  ? ["http://localhost:5173", "http://localhost:3000", "http://localhost:5174"]
+  : [APP_URL];
+
+interface ChallengeEntry { challenge: string; expires: number; }
+const regChallenges = new Map<string, ChallengeEntry>();
+const authChallenges = new Map<string, ChallengeEntry>();
+const CHALLENGE_TTL = 120_000;
+
+function popChallenge(store: Map<string, ChallengeEntry>, key: string): string | null {
+  const e = store.get(key);
+  store.delete(key);
+  if (!e || Date.now() > e.expires) return null;
+  return e.challenge;
+}
+
+interface WebAuthnCredential {
+  id: string;
+  publicKey: string;
+  counter: number;
+  createdAt: string;
+}
+
 const router = Router();
 
 // In-memory cache so DB isn't hit on every page load (TTL: 30s)
@@ -93,6 +132,7 @@ interface UnifiedClient {
   hotovostDph?: number;
   manualPrices?: Record<string, number>;
   active?: boolean;
+  webauthnCredentials?: WebAuthnCredential[];
   // legacy fallback fields
   name?: string;
   discountPct?: number;
@@ -390,6 +430,174 @@ router.post("/password-reset-confirm", async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "Password reset confirm failed");
     return res.status(500).json({ ok: false, error: "Internal server error" });
+  }
+});
+
+// ── WebAuthn helper ───────────────────────────────────────────────────────────
+async function saveWebAuthnCredential(clientId: string, cred: WebAuthnCredential): Promise<void> {
+  const rows = await db.select().from(adminConfig).where(eq(adminConfig.key, "clients"));
+  if (!rows.length || !Array.isArray(rows[0].data)) return;
+  const clients = rows[0].data as UnifiedClient[];
+  const updated = clients.map((c) => {
+    if (c.id !== clientId) return c;
+    const existing = (c.webauthnCredentials ?? []).filter((e) => e.id !== cred.id);
+    return { ...c, webauthnCredentials: [...existing, cred].slice(-5) };
+  });
+  await db.insert(adminConfig).values({ key: "clients", data: updated })
+    .onConflictDoUpdate({ target: adminConfig.key, set: { data: updated, updatedAt: new Date() } });
+  invalidateClientCache();
+}
+
+// ── WebAuthn endpoints ────────────────────────────────────────────────────────
+
+// 1. Generate registration challenge (client must be already logged in via password)
+router.post("/webauthn/reg-challenge", async (req, res) => {
+  try {
+    const { clientInternalId } = req.body ?? {};
+    if (!clientInternalId) return res.status(400).json({ ok: false });
+    const accounts = await getClientAccounts();
+    const client = accounts.find((a) => a.id === String(clientInternalId) && a.active !== false);
+    if (!client) return res.status(404).json({ ok: false, error: "Klient nenájdený" });
+    const loginId = client.loginId ?? client.id;
+    const displayName = [client.firstName, client.lastName].filter(Boolean).join(" ") || client.name || loginId;
+    const options = await generateRegistrationOptions({
+      rpName: "MS-BETON Klient",
+      rpID: rpId,
+      userName: loginId,
+      userDisplayName: displayName,
+      excludeCredentials: (client.webauthnCredentials ?? []).map((c) => ({ id: c.id, type: "public-key" as const })),
+      authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "preferred" },
+      timeout: 60000,
+    });
+    regChallenges.set(String(clientInternalId), { challenge: options.challenge, expires: Date.now() + CHALLENGE_TTL });
+    return res.json({ ok: true, options });
+  } catch (err) {
+    req.log.error({ err }, "WebAuthn reg-challenge failed");
+    return res.status(500).json({ ok: false });
+  }
+});
+
+// 2. Complete registration — verify + store public key
+router.post("/webauthn/reg-complete", async (req, res) => {
+  try {
+    const { clientInternalId, credential } = req.body ?? {};
+    if (!clientInternalId || !credential) return res.status(400).json({ ok: false });
+    const expectedChallenge = popChallenge(regChallenges, String(clientInternalId));
+    if (!expectedChallenge) return res.status(400).json({ ok: false, error: "Výzva vypršala. Skúste znova." });
+    const verification = await verifyRegistrationResponse({
+      response: credential as RegistrationResponseJSON,
+      expectedChallenge,
+      expectedOrigin: expectedOrigins,
+      expectedRPID: rpId,
+      requireUserVerification: true,
+    });
+    if (!verification.verified || !verification.registrationInfo) {
+      return res.status(400).json({ ok: false, error: "Overenie biometrie zlyhalo." });
+    }
+    const { credential: vc } = verification.registrationInfo;
+    await saveWebAuthnCredential(String(clientInternalId), {
+      id: vc.id,
+      publicKey: toB64url(vc.publicKey),
+      counter: vc.counter,
+      createdAt: new Date().toISOString(),
+    });
+    return res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "WebAuthn reg-complete failed");
+    return res.status(500).json({ ok: false, error: "Interná chyba" });
+  }
+});
+
+// 3. Generate authentication challenge
+router.post("/webauthn/auth-challenge", async (req, res) => {
+  try {
+    const { loginId } = req.body ?? {};
+    if (!loginId) return res.status(400).json({ ok: false });
+    const ip = (req.headers["cf-connecting-ip"] as string) ?? req.ip ?? "unknown";
+    if (!checkRate(`webauthn-auth:${ip}`, 20, 60_000)) return res.status(429).json({ ok: false, error: "Príliš veľa pokusov" });
+    const accounts = await getClientAccounts();
+    const client = accounts.find((a) => a.loginId === String(loginId) && a.active !== false);
+    const allowCreds = (client?.webauthnCredentials ?? []).map((c) => ({ id: c.id, type: "public-key" as const }));
+    const options = await generateAuthenticationOptions({
+      rpID: rpId,
+      allowCredentials: allowCreds,
+      userVerification: "required",
+      timeout: 60000,
+    });
+    if (client && allowCreds.length > 0) {
+      authChallenges.set(String(loginId), { challenge: options.challenge, expires: Date.now() + CHALLENGE_TTL });
+    }
+    return res.json({ ok: true, options });
+  } catch (err) {
+    req.log.error({ err }, "WebAuthn auth-challenge failed");
+    return res.status(500).json({ ok: false });
+  }
+});
+
+// 4. Complete authentication — verify assertion + return session
+router.post("/webauthn/auth-complete", async (req, res) => {
+  try {
+    const { loginId, credential } = req.body ?? {};
+    if (!loginId || !credential) return res.status(400).json({ ok: false });
+    const expectedChallenge = popChallenge(authChallenges, String(loginId));
+    if (!expectedChallenge) return res.status(400).json({ ok: false, error: "Výzva vypršala. Skúste znova." });
+    const accounts = await getClientAccounts();
+    const client = accounts.find((a) => a.loginId === String(loginId) && a.active !== false);
+    if (!client || !client.webauthnCredentials?.length) return res.status(401).json({ ok: false, error: "Biometria nenájdená" });
+    const authResp = credential as AuthenticationResponseJSON;
+    const stored = client.webauthnCredentials.find((c) => c.id === authResp.id);
+    if (!stored) return res.status(401).json({ ok: false, error: "Neznáme zariadenie" });
+    const verification = await verifyAuthenticationResponse({
+      response: authResp,
+      expectedChallenge,
+      expectedOrigin: expectedOrigins,
+      expectedRPID: rpId,
+      credential: {
+        id: stored.id,
+        publicKey: fromB64url(stored.publicKey),
+        counter: stored.counter,
+      },
+      requireUserVerification: true,
+    });
+    if (!verification.verified) return res.status(401).json({ ok: false, error: "Overenie biometrie zlyhalo" });
+    // Update counter (anti-replay)
+    const newCounter = verification.authenticationInfo.newCounter;
+    const rows = await db.select().from(adminConfig).where(eq(adminConfig.key, "clients"));
+    if (rows.length && Array.isArray(rows[0].data)) {
+      const clients = rows[0].data as UnifiedClient[];
+      const updated = clients.map((c) => c.id === client.id
+        ? { ...c, lastLoginAt: new Date().toISOString(), webauthnCredentials: (c.webauthnCredentials ?? []).map((cr) => cr.id === stored.id ? { ...cr, counter: newCounter } : cr) }
+        : c);
+      await db.insert(adminConfig).values({ key: "clients", data: updated })
+        .onConflictDoUpdate({ target: adminConfig.key, set: { data: updated, updatedAt: new Date() } });
+      invalidateClientCache();
+    }
+    return res.json({ ok: true, client: buildClientResponse(client) });
+  } catch (err) {
+    req.log.error({ err }, "WebAuthn auth-complete failed");
+    return res.status(500).json({ ok: false, error: "Interná chyba" });
+  }
+});
+
+// Delete a WebAuthn credential (forget this device)
+router.delete("/webauthn/credential/:credId", async (req, res) => {
+  try {
+    const { clientInternalId } = req.body ?? {};
+    const credId = req.params.credId;
+    if (!clientInternalId || !credId) return res.status(400).json({ ok: false });
+    const rows = await db.select().from(adminConfig).where(eq(adminConfig.key, "clients"));
+    if (!rows.length || !Array.isArray(rows[0].data)) return res.status(500).json({ ok: false });
+    const clients = rows[0].data as UnifiedClient[];
+    const updated = clients.map((c) => c.id === String(clientInternalId)
+      ? { ...c, webauthnCredentials: (c.webauthnCredentials ?? []).filter((cr) => cr.id !== credId) }
+      : c);
+    await db.insert(adminConfig).values({ key: "clients", data: updated })
+      .onConflictDoUpdate({ target: adminConfig.key, set: { data: updated, updatedAt: new Date() } });
+    invalidateClientCache();
+    return res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "WebAuthn credential delete failed");
+    return res.status(500).json({ ok: false });
   }
 });
 

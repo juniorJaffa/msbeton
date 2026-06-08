@@ -4,7 +4,7 @@ import { Navbar } from "@/components/Navbar";
 import {
   clientAuth,
   isBiometricAvailable, hasClientBiometric,
-  authenticateClientBiometric, registerClientBiometric, clearClientBiometric,
+  authenticateClientBiometric, registerClientBiometric, forgetClientBiometric,
   getClientAttemptInfo, recordClientFailedAttempt, resetClientAttempts,
 } from "@/lib/clientAuth";
 import { SEOHead } from "@/components/SEOHead";
@@ -55,14 +55,9 @@ export default function ClientLogin() {
     if (isBiometricAvailable() && hasClientBiometric()) {
       setScreen("bio-pending");
       authenticateClientBiometric().then(result => {
-        if (result.ok && result.clientId) {
-          const session = clientAuth.getLoggedClient();
-          if (session) {
-            window.dispatchEvent(new Event("client-session-changed"));
-            setLocation("/#calculator");
-          } else {
-            setScreen("bio-failed");
-          }
+        if (result.ok && result.session) {
+          clientAuth.updateSession(result.session);
+          setLocation("/#calculator");
         } else {
           setScreen("bio-failed");
         }
@@ -75,11 +70,12 @@ export default function ClientLogin() {
   const retryBiometric = () => {
     setScreen("bio-pending");
     authenticateClientBiometric().then(result => {
-      if (result.ok) {
-        const session = clientAuth.getLoggedClient();
-        if (session) { window.dispatchEvent(new Event("client-session-changed")); setLocation("/#calculator"); }
-        else setScreen("bio-failed");
-      } else setScreen("bio-failed");
+      if (result.ok && result.session) {
+        clientAuth.updateSession(result.session);
+        setLocation("/#calculator");
+      } else {
+        setScreen("bio-failed");
+      }
     });
   };
 
@@ -123,12 +119,21 @@ export default function ClientLogin() {
     }
   };
 
+  const [bioRegLoading, setBioRegLoading] = useState(false);
+  const [bioRegError, setBioRegError] = useState("");
+
   const registerBio = async () => {
     const session = clientAuth.getLoggedClient();
     if (!session) { setLocation("/#calculator"); return; }
-    const res = await registerClientBiometric(session.id, session.name);
-    if (res.ok) setLocation("/#calculator");
-    else setLocation("/#calculator");
+    setBioRegLoading(true);
+    setBioRegError("");
+    const res = await registerClientBiometric(session.id, session.clientId ?? session.id, session.name);
+    setBioRegLoading(false);
+    if (res.ok) {
+      setLocation("/#calculator");
+    } else {
+      setBioRegError(res.error ?? "Registrácia zlyhala");
+    }
   };
 
   // ── BIOMETRIC PENDING ──
@@ -167,9 +172,13 @@ export default function ClientLogin() {
               className="w-full py-3 bg-primary text-secondary font-black text-sm tracking-widest hover:bg-primary/85 transition-all rounded-sm flex items-center justify-center gap-2 cursor-pointer">
               <Fingerprint className="w-4 h-4" /> Skúsiť znova
             </button>
-            <button onClick={() => { clearClientBiometric(); setScreen("form"); }}
+            <button onClick={() => setScreen("form")}
               className="w-full py-3 border border-white/15 text-white/50 hover:text-white/80 hover:border-white/30 font-semibold text-sm tracking-widest transition-all rounded-sm cursor-pointer">
               Prihlásiť heslom
+            </button>
+            <button onClick={() => { forgetClientBiometric(); setScreen("form"); }}
+              className="w-full py-2 text-white/20 hover:text-white/40 font-medium text-xs tracking-wide transition-colors cursor-pointer">
+              Zabudnúť toto zariadenie
             </button>
           </div>
         </div>
@@ -192,12 +201,18 @@ export default function ClientLogin() {
             <p className="text-white/40 text-sm mt-1">Budúce prihlásenie bez hesla — odtlačok prsta alebo Face ID</p>
           </div>
           <div className="px-8 py-5 space-y-3">
-            <button onClick={registerBio}
-              className="w-full py-3.5 bg-primary text-secondary font-black text-sm tracking-widest hover:bg-primary/85 transition-all rounded-sm flex items-center justify-center gap-2 cursor-pointer">
-              <Check className="w-4 h-4" /> Áno, aktivovať
+            {bioRegError && (
+              <div className="bg-red-500/15 border border-red-500/30 rounded-lg px-4 py-3">
+                <p className="text-red-400 text-xs">{bioRegError}</p>
+              </div>
+            )}
+            <button onClick={registerBio} disabled={bioRegLoading}
+              className="w-full py-3.5 bg-primary text-secondary font-black text-sm tracking-widest hover:bg-primary/85 transition-all disabled:opacity-60 rounded-sm flex items-center justify-center gap-2 cursor-pointer">
+              {bioRegLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+              {bioRegLoading ? "Aktivujem…" : "Áno, aktivovať"}
             </button>
-            <button onClick={() => setLocation("/#calculator")}
-              className="w-full py-3 border border-white/15 text-white/50 hover:text-white/80 font-semibold text-sm tracking-widest transition-all rounded-sm cursor-pointer">
+            <button onClick={() => setLocation("/#calculator")} disabled={bioRegLoading}
+              className="w-full py-3 border border-white/15 text-white/50 hover:text-white/80 font-semibold text-sm tracking-widest transition-all rounded-sm cursor-pointer disabled:opacity-40">
               Nie, preskočiť
             </button>
           </div>

@@ -25,21 +25,50 @@ const ADMIN_CLIENT: LoggedClient = {
 
 // ── WebAuthn helpers ──────────────────────────────────────────────────────────
 
-function randomBytes(n: number): Uint8Array {
-  const arr = new Uint8Array(n);
-  crypto.getRandomValues(arr);
-  return arr;
-}
-
 function b64url(buf: ArrayBuffer): string {
   return btoa(String.fromCharCode(...new Uint8Array(buf)))
     .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 }
 
-function b64urlDecode(s: string): Uint8Array {
+function b64urlDecode(s: string): Uint8Array<ArrayBuffer> {
   const b64 = s.replace(/-/g, "+").replace(/_/g, "/");
   const bin = atob(b64);
-  return Uint8Array.from(bin, c => c.charCodeAt(0));
+  const arr = new Uint8Array(bin.length) as Uint8Array<ArrayBuffer>;
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return arr;
+}
+
+// Serialize PublicKeyCredential (registration) to JSON-safe object for server
+function serializeRegistration(cred: PublicKeyCredential): Record<string, unknown> {
+  const resp = cred.response as AuthenticatorAttestationResponse;
+  return {
+    id: cred.id,
+    rawId: b64url(cred.rawId),
+    response: {
+      clientDataJSON: b64url(resp.clientDataJSON),
+      attestationObject: b64url(resp.attestationObject),
+      transports: resp.getTransports?.() ?? [],
+    },
+    type: "public-key",
+    clientExtensionResults: cred.getClientExtensionResults(),
+  };
+}
+
+// Serialize PublicKeyCredential (authentication) to JSON-safe object for server
+function serializeAuthentication(cred: PublicKeyCredential): Record<string, unknown> {
+  const resp = cred.response as AuthenticatorAssertionResponse;
+  return {
+    id: cred.id,
+    rawId: b64url(cred.rawId),
+    response: {
+      clientDataJSON: b64url(resp.clientDataJSON),
+      authenticatorData: b64url(resp.authenticatorData),
+      signature: b64url(resp.signature),
+      userHandle: resp.userHandle ? b64url(resp.userHandle) : null,
+    },
+    type: "public-key",
+    clientExtensionResults: cred.getClientExtensionResults(),
+  };
 }
 
 // ── Rate limiting ──────────────────────────────────────────────────────────────
@@ -87,57 +116,161 @@ export function clearClientBiometric(): void {
   localStorage.removeItem(CLIENT_WEBAUTHN_KEY);
 }
 
-export async function registerClientBiometric(clientId: string, displayName: string): Promise<{ ok: boolean; error?: string }> {
+// Register biometric for client — server-side challenge + public key storage
+export async function registerClientBiometric(
+  clientInternalId: string,  // session.id (UUID)
+  loginId: string,           // session.clientId (loginId used for auth-challenge)
+  displayName: string
+): Promise<{ ok: boolean; error?: string }> {
   try {
+    // 1. Get registration challenge from server
+    const challengeRes = await fetch("/api/client/webauthn/reg-challenge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clientInternalId }),
+    });
+    const challengeData = await challengeRes.json() as { ok: boolean; options?: Record<string, unknown>; error?: string };
+    if (!challengeData.ok || !challengeData.options) return { ok: false, error: challengeData.error ?? "Server nedostupný" };
+
+    const opts = challengeData.options as {
+      challenge: string;
+      rp: { name: string; id: string };
+      user: { id: string; name: string; displayName: string };
+      pubKeyCredParams: PublicKeyCredentialParameters[];
+      authenticatorSelection?: AuthenticatorSelectionCriteria;
+      excludeCredentials?: Array<{ id: string; type: string }>;
+      timeout?: number;
+    };
+
+    // 2. Create credential on device
     const cred = await navigator.credentials.create({
       publicKey: {
-        challenge: randomBytes(32),
-        rp: { name: "MS-BETON Klient", id: location.hostname },
+        challenge: b64urlDecode(opts.challenge),
+        rp: opts.rp,
         user: {
-          id: new TextEncoder().encode(`msbeton-client-${clientId}`),
-          name: `klient-${clientId}`,
-          displayName,
+          id: b64urlDecode(opts.user.id),
+          name: opts.user.name,
+          displayName: displayName || opts.user.displayName,
         },
-        pubKeyCredParams: [
-          { type: "public-key", alg: -7 },
-          { type: "public-key", alg: -257 },
-        ],
-        authenticatorSelection: {
-          authenticatorAttachment: "platform",
-          userVerification: "required",
-          residentKey: "preferred",
-        },
-        timeout: 60000,
+        pubKeyCredParams: opts.pubKeyCredParams,
+        authenticatorSelection: opts.authenticatorSelection,
+        excludeCredentials: (opts.excludeCredentials ?? []).map((c) => ({
+          id: b64urlDecode(c.id),
+          type: c.type as PublicKeyCredentialType,
+        })),
+        timeout: opts.timeout ?? 60000,
       },
     }) as PublicKeyCredential;
-    localStorage.setItem(CLIENT_WEBAUTHN_KEY, JSON.stringify({
-      credId: b64url(cred.rawId),
-      clientId,
-    }));
+
+    // 3. Send credential to server for verification + storage
+    const completeRes = await fetch("/api/client/webauthn/reg-complete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        clientInternalId,
+        credential: serializeRegistration(cred),
+      }),
+    });
+    const completeData = await completeRes.json() as { ok: boolean; error?: string };
+    if (!completeData.ok) return { ok: false, error: completeData.error ?? "Registrácia zlyhala" };
+
+    // 4. Store credential ID locally (for auth-challenge lookup)
+    localStorage.setItem(CLIENT_WEBAUTHN_KEY, JSON.stringify({ credId: cred.id, loginId }));
     return { ok: true };
   } catch (err) {
     return { ok: false, error: String(err) };
   }
 }
 
-export async function authenticateClientBiometric(): Promise<{ ok: boolean; clientId?: string; error?: string }> {
+// Authenticate using biometric — returns full session on success
+export async function authenticateClientBiometric(): Promise<{ ok: boolean; session?: LoggedClient; error?: string }> {
   const storedStr = localStorage.getItem(CLIENT_WEBAUTHN_KEY);
   if (!storedStr) return { ok: false, error: "Žiadna uložená biometria" };
   try {
-    const stored: { credId: string; clientId: string } = JSON.parse(storedStr);
-    await navigator.credentials.get({
-      publicKey: {
-        challenge: randomBytes(32),
-        rpId: location.hostname,
-        allowCredentials: [{ type: "public-key", id: b64urlDecode(stored.credId) }],
-        userVerification: "required",
-        timeout: 60000,
-      },
+    const stored: { credId: string; loginId: string } = JSON.parse(storedStr);
+    if (!stored.credId || !stored.loginId) return { ok: false, error: "Poškodený záznam biometrie" };
+
+    // 1. Get authentication challenge from server
+    const challengeRes = await fetch("/api/client/webauthn/auth-challenge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ loginId: stored.loginId }),
     });
-    return { ok: true, clientId: stored.clientId };
-  } catch (err) {
-    return { ok: false, error: String(err) };
+    const challengeData = await challengeRes.json() as { ok: boolean; options?: Record<string, unknown>; error?: string };
+    if (!challengeData.ok || !challengeData.options) return { ok: false, error: "Server nedostupný" };
+
+    const opts = challengeData.options as {
+      challenge: string;
+      rpId: string;
+      allowCredentials?: Array<{ id: string; type: string }>;
+      userVerification?: UserVerificationRequirement;
+      timeout?: number;
+    };
+
+    // If server returned no allowCredentials, biometric not registered on server
+    if (!opts.allowCredentials?.length) {
+      clearClientBiometric();
+      return { ok: false, error: "Biometria nie je registrovaná" };
+    }
+
+    // 2. Perform biometric authentication on device
+    const cred = await navigator.credentials.get({
+      publicKey: {
+        challenge: b64urlDecode(opts.challenge),
+        rpId: opts.rpId,
+        allowCredentials: opts.allowCredentials.map((c) => ({
+          id: b64urlDecode(c.id),
+          type: c.type as PublicKeyCredentialType,
+        })),
+        userVerification: opts.userVerification ?? "required",
+        timeout: opts.timeout ?? 60000,
+      },
+    }) as PublicKeyCredential;
+
+    // 3. Verify assertion on server + get session
+    const completeRes = await fetch("/api/client/webauthn/auth-complete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        loginId: stored.loginId,
+        credential: serializeAuthentication(cred),
+      }),
+    });
+    const completeData = await completeRes.json() as { ok: boolean; client?: LoggedClient; error?: string };
+    if (!completeData.ok || !completeData.client) {
+      return { ok: false, error: completeData.error ?? "Overenie zlyhalo" };
+    }
+    return { ok: true, session: completeData.client };
+  } catch (err: unknown) {
+    const msg = String(err);
+    // Clear stale local credential if device no longer has it
+    if (msg.includes("NotAllowedError") || msg.includes("NotSupportedError") || msg.includes("InvalidStateError")) {
+      clearClientBiometric();
+    }
+    return { ok: false, error: msg };
   }
+}
+
+// Remove biometric from server + local storage
+export async function forgetClientBiometric(): Promise<void> {
+  const storedStr = localStorage.getItem(CLIENT_WEBAUTHN_KEY);
+  if (storedStr) {
+    try {
+      const stored: { credId: string; loginId: string } = JSON.parse(storedStr);
+      const session = localStorage.getItem("msbeton_client_session");
+      if (session) {
+        const client = JSON.parse(session) as LoggedClient;
+        if (client.id && stored.credId) {
+          await fetch(`/api/client/webauthn/credential/${encodeURIComponent(stored.credId)}`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ clientInternalId: client.id }),
+          }).catch(() => {});
+        }
+      }
+    } catch {}
+  }
+  clearClientBiometric();
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -165,6 +298,7 @@ export const clientAuth = {
   },
 
   logout(): void {
+    // Preserve CLIENT_WEBAUTHN_KEY — biometric survives logout (banking app behavior)
     localStorage.removeItem(SESSION_KEY);
     window.dispatchEvent(new Event("client-session-changed"));
   },
