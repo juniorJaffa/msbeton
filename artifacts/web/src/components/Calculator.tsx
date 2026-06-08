@@ -1362,10 +1362,16 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     };
 
     // Build rows — main item only (extras handled separately in extraRows)
+    const kaminovoPrefixHtml = (name: string | null | undefined): string => {
+      const kg = name ? getKamenivoGroup(name) : null;
+      if (kg === 'drvene') return `<svg style="display:inline-block;vertical-align:middle;margin-right:4px;margin-bottom:1px" width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3L2 21h20L12 3z"/></svg>`;
+      if (kg === 'riecne') return `<svg style="display:inline-block;vertical-align:middle;margin-right:4px;margin-bottom:1px" width="13" height="11" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M2 5 Q6 2 10 5 Q14 8 18 5 Q22 2 26 5"/><path d="M2 11 Q6 8 10 11 Q14 14 18 11 Q22 8 26 11"/><path d="M2 17 Q6 14 10 17 Q14 20 18 17 Q22 14 26 17"/></svg>`;
+      return '';
+    };
     const mainCI = result.concreteBreakdown[0];
     const mainCatName = mainCI?.categoryName ?? "";
     const mainBetonTypeName = mainCI?.label.replace(/ – [\d.,]+ m³$/, "") ?? "";
-    const mainBetonLabel = mainCatName ? kamenivoPrefix(mainCatName) + mainCatName : mainBetonTypeName;
+    const mainBetonLabel = mainCatName ? kaminovoPrefixHtml(mainCatName) + mainCatName : mainBetonTypeName;
     const betonRows = (() => {
       if (!mainCI) return "";
       const origVal = isFaktura ? mainCI.bezDph : mainCI.bezDph * (1 + VAT_HOTOVOST);
@@ -1511,7 +1517,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const dopravaExtraLabel = `${ci.transportIsMin ? "Min. doprava" : "Doprava"}${pdfZone ? ` ${pdfZone}` : ""} · ${pdfExtraTrucks}`;
       const extraTransportUnitStr = buildTransportUnitStr(ci.transportIsMin, ci.qty);
       const extraTypeLabel = ci.label.replace(/ – [\d.,]+ m³$/, "");
-      const extraSectionLabel = ci.categoryName ? kamenivoPrefix(ci.categoryName) + ci.categoryName : extraTypeLabel;
+      const extraSectionLabel = ci.categoryName ? kaminovoPrefixHtml(ci.categoryName) + ci.categoryName : extraTypeLabel;
       const isAddToMainExtra = idx < extraItems.length && extraItems[idx]?.transportMode === "addToMain";
       let rows = sectionRow(`Pridaná položka ${idx + 1}${extraSectionLabel ? ` – ${extraSectionLabel}` : ""}`);
       rows += trow(ci.label, `${ci.qty}&nbsp;m³`, unitStr, betonOrig, betonDisc, undefined, true);
