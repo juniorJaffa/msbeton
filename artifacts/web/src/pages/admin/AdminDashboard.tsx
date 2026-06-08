@@ -3,9 +3,9 @@ import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { LogOut, Users, Truck, Wrench, Layers, RefreshCw, ClipboardList, BarChart2, TrendingUp, MoreHorizontal, Search, Fingerprint, Server } from "lucide-react";
 import { VersionBadge } from "@/components/VersionBadge";
-import { useToast } from "@/hooks/use-toast";
 import { isLoggedIn, logout, isBiometricAvailable, hasStoredCredential } from "@/lib/adminAuth";
 import { adminData, adminApi, syncFromServer, Order } from "@/lib/adminData";
+import { OrderNotificationToast } from "./OrderNotificationToast";
 
 type Tab = "betony" | "sluzby" | "doprava" | "klienti" | "objednavky" | "analytics" | "statistiky" | "gsc" | "server";
 
@@ -78,7 +78,7 @@ export default function AdminDashboard() {
 
   const [orderBadge, setOrderBadge] = useState(0);
   const knownOrderIds = useRef<Set<string>>(new Set(adminData.getOrders().map(o => o.id)));
-  const { toast } = useToast();
+  const [toastOrders, setToastOrders] = useState<Order[]>([]);
 
   useEffect(() => {
     if (tab === "objednavky") {
@@ -95,11 +95,7 @@ export default function AdminDashboard() {
           if (newOnes.length > 0) {
             newOnes.forEach(o => knownOrderIds.current.add(o.id));
             setOrderBadge(n => n + newOnes.length);
-            toast({
-              title: `${newOnes.length === 1 ? "Nová objednávka" : `${newOnes.length} nové objednávky`}`,
-              description: newOnes.map(o => o.clientName).join(", "),
-              duration: 6000,
-            });
+            setToastOrders(prev => [...prev, ...newOnes]);
           }
         }
       } catch {}
@@ -107,6 +103,15 @@ export default function AdminDashboard() {
     const interval = setInterval(poll, 30000);
     return () => clearInterval(interval);
   }, [tab]);
+
+  const handleToastDismiss = () => setToastOrders(prev => prev.slice(1));
+  const handleToastOpen = (order: Order) => {
+    setToastOrders([]);
+    setGoToOrdersFocusId(order.id);
+    setGoToOrdersSearch(undefined);
+    setTab("objednavky");
+    window.location.hash = "objednavky";
+  };
 
   const handleLogout = () => { logout(); navigate("/admin/login"); };
   const [moreOpen, setMoreOpen] = useState(false);
@@ -238,6 +243,12 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      <OrderNotificationToast
+        orders={toastOrders}
+        onDismiss={handleToastDismiss}
+        onOpen={handleToastOpen}
+      />
 
       {/* Scroll container — fills viewport below fixed header */}
       <div id="admin-content" className="fixed top-[86px] sm:top-20 left-0 right-0 bottom-0 overflow-y-auto">
