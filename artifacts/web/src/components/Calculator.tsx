@@ -177,16 +177,15 @@ function TypeSelectField({ label, value, onChange, options, discountFactor = 1, 
             const displayPrice = manual !== undefined ? manual : o.price * discountFactor;
             const showStrike = Math.abs(o.price - displayPrice) > 0.001;
             const itemClean = cleanLabel(o.label);
-            const itemShort = itemClean.length <= 28;
             return (
               <SelectItem key={o.label} value={o.label} className="text-white focus:bg-white/10 focus:text-primary cursor-pointer py-2 !items-start">
-                <span className="flex gap-2 items-start">
-                  <span className="flex-1 min-w-0 whitespace-normal break-words leading-snug">{itemClean}</span>
-                  <span className="shrink-0 whitespace-nowrap flex items-center gap-1 text-xs font-bold pt-0.5">
-                    {showStrike && <s className="text-white/30 font-normal">{o.price.toFixed(2)}</s>}
-                    <span className={manual !== undefined ? "text-sky-400" : "text-primary"}>{displayPrice.toFixed(2)} €/m³</span>
+                <span style={{display:'grid', gridTemplateColumns:'1fr auto', alignItems:'start', gap:'6px', width:'100%', minWidth:0}}>
+                  <span style={{whiteSpace:'normal', wordBreak:'break-word', lineHeight:1.35, minWidth:0}}>{itemClean}</span>
+                  <span style={{whiteSpace:'nowrap', fontSize:'0.75rem', fontWeight:700, paddingTop:'1px', flexShrink:0}}>
+                    {showStrike && <><s style={{color:'rgba(255,255,255,0.3)', fontWeight:400}}>{o.price.toFixed(2)}</s>{" "}</>}
+                    <span style={{color: manual !== undefined ? '#38bdf8' : '#EDC531'}}>{displayPrice.toFixed(2)} €/m³</span>
                     {manual !== undefined && (
-                      <span className="inline-flex items-center gap-0.5 bg-sky-400/20 text-sky-400 border border-sky-400/30 rounded px-1 py-px text-[8px] font-bold leading-none">
+                      <span className="inline-flex items-center gap-0.5 bg-sky-400/20 text-sky-400 border border-sky-400/30 rounded px-1 py-px text-[8px] font-bold leading-none ml-0.5">
                         <PenLine className="w-2 h-2" />M
                       </span>
                     )}
