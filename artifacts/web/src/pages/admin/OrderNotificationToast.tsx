@@ -9,7 +9,7 @@ interface Props {
   onOpen: (order: Order) => void;
 }
 
-const DURATION_S = 10;
+const DURATION_S = 20;
 const RADIUS = 11;
 const CIRC = 2 * Math.PI * RADIUS;
 
