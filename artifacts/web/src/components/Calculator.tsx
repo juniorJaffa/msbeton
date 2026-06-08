@@ -179,7 +179,7 @@ function TypeSelectField({ label, value, onChange, options, discountFactor = 1, 
             const itemClean = cleanLabel(o.label);
             const itemShort = itemClean.length <= 28;
             return (
-              <SelectItem key={o.label} value={o.label} className="text-white focus:bg-white/10 focus:text-primary cursor-pointer [&>span]:whitespace-normal py-2">
+              <SelectItem key={o.label} value={o.label} className="text-white focus:bg-white/10 focus:text-primary cursor-pointer [&>span]:whitespace-normal [&>span:not(.absolute)]:flex-1 [&>span:not(.absolute)]:min-w-0 py-2">
                 {itemShort ? (
                   /* Krátka položka: 1 riadok */
                   <span className="flex items-center gap-2 w-full">

@@ -29,7 +29,6 @@ const MARQUEE_PHOTOS = [
   { src: "/images/vozovy-park/ms-beton-man-pumpa-logo-cesta-lesny-teren-zilina.jpg",         pos: "center 42%" },
   { src: "/images/vozovy-park/ms-beton-domiesavac-beton-krajina.jpg",                        pos: "center 32%" },
   { src: "/images/vozovy-park/ms-beton-man-pumpa-zrubovy-dom-betonaz.jpg",                    pos: "center 40%" },
-  { src: "/images/vozovy-park/ms-beton-man-pumpa-logo-cesta-lesny-teren-zilina.jpg",         pos: "center 42%" },
   { src: "/images/vozovy-park/ms-beton-man-pumpa-horsky-teren-zakazka.jpg",          pos: "center 38%" },
   { src: "/images/vozovy-park/ms-beton-pumpa-mixer-zakazka-z-vysky.jpg",                     pos: "center 38%" },
   { src: "/images/vozovy-park/ms-beton-2-pumpy-mixer-kompletna-zakazka.jpg",                 pos: "center 30%" },
@@ -96,7 +95,6 @@ const GALLERY_PHOTOS: GalleryPhoto[] = [
   { src: "ms-beton-man-pumpa-komercny-objekt-moderna-stavba.jpg",  cat: "pumpa",  label: "MS-BETON MAN — čerpanie betónu, moderná stavba",         sub: "Pumpa · MAN",     pos: "center 40%" },
   { src: "ms-beton-man-pumpa-horsky-teren-zakazka.jpg",    cat: "pumpa",  label: "MS-BETON MAN — zákazka v horskom teréne",              sub: "Pumpa · MAN",     top: true, pos: "center 45%" },
   { src: "ms-beton-man-cifa-betonaz-tehlovej-hruby-stavby.jpg",    cat: "spolu",  label: "MAN + 2× domiešavač — betonáž tehlovej hrubej stavby",   sub: "Pumpa + Mix",     pos: "center 48%" },
-  { src: "ms-beton-man-pumpa-logo-cesta-lesny-teren-zilina.jpg",   cat: "pumpa",  label: "MS-BETON MAN — betónová pumpa na zákazke, Žilina",       sub: "Pumpa · MAN",     top: true, pos: "center 42%" },
 ];
 
 const TABS: { id: GalleryCat | "videa"; label: string }[] = [
@@ -229,6 +227,8 @@ export default function VozovyPark() {
       : activeTab === "vsetko"
         ? GALLERY_PHOTOS.filter(p => p.top)
         : GALLERY_PHOTOS.filter(p => p.cat === activeTab);
+  const trimmed = Math.floor(filteredPhotos.length / 3) * 3;
+  const displayPhotos = trimmed > 0 ? filteredPhotos.slice(0, trimmed) : filteredPhotos;
 
   return (
     <div className="min-h-screen bg-secondary">
@@ -547,7 +547,7 @@ export default function VozovyPark() {
                 <VideasSection />
               ) : (
                 <>
-                  <GalleryGrid photos={filteredPhotos} />
+                  <GalleryGrid photos={displayPhotos} />
                   {activeTab === "hadice" && (
                     <motion.div
                       className="mt-4 relative overflow-hidden rounded-lg"
