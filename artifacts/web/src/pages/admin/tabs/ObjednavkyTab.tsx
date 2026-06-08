@@ -194,16 +194,26 @@ function exportOrderPDF(o: Order) {
 
   const fmtRate = (n: number, suffix?: string) => n.toFixed(2) + " " + (suffix ?? "€");
   const pdfCats = adminData.getCategories();
+  const kamenivoSvg = (name: string): string => {
+    const kg = getKamenivoGroup(name);
+    if (kg === 'drvene') return `<svg style="display:inline-block;vertical-align:middle;margin-right:4px;margin-bottom:1px" width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3L2 21h20L12 3z"/></svg>`;
+    if (kg === 'riecne') return `<svg style="display:inline-block;vertical-align:middle;margin-right:4px;margin-bottom:1px" width="13" height="11" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M2 5 Q6 2 10 5 Q14 8 18 5 Q22 2 26 5"/><path d="M2 11 Q6 8 10 11 Q14 14 18 11 Q22 8 26 11"/><path d="M2 17 Q6 14 10 17 Q14 20 18 17 Q22 14 26 17"/></svg>`;
+    return '';
+  };
   const fixSecH = (h: string) => {
-    const np = h.includes(" – ") ? h.split(" – ").slice(1).join(" – ") : "";
-    if (!np || pdfCats.some(c => c.name === np)) return h;
-    const cat = pdfCats.find(c => c.types.some(t => t.label === np));
-    return cat ? h.replace(np, cat.name) : h;
+    const dashIdx = h.indexOf(" – ");
+    if (dashIdx === -1) return h;
+    const sectionPrefix = h.slice(0, dashIdx + 3);
+    const rawName = h.slice(dashIdx + 3).replace(/^[▲≋]\s*/, '');
+    const resolvedName = pdfCats.some(c => c.name === rawName)
+      ? rawName
+      : (pdfCats.find(c => c.types.some(t => t.label === rawName))?.name ?? rawName);
+    return sectionPrefix + kamenivoSvg(resolvedName) + resolvedName;
   };
   let pdfRowIdx = 0;
   const breakdownHtml = parsed ? parsed.s.map(sec => {
     const secH = fixSecH(sec.h);
-    const isMain = secH.startsWith("Pridaná") || secH.startsWith("Produkty");
+    const isMain = sec.h.startsWith("Produkty");
     const rows = sec.rows.map(row => {
       if (row.l.startsWith("⚠") && row.v === 0) {
         return `<tr><td colspan="5" style="padding:4px 8px 4px 14px;font-size:7.5pt;font-weight:600;color:#991b1b;background:#fef2f2;border-top:1px solid #fca5a5;border-bottom:1px solid #fca5a5">${row.l}</td></tr>`;
