@@ -158,10 +158,19 @@ export function CalculatorSchema() {
       { "@type": "Question", "name": "Je kalkulačka betónu zadarmo?", "acceptedAnswer": { "@type": "Answer", "text": "Áno, online kalkulačka betónu MS-BETON je úplne zadarmo a bez registrácie. Firemní klienti po prihlásení vidia svoje individuálne zľavy automaticky." } }
     ]
   };
+  const breadcrumb = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Domov", "item": SITE_URL },
+      { "@type": "ListItem", "position": 2, "name": "Kalkulačka betónu", "item": `${SITE_URL}/kalkulacka-beton` }
+    ]
+  };
   return (
     <Helmet>
       <script type="application/ld+json">{JSON.stringify(app)}</script>
       <script type="application/ld+json">{JSON.stringify(faq)}</script>
+      <script type="application/ld+json">{JSON.stringify(breadcrumb)}</script>
     </Helmet>
   );
 }

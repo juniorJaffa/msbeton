@@ -256,7 +256,7 @@ export default function Cennik() {
             </motion.p>
             <motion.div variants={fadeUp} className="flex flex-wrap gap-3">
               <a
-                href="/#calculator"
+                href="/kalkulacka-beton"
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-secondary font-black text-xs uppercase tracking-widest hover:bg-primary/90 transition-[transform,opacity] duration-150 active:scale-[0.97]"
                 style={{ fontFamily: "Montserrat, sans-serif" }}
               >
@@ -337,7 +337,7 @@ export default function Cennik() {
           </div>
           <div className="flex gap-3 shrink-0">
             <a
-              href="/#calculator"
+              href="/kalkulacka-beton"
               className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-secondary font-black text-xs uppercase tracking-widest hover:bg-primary/90 transition-[transform,opacity] duration-150 active:scale-[0.97] shadow-[0_0_30px_rgba(237,197,49,0.18)]"
               style={{ fontFamily: "Montserrat, sans-serif" }}
             >

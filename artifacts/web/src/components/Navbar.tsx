@@ -44,7 +44,7 @@ export function Navbar() {
 
   const navLinks = [
     { name: "O nás", href: "/#about" },
-    { name: "Kalkulačka", href: "/#calculator" },
+    { name: "Kalkulačka", href: "/kalkulacka-beton" },
     { name: "Vozový park", href: "/vozovy-park" },
     { name: "Cenník", href: "/cennik" },
     { name: "Kontakt", href: "/#contact" },
@@ -130,7 +130,7 @@ export function Navbar() {
             {/* ── Group 3: Nástroje ── */}
             <div className="flex items-center gap-3 shrink-0">
               <a
-                href="/#calculator"
+                href="/kalkulacka-beton"
                 className="relative flex items-center gap-1.5 text-white/55 hover:text-primary transition-colors text-xs font-bold tracking-wide group"
                 title="Kalkulačka betónu"
               >
