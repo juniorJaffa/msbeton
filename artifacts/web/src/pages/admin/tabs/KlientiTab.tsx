@@ -6,14 +6,21 @@ import { PriceModeToggle } from "@/components/PriceModeToggle";
 import { PhoneInput } from "@/components/PhoneInput";
 import { cn, formatPhone } from "@/lib/utils";
 import { adminData, adminApi, syncFromServer, Client, TransportSettings, Order, SYSTEM_OWNER_ID, getKamenivoGroup } from "@/lib/adminData";
+import { isBiometricAvailable as isAdminBioAvail, hasStoredCredential as hasAdminBio } from "@/lib/adminAuth";
 
+interface BioFeedEntry {
+  ts: string; ok: boolean; event: string;
+  clientId: string; clientName: string; loginId: string;
+  device: string; ip: string; origin: string; reason: string;
+}
 interface BiometricStats {
   totalClients: number;
   bioClients: number;
   todaySuccess: number;
   todayFailed: number;
-  alerts: Array<{ clientId: string; failCount: number; lastIp: string }>;
+  alerts: Array<{ clientId: string; clientName?: string; failCount: number; lastIp: string; lastDevice?: string; lastReason?: string }>;
   lastActivity: string | null;
+  recent?: BioFeedEntry[];
 }
 import { EditableField, authFetch } from "./_shared";
 
@@ -602,6 +609,35 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
         </button>
         {bioOpen && bioStats && (
           <>
+            {/* Explainer — dve úrovne prihlásenia */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-gray-100 border-b border-gray-100">
+              {/* ADMIN */}
+              <div className="bg-secondary/[0.03] px-4 py-3">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <ShieldCheck className="w-4 h-4 text-secondary" />
+                  <span className="font-black text-secondary text-xs uppercase tracking-wider">Admin</span>
+                  <span className={`ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-sm flex items-center gap-1 ${isAdminBioAvail() && hasAdminBio() ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-gray-100 text-gray-400"}`}>
+                    <Fingerprint className="w-3 h-3" /> {isAdminBioAvail() && hasAdminBio() ? "aktívna" : "neaktívna"}
+                  </span>
+                </div>
+                <p className="text-[11px] text-gray-500 leading-relaxed">
+                  Vstup do <strong className="text-gray-700">administrácie</strong>. Biometria je viazaná <strong className="text-gray-700">len na toto zariadenie</strong> (overuje sa lokálne). Reset hesla cez <strong className="text-gray-700">kód na email</strong>.
+                </p>
+              </div>
+              {/* KLIENT */}
+              <div className="bg-primary/[0.05] px-4 py-3">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Users className="w-4 h-4 text-amber-600" />
+                  <span className="font-black text-amber-700 text-xs uppercase tracking-wider">Klient</span>
+                  <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-sm bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    {bioStats.bioClients} / {bioStats.totalClients} má bio
+                  </span>
+                </div>
+                <p className="text-[11px] text-gray-500 leading-relaxed">
+                  Prihlásenie do <strong className="text-gray-700">kalkulačky</strong>. Biometria <strong className="text-gray-700">overená serverom</strong> (kľúč v DB) — funguje na <strong className="text-gray-700">viacerých zariadeniach</strong>. Reset hesla cez <strong className="text-gray-700">email odkaz</strong>.
+                </p>
+              </div>
+            </div>
             <div className="flex flex-wrap gap-px bg-gray-100">
               <div className="bg-white px-3 py-2 flex-1 min-w-[100px]">
                 <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Klienti s biometriou</div>
@@ -628,14 +664,56 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                   <AlertTriangle className="w-3 h-3" /> Podozrivá aktivita ({">"} 3 zlyhania / hodinu)
                 </div>
                 {bioStats.alerts.map(a => (
-                  <div key={a.clientId} className="flex items-center justify-between py-0.5">
-                    <span className="text-xs font-mono text-gray-600">Klient {a.clientId}</span>
-                    <div className="flex items-center gap-2">
+                  <div key={a.clientId} className="flex items-center justify-between py-0.5 gap-2">
+                    <span className="text-xs font-bold text-gray-700 truncate">{a.clientName || `Klient ${a.clientId}`}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {a.lastDevice && a.lastDevice !== "—" && <span className="text-[10px] text-gray-500">{a.lastDevice}</span>}
                       <span className="text-[10px] text-gray-400 font-mono">{a.lastIp}</span>
                       <span className="text-[10px] font-black text-red-500 bg-red-100 px-1.5 py-0.5 rounded">{a.failCount}× zlyhanie</span>
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Posledná aktivita — feed s identifikáciou zariadenia a príčiny */}
+            {bioStats.recent && bioStats.recent.length > 0 && (
+              <div className="border-t border-gray-100">
+                <div className="px-4 py-2 bg-gray-50/70 text-[10px] text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                  <ClipboardList className="w-3 h-3" /> Posledná aktivita ({bioStats.recent.length})
+                </div>
+                <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
+                  {bioStats.recent.map((e, i) => (
+                    <div key={i} className={`px-4 py-2 flex items-start gap-2.5 ${e.ok ? "" : "bg-red-50/40"}`}>
+                      <span className={`mt-0.5 w-1.5 h-1.5 rounded-full shrink-0 ${e.ok ? "bg-emerald-500" : "bg-red-500"}`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-xs font-bold text-gray-700 truncate">{e.clientName}</span>
+                          {e.loginId && <span className="text-[10px] text-gray-400 font-mono">#{e.loginId}</span>}
+                          <span className={`text-[9px] font-black uppercase px-1 py-px rounded ${e.event === "register" ? "bg-blue-50 text-blue-600 border border-blue-200" : "bg-gray-100 text-gray-500"}`}>
+                            {e.event === "register" ? "registrácia" : "prihlásenie"}
+                          </span>
+                          <span className={`text-[9px] font-black uppercase px-1 py-px rounded ${e.ok ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-red-50 text-red-600 border border-red-200"}`}>
+                            {e.ok ? "OK" : "zlyhanie"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-400 flex-wrap">
+                          <span className="text-gray-500">{e.device}</span>
+                          <span className="font-mono">{e.ip}</span>
+                          {e.origin && e.origin !== "—" && e.origin !== "?" && <span className="font-mono text-gray-300 truncate max-w-[140px]">{e.origin}</span>}
+                        </div>
+                        {!e.ok && e.reason && (
+                          <div className="text-[10px] text-red-500 mt-0.5 flex items-start gap-1">
+                            <Info className="w-3 h-3 shrink-0 mt-px" /> {e.reason}
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-gray-400 font-mono shrink-0">
+                        {new Date(e.ts).toLocaleString("sk-SK", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </>

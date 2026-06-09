@@ -100,6 +100,41 @@ interface BiometricAuthEntry {
   ok: boolean;
   ip: string;
   credId?: string;
+  event?: "register" | "auth";  // typ udalosti
+  device?: string;              // čitateľný label: "iPhone · Safari"
+  ua?: string;                  // plný user-agent (pre forenznú analýzu)
+  origin?: string;              // origin requestu (odhalí RPID/origin mismatch)
+  reason?: string;              // príčina zlyhania (error kód/text) — prázdne pri úspechu
+}
+
+// Parsuje user-agent na čitateľný "Zariadenie · Prehliadač" label
+function parseDevice(ua: string): string {
+  if (!ua) return "Neznáme zariadenie";
+  let device = "Počítač";
+  if (/iPhone/.test(ua)) device = "iPhone";
+  else if (/iPad/.test(ua)) device = "iPad";
+  else if (/Android/.test(ua)) device = /Mobile/.test(ua) ? "Android telefón" : "Android tablet";
+  else if (/Macintosh|Mac OS X/.test(ua)) device = "Mac";
+  else if (/Windows/.test(ua)) device = "Windows";
+  else if (/Linux/.test(ua)) device = "Linux";
+  let browser = "Prehliadač";
+  if (/CriOS|Chrome/.test(ua) && !/Edg|OPR/.test(ua)) browser = "Chrome";
+  else if (/Edg/.test(ua)) browser = "Edge";
+  else if (/FxiOS|Firefox/.test(ua)) browser = "Firefox";
+  else if (/Safari/.test(ua) && !/Chrome|CriOS/.test(ua)) browser = "Safari";
+  else if (/OPR|Opera/.test(ua)) browser = "Opera";
+  return `${device} · ${browser}`;
+}
+
+// Zostaví kontext requestu pre bio log (IP, zariadenie, origin)
+function bioReqCtx(req: { headers: Record<string, unknown>; ip?: string }): { ip: string; ua: string; device: string; origin: string } {
+  const ua = (req.headers["user-agent"] as string) ?? "";
+  return {
+    ip: (req.headers["cf-connecting-ip"] as string) ?? req.ip ?? "unknown",
+    ua,
+    device: parseDevice(ua),
+    origin: (req.headers["origin"] as string) ?? "?",
+  };
 }
 
 interface WebAuthnCredential {
@@ -449,7 +484,8 @@ async function saveWebAuthnCredential(clientId: string, cred: WebAuthnCredential
   const updated = clients.map((c) => {
     if (c.id !== clientId) return c;
     const existing = (c.webauthnCredentials ?? []).filter((e) => e.id !== cred.id);
-    return { ...c, webauthnCredentials: [...existing, cred].slice(-5) };
+    // až 8 zariadení per klient (iPhone, iPad, Mac, Chrome, Safari… multi-device)
+    return { ...c, webauthnCredentials: [...existing, cred].slice(-8) };
   });
   await db.insert(adminConfig).values({ key: "clients", data: updated })
     .onConflictDoUpdate({ target: adminConfig.key, set: { data: updated, updatedAt: new Date() } });
@@ -487,11 +523,17 @@ router.post("/webauthn/reg-challenge", async (req, res) => {
 
 // 2. Dokončenie registrácie — overenie + uloženie verejného kľúča
 router.post("/webauthn/reg-complete", async (req, res) => {
+  const ctx = bioReqCtx(req);
+  const cid = String(req.body?.clientInternalId ?? "");
   try {
     const { clientInternalId, credential } = req.body ?? {};
     if (!clientInternalId || !credential) return res.status(400).json({ ok: false });
     const expectedChallenge = popChallenge(regChallenges, String(clientInternalId));
-    if (!expectedChallenge) return res.status(400).json({ ok: false, error: "Výzva vypršala. Skúste znova." });
+    if (!expectedChallenge) {
+      void appendBioLog(cid, { ts: new Date().toISOString(), ok: false, event: "register", ...ctx, reason: "Výzva vypršala (TTL 120s)" });
+      return res.status(400).json({ ok: false, error: "Výzva vypršala. Skúste znova." });
+    }
+    req.log.info({ rpId, expectedOrigins, ...ctx, credId: (credential as RegistrationResponseJSON)?.id?.slice(0, 12) }, "WebAuthn reg-complete: verifying");
     const verification = await verifyRegistrationResponse({
       response: credential as RegistrationResponseJSON,
       expectedChallenge,
@@ -500,7 +542,10 @@ router.post("/webauthn/reg-complete", async (req, res) => {
       requireUserVerification: true,
     });
     if (!verification.verified || !verification.registrationInfo) {
-      return res.status(400).json({ ok: false, error: "Overenie biometrie zlyhalo." });
+      const reason = `Verifikácia neúspešná (origin ${ctx.origin} vs ${expectedOrigins.join(",")})`;
+      req.log.warn({ rpId, expectedOrigins, origin: ctx.origin }, "WebAuthn reg-complete: verification.verified=false");
+      void appendBioLog(cid, { ts: new Date().toISOString(), ok: false, event: "register", ...ctx, reason });
+      return res.status(400).json({ ok: false, error: `Overenie biometrie zlyhalo (origin ${ctx.origin} vs ${expectedOrigins.join(",")}).` });
     }
     const { credential: vc } = verification.registrationInfo;
     await saveWebAuthnCredential(String(clientInternalId), {
@@ -509,10 +554,13 @@ router.post("/webauthn/reg-complete", async (req, res) => {
       counter: vc.counter,
       createdAt: new Date().toISOString(),
     });
+    void appendBioLog(cid, { ts: new Date().toISOString(), ok: true, event: "register", ...ctx, credId: vc.id.slice(0, 8) });
     return res.json({ ok: true });
   } catch (err) {
     req.log.error({ err }, "WebAuthn reg-complete failed");
-    return res.status(500).json({ ok: false, error: "Interná chyba" });
+    const detail = err instanceof Error ? err.message : String(err);
+    void appendBioLog(cid, { ts: new Date().toISOString(), ok: false, event: "register", ...ctx, reason: detail });
+    return res.status(500).json({ ok: false, error: `Registrácia zlyhala: ${detail}` });
   }
 });
 
@@ -561,10 +609,10 @@ async function appendBioLog(clientId: string, entry: BiometricAuthEntry): Promis
 
 // 4. Dokončenie autentifikácie — overenie assertion + vrátenie session
 router.post("/webauthn/auth-complete", async (req, res) => {
+  const ctx = bioReqCtx(req);
   try {
     const { loginId, credential } = req.body ?? {};
     if (!loginId || !credential) return res.status(400).json({ ok: false });
-    const ip = (req.headers["cf-connecting-ip"] as string) ?? req.ip ?? "unknown";
     const expectedChallenge = popChallenge(authChallenges, String(loginId));
     if (!expectedChallenge) return res.status(400).json({ ok: false, error: "Výzva vypršala. Skúste znova." });
     const accounts = await getClientAccounts();
@@ -573,7 +621,7 @@ router.post("/webauthn/auth-complete", async (req, res) => {
     const authResp = credential as AuthenticationResponseJSON;
     const stored = client.webauthnCredentials.find((c) => c.id === authResp.id);
     if (!stored) {
-      void appendBioLog(client.id, { ts: new Date().toISOString(), ok: false, ip, credId: authResp.id?.slice(0, 8) });
+      void appendBioLog(client.id, { ts: new Date().toISOString(), ok: false, event: "auth", ...ctx, credId: authResp.id?.slice(0, 8), reason: "Neznáme zariadenie (credential nie je v DB)" });
       return res.status(401).json({ ok: false, error: "Neznáme zariadenie" });
     }
     const verification = await verifyAuthenticationResponse({
@@ -589,12 +637,12 @@ router.post("/webauthn/auth-complete", async (req, res) => {
       requireUserVerification: true,
     });
     if (!verification.verified) {
-      void appendBioLog(client.id, { ts: new Date().toISOString(), ok: false, ip, credId: stored.id.slice(0, 8) });
+      void appendBioLog(client.id, { ts: new Date().toISOString(), ok: false, event: "auth", ...ctx, credId: stored.id.slice(0, 8), reason: "Verifikácia podpisu zlyhala (counter/origin)" });
       return res.status(401).json({ ok: false, error: "Overenie biometrie zlyhalo" });
     }
     // Aktualizácia counter (anti-replay) + záznam úspechu
     const newCounter = verification.authenticationInfo.newCounter;
-    const logEntry: BiometricAuthEntry = { ts: new Date().toISOString(), ok: true, ip, credId: stored.id.slice(0, 8) };
+    const logEntry: BiometricAuthEntry = { ts: new Date().toISOString(), ok: true, event: "auth", ...ctx, credId: stored.id.slice(0, 8) };
     const rows = await db.select().from(adminConfig).where(eq(adminConfig.key, "clients"));
     if (rows.length && Array.isArray(rows[0].data)) {
       const clients = rows[0].data as UnifiedClient[];

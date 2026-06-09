@@ -19,6 +19,7 @@ const AdminLogin = lazy(() => import("@/pages/admin/AdminLogin"));
 const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard"));
 import { CookieBanner } from "@/components/CookieBanner";
 import { VersionChecker } from "@/components/VersionChecker";
+import { BiometricUnlockGate } from "@/components/BiometricUnlockGate";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +67,7 @@ function App() {
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <Router />
+          <BiometricUnlockGate />
         </WouterRouter>
         <Toaster />
         <CookieBanner />

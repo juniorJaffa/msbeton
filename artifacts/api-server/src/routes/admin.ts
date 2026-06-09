@@ -3,28 +3,82 @@ import { db, adminConfig } from "@workspace/db";
 import { eq, sql as drizzleSql } from "drizzle-orm";
 import { execSync } from "child_process";
 import { readdirSync, statSync } from "fs";
-import { randomBytes } from "crypto";
+import { randomBytes, randomInt } from "crypto";
+import bcrypt from "bcryptjs";
 import { invalidateClientCache } from "./client";
-import { sendRegistrationEmail, sendCredentialsEmail } from "../lib/mailer";
+import { sendRegistrationEmail, sendCredentialsEmail, sendAdminResetCodeEmail } from "../lib/mailer";
 import { signAdminToken, requireAdminJwt } from "../lib/adminJwt";
 import { loginRateLimit } from "../lib/rateLimits";
 
 const router = Router();
 
+// Firemný email kam chodí admin reset kód (hardcoded — kontakt vlastníka)
+const ADMIN_RESET_EMAIL = process.env.ADMIN_RESET_EMAIL ?? "peter@msbeton.sk";
+
+// Overí admin heslo: najprv DB hash (admin_secret, ak bol nastavený resetom),
+// inak fallback na ENV ADMIN_PASSWORD. Migrácia ENV→DB je tým spätne kompatibilná.
+async function verifyAdminPassword(password: string): Promise<boolean> {
+  const secret = await getConfig("admin_secret") as { hash?: string } | null;
+  if (secret?.hash) return bcrypt.compare(password, secret.hash);
+  const envPassword = process.env.ADMIN_PASSWORD ?? (process.env.NODE_ENV !== "production" ? "Msbeton2023" : undefined);
+  return !!envPassword && password === envPassword;
+}
+
 router.post("/login", loginRateLimit, async (req, res) => {
   const { username, password } = req.body as { username?: string; password?: string };
   const adminUser = (process.env.ADMIN_USER ?? "msbeton").toLowerCase();
-  const adminPassword = process.env.ADMIN_PASSWORD ?? (process.env.NODE_ENV !== "production" ? "Msbeton2023" : undefined);
 
   if (!username || !password) {
     res.status(400).json({ ok: false, error: "Chýbajú prihlasovacie údaje" });
     return;
   }
-  if (username.trim().toLowerCase() !== adminUser || !adminPassword || password !== adminPassword) {
+  if (username.trim().toLowerCase() !== adminUser || !(await verifyAdminPassword(password))) {
     res.status(401).json({ ok: false, error: "Nesprávne prihlasovacie údaje" });
     return;
   }
   res.json({ ok: true, token: signAdminToken() });
+});
+
+// ── Admin reset hesla — overovací kód na firemný email ────────────────────────
+// 1. Požiadavka — vygeneruj 6-cif. kód, ulož hash do DB, pošli kód na firemný email
+router.post("/password/reset-request", loginRateLimit, async (req, res) => {
+  try {
+    const code = String(randomInt(100000, 1000000)); // 6 číslic
+    const hash = await bcrypt.hash(code, 10);
+    await setConfig("admin_reset", { hash, expires: Date.now() + 600_000, attempts: 0 }); // TTL 10 min
+    const mail = await sendAdminResetCodeEmail({ toEmail: ADMIN_RESET_EMAIL, code });
+    if (!mail.ok) req.log.error({ err: mail.error }, "admin reset email failed");
+    // Vždy ok (neprezrádzaj stav emailu). Maskovaný email pre UI.
+    const masked = ADMIN_RESET_EMAIL.replace(/^(.).*(@.*)$/, (_m, a, d) => `${a}•••${d}`);
+    res.json({ ok: true, sentTo: masked });
+  } catch (err) {
+    req.log.error({ err }, "admin reset-request failed");
+    res.status(500).json({ ok: false, error: "Nepodarilo sa odoslať kód" });
+  }
+});
+
+// 2. Overenie — skontroluj kód, nastav nové heslo (uloží sa hash do DB, prebíja ENV)
+router.post("/password/reset-verify", loginRateLimit, async (req, res) => {
+  try {
+    const { code, newPassword } = req.body as { code?: string; newPassword?: string };
+    if (!code || !newPassword) { res.status(400).json({ ok: false, error: "Chýba kód alebo heslo" }); return; }
+    if (newPassword.length < 6) { res.status(400).json({ ok: false, error: "Heslo musí mať aspoň 6 znakov" }); return; }
+    const r = await getConfig("admin_reset") as { hash: string; expires: number; attempts: number } | null;
+    if (!r || Date.now() > r.expires) { res.status(400).json({ ok: false, error: "Kód vypršal. Požiadajte o nový." }); return; }
+    if (r.attempts >= 5) { res.status(429).json({ ok: false, error: "Príliš veľa pokusov. Požiadajte o nový kód." }); return; }
+    const match = await bcrypt.compare(String(code), r.hash);
+    if (!match) {
+      await setConfig("admin_reset", { ...r, attempts: r.attempts + 1 });
+      res.status(401).json({ ok: false, error: "Nesprávny kód" });
+      return;
+    }
+    await setConfig("admin_secret", { hash: await bcrypt.hash(newPassword, 10), updatedAt: new Date().toISOString() });
+    await setConfig("admin_reset", null);
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "admin reset-verify failed");
+    res.status(500).json({ ok: false, error: "Obnova zlyhala" });
+  }
 });
 
 // Biometrický (WebAuthn) token — vydaný po úspešnom overení passkey na strane klienta.
@@ -621,12 +675,18 @@ router.delete("/server-backup/:filename", (req, res) => {
 // ── Biometrické štatistiky ────────────────────────────────────────────────────
 router.get("/biometric-stats", async (req, res) => {
   try {
+    type BioLogEntry = { ts: string; ok: boolean; ip?: string; credId?: string; event?: string; device?: string; ua?: string; origin?: string; reason?: string };
     const raw = await getConfig(KEYS.clients);
     const clients = Array.isArray(raw) ? raw as Array<{
       id?: string;
+      loginId?: string;
+      firstName?: string;
+      lastName?: string;
+      name?: string;
+      company?: string;
       active?: boolean;
       webauthnCredentials?: unknown[];
-      biometricAuthLog?: Array<{ ts: string; ok: boolean; ip?: string; credId?: string }>;
+      biometricAuthLog?: BioLogEntry[];
     }> : [];
     const active = clients.filter(c => c.active !== false);
     const totalClients = active.length;
@@ -638,7 +698,12 @@ router.get("/biometric-stats", async (req, res) => {
     const oneHourAgoMs = nowMs - 3_600_000;
 
     let todaySuccess = 0, todayFailed = 0;
-    const alerts: Array<{ clientId: string; failCount: number; lastIp: string }> = [];
+    const alerts: Array<{ clientId: string; clientName: string; failCount: number; lastIp: string; lastDevice: string; lastReason: string }> = [];
+    // Globálny feed posledných udalostí naprieč všetkými klientmi
+    const feed: Array<{ ts: string; ok: boolean; event: string; clientId: string; clientName: string; loginId: string; device: string; ip: string; origin: string; reason: string }> = [];
+
+    const clientLabel = (c: typeof active[number]) =>
+      [c.firstName, c.lastName].filter(Boolean).join(" ") || c.name || c.company || c.loginId || String(c.id ?? "—");
 
     for (const c of active) {
       const log = c.biometricAuthLog ?? [];
@@ -646,25 +711,27 @@ router.get("/biometric-stats", async (req, res) => {
       todaySuccess += todayLog.filter(e => e.ok).length;
       todayFailed  += todayLog.filter(e => !e.ok).length;
 
-      // Security alert: >3 failures in last hour
+      for (const e of log) {
+        feed.push({
+          ts: e.ts, ok: e.ok, event: e.event ?? "auth",
+          clientId: String(c.id ?? ""), clientName: clientLabel(c), loginId: c.loginId ?? "",
+          device: e.device ?? "—", ip: e.ip ?? "—", origin: e.origin ?? "—", reason: e.reason ?? "",
+        });
+      }
+
+      // Bezpečnostný alert: >3 zlyhaní za poslednú hodinu
       const recentFails = log.filter(e => !e.ok && new Date(e.ts).getTime() >= oneHourAgoMs);
       if (recentFails.length > 3) {
         const lastFail = recentFails[recentFails.length - 1];
-        alerts.push({ clientId: String(c.id ?? ""), failCount: recentFails.length, lastIp: lastFail?.ip ?? "" });
+        alerts.push({ clientId: String(c.id ?? ""), clientName: clientLabel(c), failCount: recentFails.length, lastIp: lastFail?.ip ?? "", lastDevice: lastFail?.device ?? "—", lastReason: lastFail?.reason ?? "" });
       }
     }
 
-    // Last biometric activity (most recent log entry across all clients)
-    let lastActivity: string | null = null;
-    for (const c of active) {
-      const log = c.biometricAuthLog ?? [];
-      if (log.length > 0) {
-        const ts = log[log.length - 1].ts;
-        if (!lastActivity || ts > lastActivity) lastActivity = ts;
-      }
-    }
+    feed.sort((a, b) => (a.ts < b.ts ? 1 : -1)); // najnovšie hore
+    const recent = feed.slice(0, 40);
+    const lastActivity = feed.length > 0 ? feed[0].ts : null;
 
-    res.json({ ok: true, stats: { totalClients, bioClients, todaySuccess, todayFailed, alerts, lastActivity } });
+    res.json({ ok: true, stats: { totalClients, bioClients, todaySuccess, todayFailed, alerts, lastActivity, recent } });
   } catch (err) {
     req.log.error({ err }, "biometric-stats failed");
     res.status(500).json({ ok: false });

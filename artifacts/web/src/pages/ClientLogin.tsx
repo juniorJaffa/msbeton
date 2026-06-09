@@ -8,6 +8,7 @@ import {
   getClientAttemptInfo, recordClientFailedAttempt, resetClientAttempts,
 } from "@/lib/clientAuth";
 import { isLoggedIn as isAdminLoggedIn } from "@/lib/adminAuth";
+import { canAutoTriggerBio } from "@/lib/bioPlatform";
 import { SEOHead } from "@/components/SEOHead";
 import { LogIn, Fingerprint, AlertCircle, Clock, RefreshCw, Check } from "lucide-react";
 
@@ -17,7 +18,7 @@ function generateCaptcha() {
   return { a, b, answer: a + b };
 }
 
-type Screen = "form" | "bio-pending" | "bio-failed" | "bio-register";
+type Screen = "form" | "bio-locked" | "bio-pending" | "bio-failed" | "bio-register";
 
 export default function ClientLogin() {
   const [, setLocation] = useLocation();
@@ -57,24 +58,18 @@ export default function ClientLogin() {
     if (isAdminLoggedIn()) return;
 
     if (isBiometricAvailable() && hasClientBiometric()) {
-      setScreen("bio-pending");
-      authenticateClientBiometric().then(result => {
-        if (result.ok && result.session) {
-          clientAuth.updateSession(result.session);
-          setLocation("/#calculator");
-        } else if (!hasClientBiometric()) {
-          // Credential bol vymazaný (stale/iné zariadenie) — priamo na formulár
-          setScreen("form");
-        } else {
-          setScreen("bio-failed");
-        }
-      });
+      // iOS Safari blokuje credentials.get() bez tapnutia → zobraz lock screen.
+      // Na non-iOS (Chrome/Android/desktop) skús ticho hneď (zero-tap).
+      setScreen("bio-locked");
+      if (canAutoTriggerBio()) startBiometric();
     }
 
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setLocation]);
 
-  const retryBiometric = () => {
+  // Spustí biometrické overenie — VŽDY z user gesta (onClick) na iOS, alebo auto na non-iOS
+  const startBiometric = () => {
     if (!hasClientBiometric()) { setScreen("form"); return; }
     setScreen("bio-pending");
     authenticateClientBiometric().then(result => {
@@ -82,12 +77,15 @@ export default function ClientLogin() {
         clientAuth.updateSession(result.session);
         setLocation("/#calculator");
       } else if (!hasClientBiometric()) {
+        // Credential bol vymazaný (stale/iné zariadenie) — priamo na formulár
         setScreen("form");
       } else {
         setScreen("bio-failed");
       }
     });
   };
+
+  const retryBiometric = startBiometric;
 
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -106,7 +104,9 @@ export default function ClientLogin() {
     setLoading(false);
     if (res.ok && res.client) {
       resetClientAttempts();
-      if (isBiometricAvailable() && !hasClientBiometric()) {
+      // Admin-as-client (loginId "msbeton") nemá server-side credential → neponúkaj klient-bio
+      const isAdminClient = res.client.id === "admin" || res.client.clientId === "msbeton";
+      if (!isAdminClient && isBiometricAvailable() && !hasClientBiometric()) {
         setScreen("bio-register");
       } else {
         setLocation("/#calculator");
@@ -145,6 +145,38 @@ export default function ClientLogin() {
       setBioRegError(res.error ?? "Registrácia zlyhala");
     }
   };
+
+  // ── BIOMETRIC LOCKED (one-tap unlock — iOS-kompatibilné) ──
+  if (screen === "bio-locked") return (
+    <>
+      <SEOHead title="Prihlásenie klienta – MS-BETON" noindex />
+      <Navbar />
+      <div className="min-h-screen concrete-navy flex items-center justify-center p-4">
+        <div className="w-full max-w-sm bg-secondary/95 rounded-2xl shadow-2xl border border-white/10 overflow-hidden">
+          <div className="px-8 pt-9 pb-7 text-center">
+            <div className="relative w-20 h-20 mx-auto mb-5">
+              <span className="absolute inset-0 rounded-full bg-primary/15" />
+              <span className="absolute inset-0 rounded-full border-2 border-primary/40 flex items-center justify-center">
+                <Fingerprint className="w-9 h-9 text-primary" />
+              </span>
+            </div>
+            <p className="text-white font-black text-lg">Vitajte späť</p>
+            <p className="text-white/40 text-sm mt-1">Prihláste sa biometricky — bez hesla</p>
+          </div>
+          <div className="px-8 pb-7 space-y-3">
+            <button onClick={startBiometric}
+              className="w-full py-4 bg-primary text-secondary font-black text-sm tracking-widest hover:bg-primary/85 active:scale-[0.98] transition-all rounded-lg flex items-center justify-center gap-2.5 cursor-pointer">
+              <Fingerprint className="w-5 h-5" /> Odomknúť cez Face ID
+            </button>
+            <button onClick={() => setScreen("form")}
+              className="w-full py-3 text-white/45 hover:text-white/80 font-semibold text-sm tracking-wide transition-colors rounded-lg cursor-pointer">
+              Prihlásiť heslom
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
 
   // ── BIOMETRIC PENDING ──
   if (screen === "bio-pending") return (

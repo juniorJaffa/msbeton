@@ -2,11 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { SEOHead } from "@/components/SEOHead";
-import { Eye, EyeOff, Lock, User, AlertCircle, Clock, Fingerprint } from "lucide-react";
+import { Eye, EyeOff, Lock, User, AlertCircle, Clock, Fingerprint, Mail, KeyRound, Check, ArrowLeft, ShieldCheck } from "lucide-react";
 import {
   loginWithApi, isLoggedIn, getAttemptInfo, recordFailedAttempt, resetAttempts,
   isBiometricAvailable, hasStoredCredential, authenticateBiometricAndGetToken, registerBiometric, clearBiometric,
 } from "@/lib/adminAuth";
+import { canAutoTriggerBio } from "@/lib/bioPlatform";
 import { VersionBadge } from "@/components/VersionBadge";
 
 function generateCaptcha() {
@@ -15,7 +16,7 @@ function generateCaptcha() {
   return { a, b, answer: a + b };
 }
 
-type Screen = "form" | "bio-pending" | "bio-failed" | "bio-register";
+type Screen = "form" | "bio-locked" | "bio-pending" | "bio-failed" | "bio-register" | "reset";
 
 export default function AdminLogin() {
   const [, navigate] = useLocation();
@@ -56,16 +57,22 @@ export default function AdminLogin() {
     if (isLoggedIn()) { navigate("/admin/dashboard"); return; }
 
     if (isBiometricAvailable() && hasStoredCredential()) {
-      setScreen("bio-pending");
-      authenticateBiometricAndGetToken().then(result => {
-        if (result.ok) {
-          navigate("/admin/dashboard");
-        } else {
-          setScreen("bio-failed");
-        }
-      });
+      // iOS Safari blokuje credentials.get() bez tapnutia → lock screen.
+      // Na non-iOS skús ticho hneď (zero-tap).
+      setScreen("bio-locked");
+      if (canAutoTriggerBio()) startBiometric();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
+
+  // Spustí admin biometriu — z user gesta (onClick) na iOS, alebo auto na non-iOS
+  const startBiometric = () => {
+    setScreen("bio-pending");
+    authenticateBiometricAndGetToken().then(result => {
+      if (result.ok) { navigate("/admin/dashboard"); }
+      else { setScreen("bio-failed"); }
+    });
+  };
 
   useEffect(() => {
     const info = getAttemptInfo();
@@ -88,13 +95,7 @@ export default function AdminLogin() {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const retryBiometric = () => {
-    setScreen("bio-pending");
-    authenticateBiometricAndGetToken().then(result => {
-      if (result.ok) { navigate("/admin/dashboard"); }
-      else setScreen("bio-failed");
-    });
-  };
+  const retryBiometric = startBiometric;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,6 +143,44 @@ export default function AdminLogin() {
     window.location.href = "/admin/dashboard";
   };
 
+  // ── Reset hesla — overovací kód na firemný email ──
+  const [resetStep, setResetStep] = useState<"request" | "code">("request");
+  const [resetCode, setResetCode] = useState("");
+  const [resetNewPass, setResetNewPass] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetErr, setResetErr] = useState("");
+  const [resetSentTo, setResetSentTo] = useState("");
+  const [resetDone, setResetDone] = useState(false);
+
+  const requestResetCode = async () => {
+    setResetLoading(true); setResetErr("");
+    try {
+      const res = await fetch("/api/admin/password/reset-request", { method: "POST" });
+      const data = await res.json() as { ok: boolean; sentTo?: string; error?: string };
+      if (data.ok) { setResetSentTo(data.sentTo ?? ""); setResetStep("code"); }
+      else setResetErr(data.error ?? "Nepodarilo sa odoslať kód");
+    } catch { setResetErr("Server nedostupný"); }
+    setResetLoading(false);
+  };
+
+  const verifyResetCode = async () => {
+    if (resetCode.trim().length < 6) { setResetErr("Zadajte 6-ciferný kód"); return; }
+    if (resetNewPass.length < 6) { setResetErr("Heslo musí mať aspoň 6 znakov"); return; }
+    setResetLoading(true); setResetErr("");
+    try {
+      const res = await fetch("/api/admin/password/reset-verify", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: resetCode.trim(), newPassword: resetNewPass }),
+      });
+      const data = await res.json() as { ok: boolean; error?: string };
+      if (data.ok) {
+        setResetDone(true);
+        setTimeout(() => { setResetDone(false); setResetStep("request"); setResetCode(""); setResetNewPass(""); setScreen("form"); }, 2200);
+      } else setResetErr(data.error ?? "Obnova zlyhala");
+    } catch { setResetErr("Server nedostupný"); }
+    setResetLoading(false);
+  };
+
   return (
     <div
       className="min-h-screen flex items-center justify-center py-12 px-4 bg-secondary relative overflow-x-hidden"
@@ -178,6 +217,33 @@ export default function AdminLogin() {
           <div className="flex">
             <div className="w-2 bg-primary flex-shrink-0" />
             <div className="flex-1 p-8">
+
+              {/* ── Bio locked — one-tap unlock (iOS-kompatibilné) ──── */}
+              {screen === "bio-locked" && (
+                <div className="flex flex-col items-center gap-6 py-4">
+                  <div className="relative w-20 h-20">
+                    <span className="absolute inset-0 rounded-full bg-primary/15" />
+                    <span className="absolute inset-0 rounded-full border-2 border-primary/40 flex items-center justify-center">
+                      <Fingerprint className="w-10 h-10 text-primary" />
+                    </span>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-white font-black text-xl">Vitajte späť</p>
+                    <p className="text-white/50 text-sm mt-2">Prihláste sa biometricky — Face ID, Touch ID alebo Windows Hello.</p>
+                  </div>
+                  <div className="w-full space-y-2">
+                    <button onClick={startBiometric}
+                      className="w-full bg-primary text-secondary font-black text-sm uppercase tracking-widest py-4 hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                      style={{ fontFamily: "Montserrat, sans-serif" }}>
+                      <Fingerprint className="w-4 h-4" /> Odomknúť
+                    </button>
+                    <button onClick={() => setScreen("form")}
+                      className="w-full py-3 text-white/40 hover:text-white/70 text-sm transition-colors">
+                      Prihlásiť heslom
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* ── Bio pending ─────────────────────────────────────── */}
               {screen === "bio-pending" && (
@@ -239,6 +305,89 @@ export default function AdminLogin() {
                       Preskočiť
                     </button>
                   </div>
+                </div>
+              )}
+
+              {/* ── Reset hesla — overovací kód na email ────────────── */}
+              {screen === "reset" && (
+                <div className="space-y-5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <button onClick={() => { setScreen("form"); setResetErr(""); }}
+                      className="text-white/40 hover:text-white/80 transition-colors" aria-label="Späť">
+                      <ArrowLeft className="w-4 h-4" />
+                    </button>
+                    <h2 className="text-lg font-black text-white uppercase tracking-wide flex items-center gap-2" style={{ fontFamily: "Montserrat, sans-serif" }}>
+                      <ShieldCheck className="w-5 h-5 text-primary" /> Obnova hesla
+                    </h2>
+                  </div>
+
+                  {resetDone ? (
+                    <div className="flex flex-col items-center gap-3 py-6">
+                      <div className="w-14 h-14 rounded-full bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center">
+                        <Check className="w-7 h-7 text-emerald-400" />
+                      </div>
+                      <p className="text-white font-bold">Heslo zmenené</p>
+                      <p className="text-white/50 text-sm">Prihláste sa novým heslom…</p>
+                    </div>
+                  ) : resetStep === "request" ? (
+                    <>
+                      <p className="text-white/60 text-sm leading-relaxed">
+                        Pošleme <strong className="text-white">6-ciferný kód</strong> na firemný email administrátora. Kód platí 10 minút.
+                      </p>
+                      {resetErr && (
+                        <div className="flex items-center gap-2 bg-red-500/20 border border-red-500/30 text-red-300 text-sm px-4 py-3 rounded">
+                          <AlertCircle className="w-4 h-4 shrink-0" />{resetErr}
+                        </div>
+                      )}
+                      <button onClick={requestResetCode} disabled={resetLoading}
+                        className="w-full bg-primary text-secondary font-black text-sm uppercase tracking-widest py-4 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                        style={{ fontFamily: "Montserrat, sans-serif" }}>
+                        <Mail className="w-4 h-4" /> {resetLoading ? "Odosielam…" : "Poslať kód na email"}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-white/60 text-sm">
+                        Kód sme poslali na <strong className="text-primary">{resetSentTo || "firemný email"}</strong>. Zadajte ho a nové heslo.
+                      </p>
+                      {resetErr && (
+                        <div className="flex items-center gap-2 bg-red-500/20 border border-red-500/30 text-red-300 text-sm px-4 py-3 rounded">
+                          <AlertCircle className="w-4 h-4 shrink-0" />{resetErr}
+                        </div>
+                      )}
+                      <div>
+                        <label className="block text-white/70 text-xs font-bold uppercase tracking-widest mb-2">Overovací kód</label>
+                        <div className="relative">
+                          <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                          <input value={resetCode} onChange={e => setResetCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                            inputMode="numeric" autoComplete="one-time-code" placeholder="000000"
+                            className="w-full bg-[#32334a] text-white border border-white/10 pl-10 pr-4 py-3 text-lg tracking-[0.4em] font-mono text-center focus:outline-none focus:border-primary transition-colors" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-white/70 text-xs font-bold uppercase tracking-widest mb-2">Nové heslo</label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                          <input type={showPass ? "text" : "password"} value={resetNewPass} onChange={e => setResetNewPass(e.target.value)}
+                            autoComplete="new-password" placeholder="min. 6 znakov"
+                            className="w-full bg-[#32334a] text-white border border-white/10 pl-10 pr-12 py-3 text-sm focus:outline-none focus:border-primary transition-colors" />
+                          <button type="button" onClick={() => setShowPass(!showPass)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors">
+                            {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+                      <button onClick={verifyResetCode} disabled={resetLoading}
+                        className="w-full bg-primary text-secondary font-black text-sm uppercase tracking-widest py-4 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                        style={{ fontFamily: "Montserrat, sans-serif" }}>
+                        <Check className="w-4 h-4" /> {resetLoading ? "Overujem…" : "Zmeniť heslo"}
+                      </button>
+                      <button onClick={requestResetCode} disabled={resetLoading}
+                        className="w-full py-2 text-white/40 hover:text-white/70 text-xs transition-colors">
+                        Poslať kód znova
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -326,6 +475,10 @@ export default function AdminLogin() {
           {loading
             ? <><span className="animate-spin border-2 border-secondary/30 border-t-secondary rounded-full w-4 h-4 inline-block" /> Prihlasujem...</>
             : "Prihlásiť sa"}
+        </button>
+        <button type="button" onClick={() => { setScreen("reset"); setResetErr(""); setResetStep("request"); }}
+          className="w-full text-center text-white/40 hover:text-primary text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
+          <Mail className="w-3 h-3" /> Zabudnuté heslo? Poslať kód na email
         </button>
       </form>
     );

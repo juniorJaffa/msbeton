@@ -221,6 +221,47 @@ export async function sendPasswordResetEmail(opts: {
   }
 }
 
+// Admin reset — 6-ciferný overovací kód na firemný email
+export async function sendAdminResetCodeEmail(opts: {
+  toEmail: string;
+  code: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  const conn = createTransport();
+  if (!conn) return { ok: false, error: "SMTP not configured" };
+  const { toEmail, code } = opts;
+
+  const body = `
+<h2 style="margin:0 0 6px;color:#001D3D;font-size:22px;font-weight:900">&#128737; Obnova admin hesla</h2>
+<p style="margin:0 0 20px;color:#666;font-size:15px;line-height:1.6">Dostali sme požiadavku na obnovu hesla do <strong>administrácie MS-BETON</strong>. Použite overovací kód nižšie.</p>
+
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 24px">
+<tr><td style="background:#001D3D;border-radius:10px;padding:22px;text-align:center">
+  <p style="margin:0 0 8px;color:#EDC531;font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:700">Overovací kód</p>
+  <p style="margin:0;color:#fff;font-size:38px;font-weight:900;letter-spacing:10px;font-family:'Courier New',monospace">${code}</p>
+</td></tr>
+</table>
+
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 24px">
+<tr><td style="background:#fff8e6;border:2px solid #EDC531;border-radius:10px;padding:16px 20px">
+  <p style="margin:0;color:#7a5f00;font-size:14px;line-height:1.5">&#9201; Kód je platný <strong>10 minút</strong>. Zadajte ho v prihlasovacom okne a nastavte nové heslo.</p>
+</td></tr>
+</table>
+
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+<tr><td style="border-top:1px solid #f0f0f0;padding-top:20px">
+  <p style="margin:0;color:#aaa;font-size:12px;line-height:1.6">Ak ste o obnovu nepožiadali, <strong>ihneď</strong> tento email ignorujte a heslo zostáva nezmenené.</p>
+</td></tr>
+</table>`;
+
+  const html = emailShell(body);
+  try {
+    await conn.transport.sendMail({ from: conn.from, to: toEmail, subject: "Obnova admin hesla – overovací kód", html });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
+}
+
 export async function sendContactEmail(opts: {
   name: string; phone: string; email: string; message: string;
 }): Promise<{ ok: boolean; error?: string }> {
