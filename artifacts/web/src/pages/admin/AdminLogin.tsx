@@ -7,7 +7,7 @@ import {
   loginWithApi, isLoggedIn, getAttemptInfo, recordFailedAttempt, resetAttempts,
   isBiometricAvailable, hasStoredCredential, authenticateBiometricAndGetToken, registerBiometric, clearBiometric, reportAdminBioEvent,
 } from "@/lib/adminAuth";
-import { canAutoTriggerBio } from "@/lib/bioPlatform";
+import { canAutoTriggerBio, bioErrorToSk } from "@/lib/bioPlatform";
 import { VersionBadge } from "@/components/VersionBadge";
 
 function generateCaptcha() {
@@ -71,17 +71,12 @@ export default function AdminLogin() {
     setScreen("bio-pending");
     authenticateBiometricAndGetToken().then(result => {
       if (result.ok) { navigate("/admin/dashboard"); return; }
-      reportAdminBioEvent("auth", false, result.error?.slice(0, 120));
+      const skReason = bioErrorToSk(result.error);
+      reportAdminBioEvent("auth", false, skReason);
       // Credential bol vymazaný (stale/iné zariadenie/nepodporované) → retry je zbytočný, rovno formulár
       if (!hasStoredCredential()) { setBioFailReason(""); setScreen("form"); return; }
       // Genuine transient zlyhanie (credential existuje) → ukáž dôvod + ponúkni retry
-      const e = result.error ?? "";
-      setBioFailReason(
-        /NotAllowedError|timed out|timeout/i.test(e) ? "Overenie zrušené alebo vypršalo."
-        : /NotSupportedError/i.test(e) ? "Zariadenie nepodporuje biometriu."
-        : /SecurityError/i.test(e) ? "Biometria nie je dostupná na tejto adrese."
-        : "Skúste znova alebo zadajte heslo."
-      );
+      setBioFailReason(skReason);
       setScreen("bio-failed");
     });
   };

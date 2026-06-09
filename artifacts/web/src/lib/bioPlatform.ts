@@ -29,3 +29,14 @@ export function isSafari(): boolean {
 export function canAutoTriggerBio(): boolean {
   return !isIOS() && !isSafari();
 }
+
+// Preloží raw WebAuthn chybu na krátky, zrozumiteľný slovenský dôvod (pre log aj UI).
+export function bioErrorToSk(err: unknown): string {
+  const m = String(err ?? "");
+  if (/NotAllowedError|not allowed|timed out|timeout/i.test(m)) return "Overenie zrušené alebo vypršalo (Face ID nepotvrdené)";
+  if (/InvalidStateError/i.test(m)) return "Zariadenie už je zaregistrované";
+  if (/NotSupportedError/i.test(m)) return "Zariadenie nepodporuje biometriu";
+  if (/SecurityError/i.test(m)) return "Biometria nedostupná na tejto adrese";
+  if (/AbortError/i.test(m)) return "Overenie prerušené";
+  return "Overenie zlyhalo";
+}

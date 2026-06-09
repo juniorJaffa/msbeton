@@ -1,3 +1,5 @@
+import { bioErrorToSk } from "./bioPlatform";
+
 const TOKEN_KEY = "msbeton_admin_token";
 const ATTEMPTS_KEY = "msbeton_login_attempts";
 const WEBAUTHN_KEY = "msbeton_webauthn_cred";
@@ -165,7 +167,7 @@ export async function registerBiometric(): Promise<{ ok: boolean; error?: string
     reportAdminBioEvent("register", true);
     return { ok: true };
   } catch (err: unknown) {
-    reportAdminBioEvent("register", false, String(err).slice(0, 120));
+    reportAdminBioEvent("register", false, bioErrorToSk(err));
     return { ok: false, error: String(err) };
   }
 }
