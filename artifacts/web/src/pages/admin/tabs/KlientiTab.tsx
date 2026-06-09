@@ -1365,9 +1365,21 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                       <div>
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Prístup do kalkulačky</p>
                         {c.isOwner && (
-                          <div className="flex items-start gap-1.5 px-2 py-1.5 bg-amber-50 border border-amber-200 rounded text-[10px] text-amber-800 mb-2">
-                            <Crown className="w-3 h-3 text-primary shrink-0 mt-0.5" />
-                            <span>Vlastník má <strong>dve</strong> prihlasovacie heslá: toto (kalkulačka) a admin heslo pre <code className="font-mono">/admin/login</code>.</span>
+                          <div className="px-2.5 py-2 bg-amber-50 border border-amber-200 rounded text-[10px] text-amber-800 mb-2">
+                            <div className="flex items-center gap-1.5 font-bold mb-1.5">
+                              <Crown className="w-3 h-3 text-primary shrink-0" /> Vlastník sa prihlasuje na 2 miesta — každé má vlastné heslo:
+                            </div>
+                            <div className="space-y-1 pl-0.5">
+                              <div className="flex items-start gap-1.5">
+                                <Calculator className="w-3 h-3 text-amber-600 shrink-0 mt-0.5" />
+                                <span><strong>Kalkulačka</strong> — toto heslo tu. Počítanie cien ako klient.</span>
+                              </div>
+                              <div className="flex items-start gap-1.5">
+                                <ShieldCheck className="w-3 h-3 text-secondary shrink-0 mt-0.5" />
+                                <span><strong>Administrácia</strong> (<code className="font-mono">/admin/login</code>) — iné, samostatné heslo. Správa webu.</span>
+                              </div>
+                            </div>
+                            <p className="mt-1.5 text-amber-700/80">Zmena jedného hesla neovplyvní druhé.</p>
                           </div>
                         )}
                         <div className="border border-gray-200 bg-white divide-y divide-gray-100 mb-2">
@@ -1469,9 +1481,20 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                               )}
                             </div>
                             {isOwnerClient && (
-                              <div className="flex items-start gap-1.5 px-2 py-1.5 bg-primary/8 border border-primary/20 rounded text-[10px] text-secondary/70 mb-2">
-                                <Info className="w-3 h-3 text-primary/60 shrink-0 mt-0.5" />
-                                <span>Admin biometria (pre <code className="font-mono">/admin</code>) je zariadenie-lokálna — nie je v DB. Tu zobrazená = klientská bio pre kalkulačku (loginId: <code className="font-mono">{c.loginId}</code>).</span>
+                              <div className="px-2.5 py-2 bg-primary/8 border border-primary/20 rounded text-[10px] text-secondary/80 mb-2">
+                                <div className="flex items-center gap-1.5 font-bold mb-1.5 text-secondary">
+                                  <Info className="w-3 h-3 text-primary/70 shrink-0" /> Vlastník má 2 druhy biometrie:
+                                </div>
+                                <div className="space-y-1 pl-0.5">
+                                  <div className="flex items-start gap-1.5">
+                                    <ShieldCheck className="w-3 h-3 text-secondary shrink-0 mt-0.5" />
+                                    <span><strong>Admin</strong> (vstup do <code className="font-mono">/admin</code>) — uložená <strong>len v jeho telefóne/počítači</strong>, nie na serveri. <strong>Tu ju nevidíš.</strong></span>
+                                  </div>
+                                  <div className="flex items-start gap-1.5">
+                                    <Calculator className="w-3 h-3 text-emerald-600 shrink-0 mt-0.5" />
+                                    <span><strong>Kalkulačka</strong> — uložená na serveri. <strong>To je tá, čo vidíš nižšie</strong> (loginId <code className="font-mono">{c.loginId}</code>).</span>
+                                  </div>
+                                </div>
                               </div>
                             )}
                             {creds.length === 0 ? (
