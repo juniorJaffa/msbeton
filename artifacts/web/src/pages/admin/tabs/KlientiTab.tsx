@@ -687,9 +687,13 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                 <div className="flex items-center gap-2 mb-1.5">
                   <ShieldCheck className="w-4 h-4 text-secondary" />
                   <span className="font-black text-secondary text-xs uppercase tracking-wider">Admin</span>
-                  <span className={`ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-sm flex items-center gap-1 ${(bioStats.adminBioStats?.devices ?? 0) > 0 ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-gray-100 text-gray-400"}`} title="Počet zariadení s admin biometriou">
-                    <Fingerprint className="w-3 h-3" /> {bioStats.adminBioStats?.devices ?? 0} {(bioStats.adminBioStats?.devices ?? 0) === 1 ? "zariadenie" : "zariadení"}
-                  </span>
+                  {(bioStats.adminBioStats?.devices ?? 0) > 0 ? (
+                    <span className="ml-auto flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-bold rounded-sm bg-emerald-50 text-emerald-700 border border-emerald-200" title={`Admin biometria aktívna — ${bioStats.adminBioStats?.devices} zariadenie`}>
+                      <Fingerprint className="w-3.5 h-3.5" /> {bioStats.adminBioStats?.devices}
+                    </span>
+                  ) : (
+                    <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-sm bg-gray-100 text-gray-400">neaktívna</span>
+                  )}
                 </div>
                 <p className="text-[11px] text-gray-500 leading-relaxed">
                   Vstup do <strong className="text-gray-700">administrácie</strong>. Biometria je viazaná <strong className="text-gray-700">len na toto zariadenie</strong> (overuje sa lokálne). Reset hesla cez <strong className="text-gray-700">kód na email</strong>.
