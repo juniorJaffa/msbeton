@@ -95,6 +95,13 @@ function popChallenge(store: Map<string, ChallengeEntry>, key: string): string |
   return e.challenge;
 }
 
+interface BiometricAuthEntry {
+  ts: string;
+  ok: boolean;
+  ip: string;
+  credId?: string;
+}
+
 interface WebAuthnCredential {
   id: string;
   publicKey: string;
@@ -133,6 +140,7 @@ interface UnifiedClient {
   manualPrices?: Record<string, number>;
   active?: boolean;
   webauthnCredentials?: WebAuthnCredential[];
+  biometricAuthLog?: BiometricAuthEntry[];
   // legacy fallback fields
   name?: string;
   discountPct?: number;
@@ -534,11 +542,29 @@ router.post("/webauthn/auth-challenge", async (req, res) => {
   }
 });
 
+// Helper — append entry to biometricAuthLog (fire-and-forget for fail paths)
+async function appendBioLog(clientId: string, entry: BiometricAuthEntry): Promise<void> {
+  try {
+    const rows = await db.select().from(adminConfig).where(eq(adminConfig.key, "clients"));
+    if (!rows.length || !Array.isArray(rows[0].data)) return;
+    const clients = rows[0].data as UnifiedClient[];
+    const updated = clients.map((c) =>
+      c.id === clientId
+        ? { ...c, biometricAuthLog: [...(c.biometricAuthLog ?? []), entry].slice(-20) }
+        : c
+    );
+    await db.insert(adminConfig).values({ key: "clients", data: updated })
+      .onConflictDoUpdate({ target: adminConfig.key, set: { data: updated, updatedAt: new Date() } });
+    invalidateClientCache();
+  } catch { /* non-critical */ }
+}
+
 // 4. Complete authentication — verify assertion + return session
 router.post("/webauthn/auth-complete", async (req, res) => {
   try {
     const { loginId, credential } = req.body ?? {};
     if (!loginId || !credential) return res.status(400).json({ ok: false });
+    const ip = (req.headers["cf-connecting-ip"] as string) ?? req.ip ?? "unknown";
     const expectedChallenge = popChallenge(authChallenges, String(loginId));
     if (!expectedChallenge) return res.status(400).json({ ok: false, error: "Výzva vypršala. Skúste znova." });
     const accounts = await getClientAccounts();
@@ -546,7 +572,10 @@ router.post("/webauthn/auth-complete", async (req, res) => {
     if (!client || !client.webauthnCredentials?.length) return res.status(401).json({ ok: false, error: "Biometria nenájdená" });
     const authResp = credential as AuthenticationResponseJSON;
     const stored = client.webauthnCredentials.find((c) => c.id === authResp.id);
-    if (!stored) return res.status(401).json({ ok: false, error: "Neznáme zariadenie" });
+    if (!stored) {
+      void appendBioLog(client.id, { ts: new Date().toISOString(), ok: false, ip, credId: authResp.id?.slice(0, 8) });
+      return res.status(401).json({ ok: false, error: "Neznáme zariadenie" });
+    }
     const verification = await verifyAuthenticationResponse({
       response: authResp,
       expectedChallenge,
@@ -559,14 +588,23 @@ router.post("/webauthn/auth-complete", async (req, res) => {
       },
       requireUserVerification: true,
     });
-    if (!verification.verified) return res.status(401).json({ ok: false, error: "Overenie biometrie zlyhalo" });
-    // Update counter (anti-replay)
+    if (!verification.verified) {
+      void appendBioLog(client.id, { ts: new Date().toISOString(), ok: false, ip, credId: stored.id.slice(0, 8) });
+      return res.status(401).json({ ok: false, error: "Overenie biometrie zlyhalo" });
+    }
+    // Update counter (anti-replay) + log success
     const newCounter = verification.authenticationInfo.newCounter;
+    const logEntry: BiometricAuthEntry = { ts: new Date().toISOString(), ok: true, ip, credId: stored.id.slice(0, 8) };
     const rows = await db.select().from(adminConfig).where(eq(adminConfig.key, "clients"));
     if (rows.length && Array.isArray(rows[0].data)) {
       const clients = rows[0].data as UnifiedClient[];
       const updated = clients.map((c) => c.id === client.id
-        ? { ...c, lastLoginAt: new Date().toISOString(), webauthnCredentials: (c.webauthnCredentials ?? []).map((cr) => cr.id === stored.id ? { ...cr, counter: newCounter } : cr) }
+        ? {
+            ...c,
+            lastLoginAt: new Date().toISOString(),
+            webauthnCredentials: (c.webauthnCredentials ?? []).map((cr) => cr.id === stored.id ? { ...cr, counter: newCounter } : cr),
+            biometricAuthLog: [...(c.biometricAuthLog ?? []), logEntry].slice(-20),
+          }
         : c);
       await db.insert(adminConfig).values({ key: "clients", data: updated })
         .onConflictDoUpdate({ target: adminConfig.key, set: { data: updated, updatedAt: new Date() } });

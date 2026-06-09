@@ -77,6 +77,8 @@ export interface Client {
   smsOrderDisabled?: boolean; // true = nevytvárať objednávku pri SMS exporte (pretlačí globálne nastavenie)
   smsShareOnly?: boolean;     // true = zobraziť share menu namiesto auto-otvorenia SMS aplikácie
   allowExtraOverload?: boolean; // true = admin môže ísť do rizikového pretaženia (pod kapacitný min) pre tohto klienta
+  webauthnCredentials?: { id: string; createdAt?: string; counter?: number }[];
+  biometricAuthLog?: { ts: string; ok: boolean; ip: string; credId?: string }[];
 }
 
 export interface Order {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, Mail, PenLine } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, Mail, PenLine, Fingerprint, ShieldX } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
@@ -366,6 +366,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
   const [adding, setAdding] = useState(false);
   const [clientDetailTab, setClientDetailTab] = useState<Record<string, "detail" | "calc">>({});
   const [sendCredState, setSendCredState] = useState<Record<string, "idle" | "loading" | "ok" | "error">>({});
+  const [revokeWebauthnState, setRevokeWebauthnState] = useState<Record<string, "idle" | "loading" | "ok" | "error">>({});
   const emptyForm = {
     firstName: "", lastName: "", company: "", email: "", phone: "",
     loginId: "", password: "1234",
@@ -996,6 +997,12 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                       {zonePricingType === "km" ? "€/km" : zonePricingType === "auto" ? "€/auto" : "Štd"}
                     </span>
                   )}
+                  {(c.webauthnCredentials?.length ?? 0) > 0 && (
+                    <span className="flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-bold rounded-sm bg-emerald-50 text-emerald-700 border border-emerald-200" title={`Biometria aktívna — ${c.webauthnCredentials!.length} zariadenie`}>
+                      <Fingerprint className="w-3.5 h-3.5" />
+                      {c.webauthnCredentials!.length}
+                    </span>
+                  )}
                   {hasLogin ? (
                     <span className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase rounded-sm ${c.active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>
                       {c.active ? <ShieldCheck className="w-4 h-4" /> : <ShieldOff className="w-4 h-4" />}
@@ -1226,6 +1233,101 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                           )
                         )}
                       </div>
+
+                      {/* Biometria klienta */}
+                      {(() => {
+                        const creds = c.webauthnCredentials ?? [];
+                        const log = c.biometricAuthLog ?? [];
+                        const lastOk = [...log].reverse().find(e => e.ok);
+                        const recentLog = [...log].reverse().slice(0, 8);
+                        const maskIp = (ip: string) => {
+                          const parts = ip.split(".");
+                          if (parts.length === 4) return `${parts[0]}.${parts[1]}.*.*`;
+                          if (ip.includes(":")) return ip.slice(0, 8) + "…";
+                          return ip;
+                        };
+                        const rState = revokeWebauthnState[c.id] ?? "idle";
+                        return (
+                          <div className="border-t border-gray-100 pt-3 mt-2">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
+                                <Fingerprint className="w-3 h-3" /> Biometria
+                              </p>
+                              {creds.length > 0 && (
+                                <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold rounded-sm bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  <Fingerprint className="w-3 h-3" /> {creds.length} zariad.
+                                </span>
+                              )}
+                            </div>
+                            {creds.length === 0 ? (
+                              <p className="text-[10px] text-gray-300 text-center py-1 flex items-center justify-center gap-1">
+                                <Fingerprint className="w-3 h-3" /> Neregistrovaná
+                              </p>
+                            ) : (
+                              <div className="space-y-2">
+                                {lastOk && (
+                                  <div className="flex items-center gap-2 px-2 py-1.5 bg-emerald-50 border border-emerald-100 rounded text-xs text-emerald-700">
+                                    <Fingerprint className="w-3.5 h-3.5 shrink-0" />
+                                    <span>Posl. biometria: {new Date(lastOk.ts).toLocaleString("sk-SK", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+                                  </div>
+                                )}
+                                {recentLog.length > 0 && (
+                                  <div className="border border-gray-200 rounded overflow-hidden">
+                                    <table className="w-full text-[10px]">
+                                      <tbody>
+                                        {recentLog.map((e, i) => (
+                                          <tr key={i} className={`border-t border-gray-100 first:border-0 ${e.ok ? "bg-white" : "bg-red-50"}`}>
+                                            <td className="px-2 py-1 whitespace-nowrap text-gray-400">
+                                              {new Date(e.ts).toLocaleString("sk-SK", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                                            </td>
+                                            <td className="px-2 py-1">
+                                              <span className={`px-1 py-0.5 rounded font-bold ${e.ok ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"}`}>
+                                                {e.ok ? "OK" : "FAIL"}
+                                              </span>
+                                            </td>
+                                            <td className="px-2 py-1 text-gray-400 font-mono">{maskIp(e.ip)}</td>
+                                            {e.credId && <td className="px-2 py-1 text-gray-300 font-mono truncate max-w-[60px]">{e.credId}…</td>}
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                )}
+                                <button
+                                  disabled={rState === "loading"}
+                                  onClick={async () => {
+                                    if (!confirm(`Zrušiť biometrické prihlásenie pre ${fullName}?`)) return;
+                                    setRevokeWebauthnState(s => ({ ...s, [c.id]: "loading" }));
+                                    try {
+                                      const r = await authFetch(`/api/admin/clients/${c.id}/webauthn`, { method: "DELETE" });
+                                      const json = await r.json() as { ok: boolean };
+                                      if (json.ok) {
+                                        update(c.id, { webauthnCredentials: [], biometricAuthLog: [] });
+                                        setRevokeWebauthnState(s => ({ ...s, [c.id]: "ok" }));
+                                      } else {
+                                        setRevokeWebauthnState(s => ({ ...s, [c.id]: "error" }));
+                                      }
+                                    } catch {
+                                      setRevokeWebauthnState(s => ({ ...s, [c.id]: "error" }));
+                                    }
+                                    setTimeout(() => setRevokeWebauthnState(s => ({ ...s, [c.id]: "idle" })), 3000);
+                                  }}
+                                  className={`w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold uppercase border transition-colors mt-1 ${
+                                    rState === "ok" ? "bg-green-50 border-green-300 text-green-700" :
+                                    rState === "error" ? "bg-red-50 border-red-300 text-red-600" :
+                                    "bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
+                                  } disabled:opacity-60`}
+                                >
+                                  {rState === "loading" ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Ruším…</>
+                                    : rState === "ok" ? <><Check className="w-3.5 h-3.5" /> Zrušené</>
+                                    : rState === "error" ? <><X className="w-3.5 h-3.5" /> Chyba</>
+                                    : <><ShieldX className="w-3.5 h-3.5" /> Zrušiť biometriu</>}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       {/* Štatistiky klienta */}
                       {(() => {

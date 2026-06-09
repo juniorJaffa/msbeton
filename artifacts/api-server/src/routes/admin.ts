@@ -107,6 +107,26 @@ router.put("/clients", async (req, res) => {
   catch (err) { req.log.error({ err }, "Failed to save clients"); res.status(500).json({ error: "Internal server error" }); }
 });
 
+// Revoke all WebAuthn credentials + log for a client (admin action)
+router.delete("/clients/:id/webauthn", async (req, res) => {
+  try {
+    const clientId = req.params.id;
+    const raw = await getConfig(KEYS.clients);
+    const clients = Array.isArray(raw) ? raw as Array<Record<string, unknown>> : [];
+    const updated = clients.map((c) =>
+      String(c.id) === clientId
+        ? { ...c, webauthnCredentials: [], biometricAuthLog: [] }
+        : c
+    );
+    await setConfig(KEYS.clients, updated);
+    invalidateClientCache();
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "Failed to revoke WebAuthn credentials");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.put("/transport-zones", async (req, res) => {
   try { await setConfig(KEYS.transportZones, req.body); res.json({ ok: true }); }
   catch (err) { req.log.error({ err }, "Failed to save transport zones"); res.status(500).json({ error: "Internal server error" }); }

@@ -98,7 +98,14 @@ export function Navbar() {
                   )}
                   <span className="text-white/15 hidden sm:inline">|</span>
                   <button
-                    onClick={() => { clientAuth.logout(); setLoggedClient(null); }}
+                    onClick={() => {
+                      clientAuth.logout();
+                      setLoggedClient(null);
+                      // Banking pattern: auto-redirect to login so biometric auto-triggers
+                      if (isClientBioAvailable() && hasClientBiometric()) {
+                        window.location.href = "/prihlasenie";
+                      }
+                    }}
                     className="flex items-center gap-1.5 px-2 py-0.5 text-white/40 hover:text-white/80 transition-colors text-xs cursor-pointer"
                     title="Odhlásiť"
                   >
