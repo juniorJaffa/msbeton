@@ -1609,10 +1609,19 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                                 )}
                                 {recentLog.length > 0 && (
                                   <div className="border border-gray-200 rounded overflow-hidden">
+                                    <div className="px-2 py-1 bg-gray-50 border-b border-gray-100 text-[9px] font-bold text-gray-400 uppercase tracking-wider">Posledné prihlásenia</div>
                                     <table className="w-full text-[10px]">
+                                      <thead>
+                                        <tr className="bg-gray-50/70 text-gray-400 text-[9px] uppercase tracking-wider">
+                                          <th className="px-2 py-1 text-left font-bold">Čas</th>
+                                          <th className="px-2 py-1 text-left font-bold">Stav</th>
+                                          <th className="px-2 py-1 text-left font-bold">IP</th>
+                                          <th className="px-2 py-1 text-left font-bold">Kľúč</th>
+                                        </tr>
+                                      </thead>
                                       <tbody>
                                         {recentLog.map((e, i) => (
-                                          <tr key={i} className={`border-t border-gray-100 first:border-0 ${e.ok ? "bg-white" : "bg-red-50"}`}>
+                                          <tr key={i} className={`border-t border-gray-100 ${e.ok ? "bg-white" : "bg-red-50"}`}>
                                             <td className="px-2 py-1 whitespace-nowrap text-gray-400">
                                               {new Date(e.ts).toLocaleString("sk-SK", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                                             </td>
@@ -1622,7 +1631,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                                               </span>
                                             </td>
                                             <td className="px-2 py-1 text-gray-400 font-mono">{maskIp(e.ip)}</td>
-                                            {e.credId && <td className="px-2 py-1 text-gray-300 font-mono truncate max-w-[60px]">{e.credId}…</td>}
+                                            <td className="px-2 py-1 text-gray-300 font-mono truncate max-w-[60px]">{e.credId ? `${e.credId}…` : "—"}</td>
                                           </tr>
                                         ))}
                                       </tbody>
