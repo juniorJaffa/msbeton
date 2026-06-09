@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, Phone, ArrowRight } from "lucide-react";
+import { ChevronDown, Phone, ArrowRight, Mountain, Waves } from "lucide-react";
 import { SEOHead } from "@/components/SEOHead";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { adminData } from "@/lib/adminData";
+import { adminData, getKamenivoGroup } from "@/lib/adminData";
+
+const VAT = 0.20; // DPH 20 % (SK)
 
 const ease = [0.23, 1, 0.32, 1] as const;
 const fadeUp = {
@@ -15,6 +17,16 @@ const stagger = { show: { transition: { staggerChildren: 0.06 } } };
 
 function fmt(n: number) {
   return n.toFixed(2).replace(".", ",") + " €";
+}
+function fmtDph(n: number) {
+  return fmt(n * (1 + VAT));
+}
+// Ikona kategórie podľa kameniva (drvené = hory, riečne = vlny)
+function CatIcon({ name }: { name: string }) {
+  const g = getKamenivoGroup(name);
+  if (g === "drvene") return <Mountain className="w-4 h-4 text-primary/70 shrink-0" />;
+  if (g === "riecne") return <Waves className="w-4 h-4 text-primary/70 shrink-0" />;
+  return null;
 }
 
 // ── Betóny tab ─────────────────────────────────────────────────────────────
@@ -33,7 +45,7 @@ function BetonovyTab() {
               className="w-full flex items-center justify-between px-5 py-3.5 bg-white/5 hover:bg-white/8 transition-colors text-left"
               onClick={() => setOpen(open === cat.id ? null : cat.id)}
             >
-              <span className="font-bold text-sm tracking-widest uppercase text-primary">{cat.name}</span>
+              <span className="flex items-center gap-2 font-bold text-sm tracking-widest uppercase text-primary"><CatIcon name={cat.name} />{cat.name}</span>
               <div className="flex items-center gap-2.5">
                 <span className="text-[11px] text-white/30">{cat.types.filter(t => t.label.trim()).length} typov</span>
                 <ChevronDown
@@ -56,7 +68,8 @@ function BetonovyTab() {
                       <tr className="border-b border-white/8">
                         <th className="text-left px-5 py-2.5 text-[10px] font-bold text-white/30 uppercase tracking-widest">Typ betónu</th>
                         <th className="text-center px-4 py-2.5 text-[10px] font-bold text-white/30 uppercase tracking-widest hidden sm:table-cell">Jednotka</th>
-                        <th className="text-right px-5 py-2.5 text-[10px] font-bold text-white/30 uppercase tracking-widest">Cena bez DPH</th>
+                        <th className="text-right px-4 py-2.5 text-[10px] font-bold text-white/30 uppercase tracking-widest">Bez DPH</th>
+                        <th className="text-right px-5 py-2.5 text-[10px] font-bold text-primary/60 uppercase tracking-widest">S DPH</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -64,7 +77,8 @@ function BetonovyTab() {
                         <tr key={t.id} className={`border-b border-white/5 hover:bg-primary/5 transition-colors ${i % 2 === 0 ? "bg-white/3" : "bg-white/5"}`}>
                           <td className="px-5 py-3 text-white/85 font-medium">{t.label}</td>
                           <td className="px-4 py-3 text-center text-white/30 hidden sm:table-cell text-xs">1 m³</td>
-                          <td className="px-5 py-3 text-right font-black text-primary">{fmt(t.price)}</td>
+                          <td className="px-4 py-3 text-right font-semibold text-white/50">{fmt(t.price)}</td>
+                          <td className="px-5 py-3 text-right font-black text-primary">{fmtDph(t.price)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -99,7 +113,8 @@ function SluzbyTab() {
           <tr className="border-b border-white/10">
             <th className="text-left px-5 py-3 text-[10px] font-bold text-white/30 uppercase tracking-widest">Názov služby</th>
             <th className="text-center px-4 py-3 text-[10px] font-bold text-white/30 uppercase tracking-widest hidden sm:table-cell">Jednotka</th>
-            <th className="text-right px-5 py-3 text-[10px] font-bold text-white/30 uppercase tracking-widest">Cena bez DPH</th>
+            <th className="text-right px-4 py-3 text-[10px] font-bold text-white/30 uppercase tracking-widest">Bez DPH</th>
+            <th className="text-right px-5 py-3 text-[10px] font-bold text-primary/60 uppercase tracking-widest">S DPH</th>
           </tr>
         </thead>
         <tbody>
@@ -107,7 +122,8 @@ function SluzbyTab() {
             <tr key={s.id} className={`border-b border-white/5 hover:bg-primary/5 transition-colors ${i % 2 === 0 ? "bg-white/3" : "bg-white/5"}`}>
               <td className="px-5 py-3.5 text-white/85 font-medium">{s.name}</td>
               <td className="px-4 py-3.5 text-center text-white/30 text-xs hidden sm:table-cell">{s.unit}</td>
-              <td className="px-5 py-3.5 text-right font-black text-primary">{fmt(s.price)}</td>
+              <td className="px-4 py-3.5 text-right font-semibold text-white/50">{fmt(s.price)}</td>
+              <td className="px-5 py-3.5 text-right font-black text-primary">{fmtDph(s.price)}</td>
             </tr>
           ))}
         </tbody>
@@ -142,13 +158,13 @@ function DopravTab() {
       <div className="border border-white/10 overflow-hidden">
         <div className="px-5 py-3 border-b border-white/8 flex items-center justify-between">
           <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Vzdialenosť</span>
-          <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Cena / m³</span>
+          <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Cena / m³ (bez DPH · s DPH)</span>
         </div>
 
         {/* Min fee row */}
         <div className="flex items-center justify-between px-5 py-3 bg-primary/8 border-b border-primary/15">
           <span className="text-white/80 text-sm font-medium">Minimálna doprava / auto</span>
-          <span className="text-primary font-black text-sm">{fmt(ts.minimumFee)}</span>
+          <span className="text-sm text-right"><span className="text-white/50 font-semibold">{fmt(ts.minimumFee)}</span> <span className="text-primary font-black">{fmtDph(ts.minimumFee)}</span></span>
         </div>
 
         {zones.map((z, i) => (
@@ -159,7 +175,7 @@ function DopravTab() {
             <span className="text-white/70 text-sm">
               od <strong className="text-white/90">{z.fromKm}</strong> km do <strong className="text-white/90">{z.toKm}</strong> km
             </span>
-            <span className="text-primary font-black text-sm">{fmt(z.ratePerM3)}</span>
+            <span className="text-sm text-right"><span className="text-white/50 font-semibold">{fmt(z.ratePerM3)}</span> <span className="text-primary font-black">{fmtDph(z.ratePerM3)}</span></span>
           </div>
         ))}
       </div>
@@ -277,7 +293,7 @@ export default function Cennik() {
       <div className="border-b border-primary/15" style={{ background: "rgba(237,197,49,0.06)" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-          <p className="text-white/50 text-xs">Ceny platia pre rok 2026. Všetky ceny sú uvedené <strong className="text-white/75">BEZ DPH</strong>.</p>
+          <p className="text-white/50 text-xs">Ceny platia pre rok 2026. Uvedené sú ceny <strong className="text-white/75">bez DPH</strong> (pre firmy) aj <strong className="text-white/75">s DPH 20 %</strong> (spotrebiteľská cena).</p>
         </div>
       </div>
 
