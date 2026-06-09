@@ -42,7 +42,7 @@ export function Navbar() {
   }, []);
 
   const navLinks = [
-    { name: "O nás", href: "/#about" },
+    { name: "O nás", href: "/o-nas" },
     { name: "Kalkulačka", href: "/kalkulacka-beton" },
     { name: "Vozový park", href: "/vozovy-park" },
     { name: "Cenník", href: "/cennik" },
