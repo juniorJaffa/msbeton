@@ -41,7 +41,9 @@ export default defineConfig({
   root: path.resolve(import.meta.dirname),
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
-    emptyOutDir: true,
+    // false = prepíše súbory in-place namiesto zmazania celého dist pred buildom.
+    // Zabráni deploy-window 500 (index.html + 50x.html nikdy nechýbajú počas buildu na serveri).
+    emptyOutDir: false,
     rollupOptions: {
       output: {
         manualChunks: {
