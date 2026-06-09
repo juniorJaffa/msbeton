@@ -618,4 +618,57 @@ router.delete("/server-backup/:filename", (req, res) => {
   }
 });
 
+// ── Biometric stats ───────────────────────────────────────────────────────────
+router.get("/biometric-stats", async (req, res) => {
+  try {
+    const raw = await getConfig(KEYS.clients);
+    const clients = Array.isArray(raw) ? raw as Array<{
+      id?: string;
+      active?: boolean;
+      webauthnCredentials?: unknown[];
+      biometricAuthLog?: Array<{ ts: string; ok: boolean; ip?: string; credId?: string }>;
+    }> : [];
+    const active = clients.filter(c => c.active !== false);
+    const totalClients = active.length;
+    const bioClients = active.filter(c => (c.webauthnCredentials?.length ?? 0) > 0).length;
+
+    const nowMs = Date.now();
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    const todayStartMs = todayStart.getTime();
+    const oneHourAgoMs = nowMs - 3_600_000;
+
+    let todaySuccess = 0, todayFailed = 0;
+    const alerts: Array<{ clientId: string; failCount: number; lastIp: string }> = [];
+
+    for (const c of active) {
+      const log = c.biometricAuthLog ?? [];
+      const todayLog = log.filter(e => new Date(e.ts).getTime() >= todayStartMs);
+      todaySuccess += todayLog.filter(e => e.ok).length;
+      todayFailed  += todayLog.filter(e => !e.ok).length;
+
+      // Security alert: >3 failures in last hour
+      const recentFails = log.filter(e => !e.ok && new Date(e.ts).getTime() >= oneHourAgoMs);
+      if (recentFails.length > 3) {
+        const lastFail = recentFails[recentFails.length - 1];
+        alerts.push({ clientId: String(c.id ?? ""), failCount: recentFails.length, lastIp: lastFail?.ip ?? "" });
+      }
+    }
+
+    // Last biometric activity (most recent log entry across all clients)
+    let lastActivity: string | null = null;
+    for (const c of active) {
+      const log = c.biometricAuthLog ?? [];
+      if (log.length > 0) {
+        const ts = log[log.length - 1].ts;
+        if (!lastActivity || ts > lastActivity) lastActivity = ts;
+      }
+    }
+
+    res.json({ ok: true, stats: { totalClients, bioClients, todaySuccess, todayFailed, alerts, lastActivity } });
+  } catch (err) {
+    req.log.error({ err }, "biometric-stats failed");
+    res.status(500).json({ ok: false });
+  }
+});
+
 export default router;
