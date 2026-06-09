@@ -140,6 +140,7 @@ export default function ClientLogin() {
     const res = await registerClientBiometric(session.id, session.clientId ?? session.id, session.name);
     setBioRegLoading(false);
     if (res.ok) {
+      window.dispatchEvent(new Event("bio-status-changed")); // navbar aktualizuje indikátor
       setLocation("/#calculator");
     } else {
       setBioRegError(res.error ?? "Registrácia zlyhala");

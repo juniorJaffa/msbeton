@@ -121,7 +121,7 @@ export async function registerClientBiometric(
   clientInternalId: string,  // session.id (UUID)
   loginId: string,           // session.clientId (loginId pre autentifikačnú výzvu)
   displayName: string
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<{ ok: boolean; error?: string; already?: boolean }> {
   try {
     // 1. Získaj registračnú výzvu zo servera
     const challengeRes = await fetch("/api/client/webauthn/reg-challenge", {
@@ -179,10 +179,16 @@ export async function registerClientBiometric(
     return { ok: true };
   } catch (err) {
     const msg = String(err);
-    if (msg.includes("NotAllowedError")) return { ok: false, error: "Registrácia zrušená" };
+    // InvalidStateError = zariadenie už MÁ passkey pre tento účet (napr. macOS iCloud Keychain
+    // zdieľaný Safari↔Chrome). Biometria je teda už aktívna a server credential má → úspech.
+    if (msg.includes("InvalidStateError")) {
+      localStorage.setItem(CLIENT_WEBAUTHN_KEY, JSON.stringify({ credId: "device-passkey", loginId }));
+      return { ok: true, already: true };
+    }
+    if (msg.includes("NotAllowedError")) return { ok: false, error: "Registrácia zrušená (Face ID neschválené)" };
     if (msg.includes("NotSupportedError")) return { ok: false, error: "Zariadenie nepodporuje biometriu" };
     if (msg.includes("SecurityError")) return { ok: false, error: "Biometria nie je dostupná — skúste obnoviť stránku" };
-    return { ok: false, error: "Registrácia zlyhala" };
+    return { ok: false, error: "Registrácia zlyhala — skúste znova" };
   }
 }
 
