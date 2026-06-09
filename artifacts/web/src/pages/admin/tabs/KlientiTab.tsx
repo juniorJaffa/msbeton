@@ -1288,6 +1288,12 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                         {zonePricingType === "km" ? "€/km" : zonePricingType === "auto" ? "€/auto" : "Štd"}
                       </span>
                     )}
+                    {(c.webauthnCredentials?.length ?? 0) > 0 && (
+                      <span className="flex items-center gap-0.5 px-1 py-0 text-[10px] font-bold rounded bg-emerald-50 text-emerald-700 border border-emerald-100" title={`Biometria aktívna — ${c.webauthnCredentials!.length} zariadenie`}>
+                        <Fingerprint className="w-2.5 h-2.5" />
+                        {c.webauthnCredentials!.length}
+                      </span>
+                    )}
                     {c.isOwner && <span className="text-[10px] font-black text-primary/70">Admin</span>}
                   </div>
                 </div>
