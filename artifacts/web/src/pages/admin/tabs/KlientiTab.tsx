@@ -417,6 +417,8 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
   const [bioOpen, setBioOpen] = useState(false);
   const [bioInfoOpen, setBioInfoOpen] = useState(false);
   const [bioStats, setBioStats] = useState<BiometricStats | null>(null);
+  // Zatvorenie celého BIOMETRIA panelu zavrie aj jeho (i) info
+  useEffect(() => { if (!bioOpen) setBioInfoOpen(false); }, [bioOpen]);
   const [editingLinkFor, setEditingLinkFor] = useState<string | null>(null);
   const [addSuccessMsg, setAddSuccessMsg] = useState<string | null>(null);
   const [linkDraft, setLinkDraft] = useState("");

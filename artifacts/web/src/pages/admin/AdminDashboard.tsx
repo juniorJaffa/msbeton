@@ -78,7 +78,11 @@ export default function AdminDashboard() {
 
   const [orderBadge, setOrderBadge] = useState(0);
   const knownOrderIds = useRef<Set<string>>(new Set(adminData.getOrders().map(o => o.id)));
+  const baselineDone = useRef(false); // prvý fetch = baseline, neupozorňovať na existujúci backlog
   const [toastOrders, setToastOrders] = useState<Order[]>([]);
+
+  const MAX_TOASTS = 5;             // nikdy nespamuj viac ako 5 toastov v rade
+  const NEW_ORDER_WINDOW_MS = 10 * 60 * 1000; // toast len objednávky mladšie ako 10 min
 
   useEffect(() => {
     if (tab === "objednavky") {
@@ -89,14 +93,30 @@ export default function AdminDashboard() {
     const poll = async () => {
       try {
         const result = await adminApi.getOrders();
-        if (result?.data) {
-          const orders = result.data as Order[];
-          const newOnes = orders.filter(o => !knownOrderIds.current.has(o.id));
-          if (newOnes.length > 0) {
-            newOnes.forEach(o => knownOrderIds.current.add(o.id));
-            setOrderBadge(n => n + newOnes.length);
-            setToastOrders(prev => [...prev, ...newOnes]);
-          }
+        if (!result?.data) return;
+        const orders = result.data as Order[];
+
+        // Prvý fetch po prihlásení: označ VŠETKY existujúce ako známe a NEUPOZORŇUJ
+        // (inak by sa na novom zariadení/prehliadači vyrojil celý backlog ako "nové").
+        if (!baselineDone.current) {
+          orders.forEach(o => knownOrderIds.current.add(o.id));
+          baselineDone.current = true;
+          return;
+        }
+
+        const newOnes = orders.filter(o => !knownOrderIds.current.has(o.id));
+        if (newOnes.length === 0) return;
+        newOnes.forEach(o => knownOrderIds.current.add(o.id));
+        setOrderBadge(n => n + newOnes.length);
+
+        // Toast LEN genuinely nové (čerstvé createdAt) — backlog nikdy nespamuje
+        const now = Date.now();
+        const toastable = newOnes.filter(o => {
+          const t = o.createdAt ? new Date(o.createdAt).getTime() : now;
+          return now - t < NEW_ORDER_WINDOW_MS;
+        });
+        if (toastable.length > 0) {
+          setToastOrders(prev => [...prev, ...toastable].slice(0, MAX_TOASTS));
         }
       } catch {}
     };
