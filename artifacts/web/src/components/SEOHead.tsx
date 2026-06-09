@@ -138,15 +138,17 @@ export function CalculatorSchema() {
     "operatingSystem": "All",
     "browserRequirements": "Requires JavaScript",
     "inLanguage": "sk",
-    "description": "Online kalkulačka betónu zadarmo – presný výpočet ceny pre pumpu, mixér aj vlastnú dopravu. Kategórie a typy betónu, vzdialenosť na mape/km, čerpanie. Objednanie cez PDF, SMS alebo záväzne v systéme. Výpočet bez registrácie, Žilina a okolie.",
+    "description": "Online kalkulačka betónu zadarmo – presný výpočet množstva m³ aj ceny pre pumpu, mixér a vlastnú dopravu. Flexibilné čerpanie, doplnky (hadice, čakačky), klientske zľavy na betón, služby aj dopravu. Žilina a okolie.",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
     "featureList": [
+      "Presný výpočet množstva betónu v m³ (doska, základy, stĺp)",
+      "Plánovanie ceny vrátane doplnkov – prídavné hadice, čakačky, umývanie, doťaženie",
+      "Flexibilný výpočet čerpania betónu podľa hodín a minút",
       "Kategórie a typy betónu (C16/20 – C35/45, drvené aj riečne kamenivo)",
       "Vzdialenosť na mape alebo výpočet km",
       "Presný výpočet pre pumpu 28 m, domiešavač 9 m³ aj vlastnú dopravu",
-      "Čerpanie betónu, doťaženie, hadice, čakačky",
-      "Objednanie cez PDF, SMS alebo záväzná objednávka v systéme",
-      "Automatické zľavy pre firemných klientov"
+      "Klientske zľavové ceny na betón, služby aj dopravu",
+      "Objednanie cez PDF, SMS alebo záväzná objednávka v systéme"
     ],
     "provider": { "@type": "Organization", "name": SITE_NAME, "url": SITE_URL }
   };

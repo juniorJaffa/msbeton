@@ -13,7 +13,7 @@ export default function KalkulackaBeton() {
     <div className="min-h-screen bg-secondary">
       <SEOHead
         title="Kalkulačka betónu – okamžitý výpočet ceny online"
-        description="Online kalkulačka betónu zadarmo — presný výpočet ceny pre pumpu, mixér aj vlastnú dopravu. Kategórie a typy betónu, vzdialenosť na mape/km, čerpanie. Objednanie cez PDF, SMS alebo záväzne v systéme. Výpočet bez registrácie, Žilina a okolie."
+        description="Online kalkulačka betónu zadarmo — presný výpočet množstva m³ aj ceny pre pumpu, mixér a vlastnú dopravu. Flexibilné čerpanie, doplnky (hadice, čakačky), klientske zľavy na betón, služby aj dopravu. Žilina a okolie."
         canonical="/kalkulacka-beton"
         image="/images/vozovy-park/ms-beton-man-pumpa-logo-cesta-lesny-teren-zilina.jpg"
       />
@@ -33,7 +33,7 @@ export default function KalkulackaBeton() {
               KALKULAČKA <span className="text-primary">BETÓNU</span>
             </h1>
             <p className="text-white/60 text-base leading-relaxed max-w-xl mb-6">
-              Presný výpočet ceny betónu pre <strong className="text-white/80">pumpu, domiešavač aj vlastnú dopravu</strong>. Vyberte kategóriu a typ betónu, zadajte množstvo a vzdialenosť (na mape alebo v km) — kalkulačka spočíta betón, dopravu, čerpanie aj doťaženie. Hotovú kalkuláciu rovno objednáte: <strong className="text-white/80">PDF, SMS alebo záväzná objednávka</strong>.
+              Presný výpočet <strong className="text-white/80">množstva m³ aj ceny</strong> betónu pre pumpu, domiešavač aj vlastnú dopravu. Naplánujte si cenu vrátane <strong className="text-white/80">doplnkov — prídavné hadice, čakačky</strong> a flexibilné čerpanie podľa hodín a minút. Prihlásení klienti vidia <strong className="text-white/80">zľavové ceny na betón, služby aj dopravu</strong>. Objednanie cez PDF, SMS alebo záväzne v systéme.
             </p>
             <div className="flex flex-wrap gap-2.5">
               {[
@@ -71,12 +71,15 @@ export default function KalkulackaBeton() {
           </p>
           <h3 className="font-bold text-lg text-secondary mt-6 mb-2">Čo kalkulačka počíta</h3>
           <ul className="text-gray-600 leading-relaxed space-y-1.5 list-disc pl-5 mb-4">
-            <li><strong>Kategórie a typy betónu</strong> — drvené aj riečne kamenivo, triedy C16/20, C20/25, C25/30, C30/37, C35/45</li>
+            <li><strong>Presný výpočet množstva betónu v m³</strong> — pre základovú dosku, pásové základy, stĺpy aj pätky</li>
+            <li><strong>Plánovanie ceny vrátane doplnkov</strong> — prídavné hadice, čakačky, umývanie a doťaženie</li>
+            <li><strong>Flexibilný výpočet čerpania betónu</strong> — presne podľa hodín a minút na stavbe</li>
+            <li><strong>Kategórie a typy betónu</strong> — drvené aj riečne kamenivo, triedy C16/20 až C35/45</li>
             <li><strong>Vzdialenosť na mape alebo výpočet km</strong> — presná cena dopravy podľa lokality</li>
             <li><strong>Presný výpočet pre pumpu, mixér aj vlastnú dopravu</strong> — pumpa 28 m, domiešavač 9 m³</li>
-            <li><strong>Čerpanie betónu</strong>, doťaženie, hadice, umývanie a čakačky</li>
-            <li><strong>Objednanie kalkulácie</strong> — export do PDF, cez SMS alebo záväzná objednávka priamo v systéme</li>
-            <li><strong>Cena vrátane DPH</strong>; firemní klienti vidia po prihlásení svoje individuálne zľavy</li>
+            <li><strong>Klientske zľavové ceny</strong> — individuálne zľavy na betón, služby aj dopravu po prihlásení</li>
+            <li><strong>Objednanie kalkulácie</strong> — export do PDF, cez SMS alebo záväzná objednávka v systéme</li>
+            <li><strong>Cena vrátane DPH</strong></li>
           </ul>
           <h3 className="font-bold text-lg text-secondary mt-6 mb-2">Ako vypočítať cenu betónu</h3>
           <p className="text-gray-600 leading-relaxed mb-4">
