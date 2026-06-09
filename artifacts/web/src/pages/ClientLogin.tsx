@@ -7,6 +7,7 @@ import {
   authenticateClientBiometric, registerClientBiometric, forgetClientBiometric,
   getClientAttemptInfo, recordClientFailedAttempt, resetClientAttempts,
 } from "@/lib/clientAuth";
+import { isLoggedIn as isAdminLoggedIn } from "@/lib/adminAuth";
 import { SEOHead } from "@/components/SEOHead";
 import { LogIn, Fingerprint, AlertCircle, Clock, RefreshCw, Check } from "lucide-react";
 
@@ -52,12 +53,18 @@ export default function ClientLogin() {
       }, 1000);
     }
 
+    // Admin kontext — nekonfliktiť s klientskou biometriou
+    if (isAdminLoggedIn()) return;
+
     if (isBiometricAvailable() && hasClientBiometric()) {
       setScreen("bio-pending");
       authenticateClientBiometric().then(result => {
         if (result.ok && result.session) {
           clientAuth.updateSession(result.session);
           setLocation("/#calculator");
+        } else if (!hasClientBiometric()) {
+          // Credential bol vymazaný (stale/iné zariadenie) — priamo na formulár
+          setScreen("form");
         } else {
           setScreen("bio-failed");
         }
@@ -68,11 +75,14 @@ export default function ClientLogin() {
   }, [setLocation]);
 
   const retryBiometric = () => {
+    if (!hasClientBiometric()) { setScreen("form"); return; }
     setScreen("bio-pending");
     authenticateClientBiometric().then(result => {
       if (result.ok && result.session) {
         clientAuth.updateSession(result.session);
         setLocation("/#calculator");
+      } else if (!hasClientBiometric()) {
+        setScreen("form");
       } else {
         setScreen("bio-failed");
       }
