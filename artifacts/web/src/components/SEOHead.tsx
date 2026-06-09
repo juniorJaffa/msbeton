@@ -127,6 +127,45 @@ export function WebSiteSchema() {
   );
 }
 
+// Schéma pre dedikovanú stránku kalkulačky betónu — WebApplication + FAQ (SEO #1 priorita)
+export function CalculatorSchema() {
+  const app = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Kalkulačka betónu MS-BETON",
+    "url": `${SITE_URL}/kalkulacka-beton`,
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "All",
+    "browserRequirements": "Requires JavaScript",
+    "inLanguage": "sk",
+    "description": "Online kalkulačka betónu – okamžitý výpočet ceny betónu vrátane dopravy, betónovej pumpy a čerpania. Pumpa, domiešavač aj vlastná doprava. Žilina a okolie.",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+    "featureList": [
+      "Výpočet ceny betónu podľa triedy (C16/20 – C35/45)",
+      "Cena dopravy – pumpa 28 m, domiešavač 9 m³, vlastná doprava",
+      "Čerpanie betónu a doplnkové služby",
+      "Automatické zľavy pre firemných klientov",
+      "Okamžitá objednávka betónu online"
+    ],
+    "provider": { "@type": "Organization", "name": SITE_NAME, "url": SITE_URL }
+  };
+  const faq = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      { "@type": "Question", "name": "Ako vypočítam cenu betónu?", "acceptedAnswer": { "@type": "Answer", "text": "Zadajte triedu betónu, množstvo v m³ a typ dopravy (pumpa, domiešavač alebo vlastná doprava). Kalkulačka okamžite vypočíta cenu betónu vrátane dopravy a čerpania s DPH aj bez DPH." } },
+      { "@type": "Question", "name": "Koľko stojí doprava betónu?", "acceptedAnswer": { "@type": "Answer", "text": "Cena dopravy závisí od vzdialenosti a typu vozidla. Kalkulačka počíta presnú cenu pre betónovú pumpu s dosahom 28 m aj domiešavač 9 m³ v Žiline a okolí do 50 km." } },
+      { "@type": "Question", "name": "Je kalkulačka betónu zadarmo?", "acceptedAnswer": { "@type": "Answer", "text": "Áno, online kalkulačka betónu MS-BETON je úplne zadarmo a bez registrácie. Firemní klienti po prihlásení vidia svoje individuálne zľavy automaticky." } }
+    ]
+  };
+  return (
+    <Helmet>
+      <script type="application/ld+json">{JSON.stringify(app)}</script>
+      <script type="application/ld+json">{JSON.stringify(faq)}</script>
+    </Helmet>
+  );
+}
+
 export function LocalBusinessSchema() {
   const schema = {
     "@context": "https://schema.org",

@@ -8,6 +8,7 @@ import { clientAuth } from "@/lib/clientAuth";
 
 import Home from "@/pages/Home";
 const Cennik = lazy(() => import("@/pages/Cennik"));
+const KalkulackaBeton = lazy(() => import("@/pages/KalkulackaBeton"));
 const VozovyPark = lazy(() => import("@/pages/VozovyPark"));
 const ClientLogin = lazy(() => import("@/pages/ClientLogin"));
 const ClientProfile = lazy(() => import("@/pages/ClientProfile"));
@@ -29,6 +30,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/cennik" component={Cennik} />
+        <Route path="/kalkulacka-beton" component={KalkulackaBeton} />
         <Route path="/vozovy-park" component={VozovyPark} />
         <Route path="/prihlasenie" component={ClientLogin} />
         <Route path="/klient-profil" component={ClientProfile} />
