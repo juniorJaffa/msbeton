@@ -81,10 +81,51 @@ router.post("/password/reset-verify", loginRateLimit, async (req, res) => {
   }
 });
 
+// ── Admin bio log (informačný — admin bio sa overuje lokálne v zariadení, nie serverom) ──
+interface AdminBioEntry { ts: string; ok: boolean; event: "register" | "auth"; device?: string; ip?: string; reason?: string }
+
+function parseDeviceUA(ua: string): string {
+  if (!ua) return "Neznáme zariadenie";
+  let device = "Počítač";
+  if (/iPhone/.test(ua)) device = "iPhone";
+  else if (/iPad/.test(ua)) device = "iPad";
+  else if (/Android/.test(ua)) device = /Mobile/.test(ua) ? "Android telefón" : "Android tablet";
+  else if (/Macintosh|Mac OS X/.test(ua)) device = "Mac";
+  else if (/Windows/.test(ua)) device = "Windows";
+  else if (/Linux/.test(ua)) device = "Linux";
+  let browser = "Prehliadač";
+  if (/CriOS|Chrome/.test(ua) && !/Edg|OPR/.test(ua)) browser = "Chrome";
+  else if (/Edg/.test(ua)) browser = "Edge";
+  else if (/FxiOS|Firefox/.test(ua)) browser = "Firefox";
+  else if (/Safari/.test(ua) && !/Chrome|CriOS/.test(ua)) browser = "Safari";
+  else if (/OPR|Opera/.test(ua)) browser = "Opera";
+  return `${device} · ${browser}`;
+}
+
+async function appendAdminBioLog(req: { headers: Record<string, unknown>; ip?: string }, entry: Omit<AdminBioEntry, "device" | "ip">): Promise<void> {
+  try {
+    const ua = (req.headers["user-agent"] as string) ?? "";
+    const ip = (req.headers["cf-connecting-ip"] as string) ?? req.ip ?? "unknown";
+    const full: AdminBioEntry = { ...entry, device: parseDeviceUA(ua), ip };
+    const existing = await getConfig("admin_bio_log");
+    const log = Array.isArray(existing) ? existing as AdminBioEntry[] : [];
+    await setConfig("admin_bio_log", [...log, full].slice(-40)); // posledných 40 udalostí
+  } catch { /* non-critical */ }
+}
+
 // Biometrický (WebAuthn) token — vydaný po úspešnom overení passkey na strane klienta.
 // Rate-limited rovnako ako prihlásenie heslom — ochrana proti brute-force.
-router.post("/biometric-token", loginRateLimit, (_req, res) => {
+router.post("/biometric-token", loginRateLimit, (req, res) => {
+  void appendAdminBioLog(req, { ts: new Date().toISOString(), ok: true, event: "auth" });
   res.json({ ok: true, token: signAdminToken() });
+});
+
+// Admin bio udalosť — klient hlási registráciu / zlyhanie (admin bio je client-side)
+router.post("/biometric-event", loginRateLimit, async (req, res) => {
+  const { event, ok, reason } = req.body as { event?: string; ok?: boolean; reason?: string };
+  const ev: "register" | "auth" = event === "register" ? "register" : "auth";
+  await appendAdminBioLog(req, { ts: new Date().toISOString(), ok: ok === true, event: ev, reason: reason ? String(reason).slice(0, 120) : undefined });
+  res.json({ ok: true });
 });
 
 const KEYS = {
@@ -751,7 +792,12 @@ router.get("/biometric-stats", async (req, res) => {
     const recent = feed.slice(0, 40);
     const lastActivity = feed.length > 0 ? feed[0].ts : null;
 
-    res.json({ ok: true, stats: { totalClients, bioClients, todaySuccess, todayFailed, alerts, lastActivity, recent } });
+    // Admin bio log (client-side biometria — informačný self-reported záznam)
+    const adminRaw = await getConfig("admin_bio_log");
+    const adminBio = (Array.isArray(adminRaw) ? adminRaw as Array<{ ts: string; ok: boolean; event: string; device?: string; ip?: string; reason?: string }> : [])
+      .slice().reverse().slice(0, 20);
+
+    res.json({ ok: true, stats: { totalClients, bioClients, todaySuccess, todayFailed, alerts, lastActivity, recent, adminBio } });
   } catch (err) {
     req.log.error({ err }, "biometric-stats failed");
     res.status(500).json({ ok: false });

@@ -21,6 +21,7 @@ interface BiometricStats {
   alerts: Array<{ clientId: string; clientName?: string; failCount: number; lastIp: string; lastDevice?: string; lastReason?: string }>;
   lastActivity: string | null;
   recent?: BioFeedEntry[];
+  adminBio?: Array<{ ts: string; ok: boolean; event: string; device?: string; ip?: string; reason?: string }>;
 }
 import { EditableField, authFetch } from "./_shared";
 
@@ -769,6 +770,54 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                 </div>
               </div>
             )}
+
+            {/* ADMIN biometria — samostatný log (client-side, informačný) */}
+            <div className="border-t border-gray-100">
+              <div className="px-4 py-2 bg-secondary/[0.04] text-[10px] text-secondary/70 uppercase tracking-wider flex items-center gap-1.5">
+                <ShieldCheck className="w-3 h-3" /> Admin biometria — aktivita
+                <span className="ml-auto normal-case tracking-normal text-gray-400 flex items-center gap-1">
+                  <span className={`w-1.5 h-1.5 rounded-full ${isAdminBioAvail() && hasAdminBio() ? "bg-emerald-500" : "bg-gray-300"}`} />
+                  {isAdminBioAvail() && hasAdminBio() ? "toto zariadenie: aktívna" : "toto zariadenie: neaktívna"}
+                </span>
+              </div>
+              {(bioStats.adminBio && bioStats.adminBio.length > 0) ? (
+                <div className="max-h-56 overflow-y-auto divide-y divide-gray-50">
+                  {bioStats.adminBio.map((e, i) => (
+                    <div key={i} className={`px-4 py-2 flex items-start gap-2.5 ${e.ok ? "" : "bg-red-50/40"}`}>
+                      <span className={`mt-0.5 w-1.5 h-1.5 rounded-full shrink-0 ${e.ok ? "bg-emerald-500" : "bg-red-500"}`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-xs font-bold text-gray-700">{e.device || "Zariadenie"}</span>
+                          <span className={`text-[9px] font-black uppercase px-1 py-px rounded ${e.event === "register" ? "bg-blue-50 text-blue-600 border border-blue-200" : "bg-gray-100 text-gray-500"}`}>
+                            {e.event === "register" ? "registrácia" : "prihlásenie"}
+                          </span>
+                          <span className={`text-[9px] font-black uppercase px-1 py-px rounded ${e.ok ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-red-50 text-red-600 border border-red-200"}`}>
+                            {e.ok ? "OK" : "zlyhanie"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-400">
+                          {e.ip && <span className="font-mono">{e.ip}</span>}
+                        </div>
+                        {!e.ok && e.reason && (
+                          <div className="text-[10px] text-red-500 mt-0.5 flex items-start gap-1">
+                            <Info className="w-3 h-3 shrink-0 mt-px" /> {e.reason}
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-gray-400 font-mono shrink-0">
+                        {new Date(e.ts).toLocaleString("sk-SK", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="px-4 py-3 text-[11px] text-gray-400">Zatiaľ žiadna admin bio aktivita.</p>
+              )}
+              <p className="px-4 py-2 text-[10px] text-gray-400 bg-gray-50/50 border-t border-gray-100 flex items-start gap-1.5">
+                <Info className="w-3 h-3 shrink-0 mt-px text-gray-300" />
+                Admin biometria sa overuje <strong>lokálne v zariadení</strong> (nie serverom). Tento log je <strong>informačný</strong> — nahlásený zariadením.
+              </p>
+            </div>
           </>
         )}
       </div>

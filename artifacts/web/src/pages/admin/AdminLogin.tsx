@@ -5,7 +5,7 @@ import { SEOHead } from "@/components/SEOHead";
 import { Eye, EyeOff, Lock, User, AlertCircle, Clock, Fingerprint, Mail, KeyRound, Check, ArrowLeft, ShieldCheck } from "lucide-react";
 import {
   loginWithApi, isLoggedIn, getAttemptInfo, recordFailedAttempt, resetAttempts,
-  isBiometricAvailable, hasStoredCredential, authenticateBiometricAndGetToken, registerBiometric, clearBiometric,
+  isBiometricAvailable, hasStoredCredential, authenticateBiometricAndGetToken, registerBiometric, clearBiometric, reportAdminBioEvent,
 } from "@/lib/adminAuth";
 import { canAutoTriggerBio } from "@/lib/bioPlatform";
 import { VersionBadge } from "@/components/VersionBadge";
@@ -71,6 +71,7 @@ export default function AdminLogin() {
     setScreen("bio-pending");
     authenticateBiometricAndGetToken().then(result => {
       if (result.ok) { navigate("/admin/dashboard"); return; }
+      reportAdminBioEvent("auth", false, result.error?.slice(0, 120));
       // Credential bol vymazaný (stale/iné zariadenie/nepodporované) → retry je zbytočný, rovno formulár
       if (!hasStoredCredential()) { setBioFailReason(""); setScreen("form"); return; }
       // Genuine transient zlyhanie (credential existuje) → ukáž dôvod + ponúkni retry

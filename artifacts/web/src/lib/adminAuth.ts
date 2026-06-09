@@ -125,6 +125,18 @@ function b64urlDecode(s: string): Uint8Array {
   return Uint8Array.from(bin, c => c.charCodeAt(0));
 }
 
+// Nahlás admin bio udalosť na server (informačný log — admin bio je client-side)
+export function reportAdminBioEvent(event: "register" | "auth", ok: boolean, reason?: string): void {
+  try {
+    fetch("/api/admin/biometric-event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ event, ok, reason }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch { /* fire-and-forget */ }
+}
+
 export async function registerBiometric(): Promise<{ ok: boolean; error?: string }> {
   try {
     const cred = await navigator.credentials.create({
@@ -150,8 +162,10 @@ export async function registerBiometric(): Promise<{ ok: boolean; error?: string
     }) as PublicKeyCredential;
     localStorage.setItem(WEBAUTHN_KEY, b64url(cred.rawId));
     localStorage.setItem(DEVICE_FP_KEY, getDeviceFingerprint());
+    reportAdminBioEvent("register", true);
     return { ok: true };
   } catch (err: unknown) {
+    reportAdminBioEvent("register", false, String(err).slice(0, 120));
     return { ok: false, error: String(err) };
   }
 }
