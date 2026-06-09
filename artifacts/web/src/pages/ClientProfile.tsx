@@ -119,7 +119,7 @@ export default function ClientProfile() {
     await forgetClientBiometric();
     setBioActive(false);
     setBioLoading(false);
-    setBioMsg({ ok: true, text: "Zariadenie zabudnuté. Ďalší login vyžaduje heslo." });
+    setBioMsg({ ok: true, text: "Biometria na tomto zariadení vypnutá. Môžete ju kedykoľvek znova aktivovať." });
   }
 
   const discounts = [

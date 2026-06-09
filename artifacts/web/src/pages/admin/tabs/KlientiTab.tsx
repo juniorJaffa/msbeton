@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, Mail, PenLine, Fingerprint, ShieldX, AlertTriangle, Info } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, ChevronRight, Users, Truck, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, Mail, PenLine, Fingerprint, ShieldX, AlertTriangle, Info, Smartphone } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
@@ -383,6 +383,19 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
   const [clientDetailTab, setClientDetailTab] = useState<Record<string, "detail" | "calc">>({});
   const [sendCredState, setSendCredState] = useState<Record<string, "idle" | "loading" | "ok" | "error">>({});
   const [revokeWebauthnState, setRevokeWebauthnState] = useState<Record<string, "idle" | "loading" | "ok" | "error">>({});
+  const [delDeviceState, setDelDeviceState] = useState<Record<string, "idle" | "loading">>({}); // kľúč: `${clientId}:${credId}`
+
+  // Per-device: zabudni JEDNO zariadenie (credential), ostatné ostanú
+  const forgetDevice = async (clientId: string, credId: string, creds: { id: string; createdAt?: string; counter?: number }[]) => {
+    const key = `${clientId}:${credId}`;
+    setDelDeviceState(s => ({ ...s, [key]: "loading" }));
+    try {
+      const r = await authFetch(`/api/admin/clients/${clientId}/webauthn/${encodeURIComponent(credId)}`, { method: "DELETE" });
+      const json = await r.json() as { ok: boolean };
+      if (json.ok) update(clientId, { webauthnCredentials: creds.filter(cr => cr.id !== credId) });
+    } catch { /* tichý fail — necháme stav */ }
+    setDelDeviceState(s => { const n = { ...s }; delete n[key]; return n; });
+  };
   const emptyForm = {
     firstName: "", lastName: "", company: "", email: "", phone: "",
     loginId: "", password: "1234",
@@ -718,7 +731,10 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                 </div>
                 <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
                   {bioStats.recent.map((e, i) => (
-                    <div key={i} className={`px-4 py-2 flex items-start gap-2.5 ${e.ok ? "" : "bg-red-50/40"}`}>
+                    <div key={i}
+                      onClick={e.clientId ? () => { setExpanded(e.clientId); scrollToClientCard(e.clientId, true); } : undefined}
+                      title={e.clientId ? `Otvoriť kartu klienta ${e.clientName}` : undefined}
+                      className={`group px-4 py-2 flex items-start gap-2.5 ${e.ok ? "" : "bg-red-50/40"} ${e.clientId ? "cursor-pointer hover:bg-primary/[0.06]" : ""}`}>
                       <span className={`mt-0.5 w-1.5 h-1.5 rounded-full shrink-0 ${e.ok ? "bg-emerald-500" : "bg-red-500"}`} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
@@ -742,9 +758,12 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                           </div>
                         )}
                       </div>
-                      <span className="text-[10px] text-gray-400 font-mono shrink-0">
-                        {new Date(e.ts).toLocaleString("sk-SK", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" })}
-                      </span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span className="text-[10px] text-gray-400 font-mono">
+                          {new Date(e.ts).toLocaleString("sk-SK", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                        {e.clientId && <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-primary transition-colors" />}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1503,6 +1522,36 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                               </p>
                             ) : (
                               <div className="space-y-2">
+                                {/* Zoznam zariadení — per-device správa */}
+                                <div className="border border-gray-200 rounded divide-y divide-gray-100 overflow-hidden">
+                                  {creds.map((cr) => {
+                                    const prefix = cr.id.slice(0, 8);
+                                    const matched = [...log].reverse().find(e => e.credId && prefix.startsWith(e.credId));
+                                    const device = (matched as { device?: string } | undefined)?.device || "Zariadenie";
+                                    const lastUse = [...log].reverse().find(e => e.ok && e.credId && prefix.startsWith(e.credId));
+                                    const dkey = `${c.id}:${cr.id}`;
+                                    const deleting = delDeviceState[dkey] === "loading";
+                                    return (
+                                      <div key={cr.id} className="flex items-center gap-2 px-2.5 py-2 bg-white">
+                                        <Smartphone className="w-4 h-4 text-secondary/60 shrink-0" />
+                                        <div className="flex-1 min-w-0">
+                                          <div className="text-xs font-bold text-gray-700 truncate">{device}</div>
+                                          <div className="text-[10px] text-gray-400">
+                                            {cr.createdAt ? `registr. ${new Date(cr.createdAt).toLocaleDateString("sk-SK", { day: "numeric", month: "numeric", year: "2-digit" })}` : ""}
+                                            {lastUse ? ` · posl. ${new Date(lastUse.ts).toLocaleDateString("sk-SK", { day: "numeric", month: "numeric" })}` : ""}
+                                          </div>
+                                        </div>
+                                        <button
+                                          disabled={deleting}
+                                          onClick={() => { if (confirm(`Zabudnúť zariadenie „${device}" pre ${fullName}? Z tohto zariadenia sa bude vyžadovať opätovná aktivácia.`)) forgetDevice(c.id, cr.id, creds); }}
+                                          title="Zabudnúť toto zariadenie"
+                                          className="shrink-0 flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-red-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50 cursor-pointer">
+                                          {deleting ? <RefreshCw className="w-3 h-3 animate-spin" /> : <ShieldX className="w-3 h-3" />} Zabudnúť
+                                        </button>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
                                 {lastOk && (
                                   <div className="flex items-center gap-2 px-2 py-1.5 bg-emerald-50 border border-emerald-100 rounded text-xs text-emerald-700">
                                     <Fingerprint className="w-3.5 h-3.5 shrink-0" />
@@ -1559,7 +1608,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                                   {rState === "loading" ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Ruším…</>
                                     : rState === "ok" ? <><Check className="w-3.5 h-3.5" /> Zrušené</>
                                     : rState === "error" ? <><X className="w-3.5 h-3.5" /> Chyba</>
-                                    : <><ShieldX className="w-3.5 h-3.5" /> Zrušiť biometriu</>}
+                                    : <><ShieldX className="w-3.5 h-3.5" /> Zrušiť všetky zariadenia</>}
                                 </button>
                               </div>
                             )}

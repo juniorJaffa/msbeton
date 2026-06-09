@@ -181,6 +181,26 @@ router.delete("/clients/:id/webauthn", async (req, res) => {
   }
 });
 
+// Zabudnúť JEDNO zariadenie (per-device) — zmaže iba daný credential, ostatné ostanú
+router.delete("/clients/:id/webauthn/:credId", async (req, res) => {
+  try {
+    const { id: clientId, credId } = req.params;
+    const raw = await getConfig(KEYS.clients);
+    const clients = Array.isArray(raw) ? raw as Array<Record<string, unknown>> : [];
+    const updated = clients.map((c) => {
+      if (String(c.id) !== clientId) return c;
+      const creds = Array.isArray(c.webauthnCredentials) ? c.webauthnCredentials as Array<{ id: string }> : [];
+      return { ...c, webauthnCredentials: creds.filter((cr) => cr.id !== credId) };
+    });
+    await setConfig(KEYS.clients, updated);
+    invalidateClientCache();
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "Failed to delete WebAuthn credential");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.put("/transport-zones", async (req, res) => {
   try { await setConfig(KEYS.transportZones, req.body); res.json({ ok: true }); }
   catch (err) { req.log.error({ err }, "Failed to save transport zones"); res.status(500).json({ error: "Internal server error" }); }
