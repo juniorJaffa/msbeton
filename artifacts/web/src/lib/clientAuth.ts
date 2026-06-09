@@ -238,6 +238,8 @@ export async function authenticateClientBiometric(): Promise<{ ok: boolean; sess
     });
     const completeData = await completeRes.json() as { ok: boolean; client?: LoggedClient; error?: string };
     if (!completeData.ok || !completeData.client) {
+      // Server rejected credential (mismatch, crypto fail, unknown device) — clear stale local key
+      clearClientBiometric();
       return { ok: false, error: completeData.error ?? "Overenie zlyhalo" };
     }
     return { ok: true, session: completeData.client };
