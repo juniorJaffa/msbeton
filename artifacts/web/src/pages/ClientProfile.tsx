@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Navbar } from "@/components/Navbar";
 import { SEOHead } from "@/components/SEOHead";
-import { clientAuth } from "@/lib/clientAuth";
+import { clientAuth, isBiometricAvailable, hasClientBiometric, registerClientBiometric, forgetClientBiometric } from "@/lib/clientAuth";
 import { clientApi } from "@/lib/api";
-import { Eye, EyeOff, Check, AlertCircle, Mail, User, Lock, KeyRound } from "lucide-react";
+import { Eye, EyeOff, Check, AlertCircle, Mail, User, Lock, KeyRound, Fingerprint, ShieldCheck, ShieldOff } from "lucide-react";
 
 function generateCaptcha() {
   const a = Math.floor(Math.random() * 9) + 1;
@@ -94,7 +94,33 @@ export default function ClientProfile() {
   const [resetSending, setResetSending] = useState(false);
   const [resetMsg, setResetMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
+  const [bioActive, setBioActive] = useState(() => hasClientBiometric());
+  const [bioAvailable] = useState(() => isBiometricAvailable());
+  const [bioLoading, setBioLoading] = useState(false);
+  const [bioMsg, setBioMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
   if (!client || client.id === "admin") { navigate("/prihlasenie"); return null; }
+
+  async function handleBioActivate() {
+    setBioLoading(true); setBioMsg(null);
+    const result = await registerClientBiometric(client!.id, client!.clientId ?? "", client!.name ?? "");
+    setBioLoading(false);
+    if (result.ok) {
+      setBioActive(true);
+      setBioMsg({ ok: true, text: "Biometria aktivovaná. Ďalší login bez hesla." });
+    } else {
+      setBioMsg({ ok: false, text: result.error ?? "Aktivácia zlyhala" });
+    }
+  }
+
+  async function handleBioForget() {
+    if (!confirm("Zabudnúť biometrické prihlásenie na tomto zariadení?")) return;
+    setBioLoading(true); setBioMsg(null);
+    await forgetClientBiometric();
+    setBioActive(false);
+    setBioLoading(false);
+    setBioMsg({ ok: true, text: "Zariadenie zabudnuté. Ďalší login vyžaduje heslo." });
+  }
 
   const discounts = [
     client.discountBeton   > 0 && { label: `Betón −${client.discountBeton}%` },
@@ -282,6 +308,43 @@ export default function ClientProfile() {
               </div>
             </div>
           </div>
+
+          {/* ── Biometria ── */}
+          {bioAvailable && (
+            <div className="mt-5 bg-secondary rounded-xl border border-white/10 shadow-xl overflow-hidden">
+              <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-white/8 bg-white/5">
+                <Fingerprint className="w-4 h-4 text-primary shrink-0" />
+                <p className="text-[11px] font-black text-white/80 uppercase tracking-widest">Biometrické prihlásenie</p>
+                {bioActive
+                  ? <span className="ml-auto flex items-center gap-1 text-[10px] font-black text-emerald-400 bg-emerald-500/15 border border-emerald-500/25 px-2 py-0.5 rounded-full"><ShieldCheck className="w-3 h-3" /> Aktívna</span>
+                  : <span className="ml-auto flex items-center gap-1 text-[10px] font-black text-white/35 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full"><ShieldOff className="w-3 h-3" /> Neaktívna</span>
+                }
+              </div>
+              <div className="px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
+                <p className="text-xs text-white/50 max-w-sm">
+                  {bioActive
+                    ? "Toto zariadenie má aktivované biometrické prihlásenie (Face ID / odtlačok). Heslo sa pri ďalšom prihlásení nevyžaduje."
+                    : "Aktivujte Face ID alebo odtlačok prsta pre rýchle prihlásenie bez hesla — rovnako ako v bankovej aplikácii."}
+                </p>
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  {bioActive ? (
+                    <button type="button" onClick={handleBioForget} disabled={bioLoading}
+                      className="flex items-center gap-1.5 text-xs font-bold text-red-400/80 hover:text-red-400 border border-red-500/25 hover:border-red-500/50 px-3 py-2 rounded-sm transition-colors disabled:opacity-40 cursor-pointer">
+                      <ShieldOff className="w-3.5 h-3.5" />
+                      {bioLoading ? "Odstraňujem..." : "Zabudnúť toto zariadenie"}
+                    </button>
+                  ) : (
+                    <button type="button" onClick={handleBioActivate} disabled={bioLoading}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-primary text-secondary font-black text-xs uppercase tracking-wider hover:bg-primary/85 transition-colors disabled:opacity-50 rounded-sm cursor-pointer">
+                      <Fingerprint className="w-3.5 h-3.5" />
+                      {bioLoading ? "Aktivujem..." : "Aktivovať biometriu"}
+                    </button>
+                  )}
+                  <Msg msg={bioMsg} />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Footer */}
           <div className="flex items-center justify-between mt-5 pt-4 border-t border-secondary/30">
