@@ -3,7 +3,7 @@ import { Helmet } from "react-helmet-async";
 const SITE_URL = "https://msbeton.sk";
 const SITE_NAME = "MS-BETON, spol. s r.o.";
 const DEFAULT_DESCRIPTION =
-  "Výroba a doprava betónu v Žiline a okolí. Betón pumpa 28 m, domiešavač 9 m³. Rýchla doprava, spoľahlivý servis. Kontaktujte nás pre cenovú ponuku.";
+  "Doprava a čerpanie betónu v Žiline a okolí. Betónová pumpa 28 m, domiešavač 9 m³. Rýchly rozvoz betónu, spoľahlivý servis. Kontaktujte nás pre cenovú ponuku.";
 const OG_IMAGE = `${SITE_URL}/ms-beton-spol-sro-zilina-beton-pumpa-domiesavac.jpg`;
 
 interface SEOHeadProps {
@@ -246,7 +246,7 @@ export function LocalBusinessSchema() {
         { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Betón pumpa 28 m", "description": "Čerpanie betónu betónovou pumpou s dosahom 28 m" } },
         { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Domiešavač betónu 9 m³", "description": "Doprava betónu domiešavačom s kapacitou 9 m³" } },
         { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Doprava betónu Žilina a okolie", "description": "Čerstvý betón C16/20 až C35/45 s dopravou v okruhu 50 km od Žiliny" } },
-        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Výroba betónu na mieru", "description": "Betón rôznych tried podľa projektu a požiadaviek zákazníka" } }
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Dodávka betónu rôznych tried", "description": "Rozvoz čerstvého betónu rôznych tried podľa projektu a požiadaviek zákazníka" } }
       ]
     }
   };

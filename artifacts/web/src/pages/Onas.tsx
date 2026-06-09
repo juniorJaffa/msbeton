@@ -7,9 +7,9 @@ import { Footer } from "@/components/Footer";
 const SITE_URL = "https://msbeton.sk";
 
 const USP = [
-  "Moderná technológia riadenia výroby",
-  "Vlastný rozvoz a flotila domiešavačov",
-  "Certifikované a laboratórne testované zmesi",
+  "Moderný dispečing a riadenie dopravy",
+  "Vlastná flotila domiešavačov a betónových púmp",
+  "Certifikovaný betón od overených výrobcov",
   "Flexibilita a presnosť dodávok na čas",
 ];
 
@@ -20,7 +20,7 @@ const STATS = [
   { icon: Hammer, count: "2K+", label: "Spokojných klientov" },
 ];
 
-// Samostatná SEO stránka „O nás" — keyword „betonáreň Žilina".
+// Samostatná SEO stránka „O nás" — keyword „doprava betónu Žilina".
 export default function Onas() {
   const breadcrumb = {
     "@context": "https://schema.org",
@@ -33,8 +33,8 @@ export default function Onas() {
   return (
     <div className="min-h-screen bg-secondary">
       <SEOHead
-        title="O nás – betonáreň Žilina"
-        description="MS-BETON, spol. s r.o. — betonáreň v Žiline s vlastnou flotilou domiešavačov a betónových púmp. Certifikovaný betón, moderná výroba, 15+ rokov skúseností, rýchla doprava v Žiline a okolí."
+        title="O nás – doprava a čerpanie betónu Žilina"
+        description="MS-BETON, spol. s r.o. — spoľahlivý rozvoz betónu a čerpanie betónovou pumpou v Žiline a okolí. Vlastná flotila domiešavačov a púmp, rýchla doprava betónu priamo na stavbu, 15+ rokov skúseností."
         canonical="/o-nas"
         image="/images/vozovy-park/ms-beton-pumpa-man-tga-reprezentativna.jpg"
       />
@@ -51,10 +51,10 @@ export default function Onas() {
             <span className="text-primary font-bold text-[10px] tracking-[0.3em] uppercase">O spoločnosti</span>
           </div>
           <h1 className="font-display font-black text-4xl md:text-5xl text-white leading-tight tracking-tight max-w-2xl" style={{ fontFamily: "Montserrat, sans-serif" }}>
-            BETONÁREŇ <span className="text-primary">ŽILINA</span> — MS-BETON
+            DOPRAVA BETÓNU <span className="text-primary">ŽILINA</span> — MS-BETON
           </h1>
           <p className="text-white/60 text-base leading-relaxed max-w-2xl mt-3">
-            Patríme medzi popredných dodávateľov betónu v Žiline a okolí. Vlastná flotila domiešavačov a betónových púmp, certifikovaný betón a flexibilné dodávky presne na čas.
+            Patríme medzi popredných <strong className="text-white/80">dopravcov betónu</strong> v Žiline a okolí. Vlastná flotila domiešavačov a betónových púmp — rozvoz a čerpanie betónu flexibilne a presne na čas, priamo na vašu stavbu.
           </p>
         </div>
       </section>

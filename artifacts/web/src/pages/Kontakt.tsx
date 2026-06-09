@@ -19,8 +19,8 @@ export default function Kontakt() {
   return (
     <div className="min-h-screen bg-secondary">
       <SEOHead
-        title="Kontakt – betonáreň Žilina"
-        description="Kontaktujte MS-BETON, spol. s r.o. – betonáreň Žilina. Telefón +421 909 205 205, dispečing, cenová ponuka na betón, dopravu a čerpanie. Prevádzka Kamenná 3, Žilina."
+        title="Kontakt – doprava betónu Žilina"
+        description="Kontaktujte MS-BETON, spol. s r.o. – doprava a čerpanie betónu Žilina. Telefón +421 909 205 205, dispečing, cenová ponuka na rozvoz betónu, pumpu a domiešavač. Prevádzka Kamenná 3, Žilina."
         canonical="/kontakt"
       />
       <Helmet>

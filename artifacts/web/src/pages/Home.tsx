@@ -202,7 +202,7 @@ export default function Home() {
               </motion.p>
               <motion.ul variants={staggerContainer} className="space-y-2.5 mb-5">
                 {[
-                  "Moderná technológia riadenia výroby",
+                  "Moderný dispečing a riadenie dopravy",
                   "Vlastný rozvoz a flotila domiešavačov",
                   "Certifikované a laboratórne testované zmesi",
                   "Flexibilita a presnosť dodávok na čas"

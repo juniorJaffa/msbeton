@@ -23,19 +23,23 @@ export default function KalkulackaBeton() {
       {/* ── HERO ── */}
       <section className="concrete-bg relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-secondary/70 via-secondary/45 to-secondary/5 pointer-events-none" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-16">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 md:py-16">
           <div className="max-w-2xl">
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-3 mb-2 md:mb-4">
               <span className="block w-7 h-[2px] bg-primary" />
               <span className="text-primary font-bold text-[10px] tracking-[0.3em] uppercase">Online nástroj zadarmo</span>
             </div>
-            <h1 className="font-display font-black text-4xl md:text-5xl text-white leading-tight tracking-tight mb-4" style={{ fontFamily: "Montserrat, sans-serif" }}>
+            <h1 className="font-display font-black text-2xl md:text-5xl text-white leading-tight tracking-tight mb-2 md:mb-4" style={{ fontFamily: "Montserrat, sans-serif" }}>
               KALKULAČKA <span className="text-primary">BETÓNU</span>
             </h1>
-            <p className="text-white/60 text-base leading-relaxed max-w-xl mb-6">
+            {/* Mobile: krátky 1-riadok (kalkulačka hneď nižšie). Desktop: plný SEO odsek. */}
+            <p className="sm:hidden text-white/55 text-sm leading-snug mb-0">
+              Cena pre pumpu, domiešavač aj vlastnú dopravu — výpočet ihneď nižšie ↓
+            </p>
+            <p className="hidden sm:block text-white/60 text-base leading-relaxed max-w-xl mb-6">
               Presný výpočet <strong className="text-white/80">množstva m³ aj ceny</strong> betónu pre <strong className="text-white/80">pumpu, domiešavač aj vlastnú dopravu</strong>. Naplánujte si cenu vrátane <strong className="text-white/80">doplnkov — prídavné hadice, čakačky</strong> a flexibilné čerpanie podľa hodín a minút. Prihlásení klienti vidia <strong className="text-white/80">zľavové ceny na betón, služby aj dopravu</strong>. Objednávku vytvoríte záväzne v systéme, ako SMS s objednávkou alebo celkové zhrnutie v PDF.
             </p>
-            <div className="flex flex-wrap gap-2.5">
+            <div className="hidden sm:flex flex-wrap gap-2.5">
               {[
                 { icon: Layers, t: "Kategórie a typy betónu C16/20 – C35/45" },
                 { icon: MapPin, t: "Vzdialenosť na mape / výpočet km" },
@@ -52,7 +56,7 @@ export default function KalkulackaBeton() {
       </section>
 
       {/* ── KALKULAČKA ── */}
-      <section id="calculator" className="py-10 concrete-light relative overflow-hidden" style={{ scrollMarginTop: "96px" }}>
+      <section id="calculator" className="py-4 md:py-10 concrete-light relative overflow-hidden" style={{ scrollMarginTop: "96px" }}>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Suspense fallback={<div className="text-center py-20 text-secondary/40">Načítavam kalkulačku…</div>}>
             <ConcreteCalculator />
@@ -67,7 +71,7 @@ export default function KalkulackaBeton() {
             Prečo kalkulačka betónu MS-BETON?
           </h2>
           <p className="text-gray-600 leading-relaxed mb-4">
-            Sme jediná betonáreň v regióne Žilina, ktorá ponúka <strong>plnohodnotnú online kalkulačku betónu</strong> — presný výpočet ceny betónu aj dopravy bez telefonátu, kedykoľvek. Vzdialenosť na stavbu si zvolíte priamo <strong>na mape alebo zadáte v km</strong>, vyberiete kategóriu a typ betónu, a kalkulačka okamžite spočíta betón, dopravu, čerpanie aj doťaženie — transparentne a s cenou vrátane DPH.
+            Sme jediný dopravca betónu v regióne Žilina, ktorý ponúka <strong>plnohodnotnú online kalkulačku betónu</strong> — presný výpočet ceny betónu aj dopravy bez telefonátu, kedykoľvek. Vzdialenosť na stavbu si zvolíte priamo <strong>na mape alebo zadáte v km</strong>, vyberiete kategóriu a typ betónu, a kalkulačka okamžite spočíta betón, dopravu, čerpanie aj doťaženie — transparentne a s cenou vrátane DPH.
           </p>
           <h3 className="font-bold text-lg text-secondary mt-6 mb-2">Čo kalkulačka počíta</h3>
           <ul className="text-gray-600 leading-relaxed space-y-1.5 list-disc pl-5 mb-4">
