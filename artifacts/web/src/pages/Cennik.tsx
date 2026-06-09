@@ -282,6 +282,12 @@ export default function Cennik() {
                 Kalkulačka ceny <ArrowRight className="w-3.5 h-3.5" />
               </a>
               <a
+                href="/kolko-betonu"
+                className="inline-flex items-center gap-2 px-5 py-2.5 border border-white/20 text-white font-bold text-xs hover:border-primary hover:text-primary transition-[color,border-color] duration-150"
+              >
+                Koľko betónu? <ArrowRight className="w-3.5 h-3.5" />
+              </a>
+              <a
                 href="tel:+421909205205"
                 className="inline-flex items-center gap-2 px-5 py-2.5 border border-white/20 text-white font-bold text-xs hover:border-primary hover:text-primary transition-[color,border-color] duration-150"
               >
