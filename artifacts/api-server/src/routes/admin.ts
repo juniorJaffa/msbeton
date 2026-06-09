@@ -794,10 +794,16 @@ router.get("/biometric-stats", async (req, res) => {
 
     // Admin bio log (client-side biometria — informačný self-reported záznam)
     const adminRaw = await getConfig("admin_bio_log");
-    const adminBio = (Array.isArray(adminRaw) ? adminRaw as Array<{ ts: string; ok: boolean; event: string; device?: string; ip?: string; reason?: string }> : [])
-      .slice().reverse().slice(0, 20);
+    const adminLog = Array.isArray(adminRaw) ? adminRaw as Array<{ ts: string; ok: boolean; event: string; device?: string; ip?: string; reason?: string }> : [];
+    const adminBio = adminLog.slice().reverse().slice(0, 20);
+    // Metriky: počet zariadení čo zaregistrovali admin bio + dnešné OK/zamietnuté
+    const adminDevices = new Set(adminLog.filter(e => e.event === "register" && e.ok && e.device).map(e => e.device)).size;
+    const adminTodayOk = adminLog.filter(e => e.ok && new Date(e.ts).getTime() >= todayStartMs).length;
+    const adminTodayFail = adminLog.filter(e => !e.ok && new Date(e.ts).getTime() >= todayStartMs).length;
+    const adminLastActivity = adminLog.length > 0 ? adminLog[adminLog.length - 1].ts : null;
+    const adminBioStats = { devices: adminDevices, todayOk: adminTodayOk, todayFail: adminTodayFail, lastActivity: adminLastActivity };
 
-    res.json({ ok: true, stats: { totalClients, bioClients, todaySuccess, todayFailed, alerts, lastActivity, recent, adminBio } });
+    res.json({ ok: true, stats: { totalClients, bioClients, todaySuccess, todayFailed, alerts, lastActivity, recent, adminBio, adminBioStats } });
   } catch (err) {
     req.log.error({ err }, "biometric-stats failed");
     res.status(500).json({ ok: false });

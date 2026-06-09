@@ -22,6 +22,7 @@ interface BiometricStats {
   lastActivity: string | null;
   recent?: BioFeedEntry[];
   adminBio?: Array<{ ts: string; ok: boolean; event: string; device?: string; ip?: string; reason?: string }>;
+  adminBioStats?: { devices: number; todayOk: number; todayFail: number; lastActivity: string | null };
 }
 import { EditableField, authFetch } from "./_shared";
 
@@ -664,8 +665,8 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                 <div className="flex items-center gap-2 mb-1.5">
                   <ShieldCheck className="w-4 h-4 text-secondary" />
                   <span className="font-black text-secondary text-xs uppercase tracking-wider">Admin</span>
-                  <span className={`ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-sm flex items-center gap-1 ${isAdminBioAvail() && hasAdminBio() ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-gray-100 text-gray-400"}`}>
-                    <Fingerprint className="w-3 h-3" /> {isAdminBioAvail() && hasAdminBio() ? "aktívna" : "neaktívna"}
+                  <span className={`ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-sm flex items-center gap-1 ${(bioStats.adminBioStats?.devices ?? 0) > 0 ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-gray-100 text-gray-400"}`} title="Počet zariadení s admin biometriou">
+                    <Fingerprint className="w-3 h-3" /> {bioStats.adminBioStats?.devices ?? 0} {(bioStats.adminBioStats?.devices ?? 0) === 1 ? "zariadenie" : "zariadení"}
                   </span>
                 </div>
                 <p className="text-[11px] text-gray-500 leading-relaxed">
@@ -779,6 +780,21 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                   <span className={`w-1.5 h-1.5 rounded-full ${isAdminBioAvail() && hasAdminBio() ? "bg-emerald-500" : "bg-gray-300"}`} />
                   {isAdminBioAvail() && hasAdminBio() ? "toto zariadenie: aktívna" : "toto zariadenie: neaktívna"}
                 </span>
+              </div>
+              {/* Admin bio metriky — paralela ku klient štatistikám */}
+              <div className="flex flex-wrap gap-px bg-gray-100 border-b border-gray-100">
+                <div className="bg-white px-3 py-2 flex-1 min-w-[90px]">
+                  <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Admin zariadenia</div>
+                  <div className={`font-black text-sm ${(bioStats.adminBioStats?.devices ?? 0) > 0 ? "text-secondary" : "text-gray-300"}`}>{bioStats.adminBioStats?.devices ?? 0}</div>
+                </div>
+                <div className="bg-white px-3 py-2 flex-1 min-w-[90px]">
+                  <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Dnes úspešné</div>
+                  <div className={`font-black text-sm ${(bioStats.adminBioStats?.todayOk ?? 0) > 0 ? "text-emerald-600" : "text-gray-300"}`}>{bioStats.adminBioStats?.todayOk ?? 0}</div>
+                </div>
+                <div className="bg-white px-3 py-2 flex-1 min-w-[90px]">
+                  <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Dnes zamietnuté</div>
+                  <div className={`font-black text-sm ${(bioStats.adminBioStats?.todayFail ?? 0) > 0 ? "text-amber-500" : "text-gray-300"}`}>{bioStats.adminBioStats?.todayFail ?? 0}</div>
+                </div>
               </div>
               {(bioStats.adminBio && bioStats.adminBio.length > 0) ? (
                 <div className="max-h-56 overflow-y-auto divide-y divide-gray-50">
