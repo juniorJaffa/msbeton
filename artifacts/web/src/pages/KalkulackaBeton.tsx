@@ -13,7 +13,7 @@ export default function KalkulackaBeton() {
     <div className="min-h-screen bg-secondary">
       <SEOHead
         title="Kalkulačka betónu – okamžitý výpočet ceny online"
-        description="Online kalkulačka betónu — presný výpočet ceny pre pumpu, mixér aj vlastnú dopravu. Kategórie a typy betónu, vzdialenosť na mape/km, čerpanie. Objednanie cez PDF, SMS alebo záväzne v systéme. Žilina a okolie."
+        description="Online kalkulačka betónu zadarmo — presný výpočet ceny pre pumpu, mixér aj vlastnú dopravu. Kategórie a typy betónu, vzdialenosť na mape/km, čerpanie. Objednanie cez PDF, SMS alebo záväzne v systéme. Výpočet bez registrácie, Žilina a okolie."
         canonical="/kalkulacka-beton"
         image="/images/vozovy-park/ms-beton-man-pumpa-logo-cesta-lesny-teren-zilina.jpg"
       />
