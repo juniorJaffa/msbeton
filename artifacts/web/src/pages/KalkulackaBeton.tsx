@@ -80,6 +80,34 @@ export default function KalkulackaBeton() {
           <p className="text-gray-600 leading-relaxed mb-4">
             Vyberte triedu betónu, zadajte množstvo v m³ a zvoľte typ dopravy. Kalkulačka okamžite zobrazí kompletný rozpis ceny. Z výsledku viete rovno <strong>objednať betón online</strong> — rýchlo, bez čakania na telefóne.
           </p>
+          <h2 className="font-display font-black text-2xl text-secondary mt-10 mb-4" style={{ fontFamily: "Montserrat, sans-serif" }}>
+            Ako vypočítať množstvo betónu (m³)
+          </h2>
+          <p className="text-gray-600 leading-relaxed mb-4">
+            Pred výpočtom ceny si určte potrebné množstvo betónu v kubíkoch (m³). Objem = plocha × hrúbka. Tu sú najčastejšie príklady zo stavby:
+          </p>
+          <div className="space-y-4 mb-4">
+            <div className="border-l-4 border-primary bg-amber-50/50 pl-4 py-3 rounded-r">
+              <h3 className="font-bold text-secondary mb-1">Základová doska</h3>
+              <p className="text-gray-600 text-sm leading-relaxed"><strong>m³ = dĺžka × šírka × hrúbka.</strong> Príklad: doska 8 × 10 m, hrúbka 0,15 m → 8 × 10 × 0,15 = <strong>12 m³ betónu</strong>.</p>
+            </div>
+            <div className="border-l-4 border-primary bg-amber-50/50 pl-4 py-3 rounded-r">
+              <h3 className="font-bold text-secondary mb-1">Pásové základy</h3>
+              <p className="text-gray-600 text-sm leading-relaxed"><strong>m³ = dĺžka pásu × šírka × hĺbka.</strong> Príklad: pás 40 bm, šírka 0,4 m, hĺbka 0,6 m → 40 × 0,4 × 0,6 = <strong>9,6 m³</strong>.</p>
+            </div>
+            <div className="border-l-4 border-primary bg-amber-50/50 pl-4 py-3 rounded-r">
+              <h3 className="font-bold text-secondary mb-1">Stĺp / pätka</h3>
+              <p className="text-gray-600 text-sm leading-relaxed">Stĺp: <strong>m³ = π × r² × výška</strong>. Hranatá pätka: <strong>dĺžka × šírka × výška</strong>. Príklad pätka 0,8 × 0,8 × 0,8 m → <strong>0,51 m³</strong>.</p>
+            </div>
+          </div>
+          <p className="text-gray-600 leading-relaxed mb-6">
+            Keď poznáte m³, zadajte hodnotu do kalkulačky vyššie a vyberte triedu betónu a typ dopravy — okamžite uvidíte <strong>cenu betónu vrátane dopravy a čerpania</strong>. Odporúčame pripočítať ~5–10 % rezervu na nerovnosti podkladu.
+
+          </p>
+          <p className="text-gray-500 text-sm leading-relaxed mb-6">
+            Tip: pri väčších odberoch (nad 7 m³) je výhodnejšia <strong>betónová pumpa</strong> — ušetrí čas aj ručnú prácu. Kalkulačka porovná cenu pumpy aj domiešavača.
+          </p>
+
           <div className="mt-8 flex flex-wrap gap-3">
             <a href="/cennik" className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-secondary font-black text-xs uppercase tracking-widest hover:bg-primary/90 transition-colors rounded-sm">
               Cenník betónu <ArrowRight className="w-4 h-4" />
