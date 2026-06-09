@@ -23,7 +23,7 @@ const ADMIN_CLIENT: LoggedClient = {
   canPridatBetonOwn: true,
 };
 
-// ── WebAuthn helpers ──────────────────────────────────────────────────────────
+// ── WebAuthn pomocné funkcie ──────────────────────────────────────────────────
 
 function b64url(buf: ArrayBuffer): string {
   return btoa(String.fromCharCode(...new Uint8Array(buf)))
@@ -38,7 +38,7 @@ function b64urlDecode(s: string): Uint8Array<ArrayBuffer> {
   return arr;
 }
 
-// Serialize PublicKeyCredential (registration) to JSON-safe object for server
+// Serializácia PublicKeyCredential (registrácia) do JSON objektu pre server
 function serializeRegistration(cred: PublicKeyCredential): Record<string, unknown> {
   const resp = cred.response as AuthenticatorAttestationResponse;
   return {
@@ -54,7 +54,7 @@ function serializeRegistration(cred: PublicKeyCredential): Record<string, unknow
   };
 }
 
-// Serialize PublicKeyCredential (authentication) to JSON-safe object for server
+// Serializácia PublicKeyCredential (autentifikácia) do JSON objektu pre server
 function serializeAuthentication(cred: PublicKeyCredential): Record<string, unknown> {
   const resp = cred.response as AuthenticatorAssertionResponse;
   return {
@@ -71,7 +71,7 @@ function serializeAuthentication(cred: PublicKeyCredential): Record<string, unkn
   };
 }
 
-// ── Rate limiting ──────────────────────────────────────────────────────────────
+// ── Obmedzenie počtu pokusov ──────────────────────────────────────────────────
 
 export function getClientAttemptInfo(): { count: number; locked: boolean; remainingMs: number } {
   const raw = localStorage.getItem(CLIENT_ATTEMPTS_KEY);
@@ -100,7 +100,7 @@ export function resetClientAttempts(): void {
   localStorage.removeItem(CLIENT_ATTEMPTS_KEY);
 }
 
-// ── Biometric / WebAuthn ──────────────────────────────────────────────────────
+// ── Biometria / WebAuthn ──────────────────────────────────────────────────────
 
 export function isBiometricAvailable(): boolean {
   return typeof window !== "undefined"
@@ -116,14 +116,14 @@ export function clearClientBiometric(): void {
   localStorage.removeItem(CLIENT_WEBAUTHN_KEY);
 }
 
-// Register biometric for client — server-side challenge + public key storage
+// Registrácia biometrie klienta — serverová výzva + uloženie verejného kľúča
 export async function registerClientBiometric(
   clientInternalId: string,  // session.id (UUID)
-  loginId: string,           // session.clientId (loginId used for auth-challenge)
+  loginId: string,           // session.clientId (loginId pre autentifikačnú výzvu)
   displayName: string
 ): Promise<{ ok: boolean; error?: string }> {
   try {
-    // 1. Get registration challenge from server
+    // 1. Získaj registračnú výzvu zo servera
     const challengeRes = await fetch("/api/client/webauthn/reg-challenge", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -142,7 +142,7 @@ export async function registerClientBiometric(
       timeout?: number;
     };
 
-    // 2. Create credential on device
+    // 2. Vytvor credential na zariadení
     const cred = await navigator.credentials.create({
       publicKey: {
         challenge: b64urlDecode(opts.challenge),
@@ -162,7 +162,7 @@ export async function registerClientBiometric(
       },
     }) as PublicKeyCredential;
 
-    // 3. Send credential to server for verification + storage
+    // 3. Pošli credential serveru na overenie + uloženie
     const completeRes = await fetch("/api/client/webauthn/reg-complete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -174,15 +174,19 @@ export async function registerClientBiometric(
     const completeData = await completeRes.json() as { ok: boolean; error?: string };
     if (!completeData.ok) return { ok: false, error: completeData.error ?? "Registrácia zlyhala" };
 
-    // 4. Store credential ID locally (for auth-challenge lookup)
+    // 4. Ulož credential ID lokálne (pre vyhľadanie pri autentifikácii)
     localStorage.setItem(CLIENT_WEBAUTHN_KEY, JSON.stringify({ credId: cred.id, loginId }));
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: String(err) };
+    const msg = String(err);
+    if (msg.includes("NotAllowedError")) return { ok: false, error: "Registrácia zrušená" };
+    if (msg.includes("NotSupportedError")) return { ok: false, error: "Zariadenie nepodporuje biometriu" };
+    if (msg.includes("SecurityError")) return { ok: false, error: "Biometria nie je dostupná — skúste obnoviť stránku" };
+    return { ok: false, error: "Registrácia zlyhala" };
   }
 }
 
-// Authenticate using biometric — returns full session on success
+// Autentifikácia cez biometriu — pri úspechu vráti celú session
 export async function authenticateClientBiometric(): Promise<{ ok: boolean; session?: LoggedClient; error?: string }> {
   const storedStr = localStorage.getItem(CLIENT_WEBAUTHN_KEY);
   if (!storedStr) return { ok: false, error: "Žiadna uložená biometria" };
@@ -190,7 +194,7 @@ export async function authenticateClientBiometric(): Promise<{ ok: boolean; sess
     const stored: { credId: string; loginId: string } = JSON.parse(storedStr);
     if (!stored.credId || !stored.loginId) return { ok: false, error: "Poškodený záznam biometrie" };
 
-    // 1. Get authentication challenge from server
+    // 1. Získaj autentifikačnú výzvu zo servera
     const challengeRes = await fetch("/api/client/webauthn/auth-challenge", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -207,13 +211,13 @@ export async function authenticateClientBiometric(): Promise<{ ok: boolean; sess
       timeout?: number;
     };
 
-    // If server returned no allowCredentials, biometric not registered on server
+    // Server nevrátil žiadne allowCredentials — biometria nie je registrovaná na serveri
     if (!opts.allowCredentials?.length) {
       clearClientBiometric();
       return { ok: false, error: "Biometria nie je registrovaná" };
     }
 
-    // 2. Perform biometric authentication on device
+    // 2. Vykonaj biometrickú autentifikáciu na zariadení
     const cred = await navigator.credentials.get({
       publicKey: {
         challenge: b64urlDecode(opts.challenge),
@@ -227,7 +231,7 @@ export async function authenticateClientBiometric(): Promise<{ ok: boolean; sess
       },
     }) as PublicKeyCredential;
 
-    // 3. Verify assertion on server + get session
+    // 3. Over assertion na serveri + získaj session
     const completeRes = await fetch("/api/client/webauthn/auth-complete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -238,22 +242,24 @@ export async function authenticateClientBiometric(): Promise<{ ok: boolean; sess
     });
     const completeData = await completeRes.json() as { ok: boolean; client?: LoggedClient; error?: string };
     if (!completeData.ok || !completeData.client) {
-      // Server rejected credential (mismatch, crypto fail, unknown device) — clear stale local key
+      // Server odmietol credential (nesúlad, crypto chyba, neznáme zariadenie) — vymaž starý lokálny kľúč
       clearClientBiometric();
       return { ok: false, error: completeData.error ?? "Overenie zlyhalo" };
     }
     return { ok: true, session: completeData.client };
   } catch (err: unknown) {
     const msg = String(err);
-    // Clear stale local credential if device no longer has it
+    // Vymaž starý lokálny credential ak ho zariadenie už nemá
     if (msg.includes("NotAllowedError") || msg.includes("NotSupportedError") || msg.includes("InvalidStateError")) {
       clearClientBiometric();
+      return { ok: false, error: "Biometria zamietnutá alebo nedostupná" };
     }
-    return { ok: false, error: msg };
+    if (msg.includes("SecurityError")) return { ok: false, error: "Chyba konfigurácie biometrie — skúste obnoviť stránku" };
+    return { ok: false, error: "Biometrická autentifikácia zlyhala" };
   }
 }
 
-// Remove biometric from server + local storage
+// Odstráň biometriu zo servera + lokálneho úložiska
 export async function forgetClientBiometric(): Promise<void> {
   const storedStr = localStorage.getItem(CLIENT_WEBAUTHN_KEY);
   if (storedStr) {
@@ -275,7 +281,7 @@ export async function forgetClientBiometric(): Promise<void> {
   clearClientBiometric();
 }
 
-// ── Auth ──────────────────────────────────────────────────────────────────────
+// ── Autentifikácia ────────────────────────────────────────────────────────────
 
 export const clientAuth = {
   getLoggedClient(): LoggedClient | null {
@@ -300,7 +306,7 @@ export const clientAuth = {
   },
 
   logout(): void {
-    // Preserve CLIENT_WEBAUTHN_KEY — biometric survives logout (banking app behavior)
+    // Zachovaj CLIENT_WEBAUTHN_KEY — biometria prežije odhlásenie (bankový vzor)
     localStorage.removeItem(SESSION_KEY);
     window.dispatchEvent(new Event("client-session-changed"));
   },
