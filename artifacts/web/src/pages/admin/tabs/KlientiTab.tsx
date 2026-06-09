@@ -1258,6 +1258,13 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                       : <span className="text-secondary font-black text-sm">{(c.firstName || c.company || "?").charAt(0).toUpperCase()}</span>
                     }
                   </div>
+                  {/* Owner: admin biometria aktívna na tomto zariadení → fingerprint odznak na korune */}
+                  {c.isOwner && isAdminBioAvail() && hasAdminBio() && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-white flex items-center justify-center"
+                      title="Admin biometria aktívna na tomto zariadení">
+                      <Fingerprint className="w-2.5 h-2.5 text-white" />
+                    </span>
+                  )}
                   {hasLogin && (
                     <span className={`sm:hidden absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-white ${c.active ? "bg-green-500" : "bg-gray-300"}`}
                       title={c.active ? "Aktívny" : "Neaktívny"} />
