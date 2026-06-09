@@ -5,7 +5,7 @@ import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
 import { PhoneInput } from "@/components/PhoneInput";
 import { cn, formatPhone } from "@/lib/utils";
-import { adminData, adminApi, Client, TransportSettings, Order, SYSTEM_OWNER_ID, getKamenivoGroup } from "@/lib/adminData";
+import { adminData, adminApi, syncFromServer, Client, TransportSettings, Order, SYSTEM_OWNER_ID, getKamenivoGroup } from "@/lib/adminData";
 import { EditableField, authFetch } from "./_shared";
 
 function genPassword() {
@@ -405,6 +405,12 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
       if (r?.data) { adminData.saveOrders(r.data as Order[]); setAllOrders(r.data as Order[]); }
     }).catch(() => {});
   }, []);
+
+  // Refresh clients from server on card expand — ensures fresh webauthnCredentials/biometricAuthLog
+  useEffect(() => {
+    if (!expanded) return;
+    syncFromServer().catch(() => {});
+  }, [expanded]);
 
   const scrollToClientCard = (id: string, toTabs = false) => {
     setTimeout(() => {
