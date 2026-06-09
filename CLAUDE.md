@@ -412,9 +412,38 @@ Standard má dve nezávislé collapsible sekcie: `stdZonesOpen` (Zóny dopravy) 
 
 ### Autentifikácia
 
-- **Admin**: iba client-side, `btoa`-enkódovaná kontrola prihlasovacích údajov v `adminAuth.ts`, session v localStorage. Žiadne API volania.
+- **Admin**: JWT token cez `/api/admin/login` → uložený pod `msbeton_admin_token`. `isLoggedIn()` v `adminAuth.ts` dekóduje JWT expiry client-side. Admin biometria je **client-side only** (žiadny server) — credential ID v `msbeton_webauthn_cred`.
 - **Klient**: `POST /api/client/login` → server overí voči `clients` kľúču v DB → vráti session objekt uložený pod `msbeton_client_session`. `clientAuth.ts` používa výlučne PostgreSQL (žiadny localStorage fallback).
 - **Logout z Navbar**: `clientAuth.logout()` dispatchuje `client-session-changed` event. `Calculator.tsx` počúva tento event a syncuje svoj `loggedClient` stav.
+
+### Biometria — architektúra a kritické pravidlá
+
+→ **[docs/biometria.md](docs/biometria.md)** — kompletná dokumentácia.
+
+Skrátené pravidlá pre AI:
+
+**Dve oddelené biometrie — NIKDY nemiešať:**
+
+| | Admin biometria | Klient biometria |
+|---|---|---|
+| Súbor | `adminAuth.ts` | `clientAuth.ts` |
+| localStorage kľúč | `msbeton_webauthn_cred` | `msbeton_client_webauthn` |
+| Overenie | **Client-side only** (žiadny server) | **Server-side** (`@simplewebauthn/server`) |
+| Public key | Uložený iba v zariadení | Uložený v DB per klient |
+| Credential | Viaže sa na `user: "msbeton-admin"` | Viaže sa na `loginId` klienta |
+
+**KRITICKÝ BUG (opravený):** `ClientLogin.tsx` — ak admin je prihlásený (`isAdminLoggedIn()` = true), **NIKDY** nespúšťaj klientsku biometriu. Admin session je `msbeton_admin_token`, klient session je `msbeton_client_session` — sú to iné keys. `clientAuth.getLoggedClient()` vracia null pre admin → bez tejto ochrany sa klient bio auto-trigger spustí hoci admin je prihlásený.
+
+```typescript
+// ClientLogin.tsx useEffect — POVINNÉ PORADIE:
+if (clientAuth.getLoggedClient()) { setLocation("/#calculator"); return; }
+if (isAdminLoggedIn()) return; // ← admin kontext, zastaviť pred bio triggerom
+if (isBiometricAvailable() && hasClientBiometric()) { /* bio auto-trigger */ }
+```
+
+**Stale credential handling:** Ak `authenticateClientBiometric()` zlyhá s `NotAllowedError` (zariadenie nemá daný credential), `clearClientBiometric()` je zavolaný automaticky. Po návrate z volania: `if (!hasClientBiometric()) setScreen("form")` — nikdy dead-end `bio-failed`.
+
+**Banking logout pattern:** `clientAuth.logout()` **nevymaže** `msbeton_client_webauthn`. Credential prežije odhlásenie. Navbar → logout → `window.location.href = "/prihlasenie"` → auto-trigger na ďalšej návšteve.
 
 ### Kľúčové API routy
 
@@ -427,6 +456,13 @@ Standard má dve nezávislé collapsible sekcie: `stdZonesOpen` (Zóny dopravy) 
 | GET/PUT | `/api/admin/transport-settings` | Min. poplatok, zimný príplatok… |
 | GET/PUT | `/api/admin/services` | Služby (čerpanie, umývanie, čakačky…) |
 | POST | `/api/client/login` | Prihlásenie klienta |
+| POST | `/api/client/webauthn/reg-challenge` | WebAuthn registrácia — challenge |
+| POST | `/api/client/webauthn/reg-complete` | WebAuthn registrácia — verifikácia + uloženie |
+| POST | `/api/client/webauthn/auth-challenge` | WebAuthn auth — challenge |
+| POST | `/api/client/webauthn/auth-complete` | WebAuthn auth — verifikácia + session |
+| DELETE | `/api/client/webauthn/credential/:credId` | Zabudnúť zariadenie (klient) |
+| DELETE | `/api/admin/clients/:id/webauthn` | Admin revoke biometrie klienta |
+| GET | `/api/admin/biometric-stats` | Globálne bio štatistiky pre ServerTab |
 
 ### Kľúčové komponenty
 
