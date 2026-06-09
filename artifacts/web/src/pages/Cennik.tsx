@@ -6,8 +6,6 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { adminData, getKamenivoGroup } from "@/lib/adminData";
 
-const VAT = 0.20; // DPH 20 % (SK)
-
 const ease = [0.23, 1, 0.32, 1] as const;
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
@@ -18,8 +16,9 @@ const stagger = { show: { transition: { staggerChildren: 0.06 } } };
 function fmt(n: number) {
   return n.toFixed(2).replace(".", ",") + " €";
 }
-function fmtDph(n: number) {
-  return fmt(n * (1 + VAT));
+// DPH sadzba zo systémových nastavení (ts.dph), default 23 % (SK štandard od 1.1.2025)
+function fmtDph(n: number, vat: number) {
+  return fmt(n * (1 + vat));
 }
 // Ikona kategórie podľa kameniva (drvené = hory, riečne = vlny)
 function CatIcon({ name }: { name: string }) {
@@ -34,6 +33,7 @@ function BetonovyTab() {
   const cats = adminData.getCategories();
   const [open, setOpen] = useState<string | null>(cats[0]?.id ?? null);
   const ts = adminData.getTransportSettings();
+  const vat = ts.dph ?? 0.23;
 
   return (
     <div>
@@ -78,7 +78,7 @@ function BetonovyTab() {
                           <td className="px-5 py-3 text-white/85 font-medium">{t.label}</td>
                           <td className="px-4 py-3 text-center text-white/30 hidden sm:table-cell text-xs">1 m³</td>
                           <td className="px-4 py-3 text-right font-semibold text-white/50">{fmt(t.price)}</td>
-                          <td className="px-5 py-3 text-right font-black text-primary">{fmtDph(t.price)}</td>
+                          <td className="px-5 py-3 text-right font-black text-primary">{fmtDph(t.price, vat)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -105,6 +105,7 @@ function BetonovyTab() {
 // ── Služby tab ─────────────────────────────────────────────────────────────
 function SluzbyTab() {
   const services = adminData.getServices().filter((s) => s.active);
+  const vat = (adminData.getTransportSettings().dph ?? 0.23);
 
   return (
     <div>
@@ -123,7 +124,7 @@ function SluzbyTab() {
               <td className="px-5 py-3.5 text-white/85 font-medium">{s.name}</td>
               <td className="px-4 py-3.5 text-center text-white/30 text-xs hidden sm:table-cell">{s.unit}</td>
               <td className="px-4 py-3.5 text-right font-semibold text-white/50">{fmt(s.price)}</td>
-              <td className="px-5 py-3.5 text-right font-black text-primary">{fmtDph(s.price)}</td>
+              <td className="px-5 py-3.5 text-right font-black text-primary">{fmtDph(s.price, vat)}</td>
             </tr>
           ))}
         </tbody>
@@ -151,6 +152,7 @@ function SluzbyTab() {
 function DopravTab() {
   const zones = adminData.getTransportZones();
   const ts = adminData.getTransportSettings();
+  const vat = ts.dph ?? 0.23;
 
   return (
     <div className="grid md:grid-cols-2 gap-5">
@@ -164,7 +166,7 @@ function DopravTab() {
         {/* Min fee row */}
         <div className="flex items-center justify-between px-5 py-3 bg-primary/8 border-b border-primary/15">
           <span className="text-white/80 text-sm font-medium">Minimálna doprava / auto</span>
-          <span className="text-sm text-right"><span className="text-white/50 font-semibold">{fmt(ts.minimumFee)}</span> <span className="text-primary font-black">{fmtDph(ts.minimumFee)}</span></span>
+          <span className="text-sm text-right"><span className="text-white/50 font-semibold">{fmt(ts.minimumFee)}</span> <span className="text-primary font-black">{fmtDph(ts.minimumFee, vat)}</span></span>
         </div>
 
         {zones.map((z, i) => (
@@ -175,7 +177,7 @@ function DopravTab() {
             <span className="text-white/70 text-sm">
               od <strong className="text-white/90">{z.fromKm}</strong> km do <strong className="text-white/90">{z.toKm}</strong> km
             </span>
-            <span className="text-sm text-right"><span className="text-white/50 font-semibold">{fmt(z.ratePerM3)}</span> <span className="text-primary font-black">{fmtDph(z.ratePerM3)}</span></span>
+            <span className="text-sm text-right"><span className="text-white/50 font-semibold">{fmt(z.ratePerM3)}</span> <span className="text-primary font-black">{fmtDph(z.ratePerM3, vat)}</span></span>
           </div>
         ))}
       </div>
@@ -233,6 +235,7 @@ type TabId = typeof TABS[number]["id"];
 
 export default function Cennik() {
   const [activeTab, setActiveTab] = useState<TabId>("betony");
+  const vatPct = Math.round((adminData.getTransportSettings().dph ?? 0.23) * 100);
   const [, setRevision] = useState(0);
   useEffect(() => {
     const h = () => setRevision(r => r + 1);
@@ -253,21 +256,21 @@ export default function Cennik() {
       {/* ── HERO (compact) ── */}
       <section className="concrete-bg relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-secondary/68 via-secondary/45 to-secondary/5 pointer-events-none" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-18">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 md:py-18">
           <motion.div initial="hidden" animate="show" variants={stagger} className="max-w-xl">
-            <motion.div variants={fadeUp} className="flex items-center gap-3 mb-4">
+            <motion.div variants={fadeUp} className="flex items-center gap-3 mb-2 md:mb-4">
               <span className="block w-7 h-[2px] bg-primary" />
               <span className="text-primary font-bold text-[10px] tracking-[0.3em] uppercase">Cenník 2026</span>
             </motion.div>
             <motion.h1
               variants={fadeUp}
-              className="font-display font-black text-4xl md:text-5xl text-white leading-tight tracking-tight mb-3"
+              className="font-display font-black text-2xl md:text-5xl text-white leading-tight tracking-tight mb-2 md:mb-3"
               style={{ fontFamily: "Montserrat, sans-serif" }}
             >
               CENY BETÓNU,<br />
               <span className="text-primary">DOPRAVY A ČERPANIA</span>
             </motion.h1>
-            <motion.p variants={fadeUp} className="text-white/50 text-sm leading-relaxed max-w-md mb-6">
+            <motion.p variants={fadeUp} className="hidden sm:block text-white/50 text-sm leading-relaxed max-w-md mb-6">
               Transparentné ceny bez skrytých poplatkov. Individuálne zľavy pre stálych zákazníkov.
             </motion.p>
             <motion.div variants={fadeUp} className="flex flex-wrap gap-3">
@@ -293,7 +296,7 @@ export default function Cennik() {
       <div className="border-b border-primary/15" style={{ background: "rgba(237,197,49,0.06)" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-          <p className="text-white/50 text-xs">Ceny platia pre rok 2026. Uvedené sú ceny <strong className="text-white/75">bez DPH</strong> (pre firmy) aj <strong className="text-white/75">s DPH 20 %</strong> (spotrebiteľská cena).</p>
+          <p className="text-white/50 text-xs">Ceny platia pre rok 2026. Uvedené sú ceny <strong className="text-white/75">bez DPH</strong> (pre firmy) aj <strong className="text-white/75">s DPH {vatPct} %</strong> (spotrebiteľská cena).</p>
         </div>
       </div>
 
