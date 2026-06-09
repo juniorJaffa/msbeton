@@ -154,7 +154,7 @@ export function CalculatorSchema() {
     "@context": "https://schema.org",
     "@type": "FAQPage",
     "mainEntity": [
-      { "@type": "Question", "name": "Ako vypočítam cenu betónu?", "acceptedAnswer": { "@type": "Answer", "text": "Zadajte triedu betónu, množstvo v m³ a typ dopravy (pumpa, domiešavač alebo vlastná doprava). Kalkulačka okamžite vypočíta cenu betónu vrátane dopravy a čerpania s DPH aj bez DPH." } },
+      { "@type": "Question", "name": "Ako vypočítam cenu betónu?", "acceptedAnswer": { "@type": "Answer", "text": "Zadajte triedu betónu, množstvo v m³ a typ dopravy (pumpa, domiešavač alebo vlastná doprava). Kalkulačka okamžite vypočíta cenu betónu vrátane dopravy a čerpania, prehľadne a s cenou vrátane DPH." } },
       { "@type": "Question", "name": "Koľko stojí doprava betónu?", "acceptedAnswer": { "@type": "Answer", "text": "Cena dopravy závisí od vzdialenosti a typu vozidla. Kalkulačka počíta presnú cenu pre betónovú pumpu s dosahom 28 m aj domiešavač 9 m³ v Žiline a okolí do 50 km." } },
       { "@type": "Question", "name": "Je kalkulačka betónu zadarmo?", "acceptedAnswer": { "@type": "Answer", "text": "Áno, online kalkulačka betónu MS-BETON je úplne zadarmo a bez registrácie. Firemní klienti po prihlásení vidia svoje individuálne zľavy automaticky." } }
     ]

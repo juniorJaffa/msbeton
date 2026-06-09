@@ -67,7 +67,7 @@ export default function KalkulackaBeton() {
             Prečo kalkulačka betónu MS-BETON?
           </h2>
           <p className="text-gray-600 leading-relaxed mb-4">
-            Sme jediná betonáreň v regióne Žilina, ktorá ponúka <strong>plnohodnotnú online kalkulačku betónu</strong> — presný výpočet ceny betónu aj dopravy bez telefonátu, kedykoľvek. Vzdialenosť na stavbu si zvolíte priamo <strong>na mape alebo zadáte v km</strong>, vyberiete kategóriu a typ betónu, a kalkulačka okamžite spočíta betón, dopravu, čerpanie aj doťaženie — transparentne, s DPH aj bez DPH.
+            Sme jediná betonáreň v regióne Žilina, ktorá ponúka <strong>plnohodnotnú online kalkulačku betónu</strong> — presný výpočet ceny betónu aj dopravy bez telefonátu, kedykoľvek. Vzdialenosť na stavbu si zvolíte priamo <strong>na mape alebo zadáte v km</strong>, vyberiete kategóriu a typ betónu, a kalkulačka okamžite spočíta betón, dopravu, čerpanie aj doťaženie — transparentne a s cenou vrátane DPH.
           </p>
           <h3 className="font-bold text-lg text-secondary mt-6 mb-2">Čo kalkulačka počíta</h3>
           <ul className="text-gray-600 leading-relaxed space-y-1.5 list-disc pl-5 mb-4">
@@ -76,7 +76,7 @@ export default function KalkulackaBeton() {
             <li><strong>Presný výpočet pre pumpu, mixér aj vlastnú dopravu</strong> — pumpa 28 m, domiešavač 9 m³</li>
             <li><strong>Čerpanie betónu</strong>, doťaženie, hadice, umývanie a čakačky</li>
             <li><strong>Objednanie kalkulácie</strong> — export do PDF, cez SMS alebo záväzná objednávka priamo v systéme</li>
-            <li><strong>Cena s DPH aj bez DPH</strong>, individuálne zľavy pre firemných klientov po prihlásení</li>
+            <li><strong>Cena vrátane DPH</strong>; firemní klienti vidia po prihlásení svoje individuálne zľavy</li>
           </ul>
           <h3 className="font-bold text-lg text-secondary mt-6 mb-2">Ako vypočítať cenu betónu</h3>
           <p className="text-gray-600 leading-relaxed mb-4">
