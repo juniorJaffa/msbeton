@@ -463,11 +463,11 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
   }, []);
 
   useEffect(() => { loadBioStats(); }, [loadBioStats]);
-  // Re-fetch pri otvorení panelu + auto-refresh každých 15 s kým je otvorený (live feed)
+  // Background poll — VŽDY kým je tab mountnutý (15 s kým je panel otvorený, 30 s na pozadí).
+  // Badge + feed sú tak vždy živé bez reloadu.
   useEffect(() => {
-    if (!bioOpen) return;
-    loadBioStats();
-    const iv = setInterval(loadBioStats, 15000);
+    if (bioOpen) loadBioStats(); // okamžitý refresh pri otvorení
+    const iv = setInterval(loadBioStats, bioOpen ? 15000 : 30000);
     return () => clearInterval(iv);
   }, [bioOpen, loadBioStats]);
 
