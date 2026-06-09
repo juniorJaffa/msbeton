@@ -33,7 +33,7 @@ export default function KalkulackaBeton() {
               KALKULAČKA <span className="text-primary">BETÓNU</span>
             </h1>
             <p className="text-white/60 text-base leading-relaxed max-w-xl mb-6">
-              Presný výpočet <strong className="text-white/80">množstva m³ aj ceny</strong> betónu pre pumpu, domiešavač aj vlastnú dopravu. Naplánujte si cenu vrátane <strong className="text-white/80">doplnkov — prídavné hadice, čakačky</strong> a flexibilné čerpanie podľa hodín a minút. Prihlásení klienti vidia <strong className="text-white/80">zľavové ceny na betón, služby aj dopravu</strong>. Objednanie cez PDF, SMS alebo záväzne v systéme.
+              Presný výpočet <strong className="text-white/80">množstva m³ aj ceny</strong> betónu pre <strong className="text-white/80">pumpu, domiešavač aj vlastnú dopravu</strong>. Naplánujte si cenu vrátane <strong className="text-white/80">doplnkov — prídavné hadice, čakačky</strong> a flexibilné čerpanie podľa hodín a minút. Prihlásení klienti vidia <strong className="text-white/80">zľavové ceny na betón, služby aj dopravu</strong>. Objednávku vytvoríte záväzne v systéme, ako SMS s objednávkou alebo celkové zhrnutie v PDF.
             </p>
             <div className="flex flex-wrap gap-2.5">
               {[
@@ -78,7 +78,7 @@ export default function KalkulackaBeton() {
             <li><strong>Vzdialenosť na mape alebo výpočet km</strong> — presná cena dopravy podľa lokality</li>
             <li><strong>Presný výpočet pre pumpu, mixér aj vlastnú dopravu</strong> — pumpa 28 m, domiešavač 9 m³</li>
             <li><strong>Klientske zľavové ceny</strong> — individuálne zľavy na betón, služby aj dopravu po prihlásení</li>
-            <li><strong>Objednanie kalkulácie</strong> — export do PDF, cez SMS alebo záväzná objednávka v systéme</li>
+            <li><strong>Objednanie</strong> — záväzne priamo v systéme, ako SMS s objednávkou alebo celkové zhrnutie objednávky v PDF</li>
             <li><strong>Cena vrátane DPH</strong></li>
           </ul>
           <h3 className="font-bold text-lg text-secondary mt-6 mb-2">Ako vypočítať cenu betónu</h3>
