@@ -47,7 +47,7 @@ export function Navbar() {
     { name: "Kalkulačka", href: "/kalkulacka-beton" },
     { name: "Vozový park", href: "/vozovy-park" },
     { name: "Cenník", href: "/cennik" },
-    { name: "Kontakt", href: "/#contact" },
+    { name: "Kontakt", href: "/kontakt" },
   ];
 
   return (

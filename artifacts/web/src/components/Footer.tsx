@@ -85,10 +85,10 @@ export function Footer() {
             <h3 className="text-base font-bold text-white mb-6 tracking-widest uppercase">Rýchle Odkazy</h3>
             <ul className="space-y-3 text-sm">
               <li><a href="#home" className="hover:text-primary transition-colors">Domov</a></li>
-              <li><a href="#about" className="hover:text-primary transition-colors">O Spoločnosti</a></li>
-              <li><a href="#products" className="hover:text-primary transition-colors">Naše Produkty</a></li>
-              <li><a href="#calculator" className="hover:text-primary transition-colors">Výpočet Ceny</a></li>
-              <li><a href="#contact" className="hover:text-primary transition-colors">Kontakt</a></li>
+              <li><a href="/#about" className="hover:text-primary transition-colors">O Spoločnosti</a></li>
+              <li><a href="/#products" className="hover:text-primary transition-colors">Naše Produkty</a></li>
+              <li><a href="/kalkulacka-beton" className="hover:text-primary transition-colors">Výpočet Ceny</a></li>
+              <li><a href="/kontakt" className="hover:text-primary transition-colors">Kontakt</a></li>
             </ul>
           </div>
 
