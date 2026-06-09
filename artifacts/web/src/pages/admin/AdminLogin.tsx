@@ -30,6 +30,7 @@ export default function AdminLogin() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [lockInfo, setLockInfo] = useState({ locked: false, remainingMs: 0 });
+  const [bioFailReason, setBioFailReason] = useState("");
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Auto-trigger biometric on mount if credential is stored
@@ -69,8 +70,18 @@ export default function AdminLogin() {
   const startBiometric = () => {
     setScreen("bio-pending");
     authenticateBiometricAndGetToken().then(result => {
-      if (result.ok) { navigate("/admin/dashboard"); }
-      else { setScreen("bio-failed"); }
+      if (result.ok) { navigate("/admin/dashboard"); return; }
+      // Credential bol vymazaný (stale/iné zariadenie/nepodporované) → retry je zbytočný, rovno formulár
+      if (!hasStoredCredential()) { setBioFailReason(""); setScreen("form"); return; }
+      // Genuine transient zlyhanie (credential existuje) → ukáž dôvod + ponúkni retry
+      const e = result.error ?? "";
+      setBioFailReason(
+        /NotAllowedError|timed out|timeout/i.test(e) ? "Overenie zrušené alebo vypršalo."
+        : /NotSupportedError/i.test(e) ? "Zariadenie nepodporuje biometriu."
+        : /SecurityError/i.test(e) ? "Biometria nie je dostupná na tejto adrese."
+        : "Skúste znova alebo zadajte heslo."
+      );
+      setScreen("bio-failed");
     });
   };
 
@@ -268,7 +279,7 @@ export default function AdminLogin() {
                     <Fingerprint className="w-5 h-5 shrink-0" />
                     <div>
                       <p className="font-bold">Biometrické overenie zlyhalo</p>
-                      <p className="text-xs text-yellow-300/70 mt-0.5">Skúste znova alebo zadajte heslo</p>
+                      <p className="text-xs text-yellow-300/70 mt-0.5">{bioFailReason || "Skúste znova alebo zadajte heslo"}</p>
                     </div>
                   </div>
                   <button onClick={retryBiometric}
