@@ -96,6 +96,9 @@
 | 83 | Prihlásenie | Prihlasovacie meno | Mobil už automaticky nemení prvé písmeno na veľké — meno sa zadá presne ako má byť. | ✅ |
 | 84 | Objednávky | Upozornenia na objednávky | Pri prihlásení už neskáču upozornenia na všetky staré objednávky — zobrazia sa len skutočne nové. | ✅ |
 | 85 | Mobile | Zobrazenie na mobile | Označenie aktívnej biometrie sa správne zobrazuje aj na mobilnom zobrazení. | ✅ |
+| 86 | SEO | Kalkulačka betónu — vlastná stránka | `/kalkulacka-beton` ako samostatná stránka pre Google (jedinečná online kalkulačka betónu). WebApplication + FAQ schéma, sitemap priorita 0.95. | ✅ |
+| 87 | SEO | Staré WP URL presmerované | `/vypocet-ceny`, `/domov`, `/kontakt`, `/registrácia` a ďalšie staré adresy presmerované (301) na nové — žiadne mŕtve odkazy v Google. | ✅ |
+| 88 | SEO | 404 stránka mimo Google | Neexistujúce adresy sa už neindexujú (noindex) — Google nezobrazí „404" stránku vo výsledkoch. | ✅ |
 
 ---
 
@@ -103,10 +106,10 @@
 
 | Stav | Počet |
 |------|-------|
-| ✅ Hotovo | 67 |
+| ✅ Hotovo | 70 |
 | ⏳ Čaká (externá podmienka) | 6 |
 | ❌ Plánované | 12 |
-| **Celkom** | **85** |
+| **Celkom** | **88** |
 
 ---
 

@@ -478,6 +478,18 @@ if (isBiometricAvailable() && hasClientBiometric()) { /* bio auto-trigger */ }
 - **`bg-navy` neexistuje** v Tailwind v4 konfig — správne je `bg-secondary` (`#001D3D`)
 - `VersionChecker` banner: `fixed bottom-20 sm:bottom-4` — `bottom-20` zaručuje priestor nad mobilným nav (h-16)
 
+### SEO — kalkulačka betónu je #1 priorita
+
+**`/kalkulacka-beton`** = dedikovaná indexovateľná SEO landing stránka kalkulačky ([KalkulackaBeton.tsx](artifacts/web/src/pages/KalkulackaBeton.tsx)). Hlavný zámer: pretlačiť do Google ako **jedinečnú online kalkulačku betónu** (konkurencia RBR/ZAPA/CEMMAC takú nemá). Kalkulačka je aj na homepage (`/#calculator`, UX anchor) — `/kalkulacka-beton` je SEO landing s vlastným H1, obsahom a schémou.
+
+**Pravidlá (NEMENIŤ bez SEO dôvodu):**
+- URL je **`/kalkulacka-beton`** (bez trailing slash = canonical). `/kalkulacka-beton/` → 301 na no-slash (nginx). Stará URL `/vypocet-ceny` → 301 na `/kalkulacka-beton` (konsolidácia equity).
+- `CalculatorSchema()` v [SEOHead.tsx](artifacts/web/src/components/SEOHead.tsx) — WebApplication + FAQPage JSON-LD. Renderuje sa LEN na tejto stránke.
+- Sitemap priorita **0.95** (hneď za homepage 1.0). VOP/ochrana = 0.3 (nízka, nezaujímavé pre SEO).
+- Stránka MUSÍ ostať `index, follow` (žiaden noindex). Verejné stránky (`/`, `/cennik`, `/vozovy-park`, `/kalkulacka-beton`) = index; súkromné (`/prihlasenie`, `/klient-profil`, `/admin/*`, 404) = noindex.
+
+**Staré WP URL → 301 (nginx, na serveri):** `/domov` `/kontakt` `/logout` → `/`; `/vypocet-ceny` `/kalkulacka-beton/` → `/kalkulacka-beton`; `/registracia` → `/prihlasenie`; `/administratorska-zona` → `/admin/login`.
+
 ### Produkčný deployment
 
 Produkcia: [msbeton.sk](https://msbeton.sk), server `root@178.105.242.17`, adresár `/var/www/msbeton`. DNS migrovaný 2026-05-29 — `msbeton.sk` ukazuje na VPS. `demo.msbeton.sk` ukazuje na starú Webglobe hosting (už nie VPS).
