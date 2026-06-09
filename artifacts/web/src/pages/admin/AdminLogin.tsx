@@ -448,7 +448,8 @@ export default function AdminLogin() {
           <div className="relative">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
             <input type="text" value={username} onChange={e => setUsername(e.target.value)}
-              autoComplete="off" disabled={lockInfo.locked || loading}
+              autoComplete="off" autoCapitalize="none" autoCorrect="off" spellCheck={false}
+              disabled={lockInfo.locked || loading}
               className="w-full bg-[#32334a] text-white border border-white/10 pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-primary transition-colors disabled:opacity-50"
               placeholder="admin" />
           </div>
@@ -492,6 +493,17 @@ export default function AdminLogin() {
           className="w-full text-center text-white/40 hover:text-primary text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
           <Mail className="w-3 h-3" /> Zabudnuté heslo? Poslať kód na email
         </button>
+        {/* Bio ešte nikdy neaktivovaná — jednoduchý ikonický hint */}
+        {isBiometricAvailable() && !hasStoredCredential() && (
+          <div className="flex items-center gap-2.5 bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2.5">
+            <div className="w-8 h-8 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0">
+              <Fingerprint className="w-4 h-4 text-primary/80" />
+            </div>
+            <p className="text-white/55 text-xs leading-snug">
+              Po prihlásení zapnete <span className="text-white/80 font-bold">Face ID</span> / odtlačok — nabudúce <span className="text-white/80 font-bold">bez hesla</span>.
+            </p>
+          </div>
+        )}
       </form>
     );
   }

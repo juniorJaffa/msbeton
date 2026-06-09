@@ -315,6 +315,9 @@ export default function ClientLogin() {
                       onChange={e => setId(e.target.value)}
                       placeholder="napr. 20"
                       autoComplete="username"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
                       className="w-full bg-white/8 border-b-2 border-b-primary/60 focus:border-b-primary text-white px-4 py-3 focus:outline-none placeholder:text-white/25 text-sm font-medium rounded-sm transition-colors"
                     />
                   </div>
@@ -376,6 +379,18 @@ export default function ClientLogin() {
                   className="w-full py-2.5 border border-primary/30 text-primary/70 hover:border-primary hover:text-primary font-bold text-xs tracking-widest transition-all rounded-sm flex items-center justify-center gap-2 cursor-pointer">
                   <Fingerprint className="w-4 h-4" /> Prihlásiť biometricky
                 </button>
+              )}
+
+              {/* Bio ešte nikdy neaktivovaná — jednoduchý ikonický hint (robotníci, mobil) */}
+              {isBiometricAvailable() && !hasClientBiometric() && !lockInfo.locked && (
+                <div className="flex items-center gap-2.5 bg-white/[0.04] border border-white/10 rounded-lg px-3 py-2.5">
+                  <div className="w-8 h-8 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0">
+                    <Fingerprint className="w-4 h-4 text-primary/80" />
+                  </div>
+                  <p className="text-white/55 text-xs leading-snug">
+                    Po prihlásení zapnete <span className="text-white/80 font-bold">Face ID</span> / odtlačok — nabudúce <span className="text-white/80 font-bold">bez hesla</span>.
+                  </p>
+                </div>
               )}
 
               <p className="text-center text-white/30 text-xs pt-2">
