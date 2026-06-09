@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Menu, X, Phone, Mail, LogIn, LogOut, Calculator, UserCog, ShieldCheck, Fingerprint } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { clientAuth, type LoggedClient } from "@/lib/clientAuth";
 import { hasStoredCredential, isBiometricAvailable, isLoggedIn as adminIsLoggedIn } from "@/lib/adminAuth";
@@ -181,23 +180,15 @@ export function Navbar() {
             {/* ── Logo ── */}
             <a href="/" className="flex items-center select-none" aria-label="MS-BETON">
               <span className="relative inline-flex items-center">
-                <motion.span
-                  className="font-display font-black text-[2.1rem] leading-none tracking-tighter text-primary relative"
-                  style={{ display: "inline-block" }}
-                >
+                <span className="font-display font-black text-[2.1rem] leading-none tracking-tighter text-primary relative inline-block">
                   MS
                   <span className="absolute inset-0 overflow-hidden pointer-events-none">
-                    <motion.span
-                      className="absolute inset-0"
-                      style={{
-                        background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.65) 50%, transparent 70%)",
-                        display: "block",
-                      }}
-                      animate={{ x: ["-150%", "250%"] }}
-                      transition={{ duration: 1.2, repeat: Infinity, repeatDelay: 3.8, ease: "easeInOut" }}
+                    <span
+                      className="absolute inset-0 ms-logo-shimmer"
+                      style={{ background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.65) 50%, transparent 70%)", display: "block" }}
                     />
                   </span>
-                </motion.span>
+                </span>
                 <span className="font-display font-black text-[2.1rem] leading-none text-primary/40 mx-[2px]">-</span>
                 <span
                   className="font-display font-black text-[2.1rem] leading-none tracking-tighter text-white"
@@ -238,37 +229,28 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* ── Mobile Menu ── */}
-        <AnimatePresence>
-          {isMobileMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="md:hidden bg-secondary border-t border-white/10 overflow-hidden"
+        {/* ── Mobile Menu (CSS max-height, bez framer-motion) ── */}
+        <div className={`md:hidden bg-secondary border-t border-white/10 overflow-hidden transition-[max-height,opacity] duration-300 ease-out ${isMobileMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}`}>
+          <div className="flex flex-col px-4 py-5 space-y-4">
+            {navLinks.map((link) => (
+              <a
+                key={link.name}
+                href={link.href}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="font-display text-xl font-bold text-white/80 hover:text-primary transition-colors uppercase tracking-wide"
+              >
+                {link.name}
+              </a>
+            ))}
+            <a
+              href="tel:+421909205205"
+              className="flex items-center gap-2 py-3 text-primary font-bold text-lg border-t border-white/10 pt-4"
             >
-              <div className="flex flex-col px-4 py-5 space-y-4">
-                {navLinks.map((link) => (
-                  <a
-                    key={link.name}
-                    href={link.href}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="font-display text-xl font-bold text-white/80 hover:text-primary transition-colors uppercase tracking-wide"
-                  >
-                    {link.name}
-                  </a>
-                ))}
-                <a
-                  href="tel:+421909205205"
-                  className="flex items-center gap-2 py-3 text-primary font-bold text-lg border-t border-white/10 pt-4"
-                >
-                  <Phone className="w-5 h-5" />
-                  +421 909 205 205
-                </a>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <Phone className="w-5 h-5" />
+              +421 909 205 205
+            </a>
+          </div>
+        </div>
       </header>
     </div>
     {/* Spacer — pushes page content below fixed navbar (topbar 36px + main nav ~60px) */}

@@ -147,3 +147,16 @@
     @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-yellow-300;
   }
 }
+
+/* Logo shimmer (Navbar) — nahrádza framer-motion, čistý CSS */
+@keyframes ms-logo-shimmer {
+  0%, 70% { transform: translateX(-150%); }
+  100% { transform: translateX(250%); }
+}
+.ms-logo-shimmer {
+  animation: ms-logo-shimmer 5s ease-in-out infinite;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ms-logo-shimmer { animation: none; }
+}

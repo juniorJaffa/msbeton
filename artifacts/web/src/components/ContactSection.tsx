@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { MapPin, Phone, Mail, ChevronDown, CheckCircle2, Send } from "lucide-react";
 import { PhoneInput } from "@/components/PhoneInput";
 
@@ -93,13 +92,13 @@ export function ContactSection() {
             <h4 className="hidden sm:block text-2xl font-bold text-secondary mb-8">Rýchly formulár</h4>
             <div className={`${mobileFormOpen ? "block" : "hidden"} sm:block`}>
               {submitted ? (
-                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-green-50 border border-green-200 rounded-2xl p-8 text-center">
+                <div className="bg-green-50 border border-green-200 rounded-2xl p-8 text-center">
                   <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <CheckCircle2 className="w-8 h-8 text-green-600" />
                   </div>
                   <h5 className="text-xl font-bold text-green-800 mb-2">Správa bola odoslaná!</h5>
                   <p className="text-green-700">Ďakujeme za váš záujem. Budeme vás kontaktovať čo najskôr.</p>
-                </motion.div>
+                </div>
               ) : (
                 <form onSubmit={handleContactSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
