@@ -39,7 +39,7 @@ export default function Kontakt() {
             KONTAKT
           </h1>
           <p className="text-white/60 text-base leading-relaxed max-w-xl mt-3">
-            Betonáreň MS-BETON Žilina — dispečing, cenové ponuky na betón, dopravu a čerpanie. Zavolajte alebo napíšte, ozveme sa obratom.
+            MS-BETON Žilina — doprava a čerpanie betónu, dispečing a cenové ponuky. Zavolajte alebo napíšte, ozveme sa obratom.
           </p>
         </div>
       </section>
