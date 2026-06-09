@@ -34,7 +34,7 @@ export async function loginWithApi(username: string, password: string): Promise<
 }
 
 export function checkCredentials(_username: string, _password: string): boolean {
-  // Kept for compatibility — actual check is server-side via loginWithApi
+  // Zachované pre kompatibilitu — skutočné overenie je na serveri cez loginWithApi
   return false;
 }
 

@@ -61,7 +61,7 @@ async function verifyPassword(plain: string, stored: string): Promise<boolean> {
   return plain === stored;
 }
 
-// In-memory rate limiter (resets on server restart — good enough)
+// In-memory rate limiter (resetuje sa pri reštarte servera — dostatočné)
 const rateMap = new Map<string, { count: number; firstAt: number }>();
 const RATE_WINDOW = 60 * 60 * 1000; // 1h
 const RATE_MAX = 3;
@@ -76,7 +76,7 @@ function checkRate(key: string, max = RATE_MAX, window = RATE_WINDOW): boolean {
 interface ResetToken { clientId: string; expires: number; }
 type ResetTokens = Record<string, ResetToken>;
 
-// ── WebAuthn config ───────────────────────────────────────────────────────────
+// ── WebAuthn konfigurácia ─────────────────────────────────────────────────────
 const APP_URL = process.env.APP_URL ?? "http://localhost:5173";
 const rpId = (() => { try { return new URL(APP_URL).hostname; } catch { return "localhost"; } })();
 const expectedOrigins = rpId === "localhost"
@@ -111,7 +111,7 @@ interface WebAuthnCredential {
 
 const router = Router();
 
-// In-memory cache so DB isn't hit on every page load (TTL: 30s)
+// In-memory cache — DB sa nezaťažuje pri každom načítaní stránky (TTL: 30s)
 let clientCache: { data: UnifiedClient[]; ts: number } | null = null;
 const CACHE_TTL = 30_000;
 
@@ -141,7 +141,7 @@ interface UnifiedClient {
   active?: boolean;
   webauthnCredentials?: WebAuthnCredential[];
   biometricAuthLog?: BiometricAuthEntry[];
-  // legacy fallback fields
+  // legacy záložné polia
   name?: string;
   discountPct?: number;
   sharedLink?: string;
@@ -184,7 +184,7 @@ async function getClientAccounts(): Promise<UnifiedClient[]> {
     }
   }
 
-  // 2. Try legacy client_accounts
+  // 2. Skús legacy client_accounts
   const rows = await db.select().from(adminConfig).where(eq(adminConfig.key, "client_accounts"));
   if (rows.length > 0 && Array.isArray(rows[0].data) && (rows[0].data as LegacyClientAccount[]).length > 0) {
     const legacy = rows[0].data as LegacyClientAccount[];
@@ -260,7 +260,7 @@ router.post("/login", loginRateLimit, async (req, res) => {
   }
 });
 
-// Refresh session – called on app load to get fresh client data without re-login
+// Obnovenie session — volané pri štarte aplikácie pre čerstvé dáta bez re-loginu
 router.get("/me", async (req, res) => {
   try {
     const { id } = req.query;
@@ -277,7 +277,7 @@ router.get("/me", async (req, res) => {
 
 async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
   const secret = process.env.TURNSTILE_SECRET;
-  if (!secret) return true; // skip if not configured
+  if (!secret) return true; // preskočiť ak nie je nakonfigurované
   const resp = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -293,7 +293,7 @@ router.post("/order", async (req, res) => {
     if (!order || !order.id) {
       return res.status(400).json({ ok: false, error: "Chýbajú dáta objednávky" });
     }
-    // Honeypot: hidden field — humans leave it empty, bots fill it
+    // Honeypot: skryté pole — ľudia ho nechajú prázdne, boti ho vyplnia
     if (order._hp) return res.status(400).json({ ok: false, error: "Chýbajú dáta objednávky" });
 
     const turnstileToken = order.turnstileToken as string | undefined;
@@ -332,7 +332,7 @@ router.post("/order", async (req, res) => {
   }
 });
 
-// Update client loginId / email (requires current password verification)
+// Aktualizácia loginId / emailu klienta (vyžaduje overenie aktuálneho hesla)
 router.put("/profile", async (req, res) => {
   try {
     const { id, currentPassword, newLoginId, newEmail, newPassword } = req.body ?? {};
@@ -421,7 +421,7 @@ router.post("/password-reset-confirm", async (req, res) => {
     const entry = tokens[String(token)];
     if (!entry || entry.expires < Date.now()) return res.status(400).json({ ok: false, error: "Neplatný alebo expirovaný odkaz na reset" });
 
-    // Single-use: delete immediately
+    // Jednorázové použitie: ihneď zmazať
     delete tokens[String(token)];
     await db.insert(adminConfig).values({ key: "password_reset_tokens", data: tokens })
       .onConflictDoUpdate({ target: adminConfig.key, set: { data: tokens, updatedAt: new Date() } });
@@ -441,7 +441,7 @@ router.post("/password-reset-confirm", async (req, res) => {
   }
 });
 
-// ── WebAuthn helper ───────────────────────────────────────────────────────────
+// ── WebAuthn pomocné funkcie ──────────────────────────────────────────────────
 async function saveWebAuthnCredential(clientId: string, cred: WebAuthnCredential): Promise<void> {
   const rows = await db.select().from(adminConfig).where(eq(adminConfig.key, "clients"));
   if (!rows.length || !Array.isArray(rows[0].data)) return;
@@ -456,9 +456,9 @@ async function saveWebAuthnCredential(clientId: string, cred: WebAuthnCredential
   invalidateClientCache();
 }
 
-// ── WebAuthn endpoints ────────────────────────────────────────────────────────
+// ── WebAuthn endpointy ────────────────────────────────────────────────────────
 
-// 1. Generate registration challenge (client must be already logged in via password)
+// 1. Generuj registračnú výzvu (klient musí byť prihlásený heslom)
 router.post("/webauthn/reg-challenge", async (req, res) => {
   try {
     const { clientInternalId } = req.body ?? {};
@@ -485,7 +485,7 @@ router.post("/webauthn/reg-challenge", async (req, res) => {
   }
 });
 
-// 2. Complete registration — verify + store public key
+// 2. Dokončenie registrácie — overenie + uloženie verejného kľúča
 router.post("/webauthn/reg-complete", async (req, res) => {
   try {
     const { clientInternalId, credential } = req.body ?? {};
@@ -516,7 +516,7 @@ router.post("/webauthn/reg-complete", async (req, res) => {
   }
 });
 
-// 3. Generate authentication challenge
+// 3. Generuj autentifikačnú výzvu
 router.post("/webauthn/auth-challenge", async (req, res) => {
   try {
     const { loginId } = req.body ?? {};
@@ -542,7 +542,7 @@ router.post("/webauthn/auth-challenge", async (req, res) => {
   }
 });
 
-// Helper — append entry to biometricAuthLog (fire-and-forget for fail paths)
+// Pomocník — pridaj záznam do biometricAuthLog (fire-and-forget pre chybové cesty)
 async function appendBioLog(clientId: string, entry: BiometricAuthEntry): Promise<void> {
   try {
     const rows = await db.select().from(adminConfig).where(eq(adminConfig.key, "clients"));
@@ -559,7 +559,7 @@ async function appendBioLog(clientId: string, entry: BiometricAuthEntry): Promis
   } catch { /* non-critical */ }
 }
 
-// 4. Complete authentication — verify assertion + return session
+// 4. Dokončenie autentifikácie — overenie assertion + vrátenie session
 router.post("/webauthn/auth-complete", async (req, res) => {
   try {
     const { loginId, credential } = req.body ?? {};
@@ -592,7 +592,7 @@ router.post("/webauthn/auth-complete", async (req, res) => {
       void appendBioLog(client.id, { ts: new Date().toISOString(), ok: false, ip, credId: stored.id.slice(0, 8) });
       return res.status(401).json({ ok: false, error: "Overenie biometrie zlyhalo" });
     }
-    // Update counter (anti-replay) + log success
+    // Aktualizácia counter (anti-replay) + záznam úspechu
     const newCounter = verification.authenticationInfo.newCounter;
     const logEntry: BiometricAuthEntry = { ts: new Date().toISOString(), ok: true, ip, credId: stored.id.slice(0, 8) };
     const rows = await db.select().from(adminConfig).where(eq(adminConfig.key, "clients"));
@@ -617,7 +617,7 @@ router.post("/webauthn/auth-complete", async (req, res) => {
   }
 });
 
-// Delete a WebAuthn credential (forget this device)
+// Zmazanie WebAuthn credential (zabudnúť toto zariadenie)
 router.delete("/webauthn/credential/:credId", async (req, res) => {
   try {
     const { clientInternalId } = req.body ?? {};

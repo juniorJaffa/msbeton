@@ -1,11 +1,20 @@
 import { useState, useEffect, useRef } from "react";
-import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, Mail, PenLine, Fingerprint, ShieldX } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, Users, Truck, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, Mail, PenLine, Fingerprint, ShieldX, AlertTriangle, Info } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
 import { PhoneInput } from "@/components/PhoneInput";
 import { cn, formatPhone } from "@/lib/utils";
 import { adminData, adminApi, syncFromServer, Client, TransportSettings, Order, SYSTEM_OWNER_ID, getKamenivoGroup } from "@/lib/adminData";
+
+interface BiometricStats {
+  totalClients: number;
+  bioClients: number;
+  todaySuccess: number;
+  todayFailed: number;
+  alerts: Array<{ clientId: string; failCount: number; lastIp: string }>;
+  lastActivity: string | null;
+}
 import { EditableField, authFetch } from "./_shared";
 
 function genPassword() {
@@ -383,6 +392,8 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
   const [sendRegEmail, setSendRegEmail] = useState(true);
   const [emailStatus, setEmailStatus] = useState<"idle" | "sending" | "ok" | "error">("idle");
   const [sysDphOpen, setSysDphOpen] = useState(false);
+  const [bioOpen, setBioOpen] = useState(false);
+  const [bioStats, setBioStats] = useState<BiometricStats | null>(null);
   const [editingLinkFor, setEditingLinkFor] = useState<string | null>(null);
   const [addSuccessMsg, setAddSuccessMsg] = useState<string | null>(null);
   const [linkDraft, setLinkDraft] = useState("");
@@ -406,11 +417,21 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
     }).catch(() => {});
   }, []);
 
-  // Refresh clients from server on card expand — ensures fresh webauthnCredentials/biometricAuthLog
+  // Obnoviť klientov zo servera pri rozbalení karty — zabezpečí čerstvé webauthnCredentials/biometricAuthLog
   useEffect(() => {
     if (!expanded) return;
     syncFromServer().catch(() => {});
   }, [expanded]);
+
+  // Načítaj globálne bio štatistiky
+  useEffect(() => {
+    const token = localStorage.getItem("msbeton_admin_token") ?? "";
+    if (!token) return;
+    fetch("/api/admin/biometric-stats", { headers: { Authorization: `Bearer ${token}` } as HeadersInit })
+      .then(r => r.json())
+      .then((d: { ok: boolean; stats?: BiometricStats }) => { if (d.ok && d.stats) setBioStats(d.stats); })
+      .catch(() => {});
+  }, []);
 
   const scrollToClientCard = (id: string, toTabs = false) => {
     setTimeout(() => {
@@ -558,6 +579,69 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
           Klient <span className="font-black">{addSuccessMsg}</span> bol úspešne pridaný
         </div>
       )}
+      {/* Biometria klientov — collapsible */}
+      <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
+        <button type="button" onClick={() => setBioOpen(o => !o)}
+          className="w-full flex items-center justify-between px-4 py-2 border-b border-gray-100 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer">
+          <div className="flex items-center gap-2">
+            <h3 className="font-black text-secondary text-sm uppercase tracking-widest flex items-center gap-1.5">
+              <Fingerprint className="w-3.5 h-3.5" /> Biometria klientov
+            </h3>
+            {bioStats && bioStats.bioClients > 0 && (
+              <span className="px-1.5 py-0.5 text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-sm">
+                {bioStats.bioClients} / {bioStats.totalClients}
+              </span>
+            )}
+            {bioStats && bioStats.alerts.length > 0 && (
+              <span className="flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-black bg-red-50 text-red-600 border border-red-200 rounded-sm animate-pulse">
+                <AlertTriangle className="w-3 h-3" /> {bioStats.alerts.length} alert
+              </span>
+            )}
+          </div>
+          {bioOpen ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+        </button>
+        {bioOpen && bioStats && (
+          <>
+            <div className="flex flex-wrap gap-px bg-gray-100">
+              <div className="bg-white px-3 py-2 flex-1 min-w-[100px]">
+                <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Klienti s biometriou</div>
+                <div className={`font-black text-sm ${bioStats.bioClients > 0 ? "text-emerald-600" : "text-gray-300"}`}>{bioStats.bioClients} / {bioStats.totalClients}</div>
+              </div>
+              <div className="bg-white px-3 py-2 flex-1 min-w-[100px]">
+                <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Dnes úspešné</div>
+                <div className={`font-black text-sm ${bioStats.todaySuccess > 0 ? "text-emerald-600" : "text-gray-300"}`}>{bioStats.todaySuccess}</div>
+              </div>
+              <div className="bg-white px-3 py-2 flex-1 min-w-[100px]">
+                <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Dnes zamietnuté</div>
+                <div className={`font-black text-sm ${bioStats.todayFailed > 0 ? "text-amber-500" : "text-gray-300"}`}>{bioStats.todayFailed}</div>
+              </div>
+              <div className="bg-white px-3 py-2 flex-1 min-w-[100px]">
+                <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Posledná aktivita</div>
+                <div className="font-mono text-xs text-gray-500">
+                  {bioStats.lastActivity ? new Date(bioStats.lastActivity).toLocaleString("sk-SK", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"}
+                </div>
+              </div>
+            </div>
+            {bioStats.alerts.length > 0 && (
+              <div className="px-4 py-2 border-t border-red-100 bg-red-50 space-y-1">
+                <div className="text-[10px] text-red-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" /> Podozrivá aktivita ({">"} 3 zlyhania / hodinu)
+                </div>
+                {bioStats.alerts.map(a => (
+                  <div key={a.clientId} className="flex items-center justify-between py-0.5">
+                    <span className="text-xs font-mono text-gray-600">Klient {a.clientId}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-gray-400 font-mono">{a.lastIp}</span>
+                      <span className="text-[10px] font-black text-red-500 bg-red-100 px-1.5 py-0.5 rounded">{a.failCount}× zlyhanie</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
       {/* Systémová DPH — collapsible */}
       <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
         <button
@@ -1168,6 +1252,12 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                     <div className="px-4 py-4 space-y-3">
                       <div>
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Prístup do kalkulačky</p>
+                        {c.isOwner && (
+                          <div className="flex items-start gap-1.5 px-2 py-1.5 bg-amber-50 border border-amber-200 rounded text-[10px] text-amber-800 mb-2">
+                            <Crown className="w-3 h-3 text-primary shrink-0 mt-0.5" />
+                            <span>Vlastník má <strong>dve</strong> prihlasovacie heslá: toto (kalkulačka) a admin heslo pre <code className="font-mono">/admin/login</code>.</span>
+                          </div>
+                        )}
                         <div className="border border-gray-200 bg-white divide-y divide-gray-100 mb-2">
                           <div className="flex items-center gap-2 px-3 py-2">
                             <span className="text-gray-400 text-xs w-14 shrink-0">Login ID</span>
@@ -1245,6 +1335,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                         const creds = c.webauthnCredentials ?? [];
                         const log = c.biometricAuthLog ?? [];
                         const lastOk = [...log].reverse().find(e => e.ok);
+                        const isOwnerClient = c.isOwner === true;
                         const recentLog = [...log].reverse().slice(0, 8);
                         const maskIp = (ip: string) => {
                           const parts = ip.split(".");
@@ -1265,6 +1356,12 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                                 </span>
                               )}
                             </div>
+                            {isOwnerClient && (
+                              <div className="flex items-start gap-1.5 px-2 py-1.5 bg-primary/8 border border-primary/20 rounded text-[10px] text-secondary/70 mb-2">
+                                <Info className="w-3 h-3 text-primary/60 shrink-0 mt-0.5" />
+                                <span>Admin biometria (pre <code className="font-mono">/admin</code>) je zariadenie-lokálna — nie je v DB. Tu zobrazená = klientská bio pre kalkulačku (loginId: <code className="font-mono">{c.loginId}</code>).</span>
+                              </div>
+                            )}
                             {creds.length === 0 ? (
                               <p className="text-[10px] text-gray-300 text-center py-1 flex items-center justify-center gap-1">
                                 <Fingerprint className="w-3 h-3" /> Neregistrovaná

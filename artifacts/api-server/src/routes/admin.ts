@@ -27,8 +27,8 @@ router.post("/login", loginRateLimit, async (req, res) => {
   res.json({ ok: true, token: signAdminToken() });
 });
 
-// Biometric (WebAuthn) token — issued after successful client-side passkey verification.
-// Rate-limited same as password login to prevent brute-force token farming.
+// Biometrický (WebAuthn) token — vydaný po úspešnom overení passkey na strane klienta.
+// Rate-limited rovnako ako prihlásenie heslom — ochrana proti brute-force.
 router.post("/biometric-token", loginRateLimit, (_req, res) => {
   res.json({ ok: true, token: signAdminToken() });
 });
@@ -107,7 +107,7 @@ router.put("/clients", async (req, res) => {
   catch (err) { req.log.error({ err }, "Failed to save clients"); res.status(500).json({ error: "Internal server error" }); }
 });
 
-// Revoke all WebAuthn credentials + log for a client (admin action)
+// Zrušenie všetkých WebAuthn credentials + logu klienta (admin akcia)
 router.delete("/clients/:id/webauthn", async (req, res) => {
   try {
     const clientId = req.params.id;
@@ -390,7 +390,7 @@ router.get("/analytics", async (req, res) => {
   }
 });
 
-// Admin — send login credentials email to client
+// Admin — odoslanie prihlasovacích údajov emailom klientovi
 router.post("/clients/:id/send-credentials", async (req, res) => {
   try {
     const clientId = req.params.id;
@@ -486,7 +486,7 @@ router.get("/server-status", async (req, res) => {
     dbSize = (r.rows[0] as { size: string }).size;
   } catch {}
 
-  // System uptime
+  // Uptime systému
   const uptime = safe(() => execSync("uptime -p 2>/dev/null", { encoding: "utf-8", timeout: 2000 }).trim().replace(/^up\s+/, ""), "?");
 
   // Backups
@@ -618,7 +618,7 @@ router.delete("/server-backup/:filename", (req, res) => {
   }
 });
 
-// ── Biometric stats ───────────────────────────────────────────────────────────
+// ── Biometrické štatistiky ────────────────────────────────────────────────────
 router.get("/biometric-stats", async (req, res) => {
   try {
     const raw = await getConfig(KEYS.clients);

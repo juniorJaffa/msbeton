@@ -1,14 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, HardDrive, Database, Activity, Server, Download, CheckCircle, XCircle, Clock, Archive, Shield, Trash2, AlertTriangle, ShieldAlert, Info, Fingerprint } from "lucide-react";
-
-interface BiometricStats {
-  totalClients: number;
-  bioClients: number;
-  todaySuccess: number;
-  todayFailed: number;
-  alerts: Array<{ clientId: string; failCount: number; lastIp: string }>;
-  lastActivity: string | null;
-}
+import { RefreshCw, HardDrive, Database, Activity, Server, Download, CheckCircle, XCircle, Clock, Archive, Shield, Trash2, ShieldAlert, Info } from "lucide-react";
 
 interface ServerStatus {
   pm2: { status: string; uptimeMs: number; restarts: number; memoryBytes: number };
@@ -76,23 +67,15 @@ export default function ServerTab() {
   const [backupMsg, setBackupMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [deletingFile, setDeletingFile] = useState<string | null>(null);
   const [wpInfoOpen, setWpInfoOpen] = useState(false);
-  const [bioStats, setBioStats] = useState<BiometricStats | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     const token = localStorage.getItem("msbeton_admin_token") ?? "";
     try {
-      const [statusRes, bioRes] = await Promise.all([
-        fetch("/api/admin/server-status", { headers: { Authorization: `Bearer ${token}` } as HeadersInit }),
-        fetch("/api/admin/biometric-stats", { headers: { Authorization: `Bearer ${token}` } as HeadersInit }),
-      ]);
+      const statusRes = await fetch("/api/admin/server-status", { headers: { Authorization: `Bearer ${token}` } as HeadersInit });
       if (!statusRes.ok) throw new Error(`HTTP ${statusRes.status}`);
       setData(await statusRes.json() as ServerStatus);
-      if (bioRes.ok) {
-        const bd = await bioRes.json() as { ok: boolean; stats?: BiometricStats };
-        if (bd.ok && bd.stats) setBioStats(bd.stats);
-      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Chyba pri načítaní");
     } finally {
@@ -340,64 +323,6 @@ export default function ServerTab() {
                 <div key={ip} className="flex items-center justify-between">
                   <span className="text-xs font-mono text-white/60">{ip}</span>
                   <span className="text-xs font-bold text-amber-400">{count}×</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Biometric stats */}
-      {bioStats && (
-        <div className="bg-secondary rounded-xl overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-            <div className="flex items-center gap-2 text-white/60 text-xs font-black uppercase tracking-widest">
-              <Fingerprint className="w-3.5 h-3.5" />
-              Biometria klientov
-            </div>
-            {bioStats.alerts.length > 0 && (
-              <span className="flex items-center gap-1 text-[10px] font-black text-red-400 bg-red-500/20 px-2 py-0.5 rounded-full animate-pulse">
-                <AlertTriangle className="w-3 h-3" />
-                {bioStats.alerts.length} alert{bioStats.alerts.length > 1 ? "y" : ""}
-              </span>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-0 divide-x divide-white/10">
-            <div className="px-4 py-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-white/40">Klienti s biometriou</span>
-                <span className="text-sm font-black text-emerald-400">{bioStats.bioClients} / {bioStats.totalClients}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-white/40">Dnes úspešné</span>
-                <span className={`text-sm font-black ${bioStats.todaySuccess > 0 ? "text-emerald-400" : "text-white/30"}`}>{bioStats.todaySuccess}</span>
-              </div>
-            </div>
-            <div className="px-4 py-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-white/40">Dnes zamietnuté</span>
-                <span className={`text-sm font-black ${bioStats.todayFailed > 0 ? "text-amber-400" : "text-white/30"}`}>{bioStats.todayFailed}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-white/40">Posledná aktivita</span>
-                <span className="text-xs text-white/50 font-mono">
-                  {bioStats.lastActivity ? fmtDate(bioStats.lastActivity) : "—"}
-                </span>
-              </div>
-            </div>
-          </div>
-          {bioStats.alerts.length > 0 && (
-            <div className="px-4 py-2 border-t border-red-500/20 space-y-1">
-              <div className="text-[10px] text-red-400/70 uppercase tracking-wider mb-1 flex items-center gap-1">
-                <AlertTriangle className="w-3 h-3" /> Podozrivá aktivita ({">"} 3 neúspešné / hodinu)
-              </div>
-              {bioStats.alerts.map(a => (
-                <div key={a.clientId} className="flex items-center justify-between">
-                  <span className="text-xs font-mono text-white/60">Klient {a.clientId}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-white/35 font-mono">{a.lastIp}</span>
-                    <span className="text-[10px] font-black text-red-400 bg-red-500/20 px-1.5 py-0.5 rounded">{a.failCount}× zlyhanie</span>
-                  </div>
                 </div>
               ))}
             </div>
