@@ -83,6 +83,19 @@
 | 70 | 🔍 SEO | GBP Posts (po overení) | Pravidelné posty na GBP — ponuky, aktuality. Zvyšuje viditeľnosť v Maps. | ⏳ Čaká na overenie GBP |
 | 71 | 🔐 Bezpečnosť | fail2ban HTTP jail | Nginx logy plné WP scan pokusov (wp-login.php, xmlrpc.php). fail2ban HTTP jail — ban IP po 5 pokusoch. | ❌ ~30min |
 | 72 | 🗄️ CI/CD | Remote DB backup | Zálohy iba lokálne na VPS (single point of failure). Rsync na druhý server alebo Hetzner Object Storage. | ❌ ~1h |
+| 73 | Biometria | Prihlásenie odtlačkom / Face ID | Klienti aj admin sa prihlásia odtlačkom prsta alebo Face ID — bez zadávania hesla. Funguje na iPhone, Macu, v Chrome aj Safari. | ✅ |
+| 74 | Biometria | Rýchle odomknutie | Po otvorení stránky stačí jeden dotyk na „Odomknúť cez Face ID" a ste prihlásený. | ✅ |
+| 75 | Prihlásenie | Obnova admin hesla | Pri zabudnutom admin hesle systém pošle overovací kód na firemný email a umožní nastaviť nové heslo. | ✅ |
+| 76 | Biometria | Viac zariadení | Každý klient môže mať biometriu až na 8 zariadeniach naraz (telefón, tablet, počítač). | ✅ |
+| 77 | Admin | Prehľad biometrie | Admin vidí, ktorí klienti majú aktívnu biometriu, koľko zariadení a poslednú aktivitu. | ✅ |
+| 78 | Admin | Záznam aktivity | Pri každom biometrickom prihlásení sa zaznamená zariadenie, čas a prípadný dôvod zlyhania. | ✅ |
+| 79 | Admin | Správa zariadení | Admin môže klientovi zabudnúť jedno konkrétne zariadenie (napr. stratený telefón) bez ovplyvnenia ostatných. | ✅ |
+| 80 | Admin | Živý prehľad | Aktivita biometrie sa v admine obnovuje sama, bez nutnosti znova načítať stránku. | ✅ |
+| 81 | Admin | Vysvetlenie pre používateľov | Jednoduché info priamo v admine: ako biometria funguje a rozdiel medzi admin a klientskym prístupom. | ✅ |
+| 82 | UX | Zrozumiteľné hlášky | Chybové a stavové správy prepísané do jednoduchého jazyka, aby im rozumel každý. | ✅ |
+| 83 | Prihlásenie | Prihlasovacie meno | Mobil už automaticky nemení prvé písmeno na veľké — meno sa zadá presne ako má byť. | ✅ |
+| 84 | Objednávky | Upozornenia na objednávky | Pri prihlásení už neskáču upozornenia na všetky staré objednávky — zobrazia sa len skutočne nové. | ✅ |
+| 85 | Mobile | Zobrazenie na mobile | Označenie aktívnej biometrie sa správne zobrazuje aj na mobilnom zobrazení. | ✅ |
 
 ---
 
@@ -90,10 +103,10 @@
 
 | Stav | Počet |
 |------|-------|
-| ✅ Hotovo | 54 |
+| ✅ Hotovo | 67 |
 | ⏳ Čaká (externá podmienka) | 6 |
 | ❌ Plánované | 12 |
-| **Celkom** | **72** |
+| **Celkom** | **85** |
 
 ---
 
