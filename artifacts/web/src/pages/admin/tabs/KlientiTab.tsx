@@ -417,6 +417,9 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
   const [bioOpen, setBioOpen] = useState(false);
   const [bioInfoOpen, setBioInfoOpen] = useState(false);
   const [bioStats, setBioStats] = useState<BiometricStats | null>(null);
+  const [bioPage, setBioPage] = useState(0); // stránkovanie feedu — 50/stranu, max 5 strán
+  const BIO_PER_PAGE = 50;
+  const BIO_MAX_PAGES = 5;
   // Zatvorenie celého BIOMETRIA panelu zavrie aj jeho (i) info
   useEffect(() => { if (!bioOpen) setBioInfoOpen(false); }, [bioOpen]);
   const [editingLinkFor, setEditingLinkFor] = useState<string | null>(null);
@@ -752,13 +755,20 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
             )}
 
             {/* Posledná aktivita — feed s identifikáciou zariadenia a príčiny */}
-            {bioStats.recent && bioStats.recent.length > 0 && (
+            {bioStats.recent && bioStats.recent.length > 0 && (() => {
+              const total = bioStats.recent.length;
+              const pageCount = Math.min(BIO_MAX_PAGES, Math.ceil(total / BIO_PER_PAGE));
+              const safePage = Math.min(bioPage, pageCount - 1);
+              const items = bioStats.recent.slice(safePage * BIO_PER_PAGE, safePage * BIO_PER_PAGE + BIO_PER_PAGE);
+              return (
               <div className="border-t border-gray-100">
                 <div className="px-4 py-2 bg-gray-50/70 text-[10px] text-gray-400 uppercase tracking-wider flex items-center gap-1">
-                  <ClipboardList className="w-3 h-3" /> Posledná aktivita ({bioStats.recent.length})
+                  <ClipboardList className="w-3 h-3" /> Posledná aktivita ({total})
                 </div>
-                <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
-                  {bioStats.recent.map((e, i) => (
+                <div className="max-h-[28rem] overflow-y-auto divide-y divide-gray-50">
+                  {items.map((e, idx) => {
+                    const i = safePage * BIO_PER_PAGE + idx;
+                    return (
                     <div key={i}
                       onClick={e.clientId ? () => { setExpanded(e.clientId); scrollToClientCard(e.clientId, true); } : undefined}
                       title={e.clientId ? `Otvoriť kartu klienta ${e.clientName}` : undefined}
@@ -793,10 +803,25 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                         {e.clientId && <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-primary transition-colors" />}
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
+                {pageCount > 1 && (
+                  <div className="flex items-center justify-center gap-3 px-4 py-2 border-t border-gray-100 bg-gray-50/50">
+                    <button type="button" disabled={safePage === 0} onClick={() => setBioPage(p => Math.max(0, p - 1))}
+                      className="w-7 h-7 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer">
+                      <ChevronRight className="w-4 h-4 rotate-180" />
+                    </button>
+                    <span className="text-[11px] text-gray-500 font-mono tabular-nums">{safePage + 1} / {pageCount}</span>
+                    <button type="button" disabled={safePage >= pageCount - 1} onClick={() => setBioPage(p => Math.min(pageCount - 1, p + 1))}
+                      className="w-7 h-7 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer">
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
+              );
+            })()}
 
             {/* ADMIN biometria — samostatný log (client-side, informačný) */}
             <div className="border-t border-gray-100">
@@ -1258,13 +1283,19 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                       : <span className="text-secondary font-black text-sm">{(c.firstName || c.company || "?").charAt(0).toUpperCase()}</span>
                     }
                   </div>
-                  {/* Owner: admin biometria aktívna na tomto zariadení → fingerprint odznak na korune */}
-                  {c.isOwner && isAdminBioAvail() && hasAdminBio() && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-white flex items-center justify-center"
-                      title="Admin biometria aktívna na tomto zariadení">
-                      <Fingerprint className="w-2.5 h-2.5 text-white" />
-                    </span>
-                  )}
+                  {/* Biometria aktívna → fingerprint odznak na avatare (owner=admin bio, klient=server bio) */}
+                  {(() => {
+                    const ownerBio = c.isOwner && isAdminBioAvail() && hasAdminBio();
+                    const clientBio = (c.webauthnCredentials?.length ?? 0) > 0;
+                    if (!ownerBio && !clientBio) return null;
+                    return (
+                      <span className="absolute -top-1 -right-1 min-w-4 h-4 px-0.5 rounded-full bg-emerald-500 ring-2 ring-white flex items-center justify-center gap-px"
+                        title={ownerBio ? "Admin biometria aktívna na tomto zariadení" : `Biometria aktívna — ${c.webauthnCredentials!.length} zariadenie`}>
+                        <Fingerprint className="w-2.5 h-2.5 text-white" />
+                        {clientBio && <span className="text-white text-[8px] font-black leading-none">{c.webauthnCredentials!.length}</span>}
+                      </span>
+                    );
+                  })()}
                   {hasLogin && (
                     <span className={`sm:hidden absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-white ${c.active ? "bg-green-500" : "bg-gray-300"}`}
                       title={c.active ? "Aktívny" : "Neaktívny"} />
@@ -1295,12 +1326,6 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                         {zonePricingType === "km" ? "€/km" : zonePricingType === "auto" ? "€/auto" : "Štd"}
                       </span>
                     )}
-                    {(c.webauthnCredentials?.length ?? 0) > 0 && (
-                      <span className="flex items-center gap-0.5 px-1 py-0 text-[10px] font-bold rounded bg-emerald-50 text-emerald-700 border border-emerald-100" title={`Biometria aktívna — ${c.webauthnCredentials!.length} zariadenie`}>
-                        <Fingerprint className="w-2.5 h-2.5" />
-                        {c.webauthnCredentials!.length}
-                      </span>
-                    )}
                     {c.isOwner && <span className="text-[10px] font-black text-primary/70">Admin</span>}
                   </div>
                 </div>
@@ -1320,12 +1345,6 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                     <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold rounded-sm bg-blue-50 text-blue-600 border border-blue-200">
                       <Truck className="w-4 h-4" />
                       {zonePricingType === "km" ? "€/km" : zonePricingType === "auto" ? "€/auto" : "Štd"}
-                    </span>
-                  )}
-                  {(c.webauthnCredentials?.length ?? 0) > 0 && (
-                    <span className="flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-bold rounded-sm bg-emerald-50 text-emerald-700 border border-emerald-200" title={`Biometria aktívna — ${c.webauthnCredentials!.length} zariadenie`}>
-                      <Fingerprint className="w-3.5 h-3.5" />
-                      {c.webauthnCredentials!.length}
                     </span>
                   )}
                   {hasLogin ? (

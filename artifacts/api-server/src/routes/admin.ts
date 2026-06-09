@@ -789,7 +789,7 @@ router.get("/biometric-stats", async (req, res) => {
     }
 
     feed.sort((a, b) => (a.ts < b.ts ? 1 : -1)); // najnovšie hore
-    const recent = feed.slice(0, 40);
+    const recent = feed.slice(0, 250); // 50/stranu × max 5 strán
     const lastActivity = feed.length > 0 ? feed[0].ts : null;
 
     // Admin bio log (client-side biometria — informačný self-reported záznam)
