@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Calculator, Truck, Banknote, Zap, ArrowRight } from "lucide-react";
+import { Calculator, Truck, MapPin, Layers, FileText, ArrowRight } from "lucide-react";
 import { SEOHead, CalculatorSchema } from "@/components/SEOHead";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -13,7 +13,7 @@ export default function KalkulackaBeton() {
     <div className="min-h-screen bg-secondary">
       <SEOHead
         title="Kalkulačka betónu – okamžitý výpočet ceny online"
-        description="Jedinečná online kalkulačka betónu. Vypočítajte cenu betónu vrátane dopravy, betónovej pumpy a čerpania – pumpa, domiešavač aj vlastná doprava. Žilina a okolie, zadarmo a bez registrácie."
+        description="Online kalkulačka betónu — presný výpočet ceny pre pumpu, mixér aj vlastnú dopravu. Kategórie a typy betónu, vzdialenosť na mape/km, čerpanie. Objednanie cez PDF, SMS alebo záväzne v systéme. Žilina a okolie."
         canonical="/kalkulacka-beton"
         image="/images/vozovy-park/ms-beton-man-pumpa-logo-cesta-lesny-teren-zilina.jpg"
       />
@@ -33,14 +33,14 @@ export default function KalkulackaBeton() {
               KALKULAČKA <span className="text-primary">BETÓNU</span>
             </h1>
             <p className="text-white/60 text-base leading-relaxed max-w-xl mb-6">
-              Okamžitý výpočet ceny betónu vrátane dopravy, pumpy a čerpania. Zadajte triedu betónu, množstvo a typ dopravy — cenu uvidíte ihneď, s DPH aj bez DPH.
+              Presný výpočet ceny betónu pre <strong className="text-white/80">pumpu, domiešavač aj vlastnú dopravu</strong>. Vyberte kategóriu a typ betónu, zadajte množstvo a vzdialenosť (na mape alebo v km) — kalkulačka spočíta betón, dopravu, čerpanie aj doťaženie. Hotovú kalkuláciu rovno objednáte: <strong className="text-white/80">PDF, SMS alebo záväzná objednávka</strong>.
             </p>
             <div className="flex flex-wrap gap-2.5">
               {[
-                { icon: Calculator, t: "Cena betónu C16/20 – C35/45" },
-                { icon: Truck, t: "Doprava pumpa 28 m / domiešavač" },
-                { icon: Banknote, t: "S DPH aj bez DPH" },
-                { icon: Zap, t: "Okamžitý výsledok" },
+                { icon: Layers, t: "Kategórie a typy betónu C16/20 – C35/45" },
+                { icon: MapPin, t: "Vzdialenosť na mape / výpočet km" },
+                { icon: Truck, t: "Pumpa 28 m · domiešavač · vlastná doprava" },
+                { icon: FileText, t: "Objednávka cez PDF / SMS / systém" },
               ].map((f, i) => (
                 <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/8 border border-white/10 rounded-sm text-white/70 text-xs font-semibold">
                   <f.icon className="w-3.5 h-3.5 text-primary" /> {f.t}
@@ -67,13 +67,15 @@ export default function KalkulackaBeton() {
             Prečo kalkulačka betónu MS-BETON?
           </h2>
           <p className="text-gray-600 leading-relaxed mb-4">
-            Sme jediná betonáreň v regióne Žilina, ktorá ponúka <strong>plnohodnotnú online kalkulačku betónu</strong> — vypočítate si presnú cenu betónu aj dopravy bez telefonátu, kedykoľvek a zadarmo. Zákazník vidí cenu betónu, dopravy domiešavačom či betónovou pumpou, čerpania aj doplnkových služieb okamžite a transparentne.
+            Sme jediná betonáreň v regióne Žilina, ktorá ponúka <strong>plnohodnotnú online kalkulačku betónu</strong> — presný výpočet ceny betónu aj dopravy bez telefonátu, kedykoľvek. Vzdialenosť na stavbu si zvolíte priamo <strong>na mape alebo zadáte v km</strong>, vyberiete kategóriu a typ betónu, a kalkulačka okamžite spočíta betón, dopravu, čerpanie aj doťaženie — transparentne, s DPH aj bez DPH.
           </p>
           <h3 className="font-bold text-lg text-secondary mt-6 mb-2">Čo kalkulačka počíta</h3>
           <ul className="text-gray-600 leading-relaxed space-y-1.5 list-disc pl-5 mb-4">
-            <li><strong>Cena betónu</strong> podľa triedy pevnosti (C16/20, C20/25, C25/30, C30/37, C35/45) a kameniva</li>
-            <li><strong>Doprava betónu</strong> — betónová pumpa s dosahom 28 m, domiešavač 9 m³ alebo vlastná doprava</li>
+            <li><strong>Kategórie a typy betónu</strong> — drvené aj riečne kamenivo, triedy C16/20, C20/25, C25/30, C30/37, C35/45</li>
+            <li><strong>Vzdialenosť na mape alebo výpočet km</strong> — presná cena dopravy podľa lokality</li>
+            <li><strong>Presný výpočet pre pumpu, mixér aj vlastnú dopravu</strong> — pumpa 28 m, domiešavač 9 m³</li>
             <li><strong>Čerpanie betónu</strong>, doťaženie, hadice, umývanie a čakačky</li>
+            <li><strong>Objednanie kalkulácie</strong> — export do PDF, cez SMS alebo záväzná objednávka priamo v systéme</li>
             <li><strong>Cena s DPH aj bez DPH</strong>, individuálne zľavy pre firemných klientov po prihlásení</li>
           </ul>
           <h3 className="font-bold text-lg text-secondary mt-6 mb-2">Ako vypočítať cenu betónu</h3>
