@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, ChevronRight, Users, Truck, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, Mail, PenLine, Fingerprint, ShieldX, AlertTriangle, Info, Smartphone } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
@@ -448,15 +448,28 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
     syncFromServer().catch(() => {});
   }, [expanded]);
 
-  // Načítaj globálne bio štatistiky
-  useEffect(() => {
+  // Globálne bio štatistiky — refreshovateľné (live aktivita)
+  const [bioRefreshing, setBioRefreshing] = useState(false);
+  const loadBioStats = useCallback(async () => {
     const token = localStorage.getItem("msbeton_admin_token") ?? "";
     if (!token) return;
-    fetch("/api/admin/biometric-stats", { headers: { Authorization: `Bearer ${token}` } as HeadersInit })
-      .then(r => r.json())
-      .then((d: { ok: boolean; stats?: BiometricStats }) => { if (d.ok && d.stats) setBioStats(d.stats); })
-      .catch(() => {});
+    setBioRefreshing(true);
+    try {
+      const r = await fetch("/api/admin/biometric-stats", { headers: { Authorization: `Bearer ${token}` } as HeadersInit });
+      const d = await r.json() as { ok: boolean; stats?: BiometricStats };
+      if (d.ok && d.stats) setBioStats(d.stats);
+    } catch { /* ignore */ }
+    setBioRefreshing(false);
   }, []);
+
+  useEffect(() => { loadBioStats(); }, [loadBioStats]);
+  // Re-fetch pri otvorení panelu + auto-refresh každých 15 s kým je otvorený (live feed)
+  useEffect(() => {
+    if (!bioOpen) return;
+    loadBioStats();
+    const iv = setInterval(loadBioStats, 15000);
+    return () => clearInterval(iv);
+  }, [bioOpen, loadBioStats]);
 
   const scrollToClientCard = (id: string, toTabs = false) => {
     setTimeout(() => {
@@ -624,6 +637,13 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
             )}
           </button>
           <div className="flex items-center gap-1">
+            {bioOpen && (
+              <button type="button" onClick={loadBioStats} disabled={bioRefreshing}
+                title="Obnoviť aktivitu"
+                className="flex items-center justify-center w-6 h-6 rounded-full text-gray-400 hover:text-secondary hover:bg-gray-200 transition-colors cursor-pointer disabled:opacity-50">
+                <RefreshCw className={`w-3.5 h-3.5 ${bioRefreshing ? "animate-spin" : ""}`} />
+              </button>
+            )}
             <button type="button" onClick={() => setBioInfoOpen(o => !o)}
               title="Ako biometria funguje"
               className={cn("flex items-center justify-center w-6 h-6 rounded-full transition-colors cursor-pointer",
