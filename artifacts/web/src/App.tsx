@@ -12,6 +12,7 @@ const KalkulackaBeton = lazy(() => import("@/pages/KalkulackaBeton"));
 const Kontakt = lazy(() => import("@/pages/Kontakt"));
 const Onas = lazy(() => import("@/pages/Onas"));
 const KolkoBetonu = lazy(() => import("@/pages/KolkoBetonu"));
+const Betony = lazy(() => import("@/pages/Betony"));
 const VozovyPark = lazy(() => import("@/pages/VozovyPark"));
 const ClientLogin = lazy(() => import("@/pages/ClientLogin"));
 const ClientProfile = lazy(() => import("@/pages/ClientProfile"));
@@ -37,6 +38,7 @@ function Router() {
         <Route path="/kontakt" component={Kontakt} />
         <Route path="/o-nas" component={Onas} />
         <Route path="/kolko-betonu" component={KolkoBetonu} />
+        <Route path="/betony" component={Betony} />
         <Route path="/vozovy-park" component={VozovyPark} />
         <Route path="/prihlasenie" component={ClientLogin} />
         <Route path="/klient-profil" component={ClientProfile} />

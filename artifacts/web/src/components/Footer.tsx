@@ -87,6 +87,7 @@ export function Footer() {
               <li><a href="#home" className="hover:text-primary transition-colors">Domov</a></li>
               <li><a href="/o-nas" className="hover:text-primary transition-colors">O Spoločnosti</a></li>
               <li><a href="/kolko-betonu" className="hover:text-primary transition-colors">Koľko betónu?</a></li>
+              <li><a href="/betony" className="hover:text-primary transition-colors">Druhy betónu</a></li>
               <li><a href="/kalkulacka-beton" className="hover:text-primary transition-colors">Výpočet Ceny</a></li>
               <li><a href="/kontakt" className="hover:text-primary transition-colors">Kontakt</a></li>
             </ul>
