@@ -93,7 +93,7 @@ function SelectField({ label, value, onChange, options }: {
     <div>
       <label className="block text-sm font-semibold text-white/80 mb-2">{label}</label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="w-full bg-white/10 border border-white/10 border-b-2 border-b-primary text-white px-4 py-3 text-sm font-medium rounded-sm focus:ring-0 focus:ring-offset-0 h-auto">
+        <SelectTrigger aria-label={label} className="w-full bg-white/10 border border-white/10 border-b-2 border-b-primary text-white px-4 py-3 text-sm font-medium rounded-sm focus:ring-0 focus:ring-offset-0 h-auto">
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="bg-[#1e293b] border border-white/10 text-white z-[200]" side="bottom" position="popper" sideOffset={4}>
@@ -129,7 +129,7 @@ function CategorySelectField({ label, value, onChange, options }: {
     <div>
       <label className="block text-sm font-semibold text-white/80 mb-2">{label}</label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="w-full bg-white/10 border border-white/10 border-b-2 border-b-primary text-white px-4 py-3 text-sm font-medium rounded-sm focus:ring-0 focus:ring-offset-0 h-auto">
+        <SelectTrigger aria-label={label} className="w-full bg-white/10 border border-white/10 border-b-2 border-b-primary text-white px-4 py-3 text-sm font-medium rounded-sm focus:ring-0 focus:ring-offset-0 h-auto">
           <div className="flex items-center gap-1.5 flex-1 min-w-0">
             <KamenivoIcon name={value} size="xs" />
             <span className="truncate">{value || <span className="text-white/40 font-normal">Vyberte kategóriu</span>}</span>
@@ -189,7 +189,7 @@ function TypeSelectField({ label, value, onChange, options, discountFactor = 1, 
           Riešenie: wrapper je <div> (nie <span>) → selektor [&>span] ho nechytí.
           line-clamp-none by nastavil display:block a rozbil by flex layout.
         */}
-        <SelectTrigger className="w-full bg-white/10 border border-white/10 border-b-2 border-b-primary text-white px-4 py-3 text-sm font-medium rounded-sm focus:ring-0 focus:ring-offset-0 h-auto min-h-[48px] overflow-visible">
+        <SelectTrigger aria-label={label} className="w-full bg-white/10 border border-white/10 border-b-2 border-b-primary text-white px-4 py-3 text-sm font-medium rounded-sm focus:ring-0 focus:ring-offset-0 h-auto min-h-[48px] overflow-visible">
           <div className={cn(
             "flex-1 min-w-0 text-left whitespace-normal",
             !value || isShort ? "flex items-center gap-2" : "flex flex-col gap-0.5"

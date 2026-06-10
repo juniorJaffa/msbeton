@@ -2,7 +2,7 @@
 <html lang="sk">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MS-BETON, spol. s r.o. | Žilina – betón, pumpa, domiešavač</title>
     <meta name="description" content="Výroba a doprava betónu v Žiline a okolí. Betón pumpa 28 m, domiešavač 9 m³. Rýchla doprava, spoľahlivý servis." />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
@@ -31,7 +31,7 @@
     <!-- Google Maps loaded lazily by Calculator when user clicks "Mapa" -->
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 
-    <!-- Google Analytics 4 — Consent Mode v2 (default: denied until user accepts) -->
+    <!-- Google Analytics 4 — Consent Mode v2 + ODLOŽENÉ načítanie (neblokuje FCP/LCP) -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
@@ -42,15 +42,28 @@
         ad_personalization: 'denied',
         wait_for_update: 500,
       });
-      // Restore consent if previously accepted
       if (localStorage.getItem('msbeton_cookie_consent') === 'accepted') {
         gtag('consent', 'update', { analytics_storage: 'granted' });
       }
-    </script>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-CX3CEH8C2G"></script>
-    <script>
-      gtag('js', new Date());
-      gtag('config', 'G-CX3CEH8C2G');
+      // gtag.js (155 KB) sa načíta až keď je stránka interaktívna alebo pri prvej interakcii
+      (function () {
+        var loaded = false;
+        function loadGA() {
+          if (loaded) return; loaded = true;
+          var s = document.createElement('script');
+          s.async = true;
+          s.src = 'https://www.googletagmanager.com/gtag/js?id=G-CX3CEH8C2G';
+          document.head.appendChild(s);
+          gtag('js', new Date());
+          gtag('config', 'G-CX3CEH8C2G');
+        }
+        var fire = function () { setTimeout(loadGA, 1500); };
+        if (document.readyState === 'complete') fire();
+        else window.addEventListener('load', fire);
+        ['scroll', 'click', 'keydown', 'touchstart', 'mousemove'].forEach(function (e) {
+          window.addEventListener(e, loadGA, { once: true, passive: true });
+        });
+      })();
     </script>
   </head>
   <body>

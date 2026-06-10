@@ -74,7 +74,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
+          <main id="main">
+            <Router />
+          </main>
           <BiometricUnlockGate />
         </WouterRouter>
         <Toaster />
