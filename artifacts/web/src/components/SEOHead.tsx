@@ -15,7 +15,7 @@ interface SEOHeadProps {
 }
 
 export function SEOHead({ title, description, canonical, noindex = false, image }: SEOHeadProps) {
-  const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} | Žilina – betón, pumpa, domiešavač`;
+  const fullTitle = title ? `${title} | MS-BETON` : "Doprava betónu Žilina – pumpa, domiešavač ✅ | MS-BETON";
   const metaDesc = description ?? DEFAULT_DESCRIPTION;
   const canonicalUrl = canonical ? `${SITE_URL}${canonical}` : SITE_URL;
   const ogImage = image ? `${SITE_URL}${image}` : OG_IMAGE;
