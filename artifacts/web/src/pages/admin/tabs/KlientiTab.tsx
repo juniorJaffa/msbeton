@@ -1380,7 +1380,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                     <Table2 className="w-5 h-5" />
                   </button>
                   {c.id !== SYSTEM_OWNER_ID && (
-                    <button onClick={(e) => { e.stopPropagation(); remove(c.id); }} className="p-1.5 text-gray-300 hover:text-red-500 transition-colors">
+                    <button onClick={(e) => { e.stopPropagation(); remove(c.id); }} className="hidden sm:block p-1.5 text-gray-300 hover:text-red-500 transition-colors">
                       <Trash2 className="w-5 h-5" />
                     </button>
                   )}
@@ -1992,6 +1992,15 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                       />
                     )}
                   </div>
+
+                  {c.id !== SYSTEM_OWNER_ID && (
+                    <div className="sm:hidden border-t border-gray-100 px-4 py-3">
+                      <button onClick={() => remove(c.id)} className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-red-500 border border-red-200 rounded hover:bg-red-50 transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                        Vymazať klienta
+                      </button>
+                    </div>
+                  )}
 
                   </>)}
 
