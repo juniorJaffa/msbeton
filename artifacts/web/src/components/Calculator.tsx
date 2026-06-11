@@ -2541,8 +2541,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
               : (tsettings.condMixMax ?? 2);
             const adminMinMix = tsettings.condMixMin ?? 0;
             const maxMixP = qty > 0 ? Math.min(adminMaxMix, Math.max(0, Math.floor(qty) - podmienkyPumpa)) : adminMaxMix;
-            // allowExtraOverload: admin vždy; klient iba ak má explicitné povolenie
-            const allowExtraOverload = isAdminMode || (loggedClient ? (loggedClient.allowExtraOverload ?? false) : false);
+            // allowExtraOverload: čistý admin (bez clientOverride) vždy; clientOverride → rešpektuj klientovo nastavenie
+            const allowExtraOverload = (isAdminMode && !clientOverride) || (loggedClient ? (loggedClient.allowExtraOverload ?? false) : false);
             // bez povolenia extraOverload → min Mix pre pumpa tab = štandardné minimum (autoMixP)
             const minMixPumpa = allowExtraOverload ? adminMinMix : autoMixP;
             // Risk zone: pod kapacitným minimom
