@@ -178,5 +178,5 @@
 
 /* PWA/standalone (odkaz na ploche): navy pozadie za overscroll (nie biele) + tlmiť rubber-band.
    Concrete hero sa už nedá "odtiahnuť" a odhaliť biele pozadie. */
-html { background-color: #001D3D; }
-html, body { overscroll-behavior-y: none; }
+html, body { background-color: #001D3D; }
+html, body { overscroll-behavior-y: none; overscroll-behavior: none; }

@@ -1031,7 +1031,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const isOwn = tab === "vlastnadoprava";
     const zeroTC = { cost: 0, isMin: false, fillupM3: 0, fillupCost: 0 };
     type BreakdownItem = {
-      label: string; qty: number; categoryName: string;
+      label: string; qty: number; categoryName: string; unit: string;
       bezDph: number; bezDphFinal: number; bezDphFinalHotovost: number;
       transport: number; transportFillup: number;
       transportFillupM3: number; transportFillupTarget: number;
@@ -1054,9 +1054,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const mainTC_raw = isOwn ? zeroTC : calcTransport(km, qty + addToMainQty, tab, clientDeliveryZone, effTrucksOverride);
     const mainTC = mainTC_raw;
     const mainTrucks = effTrucksOverride ?? (tab === "pumpa" ? calcPumpTrucks(qty + addToMainQty) : Math.ceil((qty + addToMainQty) / mixCap));
+    const mainUnit = selectedCategory?.noDoprava ? "ks" : "m³";
     concreteBreakdown.push({
-      label: `Betón ${cleanType(selectedType.label)} – ${qty} m³`,
-      qty, categoryName: selectedCategory?.name ?? categoryName ?? "",
+      label: `Betón ${cleanType(selectedType.label)} – ${qty} ${mainUnit}`,
+      qty, categoryName: selectedCategory?.name ?? categoryName ?? "", unit: mainUnit,
       bezDph: qty * selectedType.price,
       bezDphFinal: mainManual !== undefined ? qty * mainManual : qty * selectedType.price * betonFactor,
       bezDphFinalHotovost: mainManual !== undefined ? qty * mainManual * (1 + VAT_HOTOVOST) : qty * selectedType.price * betonFactor * (1 + VAT_HOTOVOST),
@@ -1105,9 +1106,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             svcWaitLabel = [wh > 0 ? `${wh} h` : "", wmm > 0 ? `${wmm} min` : ""].filter(Boolean).join(" ");
           }
         }
+        const extraItemCat = allCategories.find(c => c.name === item.categoryName) ?? allCategories.find(c => c.types.some(t2 => t2.label === item.typeLabel));
+        const extraUnit = extraItemCat?.noDoprava ? "ks" : "m³";
         concreteBreakdown.push({
-          label: `Betón ${cleanType(t.label)} – ${q} m³`,
-          qty: q, categoryName: item.categoryName ?? allCategories.find(c => c.types.some(t => t.label === item.typeLabel))?.name ?? "",
+          label: `Betón ${cleanType(t.label)} – ${q} ${extraUnit}`,
+          qty: q, categoryName: item.categoryName ?? extraItemCat?.name ?? "", unit: extraUnit,
           bezDph: q * t.price,
           bezDphFinal: itemManual !== undefined ? q * itemManual : q * t.price * betonFactor,
           bezDphFinalHotovost: itemManual !== undefined ? q * itemManual * (1 + VAT_HOTOVOST) : q * t.price * betonFactor * (1 + VAT_HOTOVOST),
@@ -1370,7 +1373,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     };
     const mainCI = result.concreteBreakdown[0];
     const mainCatName = mainCI?.categoryName ?? "";
-    const mainBetonTypeName = mainCI?.label.replace(/ – [\d.,]+ m³$/, "") ?? "";
+    const mainBetonTypeName = mainCI?.label.replace(/ – [\d.,]+ (m³|ks)$/, "") ?? "";
     const mainBetonLabel = mainCatName ? kaminovoPrefixHtml(mainCatName) + mainCatName : mainBetonTypeName;
     const betonRows = (() => {
       if (!mainCI) return "";
@@ -1378,10 +1381,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const discVal = isFaktura ? mainCI.bezDphFinal : mainCI.bezDphFinalHotovost;
       const unitPriceOrig = mainCI.qty > 0 ? origVal / mainCI.qty : 0;
       const unitPrice = mainCI.qty > 0 ? discVal / mainCI.qty : 0;
+      const pdfUnit = mainCI.unit ?? "m³";
       const unitStr = hasDiscount && Math.abs(unitPriceOrig - unitPrice) > 0.001
-        ? `<span style="text-decoration:line-through;color:#bbb;font-size:7.5pt">${fmtN(unitPriceOrig)}&nbsp;€/m³</span><br>${fmtN(unitPrice)}&nbsp;€/m³`
-        : `${fmtN(unitPrice)}&nbsp;€/m³`;
-      return trow(mainCI.label, `${mainCI.qty}&nbsp;m³`, unitStr, origVal, discVal);
+        ? `<span style="text-decoration:line-through;color:#bbb;font-size:7.5pt">${fmtN(unitPriceOrig)}&nbsp;€/${pdfUnit}</span><br>${fmtN(unitPrice)}&nbsp;€/${pdfUnit}`
+        : `${fmtN(unitPrice)}&nbsp;€/${pdfUnit}`;
+      return trow(mainCI.label, `${mainCI.qty}&nbsp;${pdfUnit}`, unitStr, origVal, discVal);
     })();
 
     const pdfTrucks = tab === "pumpa"
@@ -1504,9 +1508,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const betonDisc = isFaktura ? ci.bezDphFinal : ci.bezDphFinalHotovost;
       const unitPriceOrig = ci.qty > 0 ? betonOrig / ci.qty : 0;
       const unitPrice = ci.qty > 0 ? betonDisc / ci.qty : 0;
+      const exUnit = ci.unit ?? "m³";
       const unitStr = hasDiscount && Math.abs(unitPriceOrig - unitPrice) > 0.001
-        ? `<span style="text-decoration:line-through;color:#bbb;font-size:7.5pt">${fmtN(unitPriceOrig)}&nbsp;€/m³</span><br>${fmtN(unitPrice)}&nbsp;€/m³`
-        : `${fmtN(unitPrice)}&nbsp;€/m³`;
+        ? `<span style="text-decoration:line-through;color:#bbb;font-size:7.5pt">${fmtN(unitPriceOrig)}&nbsp;€/${exUnit}</span><br>${fmtN(unitPrice)}&nbsp;€/${exUnit}`
+        : `${fmtN(unitPrice)}&nbsp;€/${exUnit}`;
       const transOrig = ci.transport;
       const transDisc = ci.transport * result.fTransport;
       const fillupOrig = ci.transportFillup;
@@ -1516,11 +1521,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         : `${ci.transportTrucks}×Mix`;
       const dopravaExtraLabel = `${ci.transportIsMin ? "Min. doprava" : "Doprava"}${pdfZone ? ` ${pdfZone}` : ""} · ${pdfExtraTrucks}`;
       const extraTransportUnitStr = buildTransportUnitStr(ci.transportIsMin, ci.qty);
-      const extraTypeLabel = ci.label.replace(/ – [\d.,]+ m³$/, "");
+      const extraTypeLabel = ci.label.replace(/ – [\d.,]+ (m³|ks)$/, "");
       const extraSectionLabel = ci.categoryName ? kaminovoPrefixHtml(ci.categoryName) + ci.categoryName : extraTypeLabel;
       const isAddToMainExtra = idx < extraItems.length && extraItems[idx]?.transportMode === "addToMain";
       let rows = sectionRow(`Pridaná položka ${idx + 1}${extraSectionLabel ? ` – ${extraSectionLabel}` : ""}`);
-      rows += trow(ci.label, `${ci.qty}&nbsp;m³`, unitStr, betonOrig, betonDisc, undefined, true);
+      rows += trow(ci.label, `${ci.qty}&nbsp;${exUnit}`, unitStr, betonOrig, betonDisc, undefined, true);
       rows += trow(dopravaExtraLabel, `${ci.transportTrucks}&nbsp;${truckWord(ci.transportTrucks)}&nbsp;(${ci.qty}&nbsp;m³)`, extraTransportUnitStr, transOrig, transDisc);
       if (isAddToMainExtra && transOrig === 0) {
         const mainLabel = (result.concreteBreakdown[0]?.label ?? "").split("–")[0].trim() || "Hlavný produkt";
@@ -1656,6 +1661,16 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     </div>
   </div>
 
+  <!-- Google Review -->
+  <div style="margin-top:5mm;padding:4mm 6mm;border:1px solid #ddd;border-radius:3px;display:flex;align-items:center;gap:6mm">
+    <img src="https://chart.googleapis.com/chart?cht=qr&chs=90x90&chl=https%3A%2F%2Fg.page%2Fr%2FCeTg2gjXL3dWEBM%2Freview&choe=UTF-8" style="width:22mm;height:22mm;display:block;flex-shrink:0" />
+    <div>
+      <div style="font-size:9pt;font-weight:bold;color:#001D3D;margin-bottom:2px">Ohodnoťte nás na Google</div>
+      <div style="font-size:7.5pt;color:#555;margin-bottom:3px">Vážime si Váš názor. Pomôžte ostatným zákazníkom svojou recenziou.</div>
+      <div style="font-size:7pt;color:#888">g.page/r/CeTg2gjXL3dWEBM/review</div>
+    </div>
+  </div>
+
   <!-- Footer -->
   <div style="padding-top:4mm;border-top:1px solid #ddd;font-size:7.5pt;color:#888;line-height:1.7">
     * Cena je orientačná. Závisí od aktuálneho cenníka a dostupnosti. Kontaktujte nás pre presnú ponuku.<br>
@@ -1708,15 +1723,15 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     result.concreteBreakdown.forEach((ci, ciIdx) => {
       const concreteVal = isFaktura ? ci.bezDphFinal : ci.bezDphFinalHotovost;
       const unitPrice = ci.qty > 0 ? concreteVal / ci.qty : 0;
-      const concreteName = ci.label.replace(/ – \d+(?:[.,]\d+)? m³$/, "");
+      const concreteName = ci.label.replace(/ – \d+(?:[.,]\d+)? (m³|ks)$/, "");
       if (ciIdx > 0) lines.push(div);
       if (ci.categoryName) lines.push(kamenivoPrefix(ci.categoryName) + ci.categoryName);
       lines.push(concreteName);
-      lines.push(rowUnit(`${ci.qty}m³`, unitPrice, concreteVal));
+      lines.push(rowUnit(`${ci.qty}${ci.unit ?? "m³"}`, unitPrice, concreteVal));
       if (!result.isOwn && ci.transport === 0 && result.concreteBreakdown.indexOf(ci) > 0) {
         const smsCiIdx = result.concreteBreakdown.indexOf(ci) - 1;
         if (smsCiIdx >= 0 && extraItems[smsCiIdx]?.transportMode === "addToMain") {
-          lines.push(`  +${ci.qty}m³ zarat. do dopravy hl.pol.`);
+          lines.push(`  +${ci.qty}${ci.unit ?? "m³"} zarat. do dopravy hl.pol.`);
         }
       }
 
@@ -1815,6 +1830,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       if (discountCelkovo > 0) dp.push(`celkovo ${discountCelkovo}%`);
       lines.push(`(zľavy: ${dp.join(", ")})`);
     }
+    lines.push("Ohodnoťte nás: g.page/r/CeTg2gjXL3dWEBM/review");
     lines.push("Tel: +421 909 205 205");
     const text = lines.join("\n");
 
@@ -1924,14 +1940,14 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const bOrig = fmt2(isFakt ? ci.bezDph : ci.bezDph * (1 + VAT_HOTOVOST));
       const bDisc = fmt2(isFakt ? ci.bezDphFinal : ci.bezDphFinalHotovost);
       const tOrig = fmt2(ci.transport);
-      const tDisc = fmt2(ci.transport * dopravaFactor);
-      const typeLabel = ci.label.replace(/ – [\d.,]+ m³$/, "");
+      const tDisc = fmt2(ci.transport * result.fTransport);
+      const typeLabel = ci.label.replace(/ – [\d.,]+ (m³|ks)$/, "");
       const catLabel = ci.categoryName ? kamenivoPrefix(ci.categoryName) + ci.categoryName : typeLabel;
       const header = idx === 0 ? `Produkty – ${catLabel}` : `Pridaná položka ${idx} – ${catLabel}`;
       const rows: { l: string; v: number; o?: number; u?: number; uOrig?: number; uSuffix?: string; q?: string }[] = [];
       const uBeton = ci.qty > 0 ? fmt2(bDisc / ci.qty) : undefined;
       const uBetonOrig = ci.qty > 0 ? fmt2(bOrig / ci.qty) : undefined;
-      rows.push({ l: ci.label, q: `${ci.qty} m³`, v: bDisc, ...(Math.abs(bOrig - bDisc) > 0.01 ? { o: bOrig } : {}), ...(uBeton !== undefined ? { u: uBeton, uSuffix: "€/m³", ...(uBetonOrig !== undefined && Math.abs(uBetonOrig - uBeton) > 0.001 ? { uOrig: uBetonOrig } : {}) } : {}) });
+      rows.push({ l: ci.label, q: `${ci.qty} ${ci.unit}`, v: bDisc, ...(Math.abs(bOrig - bDisc) > 0.01 ? { o: bOrig } : {}), ...(uBeton !== undefined ? { u: uBeton, uSuffix: `€/${ci.unit}`, ...(uBetonOrig !== undefined && Math.abs(uBetonOrig - uBeton) > 0.001 ? { uOrig: uBetonOrig } : {}) } : {}) });
       if (ci.transport > 0) {
         const hasAddToMain = idx === 0 && extraItems.some(ei => ei.transportMode === "addToMain" && (parseFloat(ei.quantity) || 0) > 0);
         const addToMainQtyBd = hasAddToMain ? extraItems.reduce((s, ei) => { const q = parseFloat(ei.quantity) || 0; return (q > 0 && ei.transportMode === "addToMain") ? s + q : s; }, 0) : 0;
@@ -1944,7 +1960,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       }
       if (ci.transportFillup > 0) {
         const fOrig = fmt2(ci.transportFillup);
-        const fDisc = fmt2(ci.transportFillup * dopravaFactor);
+        const fDisc = fmt2(ci.transportFillup * result.fTransport);
         const uFill = ci.transportFillupM3 > 0 ? fmt2(fDisc / ci.transportFillupM3) : undefined;
         const uFillOrig = ci.transportFillupM3 > 0 ? fmt2(fOrig / ci.transportFillupM3) : undefined;
         rows.push({ l: `Doťaženie do ${ci.transportFillupTarget} m³`, q: `${ci.transportFillupM3} m³`, v: fDisc, ...(Math.abs(fOrig - fDisc) > 0.01 ? { o: fOrig } : {}), ...(uFill !== undefined ? { u: uFill, uSuffix: "€/m³", ...(uFillOrig !== undefined && Math.abs(uFillOrig - uFill) > 0.001 ? { uOrig: uFillOrig } : {}) } : {}) });
