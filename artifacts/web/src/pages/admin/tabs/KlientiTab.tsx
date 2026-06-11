@@ -345,7 +345,7 @@ ${buildTable(dopravaHdr, dopravaRows)}
   Turie 468, 013 12 Turie &nbsp;|&nbsp; +421 909 205 205 &nbsp;|&nbsp; info@msbeton.sk &nbsp;|&nbsp; msbeton.sk
 </div>
 
-<script>window.onload=function(){window.print();}</script>
+
 </body></html>`;
 
   const blob = new Blob([html], { type: "text/html;charset=utf-8" });

@@ -342,7 +342,7 @@ ${breakdownHtml ? `
   </div>
 </div>
 
-<script>window.onload=function(){window.print();}</script>
+
 </body></html>`;
 
   const blob = new Blob([html], { type: "text/html;charset=utf-8" });
