@@ -2591,7 +2591,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     }}
                     placeholder="Zadajte množstvo"
                     className="flex-1 bg-white/10 border-b-2 border-b-primary text-white px-4 py-3 focus:outline-none placeholder:text-white/30 text-sm font-medium rounded-sm" />
-                  {isAdminMode && tab !== "vlastnadoprava" && (
+                  {isAdminMode && tab !== "vlastnadoprava" && (!clientOverride || (loggedClient?.allowExtraOverload ?? false)) && (
                     <button type="button"
                       onClick={() => {
                         if (qty === 0) return;
@@ -2609,7 +2609,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     </button>
                   )}
                 </div>
-                {isAdminMode && tab !== "vlastnadoprava" && podmienkyEnabled && (
+                {isAdminMode && tab !== "vlastnadoprava" && (!clientOverride || (loggedClient?.allowExtraOverload ?? false)) && podmienkyEnabled && (
                   <div className="mt-1.5 border border-amber-500/25 rounded-sm bg-amber-500/5 px-2.5 py-2 space-y-2">
                     {/* Stepper riadky — kompaktné, SVG ikona + label + − count + */}
                     {tab === "pumpa" ? (

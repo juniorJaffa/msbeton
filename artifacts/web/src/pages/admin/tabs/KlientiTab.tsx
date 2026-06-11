@@ -1157,8 +1157,8 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                 <label className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-gray-50 select-none">
                   <input type="checkbox" checked={form.allowExtraOverload} onChange={e => setForm({ ...form, allowExtraOverload: e.target.checked })} className="accent-red-500 w-5 h-5 shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <span className="text-sm text-gray-700">Minusové pretaženie</span>
-                    <div className="text-[11px] text-gray-400">Povolí ísť pod min. limit vozidiel (Pumpa min. {ts.condPumpaMin ?? 1} voz., Mix min. {ts.condMixMin ?? 0} voz.)</div>
+                    <span className="text-sm text-gray-700">Podmienky pretaženia</span>
+                    <div className="text-[11px] text-gray-400">Zobrazí ★ Podmienky v kalkulačke · admin nastaví počet vozidiel mimo normy a berie zodpovednosť</div>
                   </div>
                 </label>
                 <div className="px-3 py-3">
@@ -1866,8 +1866,8 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                           <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50 select-none">
                             <input type="checkbox" checked={c.allowExtraOverload ?? true} onChange={e => update(c.id, { allowExtraOverload: e.target.checked })} className="accent-red-500 w-4 h-4 shrink-0" />
                             <div className="flex-1 min-w-0">
-                              <span className="text-sm text-gray-700">Minusové pretaženie</span>
-                              <div className="text-[11px] text-gray-400">Pod min. limit vozidiel (Pumpa {ts.condPumpaMin ?? 1} voz., Mix {ts.condMixMin ?? 0} voz.)</div>
+                              <span className="text-sm text-gray-700">Podmienky pretaženia</span>
+                              <div className="text-[11px] text-gray-400">Zobrazí ★ Podmienky v kalkulačke · admin nastaví počet vozidiel mimo normy a berie zodpovednosť</div>
                             </div>
                           </label>
                           {/* — SMS — */}
