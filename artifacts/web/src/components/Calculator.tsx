@@ -2074,10 +2074,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       <div className="rounded-2xl overflow-hidden shadow-2xl" style={{ background: "#2d3748" }}>
 
         {/* Tabs */}
-        <div className="grid grid-cols-3">
+        <div className="grid grid-cols-3 overflow-hidden">
           {(["pumpa", "mix", "vlastnadoprava"] as Tab[]).map((t) => (
             <button key={t} onClick={() => { if (tab === t) { setTabInfoOpen(o => !o); } else { setTab(t); setExtraItems([]); setShowResult(false); setTabInfoOpen(false); gtagEvent("calc_tab", { tab: t }); } }}
-              className={cn("flex flex-col items-center justify-center gap-2 py-4 transition-all cursor-pointer group",
+              className={cn("relative flex flex-col items-center justify-center gap-2 py-4 transition-all cursor-pointer group overflow-hidden",
                 tab === t ? "bg-secondary border-b-4 border-primary" : "bg-white/5 border-b-4 border-transparent hover:bg-white/10"
               )}>
               {t === "pumpa" ? (
@@ -2120,16 +2120,14 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                   <circle cx="49" cy="40" r="4.5" strokeWidth="1.8" />
                 </svg>
               )}
-              <div className="flex items-center gap-1 justify-center flex-nowrap">
-                <span className={cn("font-black text-xs tracking-widest transition-colors whitespace-nowrap", tab === t ? "text-primary" : "text-white/50 group-hover:text-white/80")}>
-                  {t === "pumpa" ? "PUMPA" : t === "mix" ? "MIX" : "VL. DOPRAVA"}
+              {tab === t && (
+                <span className={cn("md:hidden absolute top-1 right-1 text-[9px] font-black px-1 py-0.5 rounded-full border leading-none", tabInfoOpen ? "border-primary/60 text-primary bg-primary/15" : "border-white/15 text-white/30")}>
+                  ⓘ
                 </span>
-                {tab === t && (
-                  <span className={cn("md:hidden text-[9px] font-black tracking-widest transition-colors px-1 py-0.5 rounded-full border leading-none", tabInfoOpen ? "border-primary/60 text-primary bg-primary/15" : "border-white/15 text-white/30")}>
-                    ⓘ
-                  </span>
-                )}
-              </div>
+              )}
+              <span className={cn("font-black text-xs tracking-widest transition-colors whitespace-nowrap", tab === t ? "text-primary" : "text-white/50 group-hover:text-white/80")}>
+                {t === "pumpa" ? "PUMPA" : t === "mix" ? "MIX" : "VL. DOPRAVA"}
+              </span>
               <span className={cn("text-[10px] font-medium transition-colors text-center px-1", tab === t ? "text-white/70" : "text-white/30 group-hover:text-white/50")}>
                 {t === "pumpa" ? `${pumpCap}m³ · 28m` : t === "mix" ? `${mixCap}m³` : "bez dopravy"}
               </span>
