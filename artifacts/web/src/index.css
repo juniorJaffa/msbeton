@@ -165,3 +165,13 @@
 @media (prefers-reduced-motion: reduce) {
   .ms-logo-shimmer { animation: none; }
 }
+
+/* iOS: zabráň auto-zoomu pri kliku na input (font-size < 16px ho spúšťa).
+   Zoom ostáva povolený pre používateľa (žiaden maximum-scale) = a11y aj bez otravného zoomu. */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
