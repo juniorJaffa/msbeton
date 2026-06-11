@@ -1663,7 +1663,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
   <!-- Google Review -->
   <div style="margin-top:5mm;padding:4mm 6mm;border:1px solid #ddd;border-radius:3px;display:flex;align-items:center;gap:6mm">
-    <img src="https://chart.googleapis.com/chart?cht=qr&chs=90x90&chl=https%3A%2F%2Fg.page%2Fr%2FCeTg2gjXL3dWEBM%2Freview&choe=UTF-8" style="width:22mm;height:22mm;display:block;flex-shrink:0" />
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=0&data=https%3A%2F%2Fg.page%2Fr%2FCeTg2gjXL3dWEBM%2Freview" style="width:22mm;height:22mm;display:block;flex-shrink:0" />
     <div>
       <div style="font-size:9pt;font-weight:bold;color:#001D3D;margin-bottom:2px">Ohodnoťte nás na Google</div>
       <div style="font-size:7.5pt;color:#555;margin-bottom:3px">Vážime si Váš názor. Pomôžte ostatným zákazníkom svojou recenziou.</div>

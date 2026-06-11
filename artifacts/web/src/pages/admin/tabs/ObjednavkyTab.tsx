@@ -332,6 +332,16 @@ ${breakdownHtml ? `
   <div style="border-top:1px solid #ccc;padding-top:3mm;font-size:8pt;color:#888">Pečiatka a podpis MS-BETON</div>
 </div>
 
+<!-- Google Review -->
+<div style="margin-top:6mm;padding:4mm 6mm;border:1px solid #ddd;border-radius:3px;display:flex;align-items:center;gap:6mm">
+  <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=0&data=https%3A%2F%2Fg.page%2Fr%2FCeTg2gjXL3dWEBM%2Freview" style="width:22mm;height:22mm;display:block;flex-shrink:0" />
+  <div>
+    <div style="font-size:9pt;font-weight:bold;color:#001D3D;margin-bottom:2px">Ohodnoťte nás na Google</div>
+    <div style="font-size:7.5pt;color:#555;margin-bottom:3px">Vážime si Váš názor. Pomôžte ostatným zákazníkom svojou recenziou.</div>
+    <div style="font-size:7pt;color:#888">g.page/r/CeTg2gjXL3dWEBM/review</div>
+  </div>
+</div>
+
 <script>window.onload=function(){window.print();}</script>
 </body></html>`;
 
