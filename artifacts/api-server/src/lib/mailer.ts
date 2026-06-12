@@ -40,6 +40,21 @@ function emailShell(bodyHtml: string): string {
 ${bodyHtml}
 </td></tr>
 
+<!-- GOOGLE REVIEW -->
+<tr><td style="background:#fffcee;border-top:2px solid rgba(237,197,49,0.25);padding:30px 40px;text-align:center">
+  <p style="margin:0 0 10px;font-size:26px;letter-spacing:5px;line-height:1">&#11088;&#11088;&#11088;&#11088;&#11088;</p>
+  <p style="margin:0 0 6px;color:#1a1400;font-size:15px;font-weight:800">Páčilo sa vám?</p>
+  <p style="margin:0 0 20px;color:#999;font-size:13px;line-height:1.55">Krátke hodnotenie na Google nám veľmi pomôže.<br>Zaberá to 30 sekúnd &mdash; ďakujeme!</p>
+  <table cellpadding="0" cellspacing="0" role="presentation" style="margin:0 auto">
+  <tr><td style="background:#EDC531;border-radius:8px;box-shadow:0 3px 10px rgba(237,197,49,0.45)">
+    <a href="https://g.page/r/CeTg2gjXL3dWEBM/review" target="_blank"
+       style="display:inline-block;color:#001D3D;text-decoration:none;font-weight:900;font-size:14px;letter-spacing:0.3px;padding:14px 30px">
+      &#11088;&nbsp; Ohodnoťte MS&#8209;BETON na Google
+    </a>
+  </td></tr>
+  </table>
+</td></tr>
+
 <!-- FOOTER -->
 <tr><td style="background:#001D3D;border-radius:0 0 14px 14px;padding:22px 40px;text-align:center">
   <p style="margin:0 0 6px;color:rgba(255,255,255,0.35);font-size:11px;letter-spacing:1px">MS-BETON, spol. s r.o. &nbsp;·&nbsp; Turie 468, 013 12 Turie</p>
