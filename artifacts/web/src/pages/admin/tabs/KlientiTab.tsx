@@ -1421,18 +1421,19 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
               {/* Card header */}
               <div className="flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => { const next = isExpanded ? null : c.id; setExpanded(next); if (next) scrollToClientCard(next, true); }}>
                 {/* Drag grip + číslo (stacked) — úzky ľavý stĺpec, šetrí šírku */}
-                <div className="shrink-0 flex flex-col items-center gap-0.5 -ml-1">
-                  {canDrag && (
-                    <span className="touch-none px-1 text-gray-300 hover:text-gray-500 active:text-primary cursor-grab active:cursor-grabbing"
-                      draggable={false} onClick={e => e.stopPropagation()}
-                      onPointerDown={e => onClientHandlePointerDown(e, c.id)}
-                      onPointerMove={onClientHandlePointerMove}
-                      onPointerUp={onClientHandlePointerUp}>
-                      <GripVertical className="w-5 h-5 sm:w-4 sm:h-4" />
-                    </span>
-                  )}
-                  <span className="text-[10px] font-bold text-gray-400 tabular-nums leading-none">{listIdx + 1}</span>
-                </div>
+                {canDrag ? (
+                  <span className="shrink-0 touch-none flex flex-col items-center justify-center gap-0 -ml-1 px-1 py-1 rounded text-gray-300 hover:text-gray-500 hover:bg-gray-100 active:text-primary cursor-grab active:cursor-grabbing"
+                    draggable={false} onClick={e => e.stopPropagation()}
+                    onPointerDown={e => onClientHandlePointerDown(e, c.id)}
+                    onPointerMove={onClientHandlePointerMove}
+                    onPointerUp={onClientHandlePointerUp}
+                    title={`#${listIdx + 1} · potiahni pre zmenu poradia`}>
+                    <GripVertical className="w-4 h-4" />
+                    <span className="text-[10px] font-black tabular-nums leading-none">{listIdx + 1}</span>
+                  </span>
+                ) : (
+                  <span className="shrink-0 w-5 text-center text-[11px] font-bold text-gray-300 tabular-nums">{listIdx + 1}</span>
+                )}
                 {/* Avatar */}
                 <div className="relative shrink-0">
                   <div className={cn("w-9 h-9 rounded-full flex items-center justify-center ring-2",
@@ -1520,8 +1521,8 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                     </span>
                   )}
                 </div>
-                {/* Ikona tlačidlá — mobile: väčšie touch ciele (40px) pre robotnícke prsty */}
-                <div className="flex items-center justify-end gap-0.5 shrink-0">
+                {/* Ikona tlačidlá — mobile: väčšie touch ciele; desktop w-40 zarovná s hlavičkou */}
+                <div className="flex items-center justify-end gap-0.5 shrink-0 sm:w-40">
                   {/* Akcie 2×2: hore Kalkulačka+Tabuľka (dôležité), dole Odkaz+Srdiečko */}
                   <div className="grid grid-cols-2 gap-0.5">
                     <button
