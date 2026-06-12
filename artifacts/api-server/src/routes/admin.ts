@@ -154,6 +154,56 @@ async function setConfig(key: string, data: unknown): Promise<void> {
     });
 }
 
+// ── Item-level merge (multi-admin concurrency) ──────────────────────────────────
+// Zlúči prichádzajúce pole s aktuálnym DB stavom per-položku podľa `updatedAt`:
+//   - id v oboch     → vyhráva novší updatedAt
+//   - id len v DB    → ak DB.updatedAt > baseSync (iný admin pridal/zmenil po mojom
+//                       syncu) ZACHOVAJ; inak (= ja som zmazal) zahoď
+//   - id len incoming → nová/moja položka, zachovaj
+// Rekurzívne aj na vnorené `types` (betóny → typy betónu).
+type Item = Record<string, unknown> & { id?: unknown; updatedAt?: unknown; types?: unknown };
+function ts(v: unknown): number { const t = new Date(String(v ?? 0)).getTime(); return isNaN(t) ? 0 : t; }
+
+function mergeItems(incoming: Item[], current: Item[], baseSyncMs: number): Item[] {
+  const curById = new Map(current.filter(c => c.id != null).map(c => [String(c.id), c] as const));
+  const incIds = new Set(incoming.filter(i => i.id != null).map(i => String(i.id)));
+  const result: Item[] = [];
+  // 1) Prejdi incoming — pre každú porovnaj s DB verziou (novší updatedAt vyhráva)
+  for (const inc of incoming) {
+    const id = inc.id != null ? String(inc.id) : null;
+    const cur = id ? curById.get(id) : undefined;
+    if (!cur) { result.push(inc); continue; }
+    const winner = ts(cur.updatedAt) > ts(inc.updatedAt) ? cur : inc;
+    // Vnorené types merge (ak existujú v oboch)
+    if (Array.isArray(inc.types) && Array.isArray(cur.types)) {
+      const mergedTypes = mergeItems(inc.types as Item[], cur.types as Item[], baseSyncMs);
+      result.push({ ...winner, types: mergedTypes });
+    } else {
+      result.push(winner);
+    }
+  }
+  // 2) Položky len v DB (chýbajú v incoming) — zachovaj ak vznikli/zmenili sa po baseSync
+  for (const cur of current) {
+    const id = cur.id != null ? String(cur.id) : null;
+    if (id && incIds.has(id)) continue;
+    if (ts(cur.updatedAt) > baseSyncMs) result.push(cur);
+    // inak: incoming admin túto položku zámerne zmazal → nezachovávaj
+  }
+  return result;
+}
+
+// Generický merge-save pre array kľúče. baseSync z hlavičky X-Base-Sync.
+async function mergeSaveArray(key: string, body: unknown, baseSyncHeader: unknown): Promise<{ kept: number; preserved: number }> {
+  const incoming = Array.isArray(body) ? body as Item[] : [];
+  const current = (await getConfig(key) as Item[] | null) ?? [];
+  // Bez baseSync hlavičky (legacy klient) → fallback na bezpečný merge: zachovaj
+  // všetky DB položky ktoré incoming nemá (nikdy nemaž bez explicitného baseSync).
+  const baseSyncMs = baseSyncHeader != null ? ts(baseSyncHeader) : -1;
+  const merged = mergeItems(incoming, current, baseSyncMs);
+  await setConfig(key, merged);
+  return { kept: merged.length, preserved: merged.length - incoming.length };
+}
+
 // Public read-only endpoints — kalkulačka ich potrebuje bez admin JWT
 router.get("/categories", async (req, res) => {
   try { res.json({ data: await getConfig(KEYS.categories) }); }
@@ -179,17 +229,17 @@ router.get("/transport-settings", async (req, res) => {
 router.use(requireAdminJwt);
 
 router.put("/categories", async (req, res) => {
-  try { await setConfig(KEYS.categories, req.body); res.json({ ok: true }); }
+  try { const r = await mergeSaveArray(KEYS.categories, req.body, req.get("X-Base-Sync")); res.json({ ok: true, ...r }); }
   catch (err) { req.log.error({ err }, "Failed to save categories"); res.status(500).json({ error: "Internal server error" }); }
 });
 
 router.put("/delivery", async (req, res) => {
-  try { await setConfig(KEYS.delivery, req.body); res.json({ ok: true }); }
+  try { const r = await mergeSaveArray(KEYS.delivery, req.body, req.get("X-Base-Sync")); res.json({ ok: true, ...r }); }
   catch (err) { req.log.error({ err }, "Failed to save delivery"); res.status(500).json({ error: "Internal server error" }); }
 });
 
 router.put("/services", async (req, res) => {
-  try { await setConfig(KEYS.services, req.body); res.json({ ok: true }); }
+  try { const r = await mergeSaveArray(KEYS.services, req.body, req.get("X-Base-Sync")); res.json({ ok: true, ...r }); }
   catch (err) { req.log.error({ err }, "Failed to save services"); res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -199,26 +249,9 @@ router.get("/clients", async (req, res) => {
 });
 router.put("/clients", async (req, res) => {
   try {
-    const incoming = Array.isArray(req.body) ? req.body as Array<Record<string, unknown>> : [];
-    // Server-side merge: preserve clients added by other concurrent sessions.
-    // Strategy: any client in DB whose id is NOT in incoming AND was created AFTER
-    // the newest createdAt in incoming = created by another session → keep it.
-    // This prevents last-write-wins destroying concurrent admin creations.
-    const current = (await getConfig(KEYS.clients) as Array<Record<string, unknown>> | null) ?? [];
-    const incomingIds = new Set(incoming.map(c => c.id));
-    const newestIncoming = incoming.reduce((max, c) => {
-      const t = new Date(String(c.createdAt ?? 0)).getTime();
-      return isNaN(t) ? max : Math.max(max, t);
-    }, 0);
-    const preserved = current.filter(c => {
-      if (incomingIds.has(c.id)) return false;
-      const t = new Date(String(c.createdAt ?? 0)).getTime();
-      return !isNaN(t) && t > newestIncoming;
-    });
-    const merged = preserved.length > 0 ? [...incoming, ...preserved] : incoming;
-    await setConfig(KEYS.clients, merged);
+    const r = await mergeSaveArray(KEYS.clients, req.body, req.get("X-Base-Sync"));
     invalidateClientCache();
-    res.json({ ok: true, preserved: preserved.length });
+    res.json({ ok: true, ...r });
   }
   catch (err) { req.log.error({ err }, "Failed to save clients"); res.status(500).json({ error: "Internal server error" }); }
 });
@@ -264,7 +297,7 @@ router.delete("/clients/:id/webauthn/:credId", async (req, res) => {
 });
 
 router.put("/transport-zones", async (req, res) => {
-  try { await setConfig(KEYS.transportZones, req.body); res.json({ ok: true }); }
+  try { const r = await mergeSaveArray(KEYS.transportZones, req.body, req.get("X-Base-Sync")); res.json({ ok: true, ...r }); }
   catch (err) { req.log.error({ err }, "Failed to save transport zones"); res.status(500).json({ error: "Internal server error" }); }
 });
 

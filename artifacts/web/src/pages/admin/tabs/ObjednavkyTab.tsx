@@ -212,22 +212,17 @@ function exportOrderPDF(o: Order) {
     }
   }
 
-  // Effective zone type: stored on order (Košík) OR lookup from client's current zone (SMS orders missing this field)
-  const effectiveZoneType = o.deliveryZoneType ?? (() => {
+  // Effective zone: stored on order (Košík) OR lookup z klientovej zóny (SMS bez poľa).
+  // Fallback reťazec: objednávka → klientova priradená zóna → prvá zóna (default) → "standard".
+  const zoneFromClient = (() => {
     const cl = adminData.getClients().find(c => c.loginId === String(o.clientId) || c.id === String(o.clientId));
-    if (cl?.deliveryZoneId) {
-      const z = adminData.getDelivery().find(z => z.id === cl.deliveryZoneId);
-      return z?.pricingType ?? "standard";
-    }
-    return "standard";
+    const all = adminData.getDelivery();
+    if (cl?.deliveryZoneId) return all.find(z => z.id === cl.deliveryZoneId) ?? all[0];
+    return all[0]; // klient bez explicitnej zóny používa prvú (default) zónu
   })();
-  const effectiveZoneName = o.deliveryZoneName ?? (() => {
-    const cl = adminData.getClients().find(c => c.loginId === String(o.clientId) || c.id === String(o.clientId));
-    if (cl?.deliveryZoneId) {
-      return adminData.getDelivery().find(z => z.id === cl.deliveryZoneId)?.name;
-    }
-    return undefined;
-  })();
+  const effectiveZoneType = o.deliveryZoneType ?? zoneFromClient?.pricingType ?? "standard";
+  const zoneTypeLabel = effectiveZoneType === "km" ? "Kilometre" : effectiveZoneType === "auto" ? "Počet áut" : "Štandard";
+  const effectiveZoneName = o.deliveryZoneName ?? zoneFromClient?.name ?? zoneTypeLabel;
 
   // Retroactive fix: old km/auto/standard-min orders stored q as "N autá (X m³)" and uSuffix as "€/m³"
   if (parsed) {
@@ -1131,11 +1126,14 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                         <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Objednávka</div>
                         <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Dátum</span><span className="text-gray-500">{fmtDate(o.createdAt)}</span></div>
                         {(() => {
-                          const cl = !o.deliveryZoneName ? adminData.getClients().find(c => c.loginId === String(o.clientId) || c.id === String(o.clientId)) : undefined;
-                          const zone = cl?.deliveryZoneId ? adminData.getDelivery().find(z => z.id === cl.deliveryZoneId) : undefined;
-                          const dName = o.deliveryZoneName ?? zone?.name;
+                          // Fallback reťazec — Typ dopravy MUSÍ byť vždy viditeľný:
+                          // objednávka → klientova zóna → prvá (default) zóna → label podľa typu
+                          const cl = adminData.getClients().find(c => c.loginId === String(o.clientId) || c.id === String(o.clientId));
+                          const all = adminData.getDelivery();
+                          const zone = cl?.deliveryZoneId ? (all.find(z => z.id === cl.deliveryZoneId) ?? all[0]) : all[0];
                           const dType = o.deliveryZoneType ?? zone?.pricingType ?? "standard";
-                          if (!dName) return null;
+                          const typeLabel = dType === "km" ? "Kilometre" : dType === "auto" ? "Počet áut" : "Štandard";
+                          const dName = o.deliveryZoneName ?? zone?.name ?? typeLabel;
                           return (
                             <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Typ dopravy</span>
                               <span className="font-medium text-gray-700">

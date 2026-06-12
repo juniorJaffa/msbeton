@@ -23,21 +23,27 @@ async function apiFetch<T>(base: string, path: string, options?: RequestInit): P
   }
 }
 
+// baseSync header — kedy klient naposledy videl serverové dáta (pre item-level merge)
+function baseSyncHeader(): Record<string, string> {
+  const ls = localStorage.getItem("msbeton_last_sync");
+  return ls ? { "X-Base-Sync": ls } : {};
+}
+
 export const adminApi = {
   getCategories: () => apiFetch<{ data: unknown }>(API_BASE, "/categories"),
-  saveCategories: (data: unknown) => apiFetch(API_BASE, "/categories", { method: "PUT", body: JSON.stringify(data) }),
+  saveCategories: (data: unknown) => apiFetch(API_BASE, "/categories", { method: "PUT", body: JSON.stringify(data), headers: baseSyncHeader() }),
 
   getDelivery: () => apiFetch<{ data: unknown }>(API_BASE, "/delivery"),
-  saveDelivery: (data: unknown) => apiFetch(API_BASE, "/delivery", { method: "PUT", body: JSON.stringify(data) }),
+  saveDelivery: (data: unknown) => apiFetch(API_BASE, "/delivery", { method: "PUT", body: JSON.stringify(data), headers: baseSyncHeader() }),
 
   getServices: () => apiFetch<{ data: unknown }>(API_BASE, "/services"),
-  saveServices: (data: unknown) => apiFetch(API_BASE, "/services", { method: "PUT", body: JSON.stringify(data) }),
+  saveServices: (data: unknown) => apiFetch(API_BASE, "/services", { method: "PUT", body: JSON.stringify(data), headers: baseSyncHeader() }),
 
   getClients: () => apiFetch<{ data: unknown }>(API_BASE, "/clients"),
-  saveClients: (data: unknown) => apiFetch(API_BASE, "/clients", { method: "PUT", body: JSON.stringify(data) }),
+  saveClients: (data: unknown) => apiFetch(API_BASE, "/clients", { method: "PUT", body: JSON.stringify(data), headers: baseSyncHeader() }),
 
   getTransportZones: () => apiFetch<{ data: unknown }>(API_BASE, "/transport-zones"),
-  saveTransportZones: (data: unknown) => apiFetch(API_BASE, "/transport-zones", { method: "PUT", body: JSON.stringify(data) }),
+  saveTransportZones: (data: unknown) => apiFetch(API_BASE, "/transport-zones", { method: "PUT", body: JSON.stringify(data), headers: baseSyncHeader() }),
 
   getTransportSettings: () => apiFetch<{ data: unknown }>(API_BASE, "/transport-settings"),
   saveTransportSettings: (data: unknown) => apiFetch(API_BASE, "/transport-settings", { method: "PUT", body: JSON.stringify(data) }),

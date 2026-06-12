@@ -6,6 +6,7 @@ export interface ConcreteType {
   id: string;
   label: string;
   price: number;
+  updatedAt?: string; // item-level merge (multi-admin)
 }
 
 export interface ConcreteCategory {
@@ -13,6 +14,7 @@ export interface ConcreteCategory {
   name: string;
   types: ConcreteType[];
   noDoprava?: boolean; // true = vždy BEZ DOPRAVY (napr. Dodatočné prísady)
+  updatedAt?: string;  // item-level merge (multi-admin)
 }
 
 export interface DeliveryZone {
@@ -34,6 +36,7 @@ export interface DeliveryZone {
   minimumFeeKmPumpa?: number;  // km typ: min. poplatok pumpa (€/auto)
   minimumFeeKmMix?: number;    // km typ: min. poplatok mixer (€/auto)
   minimumFeeAuto?: number;  // auto typ: min. finančná doprava (€/auto)
+  updatedAt?: string;       // item-level merge (multi-admin)
 }
 
 export interface Service {
@@ -47,6 +50,7 @@ export interface Service {
   activePeriodTo?: string;
   maxMeters?: number;             // max bm pre hadice
   serviceMode?: "pumpa" | "mix";  // iba pre daný režim kalkulačky
+  updatedAt?: string;             // item-level merge (multi-admin)
 }
 
 export interface Client {
@@ -79,6 +83,7 @@ export interface Client {
   allowExtraOverload?: boolean; // true = admin môže ísť do rizikového pretaženia (pod kapacitný min) pre tohto klienta
   webauthnCredentials?: { id: string; createdAt?: string; counter?: number }[];
   biometricAuthLog?: { ts: string; ok: boolean; ip: string; credId?: string }[];
+  updatedAt?: string; // item-level merge (multi-admin)
 }
 
 export interface Order {
@@ -133,6 +138,7 @@ export interface TransportPricingZone {
   fromKm: number;
   toKm: number;
   ratePerM3: number;
+  updatedAt?: string; // item-level merge (multi-admin)
 }
 
 export interface TransportSettings {
@@ -361,6 +367,53 @@ function saveData<T>(key: string, data: T): void {
   localStorage.setItem(key, JSON.stringify(data));
 }
 
+// ── Item-level merge support (multi-admin concurrency) ──────────────────────────
+// Každá položka dostane `updatedAt` len keď sa REÁLNE zmenila (oproti predošlému
+// stavu v localStorage). Server potom merguje per-položku: vyhráva novší updatedAt.
+const LAST_SYNC_KEY = "msbeton_last_sync";
+
+export function getLastSync(): string {
+  return localStorage.getItem(LAST_SYNC_KEY) ?? new Date(0).toISOString();
+}
+function setLastSync(): void {
+  localStorage.setItem(LAST_SYNC_KEY, new Date().toISOString());
+}
+
+// Porovnanie obsahu položky bez `updatedAt` (a bez vnorených updatedAt) — či sa zmenila
+function stripStamp<T extends Record<string, unknown>>(o: T): string {
+  const clone = JSON.parse(JSON.stringify(o)) as Record<string, unknown>;
+  delete clone.updatedAt;
+  if (Array.isArray(clone.types)) {
+    clone.types = (clone.types as Record<string, unknown>[]).map(t => { const c = { ...t }; delete c.updatedAt; return c; });
+  }
+  return JSON.stringify(clone);
+}
+
+// Stampne updatedAt na zmenené/nové položky. Zachová starý stamp na nezmenených.
+// Rekurzívne aj na vnorené `types` (betóny → typy betónu).
+function stampArray<T extends { id: string; updatedAt?: string; types?: unknown[] }>(next: T[], prevKey: string): T[] {
+  const prev = loadData<T[]>(prevKey, []);
+  const prevById = new Map(prev.map(p => [p.id, p] as const));
+  const now = new Date().toISOString();
+  return next.map(item => {
+    const old = prevById.get(item.id);
+    // Rekurzívne stampni types (ak existujú)
+    let withTypes = item;
+    if (Array.isArray(item.types)) {
+      const oldTypes = (old?.types as ({ id: string; updatedAt?: string }[] | undefined)) ?? [];
+      const oldTypesById = new Map(oldTypes.map(t => [t.id, t] as const));
+      const stampedTypes = (item.types as { id: string; updatedAt?: string }[]).map(t => {
+        const ot = oldTypesById.get(t.id);
+        if (!ot) return { ...t, updatedAt: now };
+        return stripStamp(t) === stripStamp(ot) ? { ...t, updatedAt: ot.updatedAt ?? now } : { ...t, updatedAt: now };
+      });
+      withTypes = { ...item, types: stampedTypes };
+    }
+    if (!old) return { ...withTypes, updatedAt: now };
+    return stripStamp(withTypes) === stripStamp(old) ? { ...withTypes, updatedAt: old.updatedAt ?? now } : { ...withTypes, updatedAt: now };
+  });
+}
+
 export async function syncFromServer(): Promise<void> {
   const hasData = (v: unknown) => v !== null && v !== undefined && !(Array.isArray(v) && v.length === 0);
   const hasDataOrEmpty = (v: unknown) => v !== null && v !== undefined && Array.isArray(v);
@@ -400,6 +453,7 @@ export async function syncFromServer(): Promise<void> {
     }
   }
   if (updated) window.dispatchEvent(new Event("admin-data-synced"));
+  setLastSync(); // zaznamenaj kedy sme naposledy videli serverové dáta (baseSync pre merge)
 }
 
 export const adminData = {
@@ -413,25 +467,28 @@ export const adminData = {
     });
   },
   saveCategories: (data: ConcreteCategory[]) => {
-    saveData("msbeton_categories", data);
-    adminApi.saveCategories(data);
+    const stamped = stampArray(data, "msbeton_categories");
+    saveData("msbeton_categories", stamped);
+    adminApi.saveCategories(stamped);
   },
 
   getDelivery: (): DeliveryZone[] => loadData("msbeton_delivery", DEFAULT_DELIVERY),
   saveDelivery: (data: DeliveryZone[]) => {
-    saveData("msbeton_delivery", data);
-    adminApi.saveDelivery(data);
+    const stamped = stampArray(data, "msbeton_delivery");
+    saveData("msbeton_delivery", stamped);
+    adminApi.saveDelivery(stamped);
   },
 
   getServices: (): Service[] => loadData("msbeton_services", DEFAULT_SERVICES),
   saveServices: (data: Service[]) => {
-    saveData("msbeton_services", data);
-    adminApi.saveServices(data);
+    const stamped = stampArray(data, "msbeton_services");
+    saveData("msbeton_services", stamped);
+    adminApi.saveServices(stamped);
   },
 
   getClients: (): Client[] => ensureOwner(loadData("msbeton_clients", DEFAULT_CLIENTS)),
   saveClients: (data: Client[]) => {
-    const safe = ensureOwner(data);
+    const safe = stampArray(ensureOwner(data), "msbeton_clients");
     saveData("msbeton_clients", safe);
     adminApi.saveClients(safe);
     window.dispatchEvent(new Event("admin-data-synced"));
@@ -439,8 +496,9 @@ export const adminData = {
 
   getTransportZones: (): TransportPricingZone[] => loadData("msbeton_transport_zones", DEFAULT_TRANSPORT_ZONES),
   saveTransportZones: (data: TransportPricingZone[]) => {
-    saveData("msbeton_transport_zones", data);
-    adminApi.saveTransportZones(data);
+    const stamped = stampArray(data, "msbeton_transport_zones");
+    saveData("msbeton_transport_zones", stamped);
+    adminApi.saveTransportZones(stamped);
   },
 
   getTransportSettings: (): TransportSettings => loadData("msbeton_transport_settings", DEFAULT_TRANSPORT_SETTINGS),

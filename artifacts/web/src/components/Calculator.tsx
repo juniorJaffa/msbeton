@@ -1578,8 +1578,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     })();
 
     const tabLabel = tab === "pumpa" ? "Pumpa" : tab === "mix" ? "Miešačka" : "Vlastná doprava";
-    const zoneLabel = clientDeliveryZone?.name ?? "";
-    const transportModeInfo = `<div style="color:#555;font-size:8pt;margin-top:2px">Doprava: ${tabLabel}${zoneLabel ? ` – ${zoneLabel}` : ""}</div>`;
+    const pdfZoneType = clientDeliveryZone?.pricingType ?? "standard";
+    const pdfZoneTypeLabel = pdfZoneType === "km" ? "Kilometre" : pdfZoneType === "auto" ? "Počet áut" : "Štandard";
+    const zoneLabel = clientDeliveryZone?.name ?? pdfZoneTypeLabel;
+    const zoneTypeBadge = pdfZoneType !== "standard" ? ` <span style="color:#b58c00;font-weight:700">(${pdfZoneType === "km" ? "€/km" : "€/auto"})</span>` : "";
+    const transportModeInfo = `<div style="color:#555;font-size:8pt;margin-top:2px">Typ dopravy: ${tabLabel} – ${zoneLabel}${zoneTypeBadge}</div>`;
     const clientBlock = loggedClient ? `
       <div style="border:1px solid #ddd;border-radius:3px;padding:6px 10px;margin-bottom:5mm;font-size:8.5pt">
         <div style="font-weight:bold;color:#001D3D">${loggedClient.name}${loggedClient.company ? ` – ${loggedClient.company}` : ""}</div>
