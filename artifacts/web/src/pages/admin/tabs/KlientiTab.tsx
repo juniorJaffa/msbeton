@@ -1432,7 +1432,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                     onPointerUp={onClientHandlePointerUp}
                     title={`#${listIdx + 1} · potiahni pre zmenu poradia`}>
                     <GripVertical className="w-4 h-4" />
-                    <span className="text-[10px] font-black tabular-nums leading-none">{listIdx + 1}</span>
+                    <span className="text-[9px] font-medium text-gray-400 tabular-nums leading-none mt-0.5">{listIdx + 1}</span>
                   </span>
                 ) : (
                   <span className="shrink-0 w-5 text-center text-[11px] font-bold text-gray-300 tabular-nums">{listIdx + 1}</span>
