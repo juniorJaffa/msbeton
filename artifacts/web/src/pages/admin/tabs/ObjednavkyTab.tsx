@@ -189,8 +189,28 @@ function exportOrderPDF(o: Order) {
   const today = new Date(o.createdAt).toLocaleDateString("sk-SK");
   const fmtEurPdf = (n: number | undefined) => n !== undefined ? n.toFixed(2) + " €" : "";
 
-  let parsed: { v: number; s: { h: string; rows: { l: string; v: number; o?: number; u?: number; uOrig?: number; uSuffix?: string }[] }[] } | null = null;
+  let parsed: { v: number; s: { h: string; rows: { l: string; v: number; o?: number; u?: number; uOrig?: number; uSuffix?: string }[] }[]; fT?: number } | null = null;
   try { if (o.breakdown?.startsWith("{")) parsed = JSON.parse(o.breakdown); } catch { /* */ }
+
+  // Detekcia manuálnych cien dopravy — pre opravu starých objednávok kde buildBreakdown
+  // nesprávne aplikoval dopravaFactor (namiesto fTransport=1) na manuálne ceny.
+  // Nové objednávky majú fT uložené; staré nemajú → fallback na aktuálne manualPrices klienta.
+  const storedFT = parsed?.fT ?? null;
+  let isManualTransport = false;
+  if (storedFT !== null) {
+    isManualTransport = storedFT >= 1;
+  } else {
+    const orderDiscD = Math.max(o.discountDoprava ?? 0, o.discountCelkovo ?? 0);
+    if (orderDiscD > 0) {
+      const client = adminData.getClients().find(c => c.loginId === String(o.clientId) || c.id === String(o.clientId));
+      const mp = client?.manualPrices ?? {};
+      const allZones = adminData.getDelivery();
+      isManualTransport = Object.keys(mp).some(k =>
+        k.startsWith("km_rate_") || k.startsWith("auto_rate_") || k === "min_fee" ||
+        allZones.some(z => z.id === k)
+      );
+    }
+  }
 
   const fmtRate = (n: number, suffix?: string) => n.toFixed(2) + " " + (suffix ?? "€");
   const pdfCats = adminData.getCategories();
@@ -227,12 +247,19 @@ function exportOrderPDF(o: Order) {
         return `<tr><td colspan="5" style="padding:3px 8px 3px 14px;font-size:7.5pt;color:#1d4ed8;background:#eff6ff;border-bottom:1px solid #bfdbfe">${txt}</td></tr>`;
       }
       pdfRowIdx++;
-      const orig = row.o !== undefined ? `<span style="text-decoration:line-through;color:#aaa;font-size:7.5pt">${fmtEurPdf(row.o)}</span> ` : "";
-      const unitCell = row.u !== undefined
-        ? (row.uOrig !== undefined
-          ? `<span style="text-decoration:line-through;color:#aaa;font-size:7.5pt">${fmtRate(row.uOrig, row.uSuffix)}</span><br><span style="font-weight:bold">${fmtRate(row.u, row.uSuffix)}</span>`
-          : fmtRate(row.u, row.uSuffix))
-        : "—";
+      // Stará objednávka s manuálnou cenou dopravy: row.o = správna cena, row.v = nesprávne zdiskontovaná
+      const isTransRow = isManualTransport && (row.l.toLowerCase().includes("doprava") || row.l.toLowerCase().includes("doťaženie") || row.l.startsWith("HLAVNÁ"));
+      const corrected = isTransRow && row.o !== undefined;
+      const finalV = corrected ? row.o! : row.v;
+      const orig = (!corrected && row.o !== undefined) ? `<span style="text-decoration:line-through;color:#aaa;font-size:7.5pt">${fmtEurPdf(row.o)}</span> ` : "";
+      const unitCell = (() => {
+        if (row.u === undefined) return "—";
+        const finalU = corrected && row.uOrig !== undefined ? row.uOrig : row.u;
+        if (!corrected && row.uOrig !== undefined) {
+          return `<span style="text-decoration:line-through;color:#aaa;font-size:7.5pt">${fmtRate(row.uOrig, row.uSuffix)}</span><br><span style="font-weight:bold">${fmtRate(finalU, row.uSuffix)}</span>`;
+        }
+        return fmtRate(finalU, row.uSuffix);
+      })();
       const hlavnaBadge = `<span style="display:inline-block;background:#1d4ed8;color:#fff;font-weight:900;font-size:6pt;padding:1px 4px;border-radius:3px;vertical-align:middle;margin-right:4px">&#9673;&nbsp;HLAVNÁ</span>`;
       const rowLabel = row.l.startsWith("HLAVNÁ ") ? `${hlavnaBadge}${row.l.slice(7)}` : row.l;
       return `<tr>

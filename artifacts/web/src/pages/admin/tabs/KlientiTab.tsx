@@ -2020,7 +2020,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                         canHotovost: c.canHotovost ?? true,
                         canPridatBeton: c.canPridatBeton ?? true,
                         canPridatBetonOwn: c.canPridatBetonOwn ?? true,
-                        allowExtraOverload: c.allowExtraOverload ?? false,
+                        allowExtraOverload: c.allowExtraOverload ?? true,
                         canZimneOpatrenia: c.canZimneOpatrenia ?? false,
                         hotovostDph: c.hotovostDph,
                         deliveryZoneId: c.deliveryZoneId,

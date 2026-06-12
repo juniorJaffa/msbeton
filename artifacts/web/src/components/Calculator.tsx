@@ -2005,7 +2005,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         bdSections.push({ h: tab === "pumpa" ? "Služby – Pumpa" : "Čakačky", rows: svcRows });
       }
     });
-    return JSON.stringify({ v: 2, s: bdSections });
+    return JSON.stringify({ v: 2, s: bdSections, fT: result.fTransport });
   }
 
   async function handleSubmitOrder() {
