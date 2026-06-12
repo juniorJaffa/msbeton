@@ -1457,11 +1457,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     };
     const transportUnitStr = buildTransportUnitStr(result.transportIsMin, result.qty);
     const truckWord = (n: number) => n === 1 ? "auto" : "autá";
-    const mainTransportMnozstvo = result.transportIsMin
-      ? `${result.trucks}&nbsp;${truckWord(result.trucks)}&nbsp;(${result.qty}&nbsp;m³)`
-      : pdfAddToMainQty > 0
-        ? `${result.trucks}&nbsp;${truckWord(result.trucks)}&nbsp;(${result.qty}+${fmtQ(pdfAddToMainQty)}&nbsp;m³)`
-        : `${result.trucks}&nbsp;${truckWord(result.trucks)}&nbsp;(${result.qty}&nbsp;m³)`;
+    const mainTransportMnozstvo = mainPricingType === "km"
+      ? `${result.trucks}&nbsp;${truckWord(result.trucks)}&nbsp;(${km}&nbsp;km)`
+      : result.transportIsMin
+        ? `${result.trucks}&nbsp;${truckWord(result.trucks)}&nbsp;(${result.qty}&nbsp;m³)`
+        : pdfAddToMainQty > 0
+          ? `${result.trucks}&nbsp;${truckWord(result.trucks)}&nbsp;(${result.qty}+${fmtQ(pdfAddToMainQty)}&nbsp;m³)`
+          : `${result.trucks}&nbsp;${truckWord(result.trucks)}&nbsp;(${result.qty}&nbsp;m³)`;
     const transportRow = mainTransportOrig > 0
       ? trow(dopravaLabel, mainTransportMnozstvo, transportUnitStr, mainTransportOrig, mainTransportDisc)
       : "";
@@ -1526,7 +1528,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const isAddToMainExtra = idx < extraItems.length && extraItems[idx]?.transportMode === "addToMain";
       let rows = sectionRow(`Pridaná položka ${idx + 1}${extraSectionLabel ? ` – ${extraSectionLabel}` : ""}`);
       rows += trow(ci.label, `${ci.qty}&nbsp;${exUnit}`, unitStr, betonOrig, betonDisc, undefined, true);
-      rows += trow(dopravaExtraLabel, `${ci.transportTrucks}&nbsp;${truckWord(ci.transportTrucks)}&nbsp;(${ci.qty}&nbsp;m³)`, extraTransportUnitStr, transOrig, transDisc);
+      rows += trow(dopravaExtraLabel, mainPricingType === "km" ? `${ci.transportTrucks}&nbsp;${truckWord(ci.transportTrucks)}&nbsp;(${km}&nbsp;km)` : `${ci.transportTrucks}&nbsp;${truckWord(ci.transportTrucks)}&nbsp;(${ci.qty}&nbsp;m³)`, extraTransportUnitStr, transOrig, transDisc);
       if (isAddToMainExtra && transOrig === 0) {
         const mainLabel = (result.concreteBreakdown[0]?.label ?? "").split("–")[0].trim() || "Hlavný produkt";
         rows += `<tr><td colspan="5" style="padding:2px 8px 6px 16px">
@@ -1951,12 +1953,18 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       if (ci.transport > 0) {
         const hasAddToMain = idx === 0 && extraItems.some(ei => ei.transportMode === "addToMain" && (parseFloat(ei.quantity) || 0) > 0);
         const addToMainQtyBd = hasAddToMain ? extraItems.reduce((s, ei) => { const q = parseFloat(ei.quantity) || 0; return (q > 0 && ei.transportMode === "addToMain") ? s + q : s; }, 0) : 0;
-        const qtyStr = addToMainQtyBd > 0 ? `${ci.qty}+${addToMainQtyBd} m³` : `${ci.qty} m³`;
+        const isKmBd = (clientDeliveryZone?.pricingType ?? "standard") === "km";
+        const qtyStr = isKmBd ? `${km} km` : (addToMainQtyBd > 0 ? `${ci.qty}+${addToMainQtyBd} m³` : `${ci.qty} m³`);
         const nTrucks = idx === 0 ? totalBdTrucks : ci.transportTrucks;
         const dopravaLbl = `${hasAddToMain ? "HLAVNÁ " : ""}${ci.transportIsMin ? "Min. doprava" : "Doprava"}${zoneStr ? ` ${zoneStr}` : ""} · ${pdfTrucksLabel(ci, idx === 0)}`;
-        const uTrans = ci.qty > 0 ? fmt2(tDisc / ci.qty) : undefined;
-        const uTransOrig = ci.qty > 0 ? fmt2(tOrig / ci.qty) : undefined;
-        rows.push({ l: dopravaLbl, q: `${nTrucks} autá (${qtyStr})`, v: tDisc, ...(Math.abs(tOrig - tDisc) > 0.01 ? { o: tOrig } : {}), ...(uTrans !== undefined ? { u: uTrans, uSuffix: "€/m³", ...(uTransOrig !== undefined && Math.abs(uTransOrig - uTrans) > 0.001 ? { uOrig: uTransOrig } : {}) } : {}) });
+        const uTrans = isKmBd
+          ? (ci.transportIsMin ? (nTrucks > 0 ? fmt2(tDisc / nTrucks) : undefined) : (km > 0 && nTrucks > 0 ? fmt2(tDisc / km / nTrucks) : undefined))
+          : (ci.qty > 0 ? fmt2(tDisc / ci.qty) : undefined);
+        const uTransOrig = isKmBd
+          ? (ci.transportIsMin ? (nTrucks > 0 ? fmt2(tOrig / nTrucks) : undefined) : (km > 0 && nTrucks > 0 ? fmt2(tOrig / km / nTrucks) : undefined))
+          : (ci.qty > 0 ? fmt2(tOrig / ci.qty) : undefined);
+        const uSuffixTrans = isKmBd ? (ci.transportIsMin ? "€/auto" : "€/km") : "€/m³";
+        rows.push({ l: dopravaLbl, q: `${nTrucks} autá (${qtyStr})`, v: tDisc, ...(Math.abs(tOrig - tDisc) > 0.01 ? { o: tOrig } : {}), ...(uTrans !== undefined ? { u: uTrans, uSuffix: uSuffixTrans, ...(uTransOrig !== undefined && Math.abs(uTransOrig - uTrans) > 0.001 ? { uOrig: uTransOrig } : {}) } : {}) });
       }
       if (ci.transportFillup > 0) {
         const fOrig = fmt2(ci.transportFillup);
