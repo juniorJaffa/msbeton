@@ -1420,19 +1420,21 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                   : c.isOwner ? "bg-amber-50 border-primary/40 border-l-primary" : !c.active ? "bg-white border-gray-200 border-l-red-400 opacity-50" : c.favorite ? "bg-rose-50/40 border-gray-200 border-l-rose-400" : "bg-white border-gray-200 border-l-green-500")}>
               {/* Card header */}
               <div className="flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => { const next = isExpanded ? null : c.id; setExpanded(next); if (next) scrollToClientCard(next, true); }}>
-                {/* Drag grip — len v manuál režime bez filtra/hľadania */}
-                {canDrag && (
-                  <span className="shrink-0 touch-none -ml-1 py-2 px-1 text-gray-300 hover:text-gray-500 active:text-primary cursor-grab active:cursor-grabbing"
-                    draggable={false} onClick={e => e.stopPropagation()}
-                    onPointerDown={e => onClientHandlePointerDown(e, c.id)}
-                    onPointerMove={onClientHandlePointerMove}
-                    onPointerUp={onClientHandlePointerUp}>
-                    <GripVertical className="w-5 h-5 sm:w-4 sm:h-4" />
-                  </span>
-                )}
-                {/* Číslo nad avatarom (stacked) — šetrí horizontálnu šírku na mobile */}
-                <div className="relative shrink-0 flex flex-col items-center gap-0.5">
-                  <span className="text-[9px] font-bold text-gray-300 tabular-nums leading-none">{listIdx + 1}</span>
+                {/* Drag grip + číslo (stacked) — úzky ľavý stĺpec, šetrí šírku */}
+                <div className="shrink-0 flex flex-col items-center gap-0.5 -ml-1">
+                  {canDrag && (
+                    <span className="touch-none px-1 text-gray-300 hover:text-gray-500 active:text-primary cursor-grab active:cursor-grabbing"
+                      draggable={false} onClick={e => e.stopPropagation()}
+                      onPointerDown={e => onClientHandlePointerDown(e, c.id)}
+                      onPointerMove={onClientHandlePointerMove}
+                      onPointerUp={onClientHandlePointerUp}>
+                      <GripVertical className="w-5 h-5 sm:w-4 sm:h-4" />
+                    </span>
+                  )}
+                  <span className="text-[10px] font-bold text-gray-400 tabular-nums leading-none">{listIdx + 1}</span>
+                </div>
+                {/* Avatar */}
+                <div className="relative shrink-0">
                   <div className={cn("w-9 h-9 rounded-full flex items-center justify-center ring-2",
                     c.isOwner ? "bg-primary/20 ring-primary/40"
                       : !hasLogin ? "ring-gray-200"
@@ -1450,7 +1452,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                     const clientBio = (c.webauthnCredentials?.length ?? 0) > 0;
                     if (!ownerBio && !clientBio) return null;
                     return (
-                      <span className="absolute -bottom-1 -right-1 min-w-4 h-4 px-0.5 rounded-full bg-emerald-500 ring-2 ring-white flex items-center justify-center gap-px"
+                      <span className="absolute -top-1 -right-1 min-w-4 h-4 px-0.5 rounded-full bg-emerald-500 ring-2 ring-white flex items-center justify-center gap-px"
                         title={ownerBio ? "Admin biometria aktívna na tomto zariadení" : `Biometria aktívna — ${c.webauthnCredentials!.length} zariadenie`}>
                         <Fingerprint className="w-2.5 h-2.5 text-white" />
                         {clientBio && <span className="text-white text-[8px] font-black leading-none">{c.webauthnCredentials!.length}</span>}
@@ -1519,34 +1521,37 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                   )}
                 </div>
                 {/* Ikona tlačidlá — mobile: väčšie touch ciele (40px) pre robotnícke prsty */}
-                <div className="flex items-center justify-end gap-0.5 sm:gap-0 sm:w-40 shrink-0">
-                  {!c.isOwner && (
+                <div className="flex items-center justify-end gap-0.5 shrink-0">
+                  {/* Akcie 2×2: hore Kalkulačka+Tabuľka (dôležité), dole Odkaz+Srdiečko */}
+                  <div className="grid grid-cols-2 gap-0.5">
                     <button
-                      onClick={(e) => { e.stopPropagation(); update(c.id, { favorite: !c.favorite }); }}
-                      title={c.favorite ? "Odobrať z obľúbených" : "Pridať do obľúbených"}
-                      className={cn("p-2 sm:p-1.5 transition-colors", c.favorite ? "text-rose-500 active:text-rose-600" : "text-gray-300 active:text-rose-400")}>
-                      <Heart className={cn("w-5 h-5", c.favorite && "fill-rose-500")} />
+                      onClick={(e) => { e.stopPropagation(); setExpanded(c.id); setClientDetailTab(prev => ({ ...prev, [c.id]: "calc" })); scrollToClientCard(c.id, true); }}
+                      title="Kalkulačka klienta"
+                      className="p-1.5 text-gray-300 active:text-primary hover:text-primary transition-colors">
+                      <Calculator className="w-5 h-5" />
                     </button>
-                  )}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setExpanded(c.id); setClientDetailTab(prev => ({ ...prev, [c.id]: "calc" })); scrollToClientCard(c.id, true); }}
-                    title="Kalkulačka klienta"
-                    className="p-2 sm:p-1.5 text-gray-300 active:text-primary hover:text-primary transition-colors">
-                    <Calculator className="w-5 h-5" />
-                  </button>
-                  {c.sharedLink && (
-                    <a href={c.sharedLink} target="_blank" rel="noopener noreferrer" title="Zdielaný odkaz"
-                      onClick={e => e.stopPropagation()}
-                      className="hidden sm:block p-1.5 text-gray-300 hover:text-primary transition-colors">
-                      {(() => { const { Icon, cls } = sharedLinkIcon(c.sharedLink); return <Icon className={`w-5 h-5 ${cls}`} />; })()}
-                    </a>
-                  )}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setTablePdfModal(c); setTablePdfMode("faktura"); }}
-                    title="Zľavové tabuľky"
-                    className="p-2 sm:p-1.5 text-amber-400 active:text-amber-600 hover:text-amber-600 transition-colors">
-                    <Table2 className="w-5 h-5" />
-                  </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setTablePdfModal(c); setTablePdfMode("faktura"); }}
+                      title="Zľavové tabuľky"
+                      className="p-1.5 text-amber-400 active:text-amber-600 hover:text-amber-600 transition-colors">
+                      <Table2 className="w-5 h-5" />
+                    </button>
+                    {c.sharedLink ? (
+                      <a href={c.sharedLink} target="_blank" rel="noopener noreferrer" title="Zdieľaný odkaz"
+                        onClick={e => e.stopPropagation()}
+                        className="p-1.5 text-gray-300 hover:text-primary transition-colors flex items-center justify-center">
+                        {(() => { const { Icon, cls } = sharedLinkIcon(c.sharedLink); return <Icon className={`w-5 h-5 ${cls}`} />; })()}
+                      </a>
+                    ) : <span className="p-1.5" />}
+                    {!c.isOwner ? (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); update(c.id, { favorite: !c.favorite }); }}
+                        title={c.favorite ? "Odobrať z obľúbených" : "Pridať do obľúbených"}
+                        className={cn("p-1.5 transition-colors", c.favorite ? "text-rose-500 active:text-rose-600" : "text-gray-300 active:text-rose-400")}>
+                        <Heart className={cn("w-5 h-5", c.favorite && "fill-rose-500")} />
+                      </button>
+                    ) : <span className="p-1.5" />}
+                  </div>
                   <span className="p-1 text-gray-300">
                     {isExpanded ? <ChevronUp className="w-5 h-5 sm:w-4 sm:h-4" /> : <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4" />}
                   </span>
