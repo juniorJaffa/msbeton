@@ -1464,23 +1464,26 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                 <div className="flex-1 min-w-0">
                   <div className="font-bold text-secondary text-sm break-words leading-tight">{fullName}</div>
                   {c.company && <div className="text-xs text-gray-400 truncate">{c.company}</div>}
-                  {/* Mobile-only badges — vždy vlastný riadok */}
-                  <div className="sm:hidden flex items-center gap-1 mt-0.5 flex-wrap">
+                  {/* Mobile-only badges — zľavy VEĽKÉ a viditeľné (nie ikonizované) */}
+                  <div className="sm:hidden flex items-center gap-1 mt-1 flex-wrap">
                     {(() => {
                       const discPairs = [
-                        { key: "B", val: c.discountBeton ?? 0 },
-                        { key: "D", val: c.discountDoprava ?? 0 },
-                        { key: "S", val: c.discountSluzby ?? 0 },
-                        { key: "C", val: c.discountCelkovo ?? 0 },
+                        { key: "Betón", val: c.discountBeton ?? 0 },
+                        { key: "Dopr.", val: c.discountDoprava ?? 0 },
+                        { key: "Služ.", val: c.discountSluzby ?? 0 },
+                        { key: "Celk.", val: c.discountCelkovo ?? 0 },
                       ].filter(d => d.val > 0);
                       if (discPairs.length === 0) return null;
-                      return <span className="text-[10px] font-bold text-primary">
-                        {discPairs.map(d => `${d.key}:−${d.val}%`).join(" ")}
-                      </span>;
+                      return discPairs.map(d => (
+                        <span key={d.key} className="inline-flex items-baseline gap-1 bg-primary/15 px-2 py-1 rounded">
+                          <span className="text-[9px] font-bold uppercase tracking-wide text-secondary/50">{d.key}</span>
+                          <span className="text-sm font-black text-secondary leading-none">−{d.val}%</span>
+                        </span>
+                      ));
                     })()}
                     {clientZone && (
-                      <span className="flex items-center gap-0.5 px-1 py-0 text-[10px] font-bold rounded bg-blue-50 text-blue-600 border border-blue-100">
-                        <Truck className="w-2.5 h-2.5" />
+                      <span className="flex items-center gap-0.5 px-1.5 py-1 text-[10px] font-bold rounded bg-blue-50 text-blue-600 border border-blue-100">
+                        <Truck className="w-3 h-3" />
                         {zonePricingType === "km" ? "€/km" : zonePricingType === "auto" ? "€/auto" : "Štd"}
                       </span>
                     )}
