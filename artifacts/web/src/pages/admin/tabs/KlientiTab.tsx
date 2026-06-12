@@ -7,7 +7,7 @@ import { PhoneInput } from "@/components/PhoneInput";
 import { cn, formatPhone } from "@/lib/utils";
 import { adminData, adminApi, syncFromServer, Client, TransportSettings, Order, SYSTEM_OWNER_ID, getKamenivoGroup } from "@/lib/adminData";
 import { clientAvatar } from "@/lib/clientAvatar";
-import { isBiometricAvailable as isAdminBioAvail, hasStoredCredential as hasAdminBio } from "@/lib/adminAuth";
+import { isBiometricAvailable as isAdminBioAvail, hasStoredCredential as hasAdminBio, isReader } from "@/lib/adminAuth";
 
 interface BioFeedEntry {
   ts: string; ok: boolean; event: string;
@@ -427,7 +427,8 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
   const [addSuccessMsg, setAddSuccessMsg] = useState<string | null>(null);
   const [linkDraft, setLinkDraft] = useState("");
 
-  const save = (data: Client[]) => { setClients(data); adminData.saveClients(data); };
+  const readOnly = isReader(); // admin-čitateľ — žiadne mutácie
+  const save = (data: Client[]) => { if (readOnly) return; setClients(data); adminData.saveClients(data); };
 
   // ── Sort + filter state ───────────────────────────────────────────────────
   type SortMode = "manual" | "date_desc" | "date_asc" | "name";
@@ -1131,10 +1132,12 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
             {/* spacer pre badge stĺpec — zrkadlí šírku badge sekcie v riadkoch */}
           </div>
           <div className="flex items-center justify-end w-40 shrink-0">
-            <button onClick={() => { setAdding(true); setExpanded(null); }} title="Pridať klienta"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-primary text-secondary font-black text-[10px] hover:bg-primary/90 shrink-0 uppercase tracking-wide">
-              <Plus className="w-5 h-5" />
-            </button>
+            {!readOnly && (
+              <button onClick={() => { setAdding(true); setExpanded(null); }} title="Pridať klienta"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-primary text-secondary font-black text-[10px] hover:bg-primary/90 shrink-0 uppercase tracking-wide">
+                <Plus className="w-5 h-5" />
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -1404,7 +1407,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
           const clientZone = c.deliveryZoneId ? zones.find(z => z.id === c.deliveryZoneId) : zones[0];
           const zonePricingType = clientZone?.pricingType ?? "standard";
           const av = clientAvatar(c);
-          const canDrag = sortMode === "manual" && searchTerms.length === 0 && !hasActiveFilter;
+          const canDrag = sortMode === "manual" && searchTerms.length === 0 && !hasActiveFilter && !readOnly;
           return (
             <div key={c.id} id={`client-card-${c.id}`}
               data-client-drag-id={c.id}
@@ -1438,10 +1441,12 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                 <div className="relative shrink-0">
                   <div className={cn("w-9 h-9 rounded-full flex items-center justify-center ring-2",
                     c.isOwner ? "bg-primary/20 ring-primary/40"
+                      : c.adminReader ? "bg-blue-100 ring-blue-400"
                       : !hasLogin ? "ring-gray-200"
                       : c.active ? "ring-green-400/60" : "ring-red-300/60",
-                    !c.isOwner && av.palette.bg)}>
+                    !c.isOwner && !c.adminReader && av.palette.bg)}>
                     {c.isOwner ? <Crown className="w-4 h-4 text-primary" />
+                      : c.adminReader ? <Eye className="w-4 h-4 text-blue-600" />
                       : av.kind === "template" ? <Percent className={cn("w-4 h-4", av.palette.fg)} />
                       : av.kind === "phone" ? <Phone className={cn("w-4 h-4", av.palette.fg)} />
                       : <span className={cn("font-black", av.palette.fg, av.mono.length > 1 ? "text-xs" : "text-sm")}>{av.mono || av.char}</span>
@@ -1464,7 +1469,10 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
 
                 {/* Meno + mobile badges */}
                 <div className="flex-1 min-w-0">
-                  <div className="font-bold text-secondary text-sm leading-tight" style={{ wordBreak: "normal", overflowWrap: "anywhere" }}>{fullName}</div>
+                  <div className="font-bold text-secondary text-sm leading-tight flex items-center gap-1.5 flex-wrap" style={{ wordBreak: "normal", overflowWrap: "anywhere" }}>
+                    {fullName}
+                    {c.adminReader && <span className="inline-flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wide bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded"><Eye className="w-2.5 h-2.5" />Čítateľ</span>}
+                  </div>
                   {c.company && <div className="text-xs text-gray-400 truncate">{c.company}</div>}
                   {/* Mobile-only badges — zľavy VEĽKÉ a viditeľné (nie ikonizované) */}
                   <div className="sm:hidden flex items-center gap-1 mt-1 flex-wrap">
@@ -2053,6 +2061,16 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                               <div className="text-[11px] text-gray-400">Zobrazí ★ Podmienky v kalkulačke · admin nastaví počet vozidiel mimo normy a berie zodpovednosť</div>
                             </div>
                           </label>
+                          {/* Admin-čitateľ — superadmin (plný admin, nie reader) ho môže označiť; nie pre ownera */}
+                          {!readOnly && !c.isOwner && (
+                            <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-blue-50/50 select-none border-t border-gray-100">
+                              <input type="checkbox" checked={c.adminReader ?? false} onChange={e => update(c.id, { adminReader: e.target.checked })} className="accent-blue-600 w-4 h-4 shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <span className="text-sm text-gray-700 flex items-center gap-1.5"><Eye className="w-4 h-4 text-blue-600" />Admin-čitateľ (read-only)</span>
+                                <div className="text-[11px] text-gray-400">Po prihlásení svojimi údajmi vidí celé admin prostredie, ale nemôže nič meniť ani mazať (ako čítateľ v Google Sheets)</div>
+                              </div>
+                            </label>
+                          )}
                           {/* — SMS — */}
                           <div className="px-3 pt-1.5 pb-0.5 bg-gray-50">
                             <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">SMS</span>

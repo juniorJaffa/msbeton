@@ -228,6 +228,16 @@ router.get("/transport-settings", async (req, res) => {
 
 router.use(requireAdminJwt);
 
+// Read-only enforcement: admin-čitateľ (reader) smie len GET; mutácie → 403.
+// Server-side ochrana — frontend skrytie nestačí (reader by mohol volať API priamo).
+router.use((req, res, next) => {
+  if (req.method !== "GET" && (req as typeof req & { adminRole?: string }).adminRole === "reader") {
+    res.status(403).json({ error: "Read-only: admin-čitateľ nemôže meniť dáta" });
+    return;
+  }
+  next();
+});
+
 router.put("/categories", async (req, res) => {
   try { const r = await mergeSaveArray(KEYS.categories, req.body, req.get("X-Base-Sync")); res.json({ ok: true, ...r }); }
   catch (err) { req.log.error({ err }, "Failed to save categories"); res.status(500).json({ error: "Internal server error" }); }

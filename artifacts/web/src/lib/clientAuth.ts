@@ -307,6 +307,8 @@ export const clientAuth = {
     if (!result) return { ok: false, error: "Server nedostupný" };
     if (!result.ok || !result.client) return { ok: false, error: result.error ?? "Nesprávne prihlasovacie údaje" };
     localStorage.setItem(SESSION_KEY, JSON.stringify(result.client));
+    // Admin-čitateľ: server vydal read-only admin token (role:reader) → ulož pre admin prostredie
+    if (result.adminToken) localStorage.setItem("msbeton_admin_token", result.adminToken);
     window.dispatchEvent(new Event("client-session-changed"));
     return { ok: true, client: result.client };
   },
@@ -314,6 +316,7 @@ export const clientAuth = {
   logout(): void {
     // Zachovaj CLIENT_WEBAUTHN_KEY — biometria prežije odhlásenie (bankový vzor)
     localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem("msbeton_admin_token"); // zmaž aj prípadný reader admin token
     window.dispatchEvent(new Event("client-session-changed"));
   },
 

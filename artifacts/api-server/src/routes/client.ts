@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { createHash, randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { loginRateLimit } from "../lib/rateLimits";
+import { signAdminToken } from "../lib/adminJwt";
 import {
   generateRegistrationOptions,
   verifyRegistrationResponse,
@@ -182,6 +183,7 @@ interface UnifiedClient {
   sharedLink?: string;
   smsOrderDisabled?: boolean;
   smsShareOnly?: boolean;
+  adminReader?: boolean;
 }
 
 interface LegacyClientAccount {
@@ -259,6 +261,7 @@ function buildClientResponse(account: UnifiedClient) {
     sharedLink: account.sharedLink || undefined,
     smsOrderDisabled: account.smsOrderDisabled ?? false,
     smsShareOnly: account.smsShareOnly ?? false,
+    adminReader: account.adminReader ?? false,
   };
 }
 
@@ -288,7 +291,9 @@ router.post("/login", loginRateLimit, async (req, res) => {
       await db.insert(adminConfig).values({ key: "clients", data: updated })
         .onConflictDoUpdate({ target: adminConfig.key, set: { data: updated, updatedAt: new Date() } });
     }
-    return res.json({ ok: true, client: buildClientResponse(account) });
+    // Admin-čitateľ: klient označený superadminom dostane read-only admin token (role:reader)
+    const adminToken = account.adminReader ? signAdminToken("reader") : undefined;
+    return res.json({ ok: true, client: buildClientResponse(account), ...(adminToken ? { adminToken } : {}) });
   } catch (err) {
     req.log.error({ err }, "Client login failed");
     return res.status(500).json({ ok: false, error: "Internal server error" });

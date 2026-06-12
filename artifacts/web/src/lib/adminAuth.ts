@@ -51,6 +51,23 @@ export function isLoggedIn(): boolean {
   }
 }
 
+// Rola z admin JWT: "admin" (plný) alebo "reader" (admin-čitateľ, read-only)
+export function getAdminRole(): "admin" | "reader" | null {
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    if (Date.now() / 1000 >= (payload.exp as number)) return null;
+    return payload.role === "reader" ? "reader" : "admin";
+  } catch {
+    return null;
+  }
+}
+
+export function isReader(): boolean {
+  return getAdminRole() === "reader";
+}
+
 export function login(): void {
   // noop — token is set by loginWithApi
 }

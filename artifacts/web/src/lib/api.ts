@@ -77,11 +77,12 @@ export interface LoggedClient {
   sharedLink?: string;
   smsOrderDisabled?: boolean;
   smsShareOnly?: boolean;
+  adminReader?: boolean;
 }
 
 export const clientApi = {
   login: (clientId: string, password: string) =>
-    apiFetch<{ ok: boolean; client?: LoggedClient; error?: string }>(CLIENT_API, "/login", {
+    apiFetch<{ ok: boolean; client?: LoggedClient; error?: string; adminToken?: string }>(CLIENT_API, "/login", {
       method: "POST",
       body: JSON.stringify({ clientId, password }),
     }),

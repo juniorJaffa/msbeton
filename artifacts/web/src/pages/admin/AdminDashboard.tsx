@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { LogOut, Users, Truck, Wrench, Layers, RefreshCw, ClipboardList, BarChart2, TrendingUp, MoreHorizontal, Search, Fingerprint, Server } from "lucide-react";
+import { LogOut, Users, Truck, Wrench, Layers, RefreshCw, ClipboardList, BarChart2, TrendingUp, MoreHorizontal, Search, Fingerprint, Server, Eye } from "lucide-react";
 import { VersionBadge } from "@/components/VersionBadge";
-import { isLoggedIn, logout, isBiometricAvailable, hasStoredCredential } from "@/lib/adminAuth";
+import { isLoggedIn, logout, isBiometricAvailable, hasStoredCredential, isReader } from "@/lib/adminAuth";
 import { adminData, adminApi, syncFromServer, Order } from "@/lib/adminData";
 import { OrderNotificationToast } from "./OrderNotificationToast";
 
@@ -148,8 +148,16 @@ export default function AdminDashboard() {
     { id: "server",     label: "SERVER",     short: "SERVER",   icon: <Server className="w-5 h-5" /> },
   ];
 
+  const readerMode = isReader();
   return (
     <div className="min-h-screen concrete-light" style={{ fontFamily: "Montserrat, sans-serif", overflowX: "clip" }}>
+      {/* Admin-čitateľ banner — read-only režim */}
+      {readerMode && (
+        <div className="fixed top-12 sm:top-[88px] left-0 right-0 z-40 bg-blue-600 text-white text-center text-[11px] sm:text-xs font-bold py-1.5 px-4 flex items-center justify-center gap-2 shadow">
+          <Eye className="w-4 h-4 shrink-0" />
+          Režim čítania — admin-čitateľ. Zmeny a mazanie sú vypnuté.
+        </div>
+      )}
       {/* Top nav */}
       {/* Combined sticky header — logo row + desktop tab row */}
       <header className="bg-secondary shadow-lg fixed top-0 left-0 right-0 z-50">
