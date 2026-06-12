@@ -1430,10 +1430,9 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                     <GripVertical className="w-5 h-5 sm:w-4 sm:h-4" />
                   </span>
                 )}
-                {/* Poradové číslo */}
-                <span className="shrink-0 w-4 sm:w-5 text-right text-[10px] font-bold text-gray-300 tabular-nums">{listIdx + 1}</span>
-                {/* Avatar + active dot */}
-                <div className="relative shrink-0">
+                {/* Číslo nad avatarom (stacked) — šetrí horizontálnu šírku na mobile */}
+                <div className="relative shrink-0 flex flex-col items-center gap-0.5">
+                  <span className="text-[9px] font-bold text-gray-300 tabular-nums leading-none">{listIdx + 1}</span>
                   <div className={cn("w-9 h-9 rounded-full flex items-center justify-center ring-2",
                     c.isOwner ? "bg-primary/20 ring-primary/40"
                       : !hasLogin ? "ring-gray-200"
@@ -1451,7 +1450,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                     const clientBio = (c.webauthnCredentials?.length ?? 0) > 0;
                     if (!ownerBio && !clientBio) return null;
                     return (
-                      <span className="absolute -top-1 -right-1 min-w-4 h-4 px-0.5 rounded-full bg-emerald-500 ring-2 ring-white flex items-center justify-center gap-px"
+                      <span className="absolute -bottom-1 -right-1 min-w-4 h-4 px-0.5 rounded-full bg-emerald-500 ring-2 ring-white flex items-center justify-center gap-px"
                         title={ownerBio ? "Admin biometria aktívna na tomto zariadení" : `Biometria aktívna — ${c.webauthnCredentials!.length} zariadenie`}>
                         <Fingerprint className="w-2.5 h-2.5 text-white" />
                         {clientBio && <span className="text-white text-[8px] font-black leading-none">{c.webauthnCredentials!.length}</span>}
@@ -1462,7 +1461,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
 
                 {/* Meno + mobile badges */}
                 <div className="flex-1 min-w-0">
-                  <div className="font-bold text-secondary text-sm break-words leading-tight">{fullName}</div>
+                  <div className="font-bold text-secondary text-sm leading-tight" style={{ wordBreak: "normal", overflowWrap: "anywhere" }}>{fullName}</div>
                   {c.company && <div className="text-xs text-gray-400 truncate">{c.company}</div>}
                   {/* Mobile-only badges — zľavy VEĽKÉ a viditeľné (nie ikonizované) */}
                   <div className="sm:hidden flex items-center gap-1 mt-1 flex-wrap">
