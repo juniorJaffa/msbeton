@@ -212,6 +212,33 @@ function exportOrderPDF(o: Order) {
     }
   }
 
+  // Retroactive fix: old km/auto orders stored q as "N autá (X m³)" — wrong unit for pricingType
+  if (parsed) {
+    const fixRows = (rows: typeof parsed.s[0]["rows"]) => rows.forEach(row => {
+      const r = row as typeof row & { q?: string };
+      const isDoprava = r.l.toLowerCase().includes("doprava") || r.l.startsWith("HLAVNÁ ");
+      if (!isDoprava || !r.q || !/m³/.test(r.q)) return;
+      if (o.deliveryZoneType === "km" && o.km && o.km > 0) {
+        r.q = r.q.replace(/\([\d.,+\s]+\s*m³\)/, `(${o.km} km)`);
+        if (r.uSuffix === "€/m³") {
+          const isMinRow = r.l.includes("Min. doprava");
+          r.uSuffix = isMinRow ? "€/auto" : "€/km";
+          if (!isMinRow) {
+            const pumpa = parseInt((r.l.match(/(\d+)×Pumpa/) || ['','0'])[1]);
+            const mix   = parseInt((r.l.match(/(\d+)×Mix/)   || ['','0'])[1]);
+            const trucks = Math.max(1, pumpa + mix);
+            r.u = parseFloat((r.v / o.km / trucks).toFixed(3));
+            if (r.uOrig !== undefined && r.o !== undefined) r.uOrig = parseFloat((r.o / o.km / trucks).toFixed(3));
+          }
+        }
+      } else if (o.deliveryZoneType === "auto") {
+        r.q = r.q.replace(/\s*\([\d.,+\s]+\s*m³\)/, '');
+        if (r.uSuffix === "€/m³") r.uSuffix = "€/auto";
+      }
+    });
+    parsed.s.forEach(sec => fixRows(sec.rows));
+  }
+
   const fmtRate = (n: number, suffix?: string) => n.toFixed(2) + " " + (suffix ?? "€");
   const pdfCats = adminData.getCategories();
   const kamenivoSvg = (name: string): string => {
