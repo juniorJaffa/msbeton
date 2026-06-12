@@ -198,7 +198,28 @@ router.get("/clients", async (req, res) => {
   catch (err) { req.log.error({ err }, "Failed to get clients"); res.status(500).json({ error: "Internal server error" }); }
 });
 router.put("/clients", async (req, res) => {
-  try { await setConfig(KEYS.clients, req.body); invalidateClientCache(); res.json({ ok: true }); }
+  try {
+    const incoming = Array.isArray(req.body) ? req.body as Array<Record<string, unknown>> : [];
+    // Server-side merge: preserve clients added by other concurrent sessions.
+    // Strategy: any client in DB whose id is NOT in incoming AND was created AFTER
+    // the newest createdAt in incoming = created by another session → keep it.
+    // This prevents last-write-wins destroying concurrent admin creations.
+    const current = (await getConfig(KEYS.clients) as Array<Record<string, unknown>> | null) ?? [];
+    const incomingIds = new Set(incoming.map(c => c.id));
+    const newestIncoming = incoming.reduce((max, c) => {
+      const t = new Date(String(c.createdAt ?? 0)).getTime();
+      return isNaN(t) ? max : Math.max(max, t);
+    }, 0);
+    const preserved = current.filter(c => {
+      if (incomingIds.has(c.id)) return false;
+      const t = new Date(String(c.createdAt ?? 0)).getTime();
+      return !isNaN(t) && t > newestIncoming;
+    });
+    const merged = preserved.length > 0 ? [...incoming, ...preserved] : incoming;
+    await setConfig(KEYS.clients, merged);
+    invalidateClientCache();
+    res.json({ ok: true, preserved: preserved.length });
+  }
   catch (err) { req.log.error({ err }, "Failed to save clients"); res.status(500).json({ error: "Internal server error" }); }
 });
 
