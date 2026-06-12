@@ -84,6 +84,7 @@ export interface Client {
   webauthnCredentials?: { id: string; createdAt?: string; counter?: number }[];
   biometricAuthLog?: { ts: string; ok: boolean; ip: string; credId?: string }[];
   updatedAt?: string; // item-level merge (multi-admin)
+  favorite?: boolean; // obľúbený klient — pin hore (srdiečko)
 }
 
 export interface Order {

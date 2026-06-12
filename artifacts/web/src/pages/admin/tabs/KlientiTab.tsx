@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, ChevronRight, Users, Truck, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, Mail, Phone, PenLine, Fingerprint, ShieldX, AlertTriangle, Info, Smartphone } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, ChevronRight, Users, Truck, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, Mail, Phone, PenLine, Fingerprint, ShieldX, AlertTriangle, Info, Smartphone, Heart, GripVertical, ArrowDownUp, SlidersHorizontal, Percent, Building2 } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
@@ -7,6 +7,46 @@ import { PhoneInput } from "@/components/PhoneInput";
 import { cn, formatPhone } from "@/lib/utils";
 import { adminData, adminApi, syncFromServer, Client, TransportSettings, Order, SYSTEM_OWNER_ID, getKamenivoGroup } from "@/lib/adminData";
 import { isBiometricAvailable as isAdminBioAvail, hasStoredCredential as hasAdminBio } from "@/lib/adminAuth";
+
+// ── Smart avatar ────────────────────────────────────────────────────────────
+// Prod analýza: ~9/61 klientov má telefón/číslo v firstName (→ avatar "0"/"+"),
+// ~6 sú šablóny "Zľava X%". charAt(0) na nich zlyháva. Smart fallback + farba.
+const AVATAR_PALETTE = [
+  { bg: "bg-rose-100",    fg: "text-rose-700" },
+  { bg: "bg-orange-100",  fg: "text-orange-700" },
+  { bg: "bg-amber-100",   fg: "text-amber-700" },
+  { bg: "bg-emerald-100", fg: "text-emerald-700" },
+  { bg: "bg-teal-100",    fg: "text-teal-700" },
+  { bg: "bg-sky-100",     fg: "text-sky-700" },
+  { bg: "bg-indigo-100",  fg: "text-indigo-700" },
+  { bg: "bg-fuchsia-100", fg: "text-fuchsia-700" },
+];
+function hashStr(s: string): number { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
+// začína + alebo číslicou a obsahuje prevažne čísla/medzery → telefón, nie meno
+function isPhoneLike(s: string): boolean { const t = s.trim(); return /^[+\d]/.test(t) && /\d{4,}/.test(t.replace(/\s/g, "")); }
+function firstLetter(s: string | undefined): string { const m = (s ?? "").trim().match(/\p{L}/u); return m ? m[0].toUpperCase() : ""; }
+
+type AvatarKind = "owner" | "template" | "phone" | "initial";
+interface AvatarInfo { kind: AvatarKind; char: string; mono: string; palette: { bg: string; fg: string } }
+function clientAvatar(c: Client): AvatarInfo {
+  const palette = AVATAR_PALETTE[hashStr(c.loginId || c.id || `${c.firstName}${c.lastName}${c.company}`) % AVATAR_PALETTE.length];
+  if (c.isOwner) return { kind: "owner", char: "", mono: "", palette };
+  // Šablóna zliav: "Zľava 10%" → % ikona
+  if (/^z[ľl]ava/i.test((c.firstName || "").trim())) return { kind: "template", char: "", mono: "", palette };
+  const fn = (c.firstName || "").trim();
+  const ln = (c.lastName || "").trim();
+  const co = (c.company || "").trim();
+  // Iniciálka — preskoč telefón/číslo, skús ďalší zdroj
+  const fnOk = fn && !isPhoneLike(fn);
+  const lnOk = ln && !isPhoneLike(ln);
+  if (fnOk) {
+    const mono = lnOk ? firstLetter(fn) + firstLetter(ln) : firstLetter(fn);
+    return { kind: "initial", char: firstLetter(fn), mono, palette };
+  }
+  if (lnOk) return { kind: "initial", char: firstLetter(ln), mono: firstLetter(ln), palette };
+  if (co && !isPhoneLike(co)) return { kind: "initial", char: firstLetter(co), mono: firstLetter(co), palette };
+  return { kind: "phone", char: "", mono: "", palette }; // len telefón → 📞 ikona
+}
 
 interface BioFeedEntry {
   ts: string; ok: boolean; event: string;
@@ -428,6 +468,61 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
 
   const save = (data: Client[]) => { setClients(data); adminData.saveClients(data); };
 
+  // ── Sort + filter state ───────────────────────────────────────────────────
+  type SortMode = "manual" | "date_desc" | "date_asc" | "name";
+  const [sortMode, setSortMode] = useState<SortMode>("manual");
+  const [showFilters, setShowFilters] = useState(false);
+  const [fStatus, setFStatus] = useState<"all" | "active" | "inactive" | "noaccess">("all");
+  const [fZone, setFZone] = useState<"all" | "standard" | "km" | "auto">("all");
+  const [fFlag, setFFlag] = useState<"all" | "bio" | "discount" | "favorite">("all");
+  const [fRecord, setFRecord] = useState<"all" | "client" | "template" | "company">("all");
+  const hasActiveFilter = fStatus !== "all" || fZone !== "all" || fFlag !== "all" || fRecord !== "all";
+  const resetFilters = () => { setFStatus("all"); setFZone("all"); setFFlag("all"); setFRecord("all"); };
+
+  // ── Drag-drop (manuál režim) — HTML5 desktop + Pointer Events mobile ─────────
+  const dragClientId = useRef<string | null>(null);
+  const [dragOverClientId, setDragOverClientId] = useState<string | null>(null);
+  const [liftedClientId, setLiftedClientId] = useState<string | null>(null);
+  const [flashClientId, setFlashClientId] = useState<string | null>(null);
+  const ptrClientDrag = useRef<{ fromId: string } | null>(null);
+  const ptrClientMoved = useRef(false);
+  const flashClient = (id: string) => { setFlashClientId(id); setTimeout(() => setFlashClientId(null), 700); };
+  const reorderClients = (fromId: string, toId: string) => {
+    if (fromId === toId) return;
+    const arr = [...clients];
+    const from = arr.findIndex(c => c.id === fromId);
+    const to = arr.findIndex(c => c.id === toId);
+    if (from < 0 || to < 0) return;
+    const [m] = arr.splice(from, 1); arr.splice(to, 0, m);
+    save(arr); flashClient(fromId);
+  };
+  const onClientDragStart = (e: React.DragEvent, id: string) => { dragClientId.current = id; e.dataTransfer.effectAllowed = "move"; setLiftedClientId(id); };
+  const onClientDragOver = (e: React.DragEvent, id: string) => { e.preventDefault(); if (dragClientId.current && dragClientId.current !== id) setDragOverClientId(id); };
+  const onClientDrop = (e: React.DragEvent, targetId: string) => { e.preventDefault(); const from = dragClientId.current; dragClientId.current = null; setDragOverClientId(null); setLiftedClientId(null); if (from) reorderClients(from, targetId); };
+  const onClientDragEnd = () => { dragClientId.current = null; setDragOverClientId(null); setLiftedClientId(null); };
+  const onClientHandlePointerDown = (e: React.PointerEvent, id: string) => {
+    if (e.pointerType === "mouse") return; // mouse cez HTML5 drag
+    e.preventDefault(); e.stopPropagation();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    ptrClientDrag.current = { fromId: id }; ptrClientMoved.current = false; setLiftedClientId(id);
+  };
+  const onClientHandlePointerMove = (e: React.PointerEvent) => {
+    if (!ptrClientDrag.current || e.pointerType === "mouse") return;
+    e.preventDefault(); ptrClientMoved.current = true;
+    const h = e.currentTarget as HTMLElement; h.style.visibility = "hidden";
+    const under = document.elementFromPoint(e.clientX, e.clientY); h.style.visibility = "";
+    const row = under?.closest("[data-client-drag-id]") as HTMLElement | null;
+    const targetId = row?.dataset.clientDragId ?? null;
+    setDragOverClientId(targetId && targetId !== ptrClientDrag.current.fromId ? targetId : null);
+  };
+  const onClientHandlePointerUp = (e: React.PointerEvent) => {
+    if (!ptrClientDrag.current || e.pointerType === "mouse") return;
+    const { fromId } = ptrClientDrag.current; const moved = ptrClientMoved.current;
+    ptrClientDrag.current = null; ptrClientMoved.current = false; setLiftedClientId(null);
+    if (moved && dragOverClientId) reorderClients(fromId, dragOverClientId);
+    setDragOverClientId(null);
+  };
+
   // Refresh from external changes (sync, Doprava tab) without remounting/closing expanded
   useEffect(() => {
     const handler = () => {
@@ -577,16 +672,54 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
   const normK = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const compactK = (s: string) => s.replace(/\s/g, "");
   const searchTerms = search.trim().split(/\s+/).filter(Boolean);
-  const filtered = clients.filter(c => {
-    if (!searchTerms.length) return true;
-    const haystack = [c.firstName, c.lastName, c.company, c.email, c.phone, c.loginId].filter(Boolean).join(" ");
-    const haystackN = normK(haystack);
-    const haystackC = compactK(haystackN);
-    return searchTerms.every(t => {
-      const tn = normK(t);
-      return haystackN.includes(tn) || haystackC.includes(compactK(tn));
+  const zoneTypeOf = (c: Client) => ((c.deliveryZoneId ? zones.find(z => z.id === c.deliveryZoneId) : zones[0])?.pricingType ?? "standard");
+  const filtered = (() => {
+    // 1) Text search + filter kritériá
+    let arr = clients.filter(c => {
+      // Filter: stav
+      const hasLogin = !!(c.loginId && c.password);
+      if (fStatus === "active" && !(hasLogin && c.active)) return false;
+      if (fStatus === "inactive" && !(hasLogin && !c.active)) return false;
+      if (fStatus === "noaccess" && hasLogin) return false;
+      // Filter: typ dopravy
+      if (fZone !== "all" && zoneTypeOf(c) !== fZone) return false;
+      // Filter: príznak (bio/zľava/favorite)
+      if (fFlag === "bio" && !(c.webauthnCredentials?.length)) return false;
+      if (fFlag === "discount" && !((c.discountBeton ?? 0) || (c.discountDoprava ?? 0) || (c.discountSluzby ?? 0) || (c.discountCelkovo ?? 0))) return false;
+      if (fFlag === "favorite" && !c.favorite) return false;
+      // Filter: typ záznamu
+      const isTemplate = /^z[ľl]ava/i.test((c.firstName || "").trim());
+      const isCompany = !!(c.company || "").trim() && !isTemplate;
+      if (fRecord === "template" && !isTemplate) return false;
+      if (fRecord === "company" && !isCompany) return false;
+      if (fRecord === "client" && (isTemplate || c.isOwner)) return false;
+      // Text search
+      if (!searchTerms.length) return true;
+      const haystack = [c.firstName, c.lastName, c.company, c.email, c.phone, c.loginId].filter(Boolean).join(" ");
+      const haystackN = normK(haystack);
+      const haystackC = compactK(haystackN);
+      return searchTerms.every(t => { const tn = normK(t); return haystackN.includes(tn) || haystackC.includes(compactK(tn)); });
     });
-  });
+    // 2) Sort (mimo manuál režimu) — owner vždy úplne hore
+    if (sortMode !== "manual") {
+      const cmp = (a: Client, b: Client) => {
+        if (sortMode === "name") {
+          const an = normK([a.firstName, a.lastName, a.company].filter(Boolean).join(" "));
+          const bn = normK([b.firstName, b.lastName, b.company].filter(Boolean).join(" "));
+          return an.localeCompare(bn, "sk");
+        }
+        const at = new Date(a.createdAt ?? 0).getTime(), bt = new Date(b.createdAt ?? 0).getTime();
+        return sortMode === "date_asc" ? at - bt : bt - at;
+      };
+      arr = [...arr].sort(cmp);
+    }
+    // 3) Favourite pin hore (owner > favorite > zvyšok) — vo všetkých režimoch
+    arr = [...arr].sort((a, b) => {
+      const rank = (c: Client) => c.isOwner ? 2 : c.favorite ? 1 : 0;
+      return rank(b) - rank(a);
+    });
+    return arr;
+  })();
 
   const [floatingClient, setFloatingClient] = useState<Client | null>(null);
   const filteredRef = useRef(filtered);
@@ -974,7 +1107,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
       {/* Sticky toolbar — search + table header + floating client indicator */}
       <div id="klienti-sticky" className="sticky top-0 z-20">
       <div id="klienti-toolbar" className="shadow-sm">
-        <div className="py-2 px-1 bg-white border-b border-gray-100">
+        <div className="py-2 px-1 bg-white border-b border-gray-100 space-y-2">
           <div className="relative">
             <input placeholder="Hľadať klienta..." value={search} onChange={e => setSearch(e.target.value)}
               className="w-full bg-gray-50 text-secondary placeholder:text-gray-400 px-4 py-2.5 pr-9 text-sm focus:outline-none rounded border border-gray-200 focus:border-primary" />
@@ -984,6 +1117,58 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
               </button>
             )}
           </div>
+          {/* Sort prepínač + filter toggle — mobile: kratšie labely, väčšie touch ciele */}
+          <div className="flex items-center gap-1.5">
+            <div className="flex border border-gray-200 rounded overflow-hidden text-[11px] sm:text-xs font-bold shrink min-w-0">
+              {([
+                { k: "manual", l: "Manuál", lShort: "Manuál", icon: true },
+                { k: "date_desc", l: "Najnovší", lShort: "Nové" },
+                { k: "date_asc", l: "Najstarší", lShort: "Staré" },
+                { k: "name", l: "Meno A-Z", lShort: "A-Z" },
+              ] as { k: SortMode; l: string; lShort: string; icon?: boolean }[]).map(o => (
+                <button key={o.k} onClick={() => setSortMode(o.k)}
+                  className={cn("px-2.5 py-2 sm:py-1.5 transition-colors flex items-center gap-1 whitespace-nowrap", sortMode === o.k ? "bg-secondary text-white" : "bg-white text-gray-500 active:bg-gray-100")}>
+                  {o.icon && <GripVertical className="w-3 h-3" />}
+                  <span className="sm:hidden">{o.lShort}</span>
+                  <span className="hidden sm:inline">{o.l}</span>
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setShowFilters(v => !v)}
+              className={cn("ml-auto flex items-center gap-1 px-2.5 py-2 sm:py-1.5 rounded border text-[11px] sm:text-xs font-bold transition-colors shrink-0", hasActiveFilter || showFilters ? "border-primary bg-primary/10 text-secondary" : "border-gray-200 text-gray-500 active:bg-gray-100")}>
+              <SlidersHorizontal className="w-4 h-4" />
+              <span className="hidden sm:inline">Filter</span>
+              {hasActiveFilter && <span className="w-4 h-4 rounded-full bg-primary text-secondary text-[9px] font-black flex items-center justify-center">{[fStatus, fZone, fFlag, fRecord].filter(v => v !== "all").length}</span>}
+            </button>
+          </div>
+          {/* Filter panel */}
+          {showFilters && (
+            <div className="space-y-1.5 pt-1 border-t border-gray-100">
+              {([
+                { label: "STAV", val: fStatus, set: setFStatus, opts: [["all","Všetko"],["active","Aktívny"],["inactive","Neaktívny"],["noaccess","Bez prístupu"]] },
+                { label: "DOPRAVA", val: fZone, set: setFZone, opts: [["all","Všetko"],["standard","Štd"],["km","€/km"],["auto","€/auto"]] },
+                { label: "PRÍZNAK", val: fFlag, set: setFFlag, opts: [["all","Všetko"],["favorite","❤ Obľúbený"],["bio","Biometria"],["discount","Zľava"]] },
+                { label: "ZÁZNAM", val: fRecord, set: setFRecord, opts: [["all","Všetko"],["client","Klient"],["company","Firma"],["template","Šablóna"]] },
+              ] as { label: string; val: string; set: (v: string) => void; opts: [string,string][] }[]).map(row => (
+                <div key={row.label} className="flex items-start gap-1.5">
+                  <span className="w-14 shrink-0 text-[9px] font-black uppercase tracking-wider text-gray-400 pt-2">{row.label}</span>
+                  <div className="flex flex-wrap gap-1">
+                    {row.opts.map(([v, l]) => (
+                      <button key={v} onClick={() => row.set(v)}
+                        className={cn("px-2.5 py-1.5 rounded text-[11px] sm:text-xs font-bold transition-colors", row.val === v ? "bg-secondary text-white" : "bg-gray-100 text-gray-500 active:bg-gray-200")}>
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {hasActiveFilter && (
+                <button onClick={resetFilters} className="text-[10px] font-bold text-red-500 hover:text-red-600 flex items-center gap-1 pt-0.5">
+                  <X className="w-3 h-3" /> Zrušiť filtre
+                </button>
+              )}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-3 px-4 py-2 bg-secondary text-white text-xs font-black uppercase tracking-widest">
           <div className="w-9 shrink-0 flex items-center justify-center">
@@ -1263,7 +1448,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
       {/* Client cards */}
       <div className="space-y-px">
         {filtered.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">Žiadni klienti.</p>}
-        {filtered.map(c => {
+        {filtered.map((c, listIdx) => {
           const isExpanded = expanded === c.id;
           const isHashedPass = c.password?.startsWith("$2b$") || c.password?.startsWith("$2a$");
           const hasLogin = !!(c.loginId && c.password);
@@ -1271,18 +1456,54 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
           const maxDisc = Math.max(c.discountBeton ?? 0, c.discountDoprava ?? 0, c.discountSluzby ?? 0, c.discountCelkovo ?? 0);
           const clientZone = c.deliveryZoneId ? zones.find(z => z.id === c.deliveryZoneId) : zones[0];
           const zonePricingType = clientZone?.pricingType ?? "standard";
+          const av = clientAvatar(c);
+          const canDrag = sortMode === "manual" && searchTerms.length === 0 && !hasActiveFilter;
           return (
-            <div key={c.id} id={`client-card-${c.id}`} className={cn("border shadow-sm overflow-hidden transition-opacity border-l-4", c.isOwner ? "bg-amber-50 border-primary/40 border-l-primary" : !c.active ? "bg-white border-gray-200 border-l-red-400 opacity-50" : "bg-white border-gray-200 border-l-green-500")}>
+            <div key={c.id} id={`client-card-${c.id}`}
+              data-client-drag-id={c.id}
+              draggable={canDrag}
+              onDragStart={canDrag ? (e => onClientDragStart(e, c.id)) : undefined}
+              onDragOver={canDrag ? (e => onClientDragOver(e, c.id)) : undefined}
+              onDrop={canDrag ? (e => onClientDrop(e, c.id)) : undefined}
+              onDragEnd={canDrag ? onClientDragEnd : undefined}
+              className={cn("border shadow-sm overflow-hidden transition-all border-l-4",
+                dragOverClientId === c.id ? "border-primary border-2 bg-primary/5 shadow-[0_0_0_3px_rgba(237,197,49,0.25)]"
+                  : flashClientId === c.id ? "border-green-400 border-2 bg-green-50"
+                  : liftedClientId === c.id ? "border-primary border-2 opacity-50 scale-[0.99] shadow-xl"
+                  : c.isOwner ? "bg-amber-50 border-primary/40 border-l-primary" : !c.active ? "bg-white border-gray-200 border-l-red-400 opacity-50" : c.favorite ? "bg-rose-50/40 border-gray-200 border-l-rose-400" : "bg-white border-gray-200 border-l-green-500")}>
               {/* Card header */}
-              <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => { const next = isExpanded ? null : c.id; setExpanded(next); if (next) scrollToClientCard(next, true); }}>
+              <div className="flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => { const next = isExpanded ? null : c.id; setExpanded(next); if (next) scrollToClientCard(next, true); }}>
+                {/* Drag grip — len v manuál režime bez filtra/hľadania */}
+                {canDrag && (
+                  <span className="shrink-0 touch-none -ml-1 py-2 px-1 text-gray-300 hover:text-gray-500 active:text-primary cursor-grab active:cursor-grabbing"
+                    draggable={false} onClick={e => e.stopPropagation()}
+                    onPointerDown={e => onClientHandlePointerDown(e, c.id)}
+                    onPointerMove={onClientHandlePointerMove}
+                    onPointerUp={onClientHandlePointerUp}>
+                    <GripVertical className="w-5 h-5 sm:w-4 sm:h-4" />
+                  </span>
+                )}
+                {/* Poradové číslo */}
+                <span className="shrink-0 w-4 sm:w-5 text-right text-[10px] font-bold text-gray-300 tabular-nums">{listIdx + 1}</span>
                 {/* Avatar + active dot */}
                 <div className="relative shrink-0">
-                  <div className={cn("w-9 h-9 rounded-full flex items-center justify-center", c.isOwner ? "bg-primary/20" : "bg-secondary/10")}>
-                    {c.isOwner
-                      ? <Crown className="w-4 h-4 text-primary" />
-                      : <span className="text-secondary font-black text-sm">{(c.firstName || c.company || "?").charAt(0).toUpperCase()}</span>
+                  <div className={cn("w-9 h-9 rounded-full flex items-center justify-center ring-2",
+                    c.isOwner ? "bg-primary/20 ring-primary/40"
+                      : !hasLogin ? "ring-gray-200"
+                      : c.active ? "ring-green-400/60" : "ring-red-300/60",
+                    !c.isOwner && av.palette.bg)}>
+                    {c.isOwner ? <Crown className="w-4 h-4 text-primary" />
+                      : av.kind === "template" ? <Percent className={cn("w-4 h-4", av.palette.fg)} />
+                      : av.kind === "phone" ? <Phone className={cn("w-4 h-4", av.palette.fg)} />
+                      : <span className={cn("font-black", av.palette.fg, av.mono.length > 1 ? "text-xs" : "text-sm")}>{av.mono || av.char}</span>
                     }
                   </div>
+                  {/* Favourite srdiečko — ľavý horný roh */}
+                  {c.favorite && !c.isOwner && (
+                    <span className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-rose-500 ring-2 ring-white flex items-center justify-center" title="Obľúbený klient">
+                      <Heart className="w-2.5 h-2.5 text-white fill-white" />
+                    </span>
+                  )}
                   {/* Biometria aktívna → fingerprint odznak na avatare (owner=admin bio, klient=server bio) */}
                   {(() => {
                     const ownerBio = c.isOwner && isAdminBioAvail() && hasAdminBio();
@@ -1296,10 +1517,6 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                       </span>
                     );
                   })()}
-                  {hasLogin && (
-                    <span className={`sm:hidden absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-white ${c.active ? "bg-green-500" : "bg-gray-300"}`}
-                      title={c.active ? "Aktívny" : "Neaktívny"} />
-                  )}
                 </div>
 
                 {/* Meno + mobile badges */}
@@ -1358,32 +1575,35 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                     </span>
                   )}
                 </div>
-                {/* Ikona tlačidlá — pevná šírka zodpovedá header akciám */}
-                <div className="flex items-center justify-end w-40 shrink-0">
+                {/* Ikona tlačidlá — mobile: väčšie touch ciele (40px) pre robotnícke prsty */}
+                <div className="flex items-center justify-end gap-0.5 sm:gap-0 sm:w-40 shrink-0">
+                  {!c.isOwner && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); update(c.id, { favorite: !c.favorite }); }}
+                      title={c.favorite ? "Odobrať z obľúbených" : "Pridať do obľúbených"}
+                      className={cn("p-2 sm:p-1.5 transition-colors", c.favorite ? "text-rose-500 active:text-rose-600" : "text-gray-300 active:text-rose-400")}>
+                      <Heart className={cn("w-5 h-5", c.favorite && "fill-rose-500")} />
+                    </button>
+                  )}
                   <button
                     onClick={(e) => { e.stopPropagation(); setExpanded(c.id); setClientDetailTab(prev => ({ ...prev, [c.id]: "calc" })); scrollToClientCard(c.id, true); }}
                     title="Kalkulačka klienta"
-                    className="p-1.5 text-gray-300 hover:text-primary transition-colors">
+                    className="p-2 sm:p-1.5 text-gray-300 active:text-primary hover:text-primary transition-colors">
                     <Calculator className="w-5 h-5" />
                   </button>
                   {c.sharedLink && (
                     <a href={c.sharedLink} target="_blank" rel="noopener noreferrer" title="Zdielaný odkaz"
                       onClick={e => e.stopPropagation()}
-                      className="p-1.5 text-gray-300 hover:text-primary transition-colors">
+                      className="hidden sm:block p-1.5 text-gray-300 hover:text-primary transition-colors">
                       {(() => { const { Icon, cls } = sharedLinkIcon(c.sharedLink); return <Icon className={`w-5 h-5 ${cls}`} />; })()}
                     </a>
                   )}
                   <button
                     onClick={(e) => { e.stopPropagation(); setTablePdfModal(c); setTablePdfMode("faktura"); }}
                     title="Zľavové tabuľky"
-                    className="p-1.5 text-amber-400 hover:text-amber-600 transition-colors">
+                    className="p-2 sm:p-1.5 text-amber-400 active:text-amber-600 hover:text-amber-600 transition-colors">
                     <Table2 className="w-5 h-5" />
                   </button>
-                  {c.id !== SYSTEM_OWNER_ID && (
-                    <button onClick={(e) => { e.stopPropagation(); remove(c.id); }} className="hidden sm:block p-1.5 text-gray-300 hover:text-red-500 transition-colors">
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  )}
                   <span className="p-1 text-gray-300">
                     {isExpanded ? <ChevronUp className="w-5 h-5 sm:w-4 sm:h-4" /> : <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4" />}
                   </span>
