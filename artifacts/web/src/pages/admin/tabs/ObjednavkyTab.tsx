@@ -338,91 +338,128 @@ function exportOrderPDF(o: Order) {
 <meta charset="utf-8">
 <title>Objednávka – ${o.clientName || "klient"}</title>
 <style>
-  @page { size: A4; margin: 12mm 14mm; }
+  @page { size: A4; margin: 0; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, Helvetica, sans-serif; font-size: 9pt; color: #222; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 9pt; color: #222; position: relative; }
   table { border-collapse: collapse; width: 100%; }
   @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 </style>
 </head><body>
 
-<div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:4mm;border-bottom:2px solid #EDC531;margin-bottom:5mm">
-  <div>
-    <div style="font-size:14pt;font-weight:bold;color:#001D3D">MS-BETON, spol. s r.o.</div>
-    <div style="font-size:7.5pt;color:#555;margin-top:2px">Turie 468, 013 12 Turie &nbsp;|&nbsp; IČO: 55747591 &nbsp;|&nbsp; IČ DPH: SK2122074603</div>
-    <div style="font-size:7.5pt;color:#777;margin-top:1px">+421 944 069 305 &nbsp;|&nbsp; peter@msbeton.sk &nbsp;|&nbsp; msbeton.sk</div>
-  </div>
-  <div style="text-align:right">
-    <div style="font-size:13pt;font-weight:bold;color:#EDC531;letter-spacing:0.5px">OBJEDNÁVKA</div>
-    <div style="font-size:8pt;color:#777;margin-top:2px">${today}</div>
-    <div style="font-size:7.5pt;color:#aaa;margin-top:1px">Stav: ${statusLabels[o.status] ?? o.status}</div>
-  </div>
-</div>
-
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:6mm;margin-bottom:5mm">
-  <div style="border:1px solid #eee;padding:4mm;border-radius:2px">
-    <div style="font-size:8pt;font-weight:bold;color:#001D3D;border-bottom:1px solid #eee;padding-bottom:2mm;margin-bottom:3mm">KLIENT</div>
-    <div style="font-size:8.5pt;font-weight:bold;color:#111;margin-bottom:2px">${o.clientName || "—"}</div>
-    ${o.company ? `<div style="font-size:8pt;color:#555">${o.company}</div>` : ""}
-    ${o.phone ? `<div style="font-size:8pt;color:#555;margin-top:2px">${o.phone}</div>` : ""}
-    ${o.email ? `<div style="font-size:8pt;color:#777">${o.email}</div>` : ""}
-    ${discountInfo ? `<div style="font-size:7.5pt;color:#b45309;margin-top:4px;font-weight:bold">Zľavy: ${discountInfo}</div>` : ""}
-  </div>
-  <div style="border:1px solid #eee;padding:4mm;border-radius:2px">
-    <div style="font-size:8pt;font-weight:bold;color:#001D3D;border-bottom:1px solid #eee;padding-bottom:2mm;margin-bottom:3mm">DORUČENIE</div>
-    <table style="font-size:8.5pt"><tbody>
-      <tr><td style="color:#888;padding:1px 6px 1px 0;width:90px">Typ</td><td style="font-weight:bold">${tabLabels[o.tab] ?? o.tab}</td></tr>
-      <tr><td style="color:#888;padding:1px 6px 1px 0">Množstvo</td><td style="font-weight:bold">${o.totalQty} m³${(o.fillupM3 ?? 0) > 0 ? ` <span style="color:#92400e;font-size:8pt;font-weight:normal">+ ${o.fillupM3} m³ doťaženie</span>` : ""}</td></tr>
-      ${(o.fillupM3 ?? 0) > 0 ? `<tr><td style="color:#888;padding:1px 6px 1px 0;vertical-align:top">Doťaženie</td><td style="color:#92400e;font-size:8.5pt">${o.totalQty}&nbsp;m³ → +${o.fillupM3}&nbsp;m³ → <strong>${o.fillupTarget}&nbsp;m³/auto</strong></td></tr>` : ""}
-      ${o.podmienky ? `<tr><td style="color:#888;padding:1px 6px 1px 0;vertical-align:top">Podmienky</td><td style="${o.podmienky.isRisk ? "color:#991b1b" : "color:#92400e"};font-size:8pt;font-weight:600">${o.podmienky.isRisk ? "⚠ Minusové pretaženie" : "★ Pretaženie"}: ${o.podmienky.pumpa > 0 ? `1× Pumpa + ${o.podmienky.mix}× Mix` : `${o.podmienky.trucks}× Mix`} · ∅ ${o.podmienky.m3PerTruck?.toFixed(1) ?? "—"} m³/vozidlo</td></tr>` : ""}
-      ${o.km ? `<tr><td style="color:#888;padding:1px 6px 1px 0">Vzdialenosť</td><td>${o.km} km</td></tr>` : ""}
-      ${(o.address || o.mapPlusCode) ? `<tr><td style="color:#888;padding:1px 6px 1px 0;vertical-align:top">Adresa</td><td>${o.address ? o.address : ""}${o.mapPlusCode ? `<br><span style="font-family:monospace;font-size:7.5pt;color:#aaa">${o.mapPlusCode}${o.mapLocality ? " · " + o.mapLocality : ""}</span>` : ""}</td></tr>` : ""}
-      ${(effectiveZoneName) ? `<tr><td style="color:#888;padding:1px 6px 1px 0">Zóna</td><td>${effectiveZoneName}${effectiveZoneType !== "standard" ? ` <span style="font-size:7.5pt;color:#b58c00;font-weight:700">${effectiveZoneType === "km" ? "(€/km)" : "(€/auto)"}</span>` : ""}</td></tr>` : ""}
-      <tr><td style="color:#888;padding:1px 6px 1px 0">Platba</td><td style="font-weight:bold">${o.priceMode === "hotovost" ? "Hotovosť" : "Faktúra"}</td></tr>
-      ${o.viaSms ? `<tr><td style="color:#888;padding:1px 6px 1px 0">Zdroj</td><td>SMS</td></tr>` : ""}
-    </tbody></table>
-    ${o.note ? `<div style="font-size:8pt;color:#555;margin-top:4px;font-style:italic">Poznámka: ${o.note}</div>` : ""}
+<!-- Header -->
+<div style="background:#001D3D;color:#fff;padding:10mm 14mm 8mm;position:relative;z-index:1">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div>
+      <div style="font-size:20pt;font-weight:bold;letter-spacing:-0.5px;margin-bottom:2px">MS-BETON, spol. s r.o.</div>
+      <div style="font-size:8pt;opacity:0.7;margin-bottom:1px">Turie 468, 013 12 Turie &nbsp;|&nbsp; Slovenská republika</div>
+      <div style="font-size:8pt;opacity:0.6">+421&nbsp;944&nbsp;069&nbsp;305 &nbsp;|&nbsp; peter@msbeton.sk &nbsp;|&nbsp; msbeton.sk</div>
+    </div>
+    <div style="text-align:right;font-size:8pt;opacity:0.65;line-height:1.8">
+      IČO: 55747591<br>DIČ: 2122074603<br>IČ DPH: SK2122074603
+    </div>
   </div>
 </div>
 
-${breakdownHtml ? `
-<div style="margin-bottom:5mm">
-  <div style="font-size:9.5pt;font-weight:bold;color:#001D3D;border-bottom:2px solid #EDC531;padding-bottom:2px;margin-bottom:4px">KALKULÁCIA</div>
-  <table><thead><tr style="background:#001D3D;color:#fff;font-size:8pt"><th style="padding:4px 8px;width:22px;text-align:center;font-weight:bold">#</th><th style="padding:4px 8px;text-align:left;font-weight:bold">Popis</th><th style="padding:4px 8px;text-align:right;font-weight:bold">Množstvo</th><th style="padding:4px 8px;text-align:right;font-weight:bold">Jedn.&nbsp;cena</th><th style="padding:4px 8px;text-align:right;font-weight:bold">Spolu</th></tr></thead><tbody>${breakdownHtml}</tbody></table>
-</div>` : ""}
+<!-- Body -->
+<div style="padding:7mm 14mm 12mm;position:relative;z-index:1">
 
-<div style="background:#001D3D;color:#fff;padding:4mm;border-radius:2px;display:flex;justify-content:space-between;align-items:center">
-  ${o.priceMode !== "hotovost" ? `<div>
-    <div style="font-size:8pt;color:rgba(255,255,255,0.6)">Bez DPH</div>
-    <div style="font-size:9.5pt;font-weight:bold;color:rgba(255,255,255,0.8)">${fmtEurPdf(o.totalBezDph)}</div>
-  </div>` : "<div></div>"}
-  <div style="text-align:right">
-    <div style="font-size:8pt;color:rgba(255,255,255,0.6)">${o.priceMode === "hotovost" ? "Spolu" : "Celkom s DPH"}</div>
-    <div style="font-size:16pt;font-weight:bold;color:#EDC531">${fmtEurPdf(o.totalSDph)}</div>
-    ${o.status === "vyplatena" && o.paidAmount !== undefined ? `
-    <div style="margin-top:4px;border-top:1px solid rgba(255,255,255,0.2);padding-top:4px">
-      <div style="font-size:8pt;color:rgba(255,255,255,0.6)">Zaplatené</div>
-      <div style="font-size:11pt;font-weight:bold;color:#fff">${fmtEurPdf(o.paidAmount)}</div>
-      ${Math.abs(o.paidAmount - o.totalSDph) > 0.01 ? `<div style="font-size:9pt;font-weight:bold;color:${o.paidAmount > o.totalSDph ? "#86efac" : "#ef4444"}">${o.paidAmount > o.totalSDph ? `+${(o.paidAmount - o.totalSDph).toFixed(2)} € tringelt` : `${(o.paidAmount - o.totalSDph).toFixed(2)} € rozdiel`}</div>` : ""}
-    </div>` : ""}
+  <!-- Title -->
+  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4mm">
+    <div style="color:#EDC531;font-size:16pt;font-weight:bold;letter-spacing:1px">OBJEDNÁVKA</div>
+    <div style="text-align:right;font-size:8pt;color:#666;line-height:1.6">
+      <div>${today}</div>
+      <div style="color:#aaa;font-size:7.5pt">Stav: ${statusLabels[o.status] ?? o.status}</div>
+    </div>
   </div>
-</div>
 
-<div style="margin-top:10mm;display:grid;grid-template-columns:1fr 1fr;gap:10mm">
-  <div style="border-top:1px solid #ccc;padding-top:3mm;font-size:8pt;color:#888">Dátum a podpis zákazníka</div>
-  <div style="border-top:1px solid #ccc;padding-top:3mm;font-size:8pt;color:#888">Pečiatka a podpis MS-BETON</div>
-</div>
-
-<!-- Google Review -->
-<div style="margin-top:6mm;padding:4mm 6mm;border:1px solid #ddd;border-radius:3px;display:flex;align-items:center;gap:6mm">
-  <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=0&data=https%3A%2F%2Fg.page%2Fr%2FCeTg2gjXL3dWEBM%2Freview" style="width:22mm;height:22mm;display:block;flex-shrink:0" />
-  <div>
-    <div style="font-size:9pt;font-weight:bold;color:#001D3D;margin-bottom:2px">Ohodnoťte nás na Google</div>
-    <div style="font-size:7.5pt;color:#555;margin-bottom:3px">Vážime si Váš názor. Pomôžte ostatným zákazníkom svojou recenziou.</div>
-    <div style="font-size:7pt;color:#888">g.page/r/CeTg2gjXL3dWEBM/review</div>
+  <!-- Klient + Doručenie -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:5mm;margin-bottom:5mm">
+    <div style="border:1px solid #e0e0ec;padding:4mm;border-radius:3px">
+      <div style="font-size:8pt;font-weight:bold;color:#001D3D;border-bottom:1px solid #eee;padding-bottom:2mm;margin-bottom:3mm">KLIENT</div>
+      <div style="font-size:8.5pt;font-weight:bold;color:#111;margin-bottom:2px">${o.clientName || "—"}</div>
+      ${o.company ? `<div style="font-size:8pt;color:#555">${o.company}</div>` : ""}
+      ${o.phone ? `<div style="font-size:8pt;color:#555;margin-top:2px">${o.phone}</div>` : ""}
+      ${o.email ? `<div style="font-size:8pt;color:#777">${o.email}</div>` : ""}
+      ${discountInfo ? `<div style="font-size:7.5pt;color:#b45309;margin-top:4px;font-weight:bold">Zľavy: ${discountInfo}</div>` : ""}
+    </div>
+    <div style="border:1px solid #e0e0ec;padding:4mm;border-radius:3px">
+      <div style="font-size:8pt;font-weight:bold;color:#001D3D;border-bottom:1px solid #eee;padding-bottom:2mm;margin-bottom:3mm">DORUČENIE</div>
+      <table style="font-size:8.5pt"><tbody>
+        <tr><td style="color:#888;padding:1px 6px 1px 0;width:88px">Typ</td><td style="font-weight:bold">${tabLabels[o.tab] ?? o.tab}</td></tr>
+        <tr><td style="color:#888;padding:1px 6px 1px 0">Množstvo</td><td style="font-weight:bold">${o.totalQty} m³${(o.fillupM3 ?? 0) > 0 ? ` <span style="color:#92400e;font-size:8pt;font-weight:normal">+ ${o.fillupM3} m³ doťaženie</span>` : ""}</td></tr>
+        ${(o.fillupM3 ?? 0) > 0 ? `<tr><td style="color:#888;padding:1px 6px 1px 0;vertical-align:top">Doťaženie</td><td style="color:#92400e;font-size:8.5pt">${o.totalQty}&nbsp;m³ → +${o.fillupM3}&nbsp;m³ → <strong>${o.fillupTarget}&nbsp;m³/auto</strong></td></tr>` : ""}
+        ${o.podmienky ? `<tr><td style="color:#888;padding:1px 6px 1px 0;vertical-align:top">Podmienky</td><td style="${o.podmienky.isRisk ? "color:#991b1b" : "color:#92400e"};font-size:8pt;font-weight:600">${o.podmienky.isRisk ? "⚠ Minusové pretaženie" : "★ Pretaženie"}: ${o.podmienky.pumpa > 0 ? `1× Pumpa + ${o.podmienky.mix}× Mix` : `${o.podmienky.trucks}× Mix`} · ∅ ${o.podmienky.m3PerTruck?.toFixed(1) ?? "—"} m³/vozidlo</td></tr>` : ""}
+        ${o.km ? `<tr><td style="color:#888;padding:1px 6px 1px 0">Vzdialenosť</td><td>${o.km} km</td></tr>` : ""}
+        ${(o.address || o.mapPlusCode) ? `<tr><td style="color:#888;padding:1px 6px 1px 0;vertical-align:top">Adresa</td><td>${o.address ? o.address : ""}${o.mapPlusCode ? `<br><span style="font-family:monospace;font-size:7.5pt;color:#aaa">${o.mapPlusCode}${o.mapLocality ? " · " + o.mapLocality : ""}</span>` : ""}</td></tr>` : ""}
+        ${effectiveZoneName ? `<tr><td style="color:#888;padding:1px 6px 1px 0">Typ dopravy</td><td>${effectiveZoneName}${effectiveZoneType !== "standard" ? ` <span style="font-size:7.5pt;color:#b58c00;font-weight:700">${effectiveZoneType === "km" ? "(€/km)" : "(€/auto)"}</span>` : ""}</td></tr>` : ""}
+        <tr><td style="color:#888;padding:1px 6px 1px 0">Platba</td><td style="font-weight:bold">${o.priceMode === "hotovost" ? "Hotovosť" : "Faktúra"}</td></tr>
+        ${o.viaSms ? `<tr><td style="color:#888;padding:1px 6px 1px 0">Zdroj</td><td>SMS</td></tr>` : ""}
+      </tbody></table>
+      ${o.note ? `<div style="font-size:8pt;color:#555;margin-top:4px;font-style:italic">Poznámka: ${o.note}</div>` : ""}
+    </div>
   </div>
-</div>
 
+  <!-- Kalkulácia -->
+  ${breakdownHtml ? `
+  <div style="margin-bottom:5mm">
+    <table style="border:1px solid #ddd">
+      <thead><tr style="background:#001D3D;color:#fff;font-size:8pt;font-weight:bold">
+        <th style="padding:5px 6px;width:24px;text-align:center">#</th>
+        <th style="padding:5px 8px;text-align:left">Popis</th>
+        <th style="padding:5px 8px;text-align:right">Množstvo</th>
+        <th style="padding:5px 8px;text-align:right">Jedn.&nbsp;cena</th>
+        <th style="padding:5px 8px;text-align:right">Spolu</th>
+      </tr></thead>
+      <tbody>${breakdownHtml}</tbody>
+    </table>
+  </div>` : ""}
+
+  <!-- Celková suma -->
+  <div style="background:#001D3D;color:#fff;padding:4mm;border-radius:2px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8mm">
+    ${o.priceMode !== "hotovost" ? `<div>
+      <div style="font-size:8pt;color:rgba(255,255,255,0.6)">Bez DPH</div>
+      <div style="font-size:9.5pt;font-weight:bold;color:rgba(255,255,255,0.8)">${fmtEurPdf(o.totalBezDph)}</div>
+    </div>` : "<div></div>"}
+    <div style="text-align:right">
+      <div style="font-size:8pt;color:rgba(255,255,255,0.6)">${o.priceMode === "hotovost" ? "Spolu" : "Celkom s DPH"}</div>
+      <div style="font-size:16pt;font-weight:bold;color:#EDC531">${fmtEurPdf(o.totalSDph)}</div>
+      ${o.status === "vyplatena" && o.paidAmount !== undefined ? `
+      <div style="margin-top:4px;border-top:1px solid rgba(255,255,255,0.2);padding-top:4px">
+        <div style="font-size:8pt;color:rgba(255,255,255,0.6)">Zaplatené</div>
+        <div style="font-size:11pt;font-weight:bold;color:#fff">${fmtEurPdf(o.paidAmount)}</div>
+        ${Math.abs(o.paidAmount - o.totalSDph) > 0.01 ? `<div style="font-size:9pt;font-weight:bold;color:${o.paidAmount > o.totalSDph ? "#86efac" : "#ef4444"}">${o.paidAmount > o.totalSDph ? `+${(o.paidAmount - o.totalSDph).toFixed(2)} € tringelt` : `${(o.paidAmount - o.totalSDph).toFixed(2)} € rozdiel`}</div>` : ""}
+      </div>` : ""}
+    </div>
+  </div>
+
+  <!-- Podpisy — rovnaká štruktúra ako Cenová ponuka -->
+  <div style="display:flex;align-items:flex-start;gap:6mm;margin-bottom:5mm">
+    <div style="flex:1;border:1px solid #c8c8d8;border-radius:3px;padding:4mm 6mm;text-align:center">
+      <div style="font-size:8pt;color:#888;margin-bottom:3mm">Vypracovala spoločnosť</div>
+      <img src="${window.location.origin}/ms-beton-watermark.png" style="width:36mm;height:auto;opacity:0.22;display:block;margin:0 auto" />
+    </div>
+    <div style="flex:1;border:1px solid #c8c8d8;border-radius:3px;padding:4mm 6mm;min-height:28mm">
+      <div style="font-size:8pt;color:#888;margin-bottom:2mm">Podpis a pečiatka zákazníka</div>
+    </div>
+  </div>
+
+  <!-- Google Review -->
+  <div style="padding:4mm 6mm;border:1px solid #ddd;border-radius:3px;display:flex;align-items:center;gap:6mm;margin-bottom:5mm">
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=0&data=https%3A%2F%2Fg.page%2Fr%2FCeTg2gjXL3dWEBM%2Freview" style="width:22mm;height:22mm;display:block;flex-shrink:0" />
+    <div>
+      <div style="font-size:9pt;font-weight:bold;color:#001D3D;margin-bottom:2px">Ohodnoťte nás na Google</div>
+      <div style="font-size:7.5pt;color:#555;margin-bottom:3px">Vážime si Váš názor. Pomôžte ostatným zákazníkom svojou recenziou.</div>
+      <div style="font-size:7pt;color:#888">g.page/r/CeTg2gjXL3dWEBM/review</div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="padding-top:4mm;border-top:1px solid #ddd;font-size:7.5pt;color:#888;line-height:1.7">
+    MS-BETON, spol. s r.o. &nbsp;|&nbsp; IČO: 55747591 &nbsp;|&nbsp; DIČ: 2122074603 &nbsp;|&nbsp; IČ DPH: SK2122074603 &nbsp;|&nbsp;
+    Turie 468, 013 12 Turie &nbsp;|&nbsp; +421&nbsp;944&nbsp;069&nbsp;305 &nbsp;|&nbsp; peter@msbeton.sk
+  </div>
+
+</div>
 
 </body></html>`;
 
