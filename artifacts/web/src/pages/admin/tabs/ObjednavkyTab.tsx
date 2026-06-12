@@ -4,6 +4,7 @@ import { SlidersHorizontal, ShoppingCart, MessageSquare, MapPin, Navigation, Cop
 import { adminData, adminApi, Order, TransportSettings, getKamenivoGroup } from "@/lib/adminData";
 import { clientAvatar, nameAvatar } from "@/lib/clientAvatar";
 import { cn, formatPhone } from "@/lib/utils";
+import { isReader } from "@/lib/adminAuth";
 
 const ORDER_STATUSES: { key: Order["status"]; label: string; color: string }[] = [
   { key: "nova",        label: "Nová",        color: "bg-blue-100 text-blue-700" },
@@ -567,7 +568,8 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
     });
   }, [orders]);
 
-  const save = (data: Order[]) => { setOrders(data); adminData.saveOrders(data); };
+  const readOnly = isReader(); // admin-čitateľ — žiadne zmeny objednávok
+  const save = (data: Order[]) => { if (readOnly) return; setOrders(data); adminData.saveOrders(data); };
   const remove = (id: string) => { if (confirm("Vymazať objednávku?")) save(orders.filter(o => o.id !== id)); };
   const updateStatus = (id: string, status: Order["status"], paidAmount?: number) =>
     save(orders.map(o => o.id === id ? { ...o, status, ...(paidAmount !== undefined ? { paidAmount } : {}) } : o));
@@ -1079,8 +1081,10 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      <OrderStatusBadge status={o.status} orderTotal={o.totalSDph} onChange={(s, amt) => updateStatus(o.id, s, amt)} />
-                      <button onClick={() => remove(o.id)} className="p-1.5 text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                      {readOnly
+                        ? <span className={cn("text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-sm", ORDER_STATUSES.find(s => s.key === o.status)?.color ?? "bg-gray-100 text-gray-600")}>{ORDER_STATUSES.find(s => s.key === o.status)?.label ?? o.status}</span>
+                        : <OrderStatusBadge status={o.status} orderTotal={o.totalSDph} onChange={(s, amt) => updateStatus(o.id, s, amt)} />}
+                      {!readOnly && <button onClick={() => remove(o.id)} className="p-1.5 text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>}
                     </div>
                   </div>
                 </div>

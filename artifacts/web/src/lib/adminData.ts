@@ -1,5 +1,5 @@
 import { adminApi } from "./api";
-import { isLoggedIn } from "./adminAuth";
+import { isLoggedIn, isReader } from "./adminAuth";
 export { adminApi };
 
 export interface ConcreteType {
@@ -469,6 +469,7 @@ export const adminData = {
     });
   },
   saveCategories: (data: ConcreteCategory[]) => {
+    if (isReader()) return; // admin-čitateľ — read-only
     const stamped = stampArray(data, "msbeton_categories");
     saveData("msbeton_categories", stamped);
     adminApi.saveCategories(stamped);
@@ -476,6 +477,7 @@ export const adminData = {
 
   getDelivery: (): DeliveryZone[] => loadData("msbeton_delivery", DEFAULT_DELIVERY),
   saveDelivery: (data: DeliveryZone[]) => {
+    if (isReader()) return;
     const stamped = stampArray(data, "msbeton_delivery");
     saveData("msbeton_delivery", stamped);
     adminApi.saveDelivery(stamped);
@@ -483,6 +485,7 @@ export const adminData = {
 
   getServices: (): Service[] => loadData("msbeton_services", DEFAULT_SERVICES),
   saveServices: (data: Service[]) => {
+    if (isReader()) return;
     const stamped = stampArray(data, "msbeton_services");
     saveData("msbeton_services", stamped);
     adminApi.saveServices(stamped);
@@ -490,6 +493,7 @@ export const adminData = {
 
   getClients: (): Client[] => ensureOwner(loadData("msbeton_clients", DEFAULT_CLIENTS)),
   saveClients: (data: Client[]) => {
+    if (isReader()) return;
     const safe = stampArray(ensureOwner(data), "msbeton_clients");
     saveData("msbeton_clients", safe);
     adminApi.saveClients(safe);
@@ -498,6 +502,7 @@ export const adminData = {
 
   getTransportZones: (): TransportPricingZone[] => loadData("msbeton_transport_zones", DEFAULT_TRANSPORT_ZONES),
   saveTransportZones: (data: TransportPricingZone[]) => {
+    if (isReader()) return;
     const stamped = stampArray(data, "msbeton_transport_zones");
     saveData("msbeton_transport_zones", stamped);
     adminApi.saveTransportZones(stamped);
@@ -505,18 +510,21 @@ export const adminData = {
 
   getTransportSettings: (): TransportSettings => loadData("msbeton_transport_settings", DEFAULT_TRANSPORT_SETTINGS),
   saveTransportSettings: (data: TransportSettings) => {
+    if (isReader()) return;
     saveData("msbeton_transport_settings", data);
     adminApi.saveTransportSettings(data);
   },
 
   getClientAccounts: (): ClientAccount[] => loadData("msbeton_client_accounts", DEFAULT_CLIENT_ACCOUNTS),
   saveClientAccounts: (data: ClientAccount[]) => {
+    if (isReader()) return;
     saveData("msbeton_client_accounts", data);
     adminApi.saveClientAccounts(data);
   },
 
   getOrders: (): Order[] => loadData("msbeton_orders", []),
   saveOrders: (data: Order[]) => {
+    if (isReader()) return;
     saveData("msbeton_orders", data);
     adminApi.saveOrders(data);
   },

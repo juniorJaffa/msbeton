@@ -104,6 +104,8 @@ export default function ClientLogin() {
     setLoading(false);
     if (res.ok && res.client) {
       resetClientAttempts();
+      // Admin-čitateľ → rovno do admin prostredia (read-only pohľad)
+      if (res.client.adminReader) { setLocation("/admin/dashboard"); return; }
       // Admin-as-client (loginId "msbeton") nemá server-side credential → neponúkaj klient-bio
       const isAdminClient = res.client.id === "admin" || res.client.clientId === "msbeton";
       if (!isAdminClient && isBiometricAvailable() && !hasClientBiometric()) {
