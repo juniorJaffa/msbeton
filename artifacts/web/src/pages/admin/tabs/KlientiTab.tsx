@@ -5,7 +5,7 @@ import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
 import { PhoneInput } from "@/components/PhoneInput";
 import { cn, formatPhone } from "@/lib/utils";
-import { adminData, adminApi, syncFromServer, Client, TransportSettings, Order, SYSTEM_OWNER_ID, getKamenivoGroup } from "@/lib/adminData";
+import { adminData, adminApi, syncFromServer, Client, TransportSettings, Order, SYSTEM_OWNER_ID, getKamenivoGroup, readerBlocked } from "@/lib/adminData";
 import { clientAvatar } from "@/lib/clientAvatar";
 import { isBiometricAvailable as isAdminBioAvail, hasStoredCredential as hasAdminBio, isReader } from "@/lib/adminAuth";
 
@@ -428,7 +428,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
   const [linkDraft, setLinkDraft] = useState("");
 
   const readOnly = isReader(); // admin-čitateľ — žiadne mutácie
-  const save = (data: Client[]) => { if (readOnly) return; setClients(data); adminData.saveClients(data); };
+  const save = (data: Client[]) => { if (readerBlocked()) return; setClients(data); adminData.saveClients(data); };
 
   // ── Sort + filter state ───────────────────────────────────────────────────
   type SortMode = "manual" | "date_desc" | "date_asc" | "name";

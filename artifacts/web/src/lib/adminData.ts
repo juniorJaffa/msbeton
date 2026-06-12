@@ -1,6 +1,20 @@
 import { adminApi } from "./api";
 import { isLoggedIn, isReader } from "./adminAuth";
+import { toast } from "@/hooks/use-toast";
 export { adminApi };
+
+// Admin-čitateľ: pokus o zmenu → toast + zablokuj. Throttle (1 toast / 2s) proti spamu.
+// Exportované — KlientiTab/ObjednavkyTab volajú vo svojom lokálnom save (toast aj tam).
+let lastReaderToast = 0;
+export function readerBlocked(): boolean {
+  if (!isReader()) return false;
+  const now = Date.now();
+  if (now - lastReaderToast > 2000) {
+    lastReaderToast = now;
+    toast({ title: "👁 Režim čítania", description: "Si admin-čitateľ — prezeranie áno, zmeny a mazanie nie.", variant: "destructive", duration: 3000 });
+  }
+  return true;
+}
 
 export interface ConcreteType {
   id: string;
@@ -469,7 +483,7 @@ export const adminData = {
     });
   },
   saveCategories: (data: ConcreteCategory[]) => {
-    if (isReader()) return; // admin-čitateľ — read-only
+    if (readerBlocked()) return;
     const stamped = stampArray(data, "msbeton_categories");
     saveData("msbeton_categories", stamped);
     adminApi.saveCategories(stamped);
@@ -477,7 +491,7 @@ export const adminData = {
 
   getDelivery: (): DeliveryZone[] => loadData("msbeton_delivery", DEFAULT_DELIVERY),
   saveDelivery: (data: DeliveryZone[]) => {
-    if (isReader()) return;
+    if (readerBlocked()) return;
     const stamped = stampArray(data, "msbeton_delivery");
     saveData("msbeton_delivery", stamped);
     adminApi.saveDelivery(stamped);
@@ -485,7 +499,7 @@ export const adminData = {
 
   getServices: (): Service[] => loadData("msbeton_services", DEFAULT_SERVICES),
   saveServices: (data: Service[]) => {
-    if (isReader()) return;
+    if (readerBlocked()) return;
     const stamped = stampArray(data, "msbeton_services");
     saveData("msbeton_services", stamped);
     adminApi.saveServices(stamped);
@@ -493,7 +507,7 @@ export const adminData = {
 
   getClients: (): Client[] => ensureOwner(loadData("msbeton_clients", DEFAULT_CLIENTS)),
   saveClients: (data: Client[]) => {
-    if (isReader()) return;
+    if (readerBlocked()) return;
     const safe = stampArray(ensureOwner(data), "msbeton_clients");
     saveData("msbeton_clients", safe);
     adminApi.saveClients(safe);
@@ -502,7 +516,7 @@ export const adminData = {
 
   getTransportZones: (): TransportPricingZone[] => loadData("msbeton_transport_zones", DEFAULT_TRANSPORT_ZONES),
   saveTransportZones: (data: TransportPricingZone[]) => {
-    if (isReader()) return;
+    if (readerBlocked()) return;
     const stamped = stampArray(data, "msbeton_transport_zones");
     saveData("msbeton_transport_zones", stamped);
     adminApi.saveTransportZones(stamped);
@@ -510,21 +524,21 @@ export const adminData = {
 
   getTransportSettings: (): TransportSettings => loadData("msbeton_transport_settings", DEFAULT_TRANSPORT_SETTINGS),
   saveTransportSettings: (data: TransportSettings) => {
-    if (isReader()) return;
+    if (readerBlocked()) return;
     saveData("msbeton_transport_settings", data);
     adminApi.saveTransportSettings(data);
   },
 
   getClientAccounts: (): ClientAccount[] => loadData("msbeton_client_accounts", DEFAULT_CLIENT_ACCOUNTS),
   saveClientAccounts: (data: ClientAccount[]) => {
-    if (isReader()) return;
+    if (readerBlocked()) return;
     saveData("msbeton_client_accounts", data);
     adminApi.saveClientAccounts(data);
   },
 
   getOrders: (): Order[] => loadData("msbeton_orders", []),
   saveOrders: (data: Order[]) => {
-    if (isReader()) return;
+    if (readerBlocked()) return;
     saveData("msbeton_orders", data);
     adminApi.saveOrders(data);
   },

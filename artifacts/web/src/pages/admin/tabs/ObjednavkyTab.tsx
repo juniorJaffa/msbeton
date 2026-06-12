@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { SlidersHorizontal, ShoppingCart, MessageSquare, MapPin, Navigation, Copy, Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, AlertTriangle, FileText, Calculator, Users, Mountain, Waves, Phone, Mail, Truck, Fingerprint, Crown, Percent } from "lucide-react";
-import { adminData, adminApi, Order, TransportSettings, getKamenivoGroup } from "@/lib/adminData";
+import { adminData, adminApi, Order, TransportSettings, getKamenivoGroup, readerBlocked } from "@/lib/adminData";
 import { clientAvatar, nameAvatar } from "@/lib/clientAvatar";
 import { cn, formatPhone } from "@/lib/utils";
 import { isReader } from "@/lib/adminAuth";
@@ -569,7 +569,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   }, [orders]);
 
   const readOnly = isReader(); // admin-čitateľ — žiadne zmeny objednávok
-  const save = (data: Order[]) => { if (readOnly) return; setOrders(data); adminData.saveOrders(data); };
+  const save = (data: Order[]) => { if (readerBlocked()) return; setOrders(data); adminData.saveOrders(data); };
   const remove = (id: string) => { if (confirm("Vymazať objednávku?")) save(orders.filter(o => o.id !== id)); };
   const updateStatus = (id: string, status: Order["status"], paidAmount?: number) =>
     save(orders.map(o => o.id === id ? { ...o, status, ...(paidAmount !== undefined ? { paidAmount } : {}) } : o));
