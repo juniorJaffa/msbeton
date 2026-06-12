@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { SlidersHorizontal, ShoppingCart, MessageSquare, MapPin, Navigation, Copy, Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, AlertTriangle, FileText, Calculator, Users, Mountain, Waves } from "lucide-react";
+import { SlidersHorizontal, ShoppingCart, MessageSquare, MapPin, Navigation, Copy, Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, AlertTriangle, FileText, Calculator, Users, Mountain, Waves, Phone, Mail } from "lucide-react";
 import { adminData, adminApi, Order, TransportSettings, getKamenivoGroup } from "@/lib/adminData";
 import { cn, formatPhone } from "@/lib/utils";
 
@@ -1068,8 +1068,26 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                         <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Kontakt</div>
                         <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Meno</span><span className="font-medium text-gray-700">{o.clientName}</span></div>
                         {o.company && <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Firma</span><span className="text-gray-600">{o.company}</span></div>}
-                        {o.phone && <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Telefón</span><span className="text-gray-600">{formatPhone(o.phone)}</span></div>}
-                        {o.email && <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Email</span><span className="text-gray-600">{o.email}</span></div>}
+                        {o.phone && (
+                          <div className="flex gap-2 items-center">
+                            <span className="text-gray-400 w-20 shrink-0">Telefón</span>
+                            <a href={`tel:${o.phone.replace(/\s/g, "")}`} onClick={e => e.stopPropagation()}
+                              className="inline-flex items-center gap-1.5 text-green-600 font-medium hover:text-green-700 active:scale-95 transition-all">
+                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-100"><Phone className="w-3.5 h-3.5" /></span>
+                              {formatPhone(o.phone)}
+                            </a>
+                          </div>
+                        )}
+                        {o.email && (
+                          <div className="flex gap-2 items-center">
+                            <span className="text-gray-400 w-20 shrink-0">Email</span>
+                            <a href={`mailto:${o.email}`} onClick={e => e.stopPropagation()}
+                              className="inline-flex items-center gap-1.5 text-blue-600 font-medium hover:text-blue-700 active:scale-95 transition-all break-all">
+                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 shrink-0"><Mail className="w-3.5 h-3.5" /></span>
+                              {o.email}
+                            </a>
+                          </div>
+                        )}
                         {o.clientId && <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">ID klienta</span><span className="text-gray-500">{o.clientId}</span></div>}
                         {o.clientId && onGoToClient && (
                           <div className="flex gap-2 items-center pt-1">

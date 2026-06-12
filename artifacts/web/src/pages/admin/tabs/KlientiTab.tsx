@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, ChevronRight, Users, Truck, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, Mail, PenLine, Fingerprint, ShieldX, AlertTriangle, Info, Smartphone } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, ChevronRight, Users, Truck, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, Mail, Phone, PenLine, Fingerprint, ShieldX, AlertTriangle, Info, Smartphone } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
@@ -1446,7 +1446,21 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                         ] as { label: string; field: keyof Client }[]).map(({ label, field }) => (
                           <div key={field} className="flex gap-2 items-start">
                             <span className="text-gray-400 text-xs w-20 shrink-0 pt-0.5">{label}</span>
-                            <EditableField value={field === "phone" ? formatPhone((c[field] as string) || "") || "—" : (c[field] as string) || "—"} type={field === "phone" ? "tel" : "text"} onSave={v => update(c.id, { [field]: field === "phone" ? formatPhone(v) : v })} suggestionSuffixes={field === "company" ? COMPANY_SUFFIXES : undefined} />
+                            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                              <EditableField value={field === "phone" ? formatPhone((c[field] as string) || "") || "—" : (c[field] as string) || "—"} type={field === "phone" ? "tel" : "text"} onSave={v => update(c.id, { [field]: field === "phone" ? formatPhone(v) : v })} suggestionSuffixes={field === "company" ? COMPANY_SUFFIXES : undefined} />
+                              {field === "phone" && c.phone && (
+                                <a href={`tel:${c.phone.replace(/\s/g, "")}`} title="Zavolať klientovi"
+                                  className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-green-100 text-green-600 hover:bg-green-200 active:scale-90 transition-all shrink-0">
+                                  <Phone className="w-3.5 h-3.5" />
+                                </a>
+                              )}
+                              {field === "email" && c.email && (
+                                <a href={`mailto:${c.email}`} title="Napísať email"
+                                  className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 active:scale-90 transition-all shrink-0">
+                                  <Mail className="w-3.5 h-3.5" />
+                                </a>
+                              )}
+                            </div>
                           </div>
                         ))}
                         {c.createdAt && (
