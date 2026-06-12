@@ -1458,7 +1458,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const transportUnitStr = buildTransportUnitStr(result.transportIsMin, result.qty);
     const truckWord = (n: number) => n === 1 ? "auto" : "autá";
     const mainTransportMnozstvo = mainPricingType === "km"
-      ? `${result.trucks}&nbsp;${truckWord(result.trucks)}&nbsp;(${km}&nbsp;km)`
+      ? `${result.trucks}&nbsp;${truckWord(result.trucks)}&nbsp;(${result.km}&nbsp;km)`
       : mainPricingType === "auto"
         ? `${result.trucks}&nbsp;${truckWord(result.trucks)}`
         : result.transportIsMin
@@ -1531,7 +1531,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       let rows = sectionRow(`Pridaná položka ${idx + 1}${extraSectionLabel ? ` – ${extraSectionLabel}` : ""}`);
       rows += trow(ci.label, `${ci.qty}&nbsp;${exUnit}`, unitStr, betonOrig, betonDisc, undefined, true);
       rows += trow(dopravaExtraLabel,
-        mainPricingType === "km" ? `${ci.transportTrucks}&nbsp;${truckWord(ci.transportTrucks)}&nbsp;(${km}&nbsp;km)`
+        mainPricingType === "km" ? `${ci.transportTrucks}&nbsp;${truckWord(ci.transportTrucks)}&nbsp;(${result.km}&nbsp;km)`
         : mainPricingType === "auto" ? `${ci.transportTrucks}&nbsp;${truckWord(ci.transportTrucks)}`
         : `${ci.transportTrucks}&nbsp;${truckWord(ci.transportTrucks)}&nbsp;(${ci.qty}&nbsp;m³)`,
         extraTransportUnitStr, transOrig, transDisc);
@@ -1967,15 +1967,15 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         const bdPricingType = clientDeliveryZone?.pricingType ?? "standard";
         const isKmBd = bdPricingType === "km";
         const isAutoBd = bdPricingType === "auto";
-        const qtyStr = isKmBd ? `${km} km` : (addToMainQtyBd > 0 ? `${ci.qty}+${addToMainQtyBd} m³` : `${ci.qty} m³`);
+        const qtyStr = isKmBd ? `${result.km} km` : (addToMainQtyBd > 0 ? `${ci.qty}+${addToMainQtyBd} m³` : `${ci.qty} m³`);
         const nTrucks = idx === 0 ? totalBdTrucks : ci.transportTrucks;
         const dopravaLbl = `${hasAddToMain ? "HLAVNÁ " : ""}${ci.transportIsMin ? "Min. doprava" : "Doprava"}${zoneStr ? ` ${zoneStr}` : ""} · ${pdfTrucksLabel(ci, idx === 0)}`;
         const uTrans = isKmBd
-          ? (ci.transportIsMin ? (nTrucks > 0 ? fmt2(tDisc / nTrucks) : undefined) : (km > 0 && nTrucks > 0 ? fmt2(tDisc / km / nTrucks) : undefined))
+          ? (ci.transportIsMin ? (nTrucks > 0 ? fmt2(tDisc / nTrucks) : undefined) : (result.km > 0 && nTrucks > 0 ? fmt2(tDisc / result.km / nTrucks) : undefined))
           : (isAutoBd || ci.transportIsMin) ? (nTrucks > 0 ? fmt2(tDisc / nTrucks) : undefined)
           : (ci.qty > 0 ? fmt2(tDisc / ci.qty) : undefined);
         const uTransOrig = isKmBd
-          ? (ci.transportIsMin ? (nTrucks > 0 ? fmt2(tOrig / nTrucks) : undefined) : (km > 0 && nTrucks > 0 ? fmt2(tOrig / km / nTrucks) : undefined))
+          ? (ci.transportIsMin ? (nTrucks > 0 ? fmt2(tOrig / nTrucks) : undefined) : (result.km > 0 && nTrucks > 0 ? fmt2(tOrig / result.km / nTrucks) : undefined))
           : (isAutoBd || ci.transportIsMin) ? (nTrucks > 0 ? fmt2(tOrig / nTrucks) : undefined)
           : (ci.qty > 0 ? fmt2(tOrig / ci.qty) : undefined);
         const uSuffixTrans = isKmBd ? (ci.transportIsMin ? "€/auto" : "€/km") : isAutoBd ? "€/auto" : (ci.transportIsMin ? "€/auto" : "€/m³");
