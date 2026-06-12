@@ -212,16 +212,33 @@ function exportOrderPDF(o: Order) {
     }
   }
 
-  // Retroactive fix: old km/auto orders stored q as "N autá (X m³)" — wrong unit for pricingType
+  // Effective zone type: stored on order (Košík) OR lookup from client's current zone (SMS orders missing this field)
+  const effectiveZoneType = o.deliveryZoneType ?? (() => {
+    const cl = adminData.getClients().find(c => c.loginId === String(o.clientId) || c.id === String(o.clientId));
+    if (cl?.deliveryZoneId) {
+      const z = adminData.getDelivery().find(z => z.id === cl.deliveryZoneId);
+      return z?.pricingType ?? "standard";
+    }
+    return "standard";
+  })();
+  const effectiveZoneName = o.deliveryZoneName ?? (() => {
+    const cl = adminData.getClients().find(c => c.loginId === String(o.clientId) || c.id === String(o.clientId));
+    if (cl?.deliveryZoneId) {
+      return adminData.getDelivery().find(z => z.id === cl.deliveryZoneId)?.name;
+    }
+    return undefined;
+  })();
+
+  // Retroactive fix: old km/auto/standard-min orders stored q as "N autá (X m³)" and uSuffix as "€/m³"
   if (parsed) {
     const fixRows = (rows: typeof parsed.s[0]["rows"]) => rows.forEach(row => {
       const r = row as typeof row & { q?: string };
       const isDoprava = r.l.toLowerCase().includes("doprava") || r.l.startsWith("HLAVNÁ ");
-      if (!isDoprava || !r.q || !/m³/.test(r.q)) return;
-      if (o.deliveryZoneType === "km" && o.km && o.km > 0) {
-        r.q = r.q.replace(/\([\d.,+\s]+\s*m³\)/, `(${o.km} km)`);
+      if (!isDoprava) return;
+      const isMinRow = r.l.includes("Min. doprava");
+      if (effectiveZoneType === "km" && o.km && o.km > 0) {
+        if (r.q && /m³/.test(r.q)) r.q = r.q.replace(/\([\d.,+\s]+\s*m³\)/, `(${o.km} km)`);
         if (r.uSuffix === "€/m³") {
-          const isMinRow = r.l.includes("Min. doprava");
           r.uSuffix = isMinRow ? "€/auto" : "€/km";
           if (!isMinRow) {
             const pumpa = parseInt((r.l.match(/(\d+)×Pumpa/) || ['','0'])[1]);
@@ -229,11 +246,21 @@ function exportOrderPDF(o: Order) {
             const trucks = Math.max(1, pumpa + mix);
             r.u = parseFloat((r.v / o.km / trucks).toFixed(3));
             if (r.uOrig !== undefined && r.o !== undefined) r.uOrig = parseFloat((r.o / o.km / trucks).toFixed(3));
+          } else if (r.q) {
+            const trucks = Math.max(1, parseInt(r.q) || 1);
+            r.u = parseFloat((r.v / trucks).toFixed(2));
+            if (r.o !== undefined) r.uOrig = parseFloat((r.o / trucks).toFixed(2));
           }
         }
-      } else if (o.deliveryZoneType === "auto") {
-        r.q = r.q.replace(/\s*\([\d.,+\s]+\s*m³\)/, '');
+      } else if (effectiveZoneType === "auto") {
+        if (r.q && /m³/.test(r.q)) r.q = r.q.replace(/\s*\([\d.,+\s]+\s*m³\)/, '');
         if (r.uSuffix === "€/m³") r.uSuffix = "€/auto";
+      } else if (isMinRow && r.uSuffix === "€/m³" && r.q) {
+        // Standard min doprava: old breakdown stored €/m³ instead of €/auto
+        r.uSuffix = "€/auto";
+        const trucks = Math.max(1, parseInt(r.q) || 1);
+        r.u = parseFloat((r.v / trucks).toFixed(2));
+        if (r.o !== undefined) r.uOrig = parseFloat((r.o / trucks).toFixed(2));
       }
     });
     parsed.s.forEach(sec => fixRows(sec.rows));
@@ -350,7 +377,7 @@ function exportOrderPDF(o: Order) {
       ${o.podmienky ? `<tr><td style="color:#888;padding:1px 6px 1px 0;vertical-align:top">Podmienky</td><td style="${o.podmienky.isRisk ? "color:#991b1b" : "color:#92400e"};font-size:8pt;font-weight:600">${o.podmienky.isRisk ? "⚠ Minusové pretaženie" : "★ Pretaženie"}: ${o.podmienky.pumpa > 0 ? `1× Pumpa + ${o.podmienky.mix}× Mix` : `${o.podmienky.trucks}× Mix`} · ∅ ${o.podmienky.m3PerTruck?.toFixed(1) ?? "—"} m³/vozidlo</td></tr>` : ""}
       ${o.km ? `<tr><td style="color:#888;padding:1px 6px 1px 0">Vzdialenosť</td><td>${o.km} km</td></tr>` : ""}
       ${(o.address || o.mapPlusCode) ? `<tr><td style="color:#888;padding:1px 6px 1px 0;vertical-align:top">Adresa</td><td>${o.address ? o.address : ""}${o.mapPlusCode ? `<br><span style="font-family:monospace;font-size:7.5pt;color:#aaa">${o.mapPlusCode}${o.mapLocality ? " · " + o.mapLocality : ""}</span>` : ""}</td></tr>` : ""}
-      ${o.deliveryZoneName ? `<tr><td style="color:#888;padding:1px 6px 1px 0">Zóna</td><td>${o.deliveryZoneName}</td></tr>` : ""}
+      ${(effectiveZoneName) ? `<tr><td style="color:#888;padding:1px 6px 1px 0">Zóna</td><td>${effectiveZoneName}${effectiveZoneType !== "standard" ? ` <span style="font-size:7.5pt;color:#b58c00;font-weight:700">${effectiveZoneType === "km" ? "(€/km)" : "(€/auto)"}</span>` : ""}</td></tr>` : ""}
       <tr><td style="color:#888;padding:1px 6px 1px 0">Platba</td><td style="font-weight:bold">${o.priceMode === "hotovost" ? "Hotovosť" : "Faktúra"}</td></tr>
       ${o.viaSms ? `<tr><td style="color:#888;padding:1px 6px 1px 0">Zdroj</td><td>SMS</td></tr>` : ""}
     </tbody></table>
@@ -1048,16 +1075,23 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                       <div className="px-4 py-3 space-y-1.5 text-sm">
                         <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Objednávka</div>
                         <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Dátum</span><span className="text-gray-500">{fmtDate(o.createdAt)}</span></div>
-                        {o.deliveryZoneName && (
-                          <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Typ dopravy</span>
-                            <span className="font-medium text-gray-700">
-                              {o.deliveryZoneName}
-                              {o.deliveryZoneType && o.deliveryZoneType !== "standard" && (
-                                <span className="ml-1 text-[9px] font-black text-primary bg-primary/10 px-1 py-0.5 rounded-sm uppercase">{o.deliveryZoneType === "km" ? "€/km" : "€/auto"}</span>
-                              )}
-                            </span>
-                          </div>
-                        )}
+                        {(() => {
+                          const cl = !o.deliveryZoneName ? adminData.getClients().find(c => c.loginId === String(o.clientId) || c.id === String(o.clientId)) : undefined;
+                          const zone = cl?.deliveryZoneId ? adminData.getDelivery().find(z => z.id === cl.deliveryZoneId) : undefined;
+                          const dName = o.deliveryZoneName ?? zone?.name;
+                          const dType = o.deliveryZoneType ?? zone?.pricingType ?? "standard";
+                          if (!dName) return null;
+                          return (
+                            <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Typ dopravy</span>
+                              <span className="font-medium text-gray-700">
+                                {dName}
+                                {dType !== "standard" && (
+                                  <span className="ml-1 text-[9px] font-black text-primary bg-primary/10 px-1 py-0.5 rounded-sm uppercase">{dType === "km" ? "€/km" : "€/auto"}</span>
+                                )}
+                              </span>
+                            </div>
+                          );
+                        })()}
                         <div className="flex gap-2 items-center"><span className="text-gray-400 w-24 shrink-0">Typ</span>
                           <span className="inline-flex items-center gap-1 font-bold text-gray-800">
                             <span className={`inline-flex items-center justify-center ${o.tab === "pumpa" ? "text-amber-600" : o.tab === "mix" ? "text-blue-600" : "text-green-600"}`}>
