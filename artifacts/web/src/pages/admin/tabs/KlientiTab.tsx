@@ -6,47 +6,8 @@ import { PriceModeToggle } from "@/components/PriceModeToggle";
 import { PhoneInput } from "@/components/PhoneInput";
 import { cn, formatPhone } from "@/lib/utils";
 import { adminData, adminApi, syncFromServer, Client, TransportSettings, Order, SYSTEM_OWNER_ID, getKamenivoGroup } from "@/lib/adminData";
+import { clientAvatar } from "@/lib/clientAvatar";
 import { isBiometricAvailable as isAdminBioAvail, hasStoredCredential as hasAdminBio } from "@/lib/adminAuth";
-
-// ── Smart avatar ────────────────────────────────────────────────────────────
-// Prod analýza: ~9/61 klientov má telefón/číslo v firstName (→ avatar "0"/"+"),
-// ~6 sú šablóny "Zľava X%". charAt(0) na nich zlyháva. Smart fallback + farba.
-const AVATAR_PALETTE = [
-  { bg: "bg-rose-100",    fg: "text-rose-700" },
-  { bg: "bg-orange-100",  fg: "text-orange-700" },
-  { bg: "bg-amber-100",   fg: "text-amber-700" },
-  { bg: "bg-emerald-100", fg: "text-emerald-700" },
-  { bg: "bg-teal-100",    fg: "text-teal-700" },
-  { bg: "bg-sky-100",     fg: "text-sky-700" },
-  { bg: "bg-indigo-100",  fg: "text-indigo-700" },
-  { bg: "bg-fuchsia-100", fg: "text-fuchsia-700" },
-];
-function hashStr(s: string): number { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
-// začína + alebo číslicou a obsahuje prevažne čísla/medzery → telefón, nie meno
-function isPhoneLike(s: string): boolean { const t = s.trim(); return /^[+\d]/.test(t) && /\d{4,}/.test(t.replace(/\s/g, "")); }
-function firstLetter(s: string | undefined): string { const m = (s ?? "").trim().match(/\p{L}/u); return m ? m[0].toUpperCase() : ""; }
-
-type AvatarKind = "owner" | "template" | "phone" | "initial";
-interface AvatarInfo { kind: AvatarKind; char: string; mono: string; palette: { bg: string; fg: string } }
-function clientAvatar(c: Client): AvatarInfo {
-  const palette = AVATAR_PALETTE[hashStr(c.loginId || c.id || `${c.firstName}${c.lastName}${c.company}`) % AVATAR_PALETTE.length];
-  if (c.isOwner) return { kind: "owner", char: "", mono: "", palette };
-  // Šablóna zliav: "Zľava 10%" → % ikona
-  if (/^z[ľl]ava/i.test((c.firstName || "").trim())) return { kind: "template", char: "", mono: "", palette };
-  const fn = (c.firstName || "").trim();
-  const ln = (c.lastName || "").trim();
-  const co = (c.company || "").trim();
-  // Iniciálka — preskoč telefón/číslo, skús ďalší zdroj
-  const fnOk = fn && !isPhoneLike(fn);
-  const lnOk = ln && !isPhoneLike(ln);
-  if (fnOk) {
-    const mono = lnOk ? firstLetter(fn) + firstLetter(ln) : firstLetter(fn);
-    return { kind: "initial", char: firstLetter(fn), mono, palette };
-  }
-  if (lnOk) return { kind: "initial", char: firstLetter(ln), mono: firstLetter(ln), palette };
-  if (co && !isPhoneLike(co)) return { kind: "initial", char: firstLetter(co), mono: firstLetter(co), palette };
-  return { kind: "phone", char: "", mono: "", palette }; // len telefón → 📞 ikona
-}
 
 interface BioFeedEntry {
   ts: string; ok: boolean; event: string;
@@ -474,10 +435,8 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
   const [showFilters, setShowFilters] = useState(false);
   const [fStatus, setFStatus] = useState<"all" | "active" | "inactive" | "noaccess">("all");
   const [fZone, setFZone] = useState<"all" | "standard" | "km" | "auto">("all");
-  const [fFlag, setFFlag] = useState<"all" | "bio" | "discount" | "favorite">("all");
-  const [fRecord, setFRecord] = useState<"all" | "client" | "template" | "company">("all");
-  const hasActiveFilter = fStatus !== "all" || fZone !== "all" || fFlag !== "all" || fRecord !== "all";
-  const resetFilters = () => { setFStatus("all"); setFZone("all"); setFFlag("all"); setFRecord("all"); };
+  const hasActiveFilter = fStatus !== "all" || fZone !== "all";
+  const resetFilters = () => { setFStatus("all"); setFZone("all"); };
 
   // ── Drag-drop (manuál režim) — HTML5 desktop + Pointer Events mobile ─────────
   const dragClientId = useRef<string | null>(null);
@@ -683,16 +642,6 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
       if (fStatus === "noaccess" && hasLogin) return false;
       // Filter: typ dopravy
       if (fZone !== "all" && zoneTypeOf(c) !== fZone) return false;
-      // Filter: príznak (bio/zľava/favorite)
-      if (fFlag === "bio" && !(c.webauthnCredentials?.length)) return false;
-      if (fFlag === "discount" && !((c.discountBeton ?? 0) || (c.discountDoprava ?? 0) || (c.discountSluzby ?? 0) || (c.discountCelkovo ?? 0))) return false;
-      if (fFlag === "favorite" && !c.favorite) return false;
-      // Filter: typ záznamu
-      const isTemplate = /^z[ľl]ava/i.test((c.firstName || "").trim());
-      const isCompany = !!(c.company || "").trim() && !isTemplate;
-      if (fRecord === "template" && !isTemplate) return false;
-      if (fRecord === "company" && !isCompany) return false;
-      if (fRecord === "client" && (isTemplate || c.isOwner)) return false;
       // Text search
       if (!searchTerms.length) return true;
       const haystack = [c.firstName, c.lastName, c.company, c.email, c.phone, c.loginId].filter(Boolean).join(" ");
@@ -1138,7 +1087,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
               className={cn("ml-auto flex items-center gap-1 px-2.5 py-2 sm:py-1.5 rounded border text-[11px] sm:text-xs font-bold transition-colors shrink-0", hasActiveFilter || showFilters ? "border-primary bg-primary/10 text-secondary" : "border-gray-200 text-gray-500 active:bg-gray-100")}>
               <SlidersHorizontal className="w-4 h-4" />
               <span className="hidden sm:inline">Filter</span>
-              {hasActiveFilter && <span className="w-4 h-4 rounded-full bg-primary text-secondary text-[9px] font-black flex items-center justify-center">{[fStatus, fZone, fFlag, fRecord].filter(v => v !== "all").length}</span>}
+              {hasActiveFilter && <span className="w-4 h-4 rounded-full bg-primary text-secondary text-[9px] font-black flex items-center justify-center">{[fStatus, fZone].filter(v => v !== "all").length}</span>}
             </button>
           </div>
           {/* Filter panel */}
@@ -1147,8 +1096,6 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
               {([
                 { label: "STAV", val: fStatus, set: setFStatus, opts: [["all","Všetko"],["active","Aktívny"],["inactive","Neaktívny"],["noaccess","Bez prístupu"]] },
                 { label: "DOPRAVA", val: fZone, set: setFZone, opts: [["all","Všetko"],["standard","Štd"],["km","€/km"],["auto","€/auto"]] },
-                { label: "PRÍZNAK", val: fFlag, set: setFFlag, opts: [["all","Všetko"],["favorite","❤ Obľúbený"],["bio","Biometria"],["discount","Zľava"]] },
-                { label: "ZÁZNAM", val: fRecord, set: setFRecord, opts: [["all","Všetko"],["client","Klient"],["company","Firma"],["template","Šablóna"]] },
               ] as { label: string; val: string; set: (v: string) => void; opts: [string,string][] }[]).map(row => (
                 <div key={row.label} className="flex items-start gap-1.5">
                   <span className="w-14 shrink-0 text-[9px] font-black uppercase tracking-wider text-gray-400 pt-2">{row.label}</span>
@@ -1498,12 +1445,6 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                       : <span className={cn("font-black", av.palette.fg, av.mono.length > 1 ? "text-xs" : "text-sm")}>{av.mono || av.char}</span>
                     }
                   </div>
-                  {/* Favourite srdiečko — ľavý horný roh */}
-                  {c.favorite && !c.isOwner && (
-                    <span className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-rose-500 ring-2 ring-white flex items-center justify-center" title="Obľúbený klient">
-                      <Heart className="w-2.5 h-2.5 text-white fill-white" />
-                    </span>
-                  )}
                   {/* Biometria aktívna → fingerprint odznak na avatare (owner=admin bio, klient=server bio) */}
                   {(() => {
                     const ownerBio = c.isOwner && isAdminBioAvail() && hasAdminBio();
@@ -2199,6 +2140,13 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                             <FileText className="w-5 h-5" /> PDF
                           </button>
                         </div>
+                      )}
+                      {/* Kôš vpravo — vymazať klienta (šetrí výšku, žiaden full-width blok) */}
+                      {c.id !== SYSTEM_OWNER_ID && (
+                        <button onClick={() => remove(c.id)} title="Vymazať klienta"
+                          className="ml-auto p-2 sm:p-1.5 rounded border border-red-200 text-red-400 hover:text-red-600 hover:border-red-400 active:bg-red-50 transition-colors shrink-0">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       )}
                     </div>
                     {showTableFor === c.id && (
