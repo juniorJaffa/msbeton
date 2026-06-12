@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { SlidersHorizontal, ShoppingCart, MessageSquare, MapPin, Navigation, Copy, Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, AlertTriangle, FileText, Calculator, Users, Mountain, Waves, Phone, Mail } from "lucide-react";
+import { SlidersHorizontal, ShoppingCart, MessageSquare, MapPin, Navigation, Copy, Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, AlertTriangle, FileText, Calculator, Users, Mountain, Waves, Phone, Mail, Truck, Fingerprint, Crown, Percent } from "lucide-react";
 import { adminData, adminApi, Order, TransportSettings, getKamenivoGroup } from "@/lib/adminData";
+import { clientAvatar, nameAvatar } from "@/lib/clientAvatar";
 import { cn, formatPhone } from "@/lib/utils";
 
 const ORDER_STATUSES: { key: Order["status"]; label: string; color: string }[] = [
@@ -962,6 +963,15 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
         <div className="space-y-2">
           {pagedOrders.map(o => {
             const isExp = expanded === o.id;
+            // Napojený klient (pre avatar + biometriu) + zónový typ dopravy
+            const linkedClient = adminData.getClients().find(cl => cl.loginId === String(o.clientId) || cl.id === String(o.clientId));
+            const av = linkedClient ? clientAvatar(linkedClient) : nameAvatar(o.clientName, o.company ?? "", o.clientId ?? o.id);
+            const clientBio = (linkedClient?.webauthnCredentials?.length ?? 0) > 0;
+            const oZoneType = o.deliveryZoneType ?? (() => {
+              const all = adminData.getDelivery();
+              const z = linkedClient?.deliveryZoneId ? (all.find(zz => zz.id === linkedClient.deliveryZoneId) ?? all[0]) : all[0];
+              return z?.pricingType ?? "standard";
+            })();
             return (
               <div key={o.id} id={`order-card-${o.id}`} className={`border shadow-sm transition-all duration-700 ${highlightedOrder === o.id ? "ring-2 ring-primary shadow-primary/30 shadow-md" : ""} ${o.createdAt.slice(0,10) === todayStr ? "bg-gray-50 border-gray-300" : "bg-white border-gray-200"}`}>
                 <div className={`flex gap-3 py-3.5 cursor-pointer transition-colors ${o.createdAt.slice(0,10) === todayStr ? "hover:bg-gray-100" : "hover:bg-gray-50"} ${o.status === "nova" ? "pl-3 pr-4" : "px-4"}`}
@@ -986,6 +996,20 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <TabBadge tab={o.tab} />
+                      {/* Avatar klienta (smart) + biometria — konzistentné s Klienti listom */}
+                      <span className="relative shrink-0">
+                        <span className={cn("w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black", av.palette.bg, av.palette.fg)}>
+                          {av.kind === "owner" ? <Crown className="w-3 h-3" />
+                            : av.kind === "template" ? <Percent className="w-3 h-3" />
+                            : av.kind === "phone" ? <Phone className="w-3 h-3" />
+                            : (av.mono || av.char)}
+                        </span>
+                        {clientBio && (
+                          <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-500 ring-1 ring-white flex items-center justify-center" title={`Biometria — ${linkedClient!.webauthnCredentials!.length} zariadenie`}>
+                            <Fingerprint className="w-2 h-2 text-white" />
+                          </span>
+                        )}
+                      </span>
                       <span className="font-bold text-secondary text-base leading-tight">{o.clientName}</span>
                       {o.company && <span className="text-sm text-gray-500 truncate max-w-[120px]">{o.company}</span>}
                     </div>
@@ -1014,6 +1038,11 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                     </div>
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className={`text-xs font-bold ${o.createdAt.slice(0,10) === todayStr ? "bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-sm" : o.createdAt.slice(0,10) === yesterdayStr ? "text-blue-500" : "text-gray-400 font-normal"}`}>{fmtDate(o.createdAt)}</span>
+                      {/* Typ dopravy — konzistentné s Klienti listom */}
+                      <span className="inline-flex items-center gap-0.5 text-[9px] font-bold rounded-sm bg-blue-50 text-blue-600 border border-blue-200 px-1.5 py-0.5">
+                        <Truck className="w-3 h-3" />
+                        {oZoneType === "km" ? "€/km" : oZoneType === "auto" ? "€/auto" : "Štd"}
+                      </span>
                       {o.viaSms
                         ? <span className="inline-flex items-center gap-0.5 bg-green-100 text-green-700 text-[9px] font-black px-1.5 py-0.5 rounded-sm"><MessageSquare className="w-2.5 h-2.5" /> SMS</span>
                         : <span className="inline-flex items-center bg-secondary/10 text-secondary px-1.5 py-0.5 rounded-sm"><ShoppingCart className="w-3 h-3" /></span>}
