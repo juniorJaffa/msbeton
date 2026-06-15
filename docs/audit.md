@@ -1,6 +1,6 @@
 # MS-BETON — Audit stav projektu
 
-> Aktualizované: 2026-05-31 (iterácia #5)
+> Aktualizované: 2026-06-15 (iterácia #6)
 > Prostredie: msbeton.sk (VPS 178.105.242.17) — DNS migrácia dokončená 2026-05-29
 
 **Legenda:** ✅ Hotovo | ⏳ Čaká (externá podmienka) | ❌ Plánované | ⚠ Čiastočne
@@ -99,6 +99,15 @@
 | 86 | SEO | Kalkulačka betónu — vlastná stránka | `/kalkulacka-beton` ako samostatná stránka pre Google (jedinečná online kalkulačka betónu). WebApplication + FAQ schéma, sitemap priorita 0.95. | ✅ |
 | 87 | SEO | Staré WP URL presmerované | `/vypocet-ceny`, `/domov`, `/kontakt`, `/registrácia` a ďalšie staré adresy presmerované (301) na nové — žiadne mŕtve odkazy v Google. | ✅ |
 | 88 | SEO | 404 stránka mimo Google | Neexistujúce adresy sa už neindexujú (noindex) — Google nezobrazí „404" stránku vo výsledkoch. | ✅ |
+| 89 | 👤 Admin — Klienti | Admin-čitateľ rola | Klient s `adminReader: true` dostane po prihlásení JWT `role:reader`. Tri vrstvy ochrany: server 403 (jadro), `adminData.saveX` no-op, banner. Redirect z ClientLogin na /admin/dashboard. | ✅ |
+| 90 | 👤 Admin — Klienti | Multi-admin race condition | 2–3 admini súčasne vytvárali klientov → len posledný zápis prežil. Item-level merge cez `updatedAt` timestamp + `X-Base-Sync` header — novší item vždy vyhráva, iného admina zmeny sa nezmaže. | ✅ |
+| 91 | 👤 Admin — Klienti | Klienti drag-drop + sort + filter + favourite | Drag-drop ručné poradie (rovnaký pattern ako Betóny). Oblúbení klienti (❤). Sort: manuálny/dátum/meno. Filter: aktívny/neaktívny. Oblúbení vždy hore (owner > favourite > rest). | ✅ |
+| 92 | 📄 PDF / Export | Km transport — Množstvo v km namiesto m³ | PDF a buildBreakdown pre km typ dopravy zobrazoval m³ namiesto km. Opravené: `mainTransportMnozstvo = "${result.km} km"`, `uTrans = €/km`, `qtyStr = "${result.km} km"`. | ✅ |
+| 93 | 📋 Admin — Objednávky | Typ dopravy v detail + PDF (SMS orders) | SMS objednávky nemali `deliveryZoneType`/`deliveryZoneName` → retroaktívna oprava zlyhala. Opravené: SMS submit payload rozšírený, fallback cez client zónu lookup. | ✅ |
+| 94 | 📋 Admin — Objednávky | PDF layout unifikácia | PDF Objednávok rewritten: navy header, body wrapper, watermark, signing box, footer — rovnaký vzhľad ako Cenová ponuka. | ✅ |
+| 95 | 👤 Admin — Klienti | Clickable tel:/mailto: v admin | Ikona telefónu → `tel:` klik, ikona emailu → `mailto:` klik — v Klienti detail aj Objednávky detail. | ✅ |
+| 96 | 👤 Admin — Klienti | Smart avatar (clientAvatar.ts) | Deterministická farba z hash, detekcia telefónneho čísla ako mena, 8-farebná paleta, kind: owner/phone/initial. adminReader → Eye modrá ikona. | ✅ |
+| 97 | 📋 Admin — Objednávky | Objednávky toast 3G fix | Rekurzívny `setTimeout` (nie `setInterval`) zabraňuje hromadeniu requestov. Videné ID v localStorage (`msbeton_seen_order_ids`, 800) — prežijú re-mount/reload na zlej sieti. | ✅ |
 
 ---
 
@@ -106,10 +115,10 @@
 
 | Stav | Počet |
 |------|-------|
-| ✅ Hotovo | 70 |
+| ✅ Hotovo | 79 |
 | ⏳ Čaká (externá podmienka) | 6 |
 | ❌ Plánované | 12 |
-| **Celkom** | **88** |
+| **Celkom** | **97** |
 
 ---
 
@@ -139,6 +148,17 @@
 ---
 
 ## Changelog
+
+### Iterácia #6 — 2026-06-15
+- #89 Feat: Admin-čitateľ rola (JWT role:reader, 3-vrstvová ochrana, redirect z ClientLogin)
+- #90 Feat: Multi-admin race condition fix (item-level merge, updatedAt + X-Base-Sync)
+- #91 Feat: Klienti drag-drop + sort + filter + favourite (owner>fav>rest pin)
+- #92 Fix: Km transport Množstvo — km namiesto m³ v PDF a buildBreakdown
+- #93 Fix: SMS objednávky chýbal deliveryZoneType/deliveryZoneName → typ dopravy v detail/PDF
+- #94 Feat: Objednávky PDF unifikácia (navy header, watermark, signing box, footer)
+- #95 Feat: Clickable tel:/mailto: v Klienti detail + Objednávky detail
+- #96 Feat: Smart avatar clientAvatar.ts (deterministická farba, phone detection, Eye pre readera)
+- #97 Fix: Objednávky toast 3G — rekurzívny setTimeout + localStorage knownOrderIds
 
 ### Iterácia #5 — 2026-05-31
 - DNS migrácia msbeton.sk → VPS 178.105.242.17 dokončená 2026-05-29
@@ -195,11 +215,12 @@
 
 ## Ďalšie priority (odporúčané poradie)
 
-1. **#69 Reviews stratégia** — QR kód + review link na stránke — priamy vplyv na GBP ranking (~1h)
-2. **#68 Sociálne siete** — FB page minimálne, pre sameAs + GBP prepojenie (~2h)
-3. **#71 fail2ban HTTP jail** — WP skenery zapĺňajú logy (~30min)
-4. **#16 GDPR consent banner (rozšírený)** — právna povinnosť (~3h)
-5. **#11 HttpOnly session cookie** — bezpečnosť (~2h)
-6. **#50 CSV export objednávok** — accounting need (~1h)
-7. **#10, 24 Cloudflare** — čaká na NS prepnutie (externé)
-8. **#72 Remote DB backup** — single point of failure (~1h)
+1. **#71 fail2ban HTTP jail** — WP skenery zapĺňajú logy (~30min)
+2. **#69 Reviews stratégia** — QR kód + review link na stránke — priamy vplyv na GBP ranking (~1h)
+3. **#50 CSV export objednávok** — accounting need (~1h)
+4. **#66 Code splitting Admin tabov** — initial bundle -40%, mobile FCP 7.3s → ~4s (~2-3h)
+5. **#68 Sociálne siete** — FB page minimálne, pre sameAs + GBP prepojenie (~2h)
+6. **#16 GDPR consent banner (rozšírený)** — právna povinnosť (~3h)
+7. **#11 HttpOnly session cookie** — bezpečnosť (~2h)
+8. **#10, 24 Cloudflare** — čaká na NS prepnutie (externé)
+9. **#72 Remote DB backup** — single point of failure (~1h)
