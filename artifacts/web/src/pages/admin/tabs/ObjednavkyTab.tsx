@@ -424,7 +424,7 @@ function exportOrderPDF(o: Order, format: "a4" | "a5" = "a4") {
       <img src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&margin=0&data=https%3A%2F%2Fg.page%2Fr%2FCeTg2gjXL3dWEBM%2Freview" style="width:15mm;height:15mm;display:block;flex-shrink:0" />
       <div style="max-width:30mm">
         <div style="font-size:7pt;font-weight:bold;color:#001D3D;line-height:1.2">Ohodnoťte nás na Google</div>
-        <div style="font-size:6pt;color:#999;margin-top:0.5mm">g.page/r/CeTg2gjXL3dWEBM/review</div>
+        <div style="font-size:6pt;color:#999;margin-top:0.5mm">msbeton.sk/recenzia</div>
       </div>
     </div>
   </div>
@@ -547,7 +547,7 @@ function exportOrderPDF(o: Order, format: "a4" | "a5" = "a4") {
     <div>
       <div style="font-size:9pt;font-weight:bold;color:#001D3D;margin-bottom:2px">Ohodnoťte nás na Google</div>
       <div style="font-size:7.5pt;color:#555;margin-bottom:3px">Vážime si Váš názor. Pomôžte ostatným zákazníkom svojou recenziou.</div>
-      <div style="font-size:7pt;color:#888">g.page/r/CeTg2gjXL3dWEBM/review</div>
+      <div style="font-size:7pt;color:#888">msbeton.sk/recenzia</div>
     </div>
   </div>
 

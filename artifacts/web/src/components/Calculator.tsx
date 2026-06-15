@@ -1678,7 +1678,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     <div>
       <div style="font-size:9pt;font-weight:bold;color:#001D3D;margin-bottom:2px">Ohodnoťte nás na Google</div>
       <div style="font-size:7.5pt;color:#555;margin-bottom:3px">Vážime si Váš názor. Pomôžte ostatným zákazníkom svojou recenziou.</div>
-      <div style="font-size:7pt;color:#888">g.page/r/CeTg2gjXL3dWEBM/review</div>
+      <div style="font-size:7pt;color:#888">msbeton.sk/recenzia</div>
     </div>
   </div>
 
@@ -1841,7 +1841,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       if (discountCelkovo > 0) dp.push(`celkovo ${discountCelkovo}%`);
       lines.push(`(zľavy: ${dp.join(", ")})`);
     }
-    lines.push("Ohodnoťte nás: g.page/r/CeTg2gjXL3dWEBM/review");
+    lines.push("Spokojní? Ohodnoťte nás ⭐ msbeton.sk/recenzia");
     lines.push("Tel: +421 909 205 205");
     const text = lines.join("\n");
 
