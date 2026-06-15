@@ -7,10 +7,11 @@ import { SlidersHorizontal, ShoppingCart, MessageSquare, MapPin, Navigation, Cop
 // undefined = staré objednávky bez údaja → null (žiadny chip).
 function creatorMeta(role?: string): { Icon: React.ElementType; label: string; cls: string } | null {
   switch (role) {
-    case "admin":  return { Icon: ShieldCheck, label: "admin",    cls: "bg-secondary/10 text-secondary border-secondary/20" };
-    case "reader": return { Icon: Eye,         label: "čítateľ",  cls: "bg-blue-50 text-blue-600 border-blue-200" };
-    case "klient": return { Icon: Users,       label: "klient",   cls: "bg-gray-100 text-gray-500 border-gray-200" };
-    case "anonym": return { Icon: Globe,       label: "web",      cls: "bg-sky-50 text-sky-600 border-sky-200" };
+    case "admin":   return { Icon: Crown,       label: "admin",    cls: "bg-primary/15 text-secondary border-primary/30" };
+    case "manager": return { Icon: ShieldCheck, label: "správca",  cls: "bg-secondary/10 text-secondary border-secondary/20" };
+    case "reader":  return { Icon: Eye,         label: "čítateľ",  cls: "bg-blue-50 text-blue-600 border-blue-200" };
+    case "klient":  return { Icon: Users,       label: "klient",   cls: "bg-gray-100 text-gray-500 border-gray-200" };
+    case "anonym":  return { Icon: Globe,       label: "web",      cls: "bg-sky-50 text-sky-600 border-sky-200" };
     default: return null; // staré objednávky bez údaja
   }
 }
@@ -1064,8 +1065,8 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                       {/* Kto vytvoril objednávku — admin / čítateľ / klient */}
                       {(() => { const cm = creatorMeta(o.createdByRole); return cm ? (
                         <span className={cn("inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-sm border", cm.cls)}
-                          title={`Vytvoril: ${o.createdByDevice ?? cm.label}${o.createdByRole === "admin" || o.createdByRole === "reader" ? ` (${cm.label})` : ""}`}>
-                          <cm.Icon className="w-2.5 h-2.5" /> {o.createdByRole === "admin" || o.createdByRole === "reader" ? (o.createdByDevice ?? cm.label) : cm.label}
+                          title={`Vytvoril: ${o.createdByDevice ?? cm.label} (${cm.label})`}>
+                          <cm.Icon className="w-2.5 h-2.5" /> {o.createdByDevice ?? cm.label}
                         </span>
                       ) : null; })()}
                       {o.podmienky ? (() => { const ir = getOrderIsRisk(o); return (
@@ -1188,7 +1189,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                 <span className={cn("inline-flex items-center gap-1 text-[11px] font-bold px-1.5 py-0.5 rounded-sm border", cm.cls)}>
                                   <cm.Icon className="w-3 h-3" />
                                   {o.createdByDevice ?? cm.label}
-                                  {(o.createdByRole === "admin" || o.createdByRole === "reader") && <span className="font-normal opacity-70">· {cm.label}</span>}
+                                  {o.createdByRole !== "klient" && o.createdByRole !== "anonym" && <span className="font-normal opacity-70">· {cm.label}</span>}
                                 </span>
                               ) : (
                                 <span className="text-gray-400">{o.viaSms ? "SMS (neznáme zariadenie)" : "—"}</span>

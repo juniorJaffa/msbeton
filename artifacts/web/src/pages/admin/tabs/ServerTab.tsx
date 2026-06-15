@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { RefreshCw, HardDrive, Database, Activity, Server, Download, CheckCircle, XCircle, Clock, Archive, Shield, Trash2, ShieldAlert, Info } from "lucide-react";
 import { ClientBiometriaPanel } from "./ClientBiometriaPanel";
 import { AdminAccessPanel } from "./AdminAccessPanel";
+import { isSuper } from "@/lib/adminAuth";
 
 interface ServerStatus {
   pm2: { status: string; uptimeMs: number; restarts: number; memoryBytes: number };
@@ -363,14 +364,16 @@ export default function ServerTab({ onOpenClient, bioFocus }: { onOpenClient?: (
                 </div>
                 <div className="text-xs text-gray-500 font-mono shrink-0">{b.sizeKb} KB</div>
                 {isLast && <span className="text-[10px] bg-green-100 text-green-700 font-bold px-1.5 py-0.5 rounded shrink-0">LAST</span>}
-                <button
-                  onClick={() => deleteBackup(b.file)}
-                  disabled={isLast || isDeleting}
-                  title={isLast ? "Posledná záloha — nedá sa vymazať" : "Vymazať zálohu"}
-                  className="p-1 text-gray-300 hover:text-red-500 disabled:opacity-20 disabled:cursor-not-allowed transition-colors cursor-pointer shrink-0"
-                >
-                  <Trash2 className={`w-3.5 h-3.5 ${isDeleting ? "animate-spin" : ""}`} />
-                </button>
+                {isSuper() && (
+                  <button
+                    onClick={() => deleteBackup(b.file)}
+                    disabled={isLast || isDeleting}
+                    title={isLast ? "Posledná záloha — nedá sa vymazať" : "Vymazať zálohu"}
+                    className="p-1 text-gray-300 hover:text-red-500 disabled:opacity-20 disabled:cursor-not-allowed transition-colors cursor-pointer shrink-0"
+                  >
+                    <Trash2 className={`w-3.5 h-3.5 ${isDeleting ? "animate-spin" : ""}`} />
+                  </button>
+                )}
               </div>
             );
           })}
@@ -437,14 +440,18 @@ export default function ServerTab({ onOpenClient, bioFocus }: { onOpenClient?: (
               <span className="font-mono">{backupMsg.text}</span>
             </div>
           )}
-          <button
-            onClick={runBackup}
-            disabled={backupRunning}
-            className="w-full flex items-center justify-center gap-2 bg-secondary text-white text-sm font-bold py-2.5 rounded-lg hover:bg-secondary/90 transition-colors cursor-pointer disabled:opacity-60"
-          >
-            <Download className={`w-4 h-4 ${backupRunning ? "animate-bounce" : ""}`} />
-            {backupRunning ? "Zálohujem…" : "Spustiť zálohu teraz"}
-          </button>
+          {isSuper() ? (
+            <button
+              onClick={runBackup}
+              disabled={backupRunning}
+              className="w-full flex items-center justify-center gap-2 bg-secondary text-white text-sm font-bold py-2.5 rounded-lg hover:bg-secondary/90 transition-colors cursor-pointer disabled:opacity-60"
+            >
+              <Download className={`w-4 h-4 ${backupRunning ? "animate-bounce" : ""}`} />
+              {backupRunning ? "Zálohujem…" : "Spustiť zálohu teraz"}
+            </button>
+          ) : (
+            <div className="text-center text-[11px] text-gray-400 py-2">Zálohy spravuje iba superadmin (msbeton).</div>
+          )}
           <p className="text-[11px] text-gray-400 text-center flex items-center justify-center gap-1">
             <Clock className="w-3 h-3" />
             {data?.backupCron ? (() => {

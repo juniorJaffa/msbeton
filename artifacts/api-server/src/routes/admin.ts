@@ -7,7 +7,7 @@ import { randomBytes, randomInt } from "crypto";
 import bcrypt from "bcryptjs";
 import { invalidateClientCache } from "./client";
 import { sendRegistrationEmail, sendCredentialsEmail, sendAdminResetCodeEmail } from "../lib/mailer";
-import { signAdminToken, requireAdminJwt } from "../lib/adminJwt";
+import { signAdminToken, requireAdminJwt, requireSuper } from "../lib/adminJwt";
 import { loginRateLimit } from "../lib/rateLimits";
 import { touchPresence, getActivePresence } from "../lib/adminPresence";
 import type { Request } from "express";
@@ -257,20 +257,22 @@ async function appendAudit(entry: AuditEntry): Promise<void> {
 // SELECT FOR UPDATE zamkne riadok — paralelné requesty čakajú, nie race condition.
 // Zároveň zaznamená audit (kto čo pridal/zmenil/zmazal) a vráti mergedFromOthers
 // (počet položiek iného admina ktoré sa zlúčili → frontend re-sync + toast).
-async function mergeSaveArray(key: string, body: unknown, baseSyncHeader: unknown, actor: Actor | null): Promise<{ kept: number; preserved: number; mergedFromOthers: number }> {
-  const incoming = Array.isArray(body) ? body as Item[] : [];
+async function mergeSaveArray(key: string, body: unknown, baseSyncHeader: unknown, actor: Actor | null, transform?: (incoming: Item[], current: Item[]) => Item[]): Promise<{ kept: number; preserved: number; mergedFromOthers: number }> {
+  const incomingRaw = Array.isArray(body) ? body as Item[] : [];
   const baseSyncMs = baseSyncHeader != null ? ts(baseSyncHeader) : -1;
 
-  const { merged, diff, current } = await db.transaction(async (tx) => {
+  const { merged, diff, current, incoming } = await db.transaction(async (tx) => {
     // Zamkni riadok — iný admin musí počkať kým táto transakcia skončí
     const rows = await tx.select().from(adminConfig).where(eq(adminConfig.key, key)).for("update").limit(1);
     const cur = (rows[0]?.data as Item[] | null) ?? [];
-    const m = mergeItems(incoming, cur, baseSyncMs);
-    const d = computeDiff(incoming, cur, baseSyncMs);
+    // transform (napr. manager sanitizácia) beží vnútri zámku s čerstvým `cur`
+    const inc = transform ? transform(incomingRaw, cur) : incomingRaw;
+    const m = mergeItems(inc, cur, baseSyncMs);
+    const d = computeDiff(inc, cur, baseSyncMs);
     await tx.insert(adminConfig)
       .values({ key, data: m })
       .onConflictDoUpdate({ target: adminConfig.key, set: { data: m, updatedAt: new Date() } });
-    return { merged: m, diff: d, current: cur };
+    return { merged: m, diff: d, current: cur, incoming: inc };
   });
 
   // Audit — len ak tento admin reálne niečo zmenil
@@ -290,6 +292,21 @@ async function mergeSaveArray(key: string, body: unknown, baseSyncHeader: unknow
   }
 
   return { kept: merged.length, preserved: merged.length - incoming.length, mergedFromOthers: diff.others.length };
+}
+
+// Manager (Správca) sanitizácia klientov — bezpečnostná hranica (nedá sa obísť, beží vnútri zámku):
+//  1) NESMIE meniť admin rolu iných (adminRole/adminReader) → reštauruj z DB (zabráni privilege escalation)
+//  2) NESMIE mazať klientov → klienti chýbajúci v incoming sa doplnia z DB
+function sanitizeClientsForManager(incoming: Item[], current: Item[]): Item[] {
+  const curById = new Map(current.filter(c => c.id != null).map(c => [String(c.id), c] as const));
+  const protectedIncoming = incoming.map(inc => {
+    const cur = inc.id != null ? curById.get(String(inc.id)) : undefined;
+    // nový klient (cur undefined) → admin polia undefined (manager nevie vytvoriť admina)
+    return { ...inc, adminRole: cur?.adminRole, adminReader: cur?.adminReader };
+  });
+  const incIds = new Set(incoming.filter(i => i.id != null).map(i => String(i.id)));
+  const missing = current.filter(c => c.id != null && !incIds.has(String(c.id)));
+  return [...protectedIncoming, ...missing];
 }
 
 // Public read-only endpoints — kalkulačka ich potrebuje bez admin JWT
@@ -376,15 +393,18 @@ router.get("/clients", async (req, res) => {
 });
 router.put("/clients", async (req, res) => {
   try {
-    const r = await mergeSaveArray(KEYS.clients, req.body, req.get("X-Base-Sync"), actorOf(req));
+    const actor = actorOf(req);
+    // Správca (manager) má obmedzenia — admin rolu nemení, klientov nemaže (server-enforced)
+    const transform = actor.role === "manager" ? sanitizeClientsForManager : undefined;
+    const r = await mergeSaveArray(KEYS.clients, req.body, req.get("X-Base-Sync"), actor, transform);
     invalidateClientCache();
     res.json({ ok: true, ...r });
   }
   catch (err) { req.log.error({ err }, "Failed to save clients"); res.status(500).json({ error: "Internal server error" }); }
 });
 
-// Zrušenie všetkých WebAuthn credentials + logu klienta (admin akcia)
-router.delete("/clients/:id/webauthn", async (req, res) => {
+// Zrušenie všetkých WebAuthn credentials + logu klienta — iba superadmin
+router.delete("/clients/:id/webauthn", requireSuper, async (req, res) => {
   try {
     const clientId = req.params.id;
     const raw = await getConfig(KEYS.clients);
@@ -403,8 +423,8 @@ router.delete("/clients/:id/webauthn", async (req, res) => {
   }
 });
 
-// Zabudnúť JEDNO zariadenie (per-device) — zmaže iba daný credential, ostatné ostanú
-router.delete("/clients/:id/webauthn/:credId", async (req, res) => {
+// Zabudnúť JEDNO zariadenie (per-device) — zmaže iba daný credential, ostatné ostanú. Iba superadmin.
+router.delete("/clients/:id/webauthn/:credId", requireSuper, async (req, res) => {
   try {
     const { id: clientId, credId } = req.params;
     const raw = await getConfig(KEYS.clients);
@@ -889,7 +909,7 @@ router.get("/server-status", async (req, res) => {
   res.json({ pm2, disk, dbSize, uptime, backups, lastLog, sslExpiry, backupCron, security });
 });
 
-router.post("/server-backup", async (req, res) => {
+router.post("/server-backup", requireSuper, async (req, res) => {
   try {
     const out = execSync("/root/backup-db.sh 2>&1", { encoding: "utf-8", timeout: 30000 });
     res.json({ ok: true, output: out.trim() });
@@ -898,8 +918,8 @@ router.post("/server-backup", async (req, res) => {
   }
 });
 
-router.delete("/server-backup/:filename", (req, res) => {
-  const { filename } = req.params;
+router.delete("/server-backup/:filename", requireSuper, (req, res) => {
+  const filename = String(req.params.filename);
   if (!/^msbeton_\d{8}_\d{6}\.sql\.gz$/.test(filename)) {
     res.status(400).json({ ok: false, error: "Neplatný názov súboru" });
     return;

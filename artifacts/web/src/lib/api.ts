@@ -96,6 +96,7 @@ export interface LoggedClient {
   smsOrderDisabled?: boolean;
   smsShareOnly?: boolean;
   adminReader?: boolean;
+  adminRole?: string; // "manager" | "reader"
 }
 
 export const clientApi = {

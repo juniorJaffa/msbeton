@@ -122,7 +122,8 @@ export interface Client {
   biometricAuthLog?: { ts: string; ok: boolean; ip: string; credId?: string }[];
   updatedAt?: string; // item-level merge (multi-admin)
   favorite?: boolean; // obľúbený klient — pin hore (srdiečko)
-  adminReader?: boolean; // admin-čitateľ: read-only prístup do admin prostredia (ako Google Sheets viewer)
+  adminReader?: boolean; // admin-čitateľ: read-only prístup (legacy bool; nová je adminRole)
+  adminRole?: "reader" | "manager"; // povýšenie klienta: reader (čítateľ) | manager (Správca)
 }
 
 export interface Order {

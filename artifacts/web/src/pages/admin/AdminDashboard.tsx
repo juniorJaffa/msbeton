@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { LogOut, Users, Truck, Wrench, Layers, RefreshCw, ClipboardList, BarChart2, TrendingUp, MoreHorizontal, Search, Fingerprint, Server, Eye } from "lucide-react";
+import { LogOut, Users, Truck, Wrench, Layers, RefreshCw, ClipboardList, BarChart2, TrendingUp, MoreHorizontal, Search, Fingerprint, Server, Eye, ShieldCheck } from "lucide-react";
 import { VersionBadge } from "@/components/VersionBadge";
-import { isLoggedIn, logout, isBiometricAvailable, hasStoredCredential, isReader } from "@/lib/adminAuth";
+import { isLoggedIn, logout, isBiometricAvailable, hasStoredCredential, isReader, isManager } from "@/lib/adminAuth";
 import { adminData, adminApi, syncFromServer, Order } from "@/lib/adminData";
 import { OrderNotificationToast } from "./OrderNotificationToast";
 import { AdminLiveBar } from "./AdminLiveBar";
@@ -172,6 +172,7 @@ export default function AdminDashboard() {
   ];
 
   const readerMode = isReader();
+  const managerMode = isManager();
   return (
     <div className="min-h-screen concrete-light" style={{ fontFamily: "Montserrat, sans-serif", overflowX: "clip" }}>
       {/* Admin-čitateľ banner — read-only režim */}
@@ -179,6 +180,13 @@ export default function AdminDashboard() {
         <div className="fixed top-12 sm:top-[88px] left-0 right-0 z-40 bg-blue-600 text-white text-center text-[11px] sm:text-xs font-bold py-1.5 px-4 flex items-center justify-center gap-2 shadow">
           <Eye className="w-4 h-4 shrink-0" />
           Režim čítania — admin-čitateľ. Zmeny a mazanie sú vypnuté.
+        </div>
+      )}
+      {/* Správca banner — môže upravovať, ale nie povyšovať/mazať/server */}
+      {managerMode && (
+        <div className="fixed top-12 sm:top-[88px] left-0 right-0 z-40 bg-secondary text-white text-center text-[11px] sm:text-xs font-bold py-1.5 px-4 flex items-center justify-center gap-2 shadow">
+          <ShieldCheck className="w-4 h-4 shrink-0" />
+          Režim Správca — môžeš upravovať. Povyšovanie adminov, mazanie klientov a server akcie sú len pre vlastníka.
         </div>
       )}
       {/* Top nav */}

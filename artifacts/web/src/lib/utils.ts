@@ -5,6 +5,18 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// Skráti IP pre zobrazenie — IPv6 je dlhé a nečitateľné, ukáž len prvý:…:posledný blok.
+// IPv4 necháva celé. Slúži len ako diagnostický doplnok — identita je zariadenie, nie IP.
+export function shortIp(ip?: string): string {
+  if (!ip || ip === "?" || ip === "unknown") return "";
+  if (ip.includes(":")) {
+    const parts = ip.split(":").filter(Boolean);
+    if (parts.length <= 2) return ip;
+    return `${parts[0]}:…:${parts[parts.length - 1]}`;
+  }
+  return ip;
+}
+
 // Formátuje telefónne číslo na jednotný formát 0XXX XXX XXX.
 // Akceptuje aj medzinárodný prefix +421 alebo 00421 a normalizuje na 0XXX.
 export function formatPhone(value: string): string {

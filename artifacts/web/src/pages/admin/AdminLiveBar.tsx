@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2, Check, GitMerge, AlertTriangle, Users } from "lucide-react";
 import { adminApi, type PresenceSession } from "@/lib/adminData";
+import { DeviceIcon } from "./tabs/AdminAccessPanel";
+import { shortIp } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
 type SaveState = "saving" | "saved" | "merged" | "error";
@@ -98,12 +100,14 @@ export function AdminLiveBar() {
               </div>
               {others.map(s => (
                 <div key={s.session} className="px-3 py-2 flex items-center justify-between gap-2 text-xs border-b border-gray-50 last:border-0">
-                  <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex items-center gap-1.5 min-w-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
+                    <DeviceIcon label={s.device} className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                     <span className="font-semibold text-gray-700 truncate">{s.device}</span>
-                    {s.role === "reader" && <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-1 rounded">čítateľ</span>}
+                    {s.role === "reader" && <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-1 rounded shrink-0">čítateľ</span>}
+                    {s.role === "manager" && <span className="text-[9px] font-black text-secondary bg-secondary/10 px-1 rounded shrink-0">správca</span>}
                   </div>
-                  <span className="font-mono text-[10px] text-gray-400 shrink-0">{s.ip}</span>
+                  <span className="font-mono text-[10px] text-gray-300 shrink-0" title={s.ip}>{shortIp(s.ip)}</span>
                 </div>
               ))}
               <div className="px-3 py-1.5 bg-blue-50/60 text-[10px] text-blue-700 leading-snug">

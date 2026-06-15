@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { ShieldCheck, ChevronDown, ChevronUp, RefreshCw, Smartphone, Monitor, Laptop, Users, Fingerprint, History, Plus, Pencil, Trash2, Info, Check, X } from "lucide-react";
 import { adminApi, type PresenceSession, type AuditEntry } from "@/lib/adminData";
 import { getAdminDeviceName, setAdminDeviceName, getAdminDeviceAuto } from "@/lib/adminAuth";
-import { cn } from "@/lib/utils";
+import { cn, shortIp } from "@/lib/utils";
 
 interface AdminBioEntry { ts: string; ok: boolean; event: string; device?: string; ip?: string; reason?: string }
 interface AdminBioStats { devices: number; todayOk: number; todayFail: number; lastActivity: string | null }
@@ -13,7 +13,7 @@ const AUDIT_KEY_LABEL: Record<string, string> = {
 };
 
 // Ikona podľa názvu zariadenia (custom názov tiež môže obsahovať iPhone/NB…)
-function DeviceIcon({ label, className }: { label: string; className?: string }) {
+export function DeviceIcon({ label, className }: { label: string; className?: string }) {
   const l = label.toLowerCase();
   if (/iphone|ipad|android|mobil|telef|phone|tablet/.test(l)) return <Smartphone className={className} />;
   if (/mac|macbook|laptop|notebook|\bnb\b/.test(l)) return <Laptop className={className} />;
@@ -159,7 +159,10 @@ export function AdminAccessPanel() {
                 <DeviceIcon label={s.device} className="w-3.5 h-3.5 text-gray-500 shrink-0" />
                 <span className="text-xs font-semibold text-gray-700 truncate">{s.device}</span>
                 {s.role === "reader" && <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-1 rounded shrink-0">čítateľ</span>}
-                <span className="ml-auto text-[10px] text-gray-400 font-mono shrink-0">{s.ip} · {relTime(s.lastSeen)}</span>
+                {s.role === "manager" && <span className="text-[9px] font-black text-secondary bg-secondary/10 px-1 rounded shrink-0">správca</span>}
+                <span className="ml-auto text-[10px] text-gray-400 shrink-0 flex items-center gap-1">
+                  <span className="font-mono text-gray-300" title={s.ip}>{shortIp(s.ip)}</span>· {relTime(s.lastSeen)}
+                </span>
               </div>
             ))}
             {others.length === 0 && <div className="text-[11px] text-gray-400 pl-4 py-0.5">Nikto iný práve nie je prihlásený.</div>}
@@ -230,7 +233,7 @@ export function AdminAccessPanel() {
                     </div>
                     <div className="text-right shrink-0">
                       <div className="text-[10px] text-gray-400 font-mono whitespace-nowrap">{relTime(e.ts)}</div>
-                      <div className="text-[9px] text-gray-300 font-mono">{e.ip}</div>
+                      <div className="text-[9px] text-gray-300 font-mono" title={e.ip}>{shortIp(e.ip)}</div>
                     </div>
                   </div>
                 ))}

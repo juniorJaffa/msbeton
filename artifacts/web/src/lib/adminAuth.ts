@@ -103,14 +103,14 @@ export function isLoggedIn(): boolean {
   }
 }
 
-// Rola z admin JWT: "admin" (plný) alebo "reader" (admin-čitateľ, read-only)
-export function getAdminRole(): "admin" | "reader" | null {
+// Rola z admin JWT. Hierarchia: admin (superadmin msbeton) > manager (Správca) > reader (Čítateľ)
+export function getAdminRole(): "admin" | "manager" | "reader" | null {
   const token = localStorage.getItem(TOKEN_KEY);
   if (!token) return null;
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
     if (Date.now() / 1000 >= (payload.exp as number)) return null;
-    return payload.role === "reader" ? "reader" : "admin";
+    return payload.role === "reader" ? "reader" : payload.role === "manager" ? "manager" : "admin";
   } catch {
     return null;
   }
@@ -118,6 +118,16 @@ export function getAdminRole(): "admin" | "reader" | null {
 
 export function isReader(): boolean {
   return getAdminRole() === "reader";
+}
+
+// Správca — môže upravovať, ale nie povyšovať/mazať klientov/server destruktívne
+export function isManager(): boolean {
+  return getAdminRole() === "manager";
+}
+
+// Superadmin (msbeton) — plný prístup vrátane povyšovania adminov a server akcií
+export function isSuper(): boolean {
+  return getAdminRole() === "admin";
 }
 
 export function login(): void {

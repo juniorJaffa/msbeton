@@ -7,11 +7,18 @@ import { PhoneInput } from "@/components/PhoneInput";
 import { cn, formatPhone } from "@/lib/utils";
 import { adminData, adminApi, syncFromServer, Client, TransportSettings, Order, SYSTEM_OWNER_ID, getKamenivoGroup, readerBlocked } from "@/lib/adminData";
 import { clientAvatar } from "@/lib/clientAvatar";
-import { isBiometricAvailable as isAdminBioAvail, hasStoredCredential as hasAdminBio, isReader } from "@/lib/adminAuth";
+import { isBiometricAvailable as isAdminBioAvail, hasStoredCredential as hasAdminBio, isReader, isSuper } from "@/lib/adminAuth";
 import { EditableField, authFetch } from "./_shared";
 
 function genPassword() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
+}
+
+// Admin rola klienta (povýšenie): manager (Správca) > reader (Čítateľ). Backward-compat s adminReader bool.
+function clientRole(c: Client): "manager" | "reader" | null {
+  if (c.adminRole === "manager") return "manager";
+  if (c.adminRole === "reader" || c.adminReader) return "reader";
+  return null;
 }
 
 const COMPANY_SUFFIXES = [", s.r.o.", ", spol. s r.o.", ", a.s.", ", k.s.", ", v.o.s."];
@@ -1141,12 +1148,14 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                 <div className="relative shrink-0">
                   <div className={cn("w-9 h-9 rounded-full flex items-center justify-center ring-2",
                     c.isOwner ? "bg-primary/20 ring-primary/40"
-                      : c.adminReader ? "bg-blue-100 ring-blue-400"
+                      : clientRole(c) === "manager" ? "bg-secondary/10 ring-secondary/50"
+                      : clientRole(c) === "reader" ? "bg-blue-100 ring-blue-400"
                       : !hasLogin ? "ring-gray-200"
                       : c.active ? "ring-green-400/60" : "ring-red-300/60",
-                    !c.isOwner && !c.adminReader && av.palette.bg)}>
+                    !c.isOwner && !clientRole(c) && av.palette.bg)}>
                     {c.isOwner ? <Crown className="w-4 h-4 text-primary" />
-                      : c.adminReader ? <Eye className="w-4 h-4 text-blue-600" />
+                      : clientRole(c) === "manager" ? <ShieldCheck className="w-4 h-4 text-secondary" />
+                      : clientRole(c) === "reader" ? <Eye className="w-4 h-4 text-blue-600" />
                       : av.kind === "template" ? <Percent className={cn("w-4 h-4", av.palette.fg)} />
                       : av.kind === "phone" ? <Phone className={cn("w-4 h-4", av.palette.fg)} />
                       : <span className={cn("font-black", av.palette.fg, av.mono.length > 1 ? "text-xs" : "text-sm")}>{av.mono || av.char}</span>
@@ -1173,7 +1182,8 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                 <div className="flex-1 min-w-0">
                   <div className="font-bold text-secondary text-sm leading-tight flex items-center gap-1.5 flex-wrap" style={{ wordBreak: "normal", overflowWrap: "anywhere" }}>
                     {fullName}
-                    {c.adminReader && <span className="inline-flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wide bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded"><Eye className="w-2.5 h-2.5" />Čítateľ</span>}
+                    {clientRole(c) === "manager" && <span className="inline-flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wide bg-secondary/10 text-secondary px-1.5 py-0.5 rounded"><ShieldCheck className="w-2.5 h-2.5" />Správca</span>}
+                    {clientRole(c) === "reader" && <span className="inline-flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wide bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded"><Eye className="w-2.5 h-2.5" />Čítateľ</span>}
                   </div>
                   {c.company && <div className="text-xs text-gray-400 truncate">{c.company}</div>}
                   {/* Mobile-only badges — zľavy VEĽKÉ a viditeľné (nie ikonizované) */}
@@ -1564,13 +1574,15 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                                             {lastUse ? ` · posl. ${new Date(lastUse.ts).toLocaleDateString("sk-SK", { day: "numeric", month: "numeric" })}` : ""}
                                           </div>
                                         </div>
-                                        <button
-                                          disabled={deleting}
-                                          onClick={() => { if (confirm(`Zabudnúť zariadenie „${device}" pre ${fullName}? Z tohto zariadenia sa bude vyžadovať opätovná aktivácia.`)) forgetDevice(c.id, cr.id, creds); }}
-                                          title="Zabudnúť toto zariadenie"
-                                          className="shrink-0 flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-red-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50 cursor-pointer">
-                                          {deleting ? <RefreshCw className="w-3 h-3 animate-spin" /> : <ShieldX className="w-3 h-3" />} Zabudnúť
-                                        </button>
+                                        {isSuper() && (
+                                          <button
+                                            disabled={deleting}
+                                            onClick={() => { if (confirm(`Zabudnúť zariadenie „${device}" pre ${fullName}? Z tohto zariadenia sa bude vyžadovať opätovná aktivácia.`)) forgetDevice(c.id, cr.id, creds); }}
+                                            title="Zabudnúť toto zariadenie"
+                                            className="shrink-0 flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-red-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50 cursor-pointer">
+                                            {deleting ? <RefreshCw className="w-3 h-3 animate-spin" /> : <ShieldX className="w-3 h-3" />} Zabudnúť
+                                          </button>
+                                        )}
                                       </div>
                                     );
                                   })}
@@ -1612,6 +1624,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                                     </table>
                                   </div>
                                 )}
+                                {isSuper() && (
                                 <button
                                   disabled={rState === "loading"}
                                   onClick={async () => {
@@ -1642,6 +1655,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                                     : rState === "error" ? <><X className="w-3.5 h-3.5" /> Chyba</>
                                     : <><ShieldX className="w-3.5 h-3.5" /> Zrušiť všetky zariadenia</>}
                                 </button>
+                                )}
                               </div>
                             )}
                           </div>
@@ -1770,15 +1784,35 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                               <div className="text-[11px] text-gray-400">Zobrazí ★ Podmienky v kalkulačke · admin nastaví počet vozidiel mimo normy a berie zodpovednosť</div>
                             </div>
                           </label>
-                          {/* Admin-čitateľ — superadmin (plný admin, nie reader) ho môže označiť; nie pre ownera */}
-                          {!readOnly && !c.isOwner && (
-                            <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-blue-50/50 select-none border-t border-gray-100">
-                              <input type="checkbox" checked={c.adminReader ?? false} onChange={e => update(c.id, { adminReader: e.target.checked })} className="accent-blue-600 w-4 h-4 shrink-0" />
-                              <div className="flex-1 min-w-0">
-                                <span className="text-sm text-gray-700 flex items-center gap-1.5"><Eye className="w-4 h-4 text-blue-600" />Admin-čitateľ (read-only)</span>
-                                <div className="text-[11px] text-gray-400">Po prihlásení svojimi údajmi vidí celé admin prostredie, ale nemôže nič meniť ani mazať (ako čítateľ v Google Sheets)</div>
+                          {/* Admin prístup — iba SUPERADMIN (msbeton) môže povyšovať; nie pre ownera. Správca to nevidí. */}
+                          {isSuper() && !c.isOwner && (
+                            <div className="px-3 py-2.5 border-t border-gray-100 bg-gray-50/40">
+                              <div className="text-[11px] font-bold text-gray-600 mb-1.5 flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-secondary" />Admin prístup</div>
+                              <div className="flex gap-1.5">
+                                {([
+                                  { v: null as null | "reader" | "manager", label: "Žiadny", Icon: X },
+                                  { v: "reader" as const, label: "Čítateľ", Icon: Eye },
+                                  { v: "manager" as const, label: "Správca", Icon: ShieldCheck },
+                                ]).map(opt => {
+                                  const active = (clientRole(c) ?? null) === opt.v;
+                                  return (
+                                    <button key={String(opt.v)} type="button"
+                                      onClick={() => update(c.id, { adminRole: opt.v ?? undefined, adminReader: opt.v === "reader" })}
+                                      className={cn("flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-bold border transition-colors",
+                                        active
+                                          ? opt.v === "manager" ? "bg-secondary text-white border-secondary"
+                                            : opt.v === "reader" ? "bg-blue-600 text-white border-blue-600"
+                                            : "bg-gray-300 text-gray-700 border-gray-400"
+                                          : "bg-white text-gray-500 border-gray-200 hover:border-gray-300")}>
+                                      <opt.Icon className="w-3.5 h-3.5" /> {opt.label}
+                                    </button>
+                                  );
+                                })}
                               </div>
-                            </label>
+                              <div className="text-[11px] text-gray-400 mt-1.5 leading-snug">
+                                <strong className="text-blue-600">Čítateľ</strong> = vidí všetko, nič nemení. <strong className="text-secondary">Správca</strong> = upravuje klientov/ceny/objednávky, ale <strong>nepovyšuje adminov, nemaže klientov</strong> ani nerobí server akcie. Prihlasuje sa svojimi údajmi ({c.loginId || "loginID"}).
+                              </div>
+                            </div>
                           )}
                           {/* — SMS — */}
                           <div className="px-3 pt-1.5 pb-0.5 bg-gray-50">
@@ -1876,8 +1910,8 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                           </button>
                         </div>
                       )}
-                      {/* Kôš vpravo — vymazať klienta (šetrí výšku, žiaden full-width blok) */}
-                      {c.id !== SYSTEM_OWNER_ID && (
+                      {/* Kôš vpravo — vymazať klienta. Iba superadmin (Správca/Čítateľ nemaže). */}
+                      {c.id !== SYSTEM_OWNER_ID && isSuper() && (
                         <button onClick={() => remove(c.id)} title="Vymazať klienta"
                           className="ml-auto p-2 sm:p-1.5 rounded border border-red-200 text-red-400 hover:text-red-600 hover:border-red-400 active:bg-red-50 transition-colors shrink-0">
                           <Trash2 className="w-4 h-4" />
