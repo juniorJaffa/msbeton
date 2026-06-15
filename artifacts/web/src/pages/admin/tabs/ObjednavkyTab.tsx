@@ -414,7 +414,21 @@ function exportOrderPDF(o: Order, format: "a4" | "a5" = "a4") {
       ${o.status === "vyplatena" && o.paidAmount !== undefined ? `<div style="font-size:7.5pt;color:rgba(255,255,255,0.7);margin-top:1.5mm">Zaplatené ${fmtEurPdf(o.paidAmount)}${Math.abs(o.paidAmount - o.totalSDph) > 0.01 ? ` <span style="font-weight:bold;color:${o.paidAmount > o.totalSDph ? "#86efac" : "#ef4444"}">${o.paidAmount > o.totalSDph ? `+${(o.paidAmount - o.totalSDph).toFixed(2)} € tringelt` : `${(o.paidAmount - o.totalSDph).toFixed(2)} €`}</span>` : ""}</div>` : ""}
     </div>
   </div>
-  <div style="margin-top:3mm;font-size:6.5pt;color:#aaa;text-align:center">Interný doklad · MS-BETON, spol. s r.o. · IČ DPH SK2122074603</div>
+  <!-- Podpisy + Google QR — zmenšené, stále na A5 -->
+  <div style="display:flex;gap:5mm;margin-top:4mm;align-items:flex-end">
+    <div style="flex:1;display:flex;gap:4mm">
+      <div style="flex:1;text-align:center"><div style="height:10mm"></div><div style="border-top:1px solid #bbb;padding-top:1mm;font-size:7pt;color:#888">Dodal</div></div>
+      <div style="flex:1;text-align:center"><div style="height:10mm"></div><div style="border-top:1px solid #bbb;padding-top:1mm;font-size:7pt;color:#888">Prevzal</div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:2.5mm;border-left:1px solid #eee;padding-left:4mm">
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&margin=0&data=https%3A%2F%2Fg.page%2Fr%2FCeTg2gjXL3dWEBM%2Freview" style="width:15mm;height:15mm;display:block;flex-shrink:0" />
+      <div style="max-width:30mm">
+        <div style="font-size:7pt;font-weight:bold;color:#001D3D;line-height:1.2">Ohodnoťte nás na Google</div>
+        <div style="font-size:6pt;color:#999;margin-top:0.5mm">g.page/r/CeTg2gjXL3dWEBM/review</div>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:3mm;padding-top:2mm;border-top:1px solid #eee;font-size:6.5pt;color:#aaa;text-align:center">Interný doklad · MS-BETON, spol. s r.o. · IČO 55747591 · IČ DPH SK2122074603</div>
 </div>
 </body></html>`;
 
