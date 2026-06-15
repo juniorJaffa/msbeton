@@ -331,7 +331,16 @@ ${buildTable(discHdr, sluzbyRows)}
 <h2 style="font-size:10pt;color:#EDC531;background:#001D3D;padding:4px 8px;margin-bottom:8px;margin-top:12px">Doprava</h2>
 ${buildTable(dopravaHdr, dopravaRows)}
 
-<div style="margin-top:10mm;padding-top:4mm;border-top:1px solid #eee;font-size:7.5pt;color:#999">
+<div style="margin-top:8mm;padding:3mm 5mm;border:1px solid #ddd;border-radius:3px;display:flex;align-items:center;gap:5mm">
+  <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=0&data=https%3A%2F%2Fg.page%2Fr%2FCeTg2gjXL3dWEBM%2Freview" style="width:20mm;height:20mm;display:block;flex-shrink:0" />
+  <div>
+    <div style="font-size:9pt;font-weight:bold;color:#001D3D;margin-bottom:1px">Spokojní? Ohodnoťte nás ⭐</div>
+    <div style="font-size:7.5pt;color:#555">Vážime si Váš názor — pomôžete aj ostatným zákazníkom.</div>
+    <div style="font-size:7.5pt;color:#888;margin-top:1px">msbeton.sk/recenzia</div>
+  </div>
+</div>
+
+<div style="margin-top:5mm;padding-top:4mm;border-top:1px solid #eee;font-size:7.5pt;color:#999">
   Vypracovala spoločnosť: MS-BETON, spol. s r.o. &nbsp;|&nbsp; IČO: 55747591 &nbsp;|&nbsp; IČ DPH: SK2122074603<br>
   Turie 468, 013 12 Turie &nbsp;|&nbsp; +421 909 205 205 &nbsp;|&nbsp; info@msbeton.sk &nbsp;|&nbsp; msbeton.sk
 </div>
