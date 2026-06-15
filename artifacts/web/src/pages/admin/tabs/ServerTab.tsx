@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { RefreshCw, HardDrive, Database, Activity, Server, Download, CheckCircle, XCircle, Clock, Archive, Shield, Trash2, ShieldAlert, Info } from "lucide-react";
+import { ClientBiometriaPanel } from "./ClientBiometriaPanel";
+import { AdminAccessPanel } from "./AdminAccessPanel";
 
 interface ServerStatus {
   pm2: { status: string; uptimeMs: number; restarts: number; memoryBytes: number };
@@ -59,7 +61,7 @@ function fmtBackupName(file: string): string {
   return `${m[3]}.${m[2]}.${m[1]}  ${m[4]}:${m[5]}`;
 }
 
-export default function ServerTab() {
+export default function ServerTab({ onOpenClient }: { onOpenClient?: (loginId: string) => void }) {
   const [data, setData] = useState<ServerStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -135,6 +137,10 @@ export default function ServerTab() {
 
   return (
     <div className="p-4 max-w-2xl mx-auto space-y-4">
+      {/* Biometria + admin telemetria — navrch, vlastný fetch (nezávislé od pomalého server-status) */}
+      <ClientBiometriaPanel onOpenClient={onOpenClient} />
+      <AdminAccessPanel />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-black text-secondary uppercase tracking-widest">Server Status</h2>

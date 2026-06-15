@@ -314,7 +314,7 @@ export default function AdminDashboard() {
             {tab === "analytics" && <AnalyticsTab />}
             {tab === "statistiky" && <StatistikyTab />}
             {tab === "gsc" && <SearchConsoleTab />}
-            {tab === "server" && <ServerTab />}
+            {tab === "server" && <ServerTab onOpenClient={(loginId) => { setGoToClientId(loginId); setTab("klienti"); window.location.hash = "klienti"; }} />}
           </Suspense>
         </div>
       </div>
