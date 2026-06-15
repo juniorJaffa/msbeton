@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Check, GitMerge, AlertTriangle, Users } from "lucide-react";
+import { Loader2, Check, GitMerge, AlertTriangle, Users, X } from "lucide-react";
 import { adminApi, type PresenceSession } from "@/lib/adminData";
 import { DeviceIcon, roleBadge } from "./tabs/AdminAccessPanel";
 import { shortIp, cn } from "@/lib/utils";
 import { getAdminRole } from "@/lib/adminAuth";
-import { toast } from "@/hooks/use-toast";
 
 type SaveState = "saving" | "saved" | "merged" | "error";
 interface SaveEvt { key: string; state: SaveState }
@@ -35,6 +34,9 @@ export function AdminLiveBar() {
   const [others, setOthers] = useState<PresenceSession[]>([]);
   const seenOthers = useRef<Set<string> | null>(null); // null = ešte neprebehol prvý poll
   const [showList, setShowList] = useState(false);
+  // Prominentný "pripojil sa admin" alert priamo v lište (nie ľahko prehliadnuteľný toast)
+  const [joinAlert, setJoinAlert] = useState<string[] | null>(null);
+  const joinTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -47,11 +49,12 @@ export function AdminLiveBar() {
           setOthers(o);
           const ids = new Set(o.map(s => s.session));
           if (seenOthers.current !== null) {
-            // toast len pre NOVO pripojené session (nie pri prvom načítaní)
-            for (const s of o) {
-              if (!seenOthers.current.has(s.session)) {
-                toast({ title: "👥 Ďalší admin online", description: `Pripojil sa: ${s.device}. Pracujete súčasne — zmeny sa zlučujú automaticky.`, duration: 5000 });
-              }
+            // NOVO pripojené session (nie pri prvom načítaní) → prominentný alert
+            const fresh = o.filter(s => !seenOthers.current!.has(s.session));
+            if (fresh.length > 0) {
+              setJoinAlert(fresh.map(s => s.device));
+              if (joinTimer.current) clearTimeout(joinTimer.current);
+              joinTimer.current = setTimeout(() => setJoinAlert(null), 15000);
             }
           }
           seenOthers.current = ids;
@@ -60,7 +63,7 @@ export function AdminLiveBar() {
       finally { if (!cancelled) timer = setTimeout(poll, 12000); }
     };
     poll();
-    return () => { cancelled = true; clearTimeout(timer); };
+    return () => { cancelled = true; clearTimeout(timer); if (joinTimer.current) clearTimeout(joinTimer.current); };
   }, []);
 
   const savePill = (() => {
@@ -81,6 +84,23 @@ export function AdminLiveBar() {
 
   return (
     <div className="fixed bottom-24 sm:bottom-6 left-0 right-0 z-[55] flex flex-col items-center gap-1.5 px-3 pointer-events-none">
+      {/* Prominentný alert pri pripojení ďalšieho admina — ostáva 15 s, X na zatvorenie */}
+      {joinAlert && joinAlert.length > 0 && (
+        <div className="pointer-events-auto flex items-center gap-2.5 px-3.5 py-2 rounded-xl border-2 border-emerald-400 bg-emerald-50 text-emerald-900 shadow-xl max-w-[92vw] animate-in fade-in slide-in-from-bottom-2">
+          <span className="relative flex h-2.5 w-2.5 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-70" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+          </span>
+          <Users className="w-4 h-4 shrink-0" />
+          <span className="text-xs font-bold leading-tight">
+            {joinAlert.length === 1 ? <>Pripojil sa ďalší admin: <span className="font-black">{joinAlert[0]}</span></> : <>Pripojili sa {joinAlert.length} admini: <span className="font-black">{joinAlert.join(", ")}</span></>}
+            <span className="block font-normal text-emerald-700/80 text-[11px]">Pracujete súčasne — zmeny sa zlučujú automaticky.</span>
+          </span>
+          <button onClick={() => setJoinAlert(null)} className="shrink-0 p-1 -mr-1 rounded-full hover:bg-emerald-200/60 transition-colors" title="Zavrieť">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
       {savePill}
       {others.length > 0 && (
         <div className="pointer-events-auto relative">
