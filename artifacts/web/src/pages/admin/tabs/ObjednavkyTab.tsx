@@ -1,14 +1,17 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { SlidersHorizontal, ShoppingCart, MessageSquare, MapPin, Navigation, Copy, Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, AlertTriangle, FileText, Calculator, Users, Mountain, Waves, Phone, Mail, Truck, Fingerprint, Crown, Percent, ShieldCheck, Eye } from "lucide-react";
+import { SlidersHorizontal, ShoppingCart, MessageSquare, MapPin, Navigation, Copy, Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, AlertTriangle, FileText, Calculator, Users, Mountain, Waves, Phone, Mail, Truck, Fingerprint, Crown, Percent, ShieldCheck, Eye, Globe } from "lucide-react";
 
-// Kto objednávku vytvoril — vizuálna identita (admin / admin-čitateľ / klient sám)
+// Kto objednávku vytvoril — vizuálna identita.
+// "anonym" = neprihlásený návštevník cez verejný košík (bežný web tok) → viditeľný "web" chip.
+// undefined = staré objednávky bez údaja → null (žiadny chip).
 function creatorMeta(role?: string): { Icon: React.ElementType; label: string; cls: string } | null {
   switch (role) {
     case "admin":  return { Icon: ShieldCheck, label: "admin",    cls: "bg-secondary/10 text-secondary border-secondary/20" };
     case "reader": return { Icon: Eye,         label: "čítateľ",  cls: "bg-blue-50 text-blue-600 border-blue-200" };
     case "klient": return { Icon: Users,       label: "klient",   cls: "bg-gray-100 text-gray-500 border-gray-200" };
-    default: return null; // anonym / staré objednávky bez údaja → nič
+    case "anonym": return { Icon: Globe,       label: "web",      cls: "bg-sky-50 text-sky-600 border-sky-200" };
+    default: return null; // staré objednávky bez údaja
   }
 }
 import { adminData, adminApi, Order, TransportSettings, getKamenivoGroup, readerBlocked } from "@/lib/adminData";
