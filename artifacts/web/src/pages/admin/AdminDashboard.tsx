@@ -27,6 +27,16 @@ function TabSpinner() {
   );
 }
 
+// Videné objednávky — persistované, aby re-mount/reload (časté na 3G) nestratil baseline
+// a nezopakoval toast pre tú istú objednávku.
+const SEEN_ORDERS_KEY = "msbeton_seen_order_ids";
+function loadSeenOrderIds(): string[] {
+  try { const v = JSON.parse(localStorage.getItem(SEEN_ORDERS_KEY) || "[]"); return Array.isArray(v) ? v : []; } catch { return []; }
+}
+function saveSeenOrderIds(ids: Set<string>): void {
+  try { localStorage.setItem(SEEN_ORDERS_KEY, JSON.stringify([...ids].slice(-800))); } catch { /* quota */ }
+}
+
 export default function AdminDashboard() {
   const [, navigate] = useLocation();
   const [tab, setTab] = useState<Tab>(() => {
@@ -77,7 +87,8 @@ export default function AdminDashboard() {
   }, []);
 
   const [orderBadge, setOrderBadge] = useState(0);
-  const knownOrderIds = useRef<Set<string>>(new Set(adminData.getOrders().map(o => o.id)));
+  // baseline = videné objednávky z localStorage (prežijú re-mount/reload) ∪ aktuálny localStorage
+  const knownOrderIds = useRef<Set<string>>(new Set([...loadSeenOrderIds(), ...adminData.getOrders().map(o => o.id)]));
   const baselineDone = useRef(false); // prvý fetch = baseline, neupozorňovať na existujúci backlog
   const [toastOrders, setToastOrders] = useState<Order[]>([]);
 
@@ -88,12 +99,17 @@ export default function AdminDashboard() {
     if (tab === "objednavky") {
       setOrderBadge(0);
       adminData.getOrders().forEach(o => knownOrderIds.current.add(o.id));
+      saveSeenOrderIds(knownOrderIds.current);
       return;
     }
+    // Rekurzívny setTimeout (nie setInterval) — na 3G fetch trvá >8s, setInterval by
+    // spúšťal prekrývajúce sa polls a hromadil ich. Ďalší poll až po dokončení.
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
     const poll = async () => {
       try {
         const result = await adminApi.getOrders();
-        if (!result?.data) return;
+        if (cancelled || !result?.data) return;
         const orders = result.data as Order[];
 
         // Prvý fetch po prihlásení: označ VŠETKY existujúce ako známe a NEUPOZORŇUJ
@@ -101,12 +117,14 @@ export default function AdminDashboard() {
         if (!baselineDone.current) {
           orders.forEach(o => knownOrderIds.current.add(o.id));
           baselineDone.current = true;
+          saveSeenOrderIds(knownOrderIds.current);
           return;
         }
 
         const newOnes = orders.filter(o => !knownOrderIds.current.has(o.id));
         if (newOnes.length === 0) return;
         newOnes.forEach(o => knownOrderIds.current.add(o.id));
+        saveSeenOrderIds(knownOrderIds.current); // persist hneď → re-mount nezopakuje toast
         setOrderBadge(n => n + newOnes.length);
 
         // Toast LEN genuinely nové (čerstvé createdAt) — backlog nikdy nespamuje
@@ -118,10 +136,13 @@ export default function AdminDashboard() {
         if (toastable.length > 0) {
           setToastOrders(prev => [...prev, ...toastable].slice(0, MAX_TOASTS));
         }
-      } catch {}
+      } catch { /* sieťová chyba — ticho, ďalší poll skúsi znova */ }
+      finally {
+        if (!cancelled) timer = setTimeout(poll, 8000);
+      }
     };
-    const interval = setInterval(poll, 8000);
-    return () => clearInterval(interval);
+    timer = setTimeout(poll, 8000);
+    return () => { cancelled = true; clearTimeout(timer); };
   }, [tab]);
 
   const handleToastDismiss = () => setToastOrders(prev => prev.slice(1));
