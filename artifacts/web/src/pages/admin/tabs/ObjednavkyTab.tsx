@@ -199,7 +199,7 @@ function TabBadge({ tab }: { tab: Order["tab"] }) {
   );
 }
 
-function exportOrderPDF(o: Order) {
+function exportOrderPDF(o: Order, format: "a4" | "a5" = "a4") {
   const tabLabels: Record<string, string> = { pumpa: "Pumpa", mix: "Domiešavač", vlastnadoprava: "Vlastná doprava" };
   const statusLabels: Record<string, string> = { nova: "Nová", potvrdena: "Potvrdená", odoslana: "Odoslaná FA", vyuctovana: "Vyúčtovaná", vyplatena: "Vyplatená", zrusena: "Zrušená" };
   const today = new Date(o.createdAt).toLocaleDateString("sk-SK");
@@ -345,7 +345,80 @@ function exportOrderPDF(o: Order) {
     o.discountCelkovo ? `Celkovo −${o.discountCelkovo}%` : "",
   ].filter(Boolean).join(" | ");
 
-  const html = `<!DOCTYPE html><html lang="sk"><head>
+  // ── A5 kompaktný interný doklad — páruje s ručným čerpacím listkom (hotovostné betonáže) ──
+  // Bez podpisového boxu / Google QR / plného footera — len to podstatné na pol stránky.
+  const platbaLbl = o.priceMode === "hotovost" ? "Hotovosť" : "Faktúra";
+  const a5Doruc = [
+    `<tr><td style="color:#999;padding:0.5mm 4mm 0.5mm 0;white-space:nowrap">Typ</td><td style="font-weight:bold">${tabLabels[o.tab] ?? o.tab}</td></tr>`,
+    `<tr><td style="color:#999;padding:0.5mm 4mm 0.5mm 0">Množstvo</td><td style="font-weight:bold">${o.totalQty} m³${(o.fillupM3 ?? 0) > 0 ? ` <span style="color:#92400e;font-weight:normal">+${o.fillupM3} doťaž.</span>` : ""}</td></tr>`,
+    o.km ? `<tr><td style="color:#999;padding:0.5mm 4mm 0.5mm 0">Vzdialenosť</td><td>${o.km} km</td></tr>` : "",
+    (o.address || o.mapPlusCode) ? `<tr><td style="color:#999;padding:0.5mm 4mm 0.5mm 0;vertical-align:top">Adresa</td><td>${o.address ?? ""}${o.mapPlusCode ? `${o.address ? "<br>" : ""}<span style="font-family:monospace;font-size:6.5pt;color:#aaa">${o.mapPlusCode}</span>` : ""}</td></tr>` : "",
+    effectiveZoneName ? `<tr><td style="color:#999;padding:0.5mm 4mm 0.5mm 0">Doprava</td><td>${effectiveZoneName}${effectiveZoneType !== "standard" ? ` <span style="color:#b58c00;font-weight:700">${effectiveZoneType === "km" ? "(€/km)" : "(€/auto)"}</span>` : ""}</td></tr>` : "",
+    `<tr><td style="color:#999;padding:0.5mm 4mm 0.5mm 0">Platba</td><td style="font-weight:bold">${platbaLbl}</td></tr>`,
+    o.viaSms ? `<tr><td style="color:#999;padding:0.5mm 4mm 0.5mm 0">Zdroj</td><td>SMS</td></tr>` : "",
+  ].filter(Boolean).join("");
+
+  const a5Html = `<!DOCTYPE html><html lang="sk"><head>
+<meta charset="utf-8">
+<title>Objednávka A5 – ${o.clientName || "klient"}</title>
+<style>
+  @page { size: A5; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #222; }
+  table { border-collapse: collapse; width: 100%; }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head><body>
+<!-- Kompaktná hlavička -->
+<div style="background:#001D3D;color:#fff;padding:4mm 8mm 3.5mm;display:flex;justify-content:space-between;align-items:flex-end">
+  <div>
+    <div style="font-size:13pt;font-weight:bold;letter-spacing:-0.3px">MS-BETON</div>
+    <div style="font-size:6.5pt;opacity:0.65;margin-top:1px">Turie 468, 013 12 Turie · IČO 55747591 · 0944 069 305</div>
+  </div>
+  <div style="text-align:right">
+    <div style="color:#EDC531;font-size:11pt;font-weight:bold;letter-spacing:0.5px">OBJEDNÁVKA</div>
+    <div style="font-size:7pt;opacity:0.7;margin-top:1px">${today} · ${platbaLbl}</div>
+  </div>
+</div>
+<div style="padding:3.5mm 8mm 5mm">
+  <!-- Klient + Doručenie -->
+  <div style="display:grid;grid-template-columns:1fr 1.15fr;gap:4mm;margin-bottom:3mm;font-size:7.5pt">
+    <div>
+      <div style="font-weight:bold;color:#001D3D;font-size:7pt;border-bottom:1px solid #eee;padding-bottom:1mm;margin-bottom:1.5mm">KLIENT</div>
+      <div style="font-weight:bold;color:#111">${o.clientName || "—"}</div>
+      ${o.company ? `<div style="color:#666">${o.company}</div>` : ""}
+      ${o.phone ? `<div style="color:#666">${o.phone}</div>` : ""}
+      ${discountInfo ? `<div style="color:#b45309;font-weight:bold;margin-top:1.5mm;font-size:7pt">Zľavy: ${discountInfo}</div>` : ""}
+    </div>
+    <div>
+      <div style="font-weight:bold;color:#001D3D;font-size:7pt;border-bottom:1px solid #eee;padding-bottom:1mm;margin-bottom:1.5mm">DORUČENIE</div>
+      <table style="font-size:7.5pt"><tbody>${a5Doruc}</tbody></table>
+    </div>
+  </div>
+  <!-- Kalkulácia (rovnaká tabuľka ako A4) -->
+  ${breakdownHtml ? `<table style="border:1px solid #ddd;margin-bottom:3mm">
+    <thead><tr style="background:#001D3D;color:#fff;font-size:7.5pt;font-weight:bold">
+      <th style="padding:3px 5px;width:18px;text-align:center">#</th>
+      <th style="padding:3px 6px;text-align:left">Popis</th>
+      <th style="padding:3px 6px;text-align:right">Množ.</th>
+      <th style="padding:3px 6px;text-align:right">Jedn.</th>
+      <th style="padding:3px 6px;text-align:right">Spolu</th>
+    </tr></thead>
+    <tbody>${breakdownHtml}</tbody>
+  </table>` : ""}
+  <!-- Suma -->
+  <div style="background:#001D3D;color:#fff;padding:3mm 4mm;display:flex;justify-content:space-between;align-items:center">
+    <div style="font-size:8pt;color:rgba(255,255,255,0.6)">${o.priceMode === "hotovost" ? "Spolu" : "Celkom s DPH"}</div>
+    <div style="text-align:right">
+      <div style="font-size:15pt;font-weight:bold;color:#EDC531;line-height:1">${fmtEurPdf(o.totalSDph)}</div>
+      ${o.status === "vyplatena" && o.paidAmount !== undefined ? `<div style="font-size:7.5pt;color:rgba(255,255,255,0.7);margin-top:1.5mm">Zaplatené ${fmtEurPdf(o.paidAmount)}${Math.abs(o.paidAmount - o.totalSDph) > 0.01 ? ` <span style="font-weight:bold;color:${o.paidAmount > o.totalSDph ? "#86efac" : "#ef4444"}">${o.paidAmount > o.totalSDph ? `+${(o.paidAmount - o.totalSDph).toFixed(2)} € tringelt` : `${(o.paidAmount - o.totalSDph).toFixed(2)} €`}</span>` : ""}</div>` : ""}
+    </div>
+  </div>
+  <div style="margin-top:3mm;font-size:6.5pt;color:#aaa;text-align:center">Interný doklad · MS-BETON, spol. s r.o. · IČ DPH SK2122074603</div>
+</div>
+</body></html>`;
+
+  const a4Html = `<!DOCTYPE html><html lang="sk"><head>
 <meta charset="utf-8">
 <title>Objednávka – ${o.clientName || "klient"}</title>
 <style>
@@ -474,6 +547,7 @@ function exportOrderPDF(o: Order) {
 
 </body></html>`;
 
+  const html = format === "a5" ? a5Html : a4Html;
   const blob = new Blob([html], { type: "text/html;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const win = window.open(url, "_blank");
@@ -1313,11 +1387,19 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                             <span className={cn("text-[9px] font-black uppercase px-2 py-0.5 rounded-sm", o.priceMode === "hotovost" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700")}>
                               {o.priceMode === "hotovost" ? "Hotovosť" : "Faktúra"}
                             </span>
-                            <button onClick={e => { e.stopPropagation(); exportOrderPDF(o); }}
-                              className="ml-auto flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-black text-secondary border border-secondary/30 rounded-sm hover:bg-secondary hover:text-white transition-all">
-                              <FileText className="w-3 h-3" />
-                              <span className="hidden sm:inline">PDF</span>
-                            </button>
+                            <div className="ml-auto flex items-center gap-1.5">
+                              <button onClick={e => { e.stopPropagation(); exportOrderPDF(o, "a5"); }}
+                                title="Kompaktný A5 doklad — na hotovostné betonáže (páruje s ručným čerpacím listkom)"
+                                className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-black text-secondary border border-secondary/30 rounded-sm hover:bg-secondary hover:text-white transition-all">
+                                <FileText className="w-3 h-3" />
+                                A5
+                              </button>
+                              <button onClick={e => { e.stopPropagation(); exportOrderPDF(o, "a4"); }}
+                                className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-black text-secondary border border-secondary/30 rounded-sm hover:bg-secondary hover:text-white transition-all">
+                                <FileText className="w-3 h-3" />
+                                <span className="hidden sm:inline">PDF</span> A4
+                              </button>
+                            </div>
                           </div>
                           <div className="px-4 py-3">
                             {parsed ? (
