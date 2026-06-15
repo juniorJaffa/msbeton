@@ -8,6 +8,7 @@ import { cn, formatPhone } from "@/lib/utils";
 import { adminData, adminApi, syncFromServer, Client, TransportSettings, Order, SYSTEM_OWNER_ID, getKamenivoGroup, readerBlocked } from "@/lib/adminData";
 import { clientAvatar } from "@/lib/clientAvatar";
 import { isBiometricAvailable as isAdminBioAvail, hasStoredCredential as hasAdminBio, isReader } from "@/lib/adminAuth";
+import { AdminAccessPanel } from "./AdminAccessPanel";
 
 interface BioFeedEntry {
   ts: string; ok: boolean; event: string;
@@ -906,71 +907,13 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
               );
             })()}
 
-            {/* ADMIN biometria — samostatný log (client-side, informačný) */}
-            <div className="border-t border-gray-100">
-              <div className="px-4 py-2 bg-secondary/[0.04] text-[10px] text-secondary/70 uppercase tracking-wider flex items-center gap-1.5">
-                <ShieldCheck className="w-3 h-3" /> Admin biometria — aktivita
-                <span className="ml-auto normal-case tracking-normal text-gray-400 flex items-center gap-1">
-                  <span className={`w-1.5 h-1.5 rounded-full ${isAdminBioAvail() && hasAdminBio() ? "bg-emerald-500" : "bg-gray-300"}`} />
-                  {isAdminBioAvail() && hasAdminBio() ? "toto zariadenie: aktívna" : "toto zariadenie: neaktívna"}
-                </span>
-              </div>
-              {/* Admin bio metriky — paralela ku klient štatistikám */}
-              <div className="flex flex-wrap gap-px bg-gray-100 border-b border-gray-100">
-                <div className="bg-white px-3 py-2 flex-1 min-w-[90px]">
-                  <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Admin zariadenia</div>
-                  <div className={`font-black text-sm ${(bioStats.adminBioStats?.devices ?? 0) > 0 ? "text-secondary" : "text-gray-300"}`}>{bioStats.adminBioStats?.devices ?? 0}</div>
-                </div>
-                <div className="bg-white px-3 py-2 flex-1 min-w-[90px]">
-                  <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Dnes úspešné</div>
-                  <div className={`font-black text-sm ${(bioStats.adminBioStats?.todayOk ?? 0) > 0 ? "text-emerald-600" : "text-gray-300"}`}>{bioStats.adminBioStats?.todayOk ?? 0}</div>
-                </div>
-                <div className="bg-white px-3 py-2 flex-1 min-w-[90px]">
-                  <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Dnes zamietnuté</div>
-                  <div className={`font-black text-sm ${(bioStats.adminBioStats?.todayFail ?? 0) > 0 ? "text-amber-500" : "text-gray-300"}`}>{bioStats.adminBioStats?.todayFail ?? 0}</div>
-                </div>
-              </div>
-              {(bioStats.adminBio && bioStats.adminBio.length > 0) ? (
-                <div className="max-h-56 overflow-y-auto divide-y divide-gray-50">
-                  {bioStats.adminBio.map((e, i) => (
-                    <div key={i} className={`px-4 py-2 flex items-start gap-2.5 ${e.ok ? "" : "bg-red-50/40"}`}>
-                      <span className={`mt-0.5 w-1.5 h-1.5 rounded-full shrink-0 ${e.ok ? "bg-emerald-500" : "bg-red-500"}`} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-xs font-bold text-gray-700">{e.device || "Zariadenie"}</span>
-                          <span className={`text-[9px] font-black uppercase px-1 py-px rounded ${e.event === "register" ? "bg-blue-50 text-blue-600 border border-blue-200" : "bg-gray-100 text-gray-500"}`}>
-                            {e.event === "register" ? "registrácia" : "prihlásenie"}
-                          </span>
-                          <span className={`text-[9px] font-black uppercase px-1 py-px rounded ${e.ok ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-red-50 text-red-600 border border-red-200"}`}>
-                            {e.ok ? "OK" : "zlyhanie"}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-400">
-                          {e.ip && <span className="font-mono">{e.ip}</span>}
-                        </div>
-                        {!e.ok && e.reason && (
-                          <div className="text-[10px] text-red-500 mt-0.5 flex items-start gap-1">
-                            <Info className="w-3 h-3 shrink-0 mt-px" /> {e.reason}
-                          </div>
-                        )}
-                      </div>
-                      <span className="text-[10px] text-gray-400 font-mono shrink-0">
-                        {new Date(e.ts).toLocaleString("sk-SK", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="px-4 py-3 text-[11px] text-gray-400">Zatiaľ žiadna admin bio aktivita.</p>
-              )}
-              <p className="px-4 py-2 text-[10px] text-gray-400 bg-gray-50/50 border-t border-gray-100 flex items-start gap-1.5">
-                <Info className="w-3 h-3 shrink-0 mt-px text-gray-300" />
-                Admin biometria sa overuje <strong>lokálne v zariadení</strong> (nie serverom). Tento log je <strong>informačný</strong> — nahlásený zariadením.
-              </p>
-            </div>
+            {/* Admin biometria + multi-admin presence + audit → samostatný panel AdminAccessPanel nižšie */}
           </>
         )}
       </div>
+
+      {/* Admin & multi-admin — prihlásenia, kto je online, kto čo menil (iba admin) */}
+      <AdminAccessPanel />
 
       {/* Systémová DPH — collapsible */}
       <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">

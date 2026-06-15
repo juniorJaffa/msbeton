@@ -5,9 +5,11 @@ const ATTEMPTS_KEY = "msbeton_login_attempts";
 const WEBAUTHN_KEY = "msbeton_webauthn_cred";
 const DEVICE_FP_KEY = "msbeton_admin_bio_device";
 const SESSION_ID_KEY = "msbeton_admin_session_id";
+const DEVICE_NAME_KEY = "msbeton_admin_device_name";
 
 // Stabilné ID tohto admin zariadenia/prehliadača — pre presence + audit log.
 // Viacero ľudí zdieľa login "msbeton" (Peter mobil, administratorka NB) → rozlíši ich session, nie login.
+// KRITICKÉ: identita = náhodné UUID, NIE label. Dva rovnaké iPhony = dve rôzne UUID = dve session.
 export function getAdminSessionId(): string {
   let id = localStorage.getItem(SESSION_ID_KEY);
   if (!id) {
@@ -17,8 +19,19 @@ export function getAdminSessionId(): string {
   return id;
 }
 
-// Ľudský názov zariadenia z userAgent — "iPhone Safari", "Mac Chrome", "Windows Edge"…
-export function getAdminDeviceLabel(): string {
+// Vlastný názov zariadenia (voliteľný) — admin si pomenuje "Peter iPhone" / "Vladko iPhone".
+// Rieši 2 rovnaké telefóny: auto-label je u oboch "iPhone Safari", custom názov ich odlíši.
+export function getAdminDeviceName(): string {
+  return localStorage.getItem(DEVICE_NAME_KEY) ?? "";
+}
+export function setAdminDeviceName(name: string): void {
+  const v = name.trim().slice(0, 40);
+  if (v) localStorage.setItem(DEVICE_NAME_KEY, v);
+  else localStorage.removeItem(DEVICE_NAME_KEY);
+}
+
+// Auto názov zariadenia z userAgent — "iPhone Safari", "Mac Chrome", "Windows Edge"…
+export function getAdminDeviceAuto(): string {
   const ua = navigator.userAgent;
   let os = "Zariadenie";
   if (/iPhone/.test(ua)) os = "iPhone";
@@ -34,6 +47,14 @@ export function getAdminDeviceLabel(): string {
   else if (/Firefox\//.test(ua)) br = "Firefox";
   else if (/Version\/.*Safari/.test(ua)) br = "Safari";
   return br ? `${os} ${br}` : os;
+}
+
+// Label posielaný na server: custom názov ak je, inak auto + krátky hash session
+// (#a3f2) aby 2 rovnaké zariadenia boli rozlíšiteľné aj bez custom názvu.
+export function getAdminDeviceLabel(): string {
+  const custom = getAdminDeviceName();
+  if (custom) return custom;
+  return `${getAdminDeviceAuto()} · #${getAdminSessionId().replace(/-/g, "").slice(0, 4)}`;
 }
 
 function getDeviceFingerprint(): string {
