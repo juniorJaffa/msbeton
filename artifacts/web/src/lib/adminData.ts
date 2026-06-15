@@ -160,6 +160,10 @@ export interface Order {
   pumpTimer?: { start: string; stop: string };
   podmienky?: { trucks: number; pumpa: number; mix: number; m3PerTruck: number; isRisk?: boolean };
   paidAmount?: number;
+  // Kto objednávku vytvoril (multi-admin): "admin" | "reader" | "klient" | "anonym"
+  createdByRole?: string;
+  createdByDevice?: string;   // názov zariadenia (admin) alebo meno klienta
+  createdBySession?: string;  // admin session id (na previazanie s presence/audit)
 }
 
 export interface ClientAccount {

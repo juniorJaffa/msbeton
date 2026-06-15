@@ -1,6 +1,16 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { SlidersHorizontal, ShoppingCart, MessageSquare, MapPin, Navigation, Copy, Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, AlertTriangle, FileText, Calculator, Users, Mountain, Waves, Phone, Mail, Truck, Fingerprint, Crown, Percent } from "lucide-react";
+import { SlidersHorizontal, ShoppingCart, MessageSquare, MapPin, Navigation, Copy, Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, AlertTriangle, FileText, Calculator, Users, Mountain, Waves, Phone, Mail, Truck, Fingerprint, Crown, Percent, ShieldCheck, Eye } from "lucide-react";
+
+// Kto objednávku vytvoril — vizuálna identita (admin / admin-čitateľ / klient sám)
+function creatorMeta(role?: string): { Icon: React.ElementType; label: string; cls: string } | null {
+  switch (role) {
+    case "admin":  return { Icon: ShieldCheck, label: "admin",    cls: "bg-secondary/10 text-secondary border-secondary/20" };
+    case "reader": return { Icon: Eye,         label: "čítateľ",  cls: "bg-blue-50 text-blue-600 border-blue-200" };
+    case "klient": return { Icon: Users,       label: "klient",   cls: "bg-gray-100 text-gray-500 border-gray-200" };
+    default: return null; // anonym / staré objednávky bez údaja → nič
+  }
+}
 import { adminData, adminApi, Order, TransportSettings, getKamenivoGroup, readerBlocked } from "@/lib/adminData";
 import { clientAvatar, nameAvatar } from "@/lib/clientAvatar";
 import { cn, formatPhone } from "@/lib/utils";
@@ -1048,6 +1058,13 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                       {o.viaSms
                         ? <span className="inline-flex items-center gap-0.5 bg-green-100 text-green-700 text-[9px] font-black px-1.5 py-0.5 rounded-sm"><MessageSquare className="w-2.5 h-2.5" /> SMS</span>
                         : <span className="inline-flex items-center bg-secondary/10 text-secondary px-1.5 py-0.5 rounded-sm"><ShoppingCart className="w-3 h-3" /></span>}
+                      {/* Kto vytvoril objednávku — admin / čítateľ / klient */}
+                      {(() => { const cm = creatorMeta(o.createdByRole); return cm ? (
+                        <span className={cn("inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-sm border", cm.cls)}
+                          title={`Vytvoril: ${o.createdByDevice ?? cm.label}${o.createdByRole === "admin" || o.createdByRole === "reader" ? ` (${cm.label})` : ""}`}>
+                          <cm.Icon className="w-2.5 h-2.5" /> {o.createdByRole === "admin" || o.createdByRole === "reader" ? (o.createdByDevice ?? cm.label) : cm.label}
+                        </span>
+                      ) : null; })()}
                       {o.podmienky ? (() => { const ir = getOrderIsRisk(o); return (
                         <span className={`inline-flex items-center gap-0.5 text-[9px] font-black px-1.5 py-0.5 rounded-sm ${ir ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-800"}`}>
                           {ir ? <AlertTriangle className="w-2.5 h-2.5 shrink-0" /> : <span>★</span>}
@@ -1158,6 +1175,24 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                       <div className="px-4 py-3 space-y-1.5 text-sm">
                         <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Objednávka</div>
                         <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Dátum</span><span className="text-gray-500">{fmtDate(o.createdAt)}</span></div>
+                        {/* Kto objednávku vytvoril — multi-admin previazanie */}
+                        {(() => {
+                          const cm = creatorMeta(o.createdByRole);
+                          return (
+                            <div className="flex gap-2 items-center">
+                              <span className="text-gray-400 w-24 shrink-0">Vytvoril</span>
+                              {cm ? (
+                                <span className={cn("inline-flex items-center gap-1 text-[11px] font-bold px-1.5 py-0.5 rounded-sm border", cm.cls)}>
+                                  <cm.Icon className="w-3 h-3" />
+                                  {o.createdByDevice ?? cm.label}
+                                  {(o.createdByRole === "admin" || o.createdByRole === "reader") && <span className="font-normal opacity-70">· {cm.label}</span>}
+                                </span>
+                              ) : (
+                                <span className="text-gray-400">{o.viaSms ? "SMS (neznáme zariadenie)" : "—"}</span>
+                              )}
+                            </div>
+                          );
+                        })()}
                         {(() => {
                           // Fallback reťazec — Typ dopravy MUSÍ byť vždy viditeľný:
                           // objednávka → klientova zóna → prvá (default) zóna → label podľa typu
