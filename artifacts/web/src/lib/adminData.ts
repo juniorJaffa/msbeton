@@ -2,6 +2,29 @@ import { adminApi } from "./api";
 import { isLoggedIn, isReader } from "./adminAuth";
 import { toast } from "@/hooks/use-toast";
 export { adminApi };
+export type { PresenceSession, AuditEntry, SaveResult } from "./api";
+
+// ── Save-state tracking (multi-admin UX) ───────────────────────────────────────
+// Každý array save vyšle udalosť admin-save-state: saving → saved | merged | error.
+// "merged" = server zlúčil zmeny iného admina (mergedFromOthers > 0) → auto re-sync,
+// aby admin okamžite videl čerstvý stav (vrátane položiek druhého admina).
+export type SaveState = "saving" | "saved" | "merged" | "error";
+function emitSaveState(key: string, state: SaveState): void {
+  window.dispatchEvent(new CustomEvent("admin-save-state", { detail: { key, state } }));
+}
+function trackSave(key: string, p: Promise<unknown> | null | undefined): void {
+  emitSaveState(key, "saving");
+  Promise.resolve(p).then(r => {
+    const res = r as { ok?: boolean; mergedFromOthers?: number } | null;
+    if (!res || res.ok === false) { emitSaveState(key, "error"); return; }
+    if ((res.mergedFromOthers ?? 0) > 0) {
+      emitSaveState(key, "merged");
+      syncFromServer().catch(() => {}); // dotiahni zmeny iného admina do lokálu
+    } else {
+      emitSaveState(key, "saved");
+    }
+  }).catch(() => emitSaveState(key, "error"));
+}
 
 // Admin-čitateľ: pokus o zmenu → toast + zablokuj. Throttle (1 toast / 2s) proti spamu.
 // Exportované — KlientiTab/ObjednavkyTab volajú vo svojom lokálnom save (toast aj tam).
@@ -486,7 +509,7 @@ export const adminData = {
     if (readerBlocked()) return;
     const stamped = stampArray(data, "msbeton_categories");
     saveData("msbeton_categories", stamped);
-    adminApi.saveCategories(stamped);
+    trackSave("categories", adminApi.saveCategories(stamped));
   },
 
   getDelivery: (): DeliveryZone[] => loadData("msbeton_delivery", DEFAULT_DELIVERY),
@@ -494,7 +517,7 @@ export const adminData = {
     if (readerBlocked()) return;
     const stamped = stampArray(data, "msbeton_delivery");
     saveData("msbeton_delivery", stamped);
-    adminApi.saveDelivery(stamped);
+    trackSave("delivery", adminApi.saveDelivery(stamped));
   },
 
   getServices: (): Service[] => loadData("msbeton_services", DEFAULT_SERVICES),
@@ -502,7 +525,7 @@ export const adminData = {
     if (readerBlocked()) return;
     const stamped = stampArray(data, "msbeton_services");
     saveData("msbeton_services", stamped);
-    adminApi.saveServices(stamped);
+    trackSave("services", adminApi.saveServices(stamped));
   },
 
   getClients: (): Client[] => ensureOwner(loadData("msbeton_clients", DEFAULT_CLIENTS)),
@@ -510,7 +533,7 @@ export const adminData = {
     if (readerBlocked()) return;
     const safe = stampArray(ensureOwner(data), "msbeton_clients");
     saveData("msbeton_clients", safe);
-    adminApi.saveClients(safe);
+    trackSave("clients", adminApi.saveClients(safe));
     window.dispatchEvent(new Event("admin-data-synced"));
   },
 
@@ -519,7 +542,7 @@ export const adminData = {
     if (readerBlocked()) return;
     const stamped = stampArray(data, "msbeton_transport_zones");
     saveData("msbeton_transport_zones", stamped);
-    adminApi.saveTransportZones(stamped);
+    trackSave("transport_zones", adminApi.saveTransportZones(stamped));
   },
 
   getTransportSettings: (): TransportSettings => loadData("msbeton_transport_settings", DEFAULT_TRANSPORT_SETTINGS),

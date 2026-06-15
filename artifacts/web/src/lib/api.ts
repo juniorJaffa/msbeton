@@ -1,4 +1,4 @@
-import { getAdminToken } from "./adminAuth";
+import { getAdminToken, getAdminSessionId, getAdminDeviceLabel } from "./adminAuth";
 
 const API_BASE = "/api/admin";
 const CLIENT_API = "/api/client";
@@ -9,6 +9,9 @@ async function apiFetch<T>(base: string, path: string, options?: RequestInit): P
     if (base === API_BASE) {
       const token = getAdminToken();
       if (token) extraHeaders["Authorization"] = `Bearer ${token}`;
+      // Identita zariadenia — pre presence (kto je online) + audit (kto čo menil)
+      extraHeaders["X-Admin-Session"] = getAdminSessionId();
+      extraHeaders["X-Admin-Device"] = getAdminDeviceLabel();
     }
     const res = await fetch(`${base}${path}`, {
       ...options,
@@ -53,7 +56,22 @@ export const adminApi = {
 
   getOrders: () => apiFetch<{ data: unknown }>(API_BASE, "/orders"),
   saveOrders: (data: unknown) => apiFetch(API_BASE, "/orders", { method: "PUT", body: JSON.stringify(data) }),
+
+  // Multi-admin awareness
+  getPresence: () => apiFetch<{ ok: boolean; sessions: PresenceSession[]; count: number }>(API_BASE, "/presence"),
+  getAuditLog: () => apiFetch<{ ok: boolean; entries: AuditEntry[] }>(API_BASE, "/audit-log"),
 };
+
+export interface PresenceSession {
+  session: string; device: string; ip: string; role: string; lastSeen: string; isSelf: boolean;
+}
+export interface AuditEntry {
+  ts: string; session: string; device: string; ip: string; role: string;
+  key: string; added: string[]; modified: string[]; removed: string[];
+}
+
+// Návratový tvar save PUT (item-level merge) — mergedFromOthers > 0 = zlúčené s iným adminom
+export interface SaveResult { ok: boolean; kept?: number; preserved?: number; mergedFromOthers?: number }
 
 export interface LoggedClient {
   id: string;

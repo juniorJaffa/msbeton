@@ -1,5 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, HardDrive, Database, Activity, Server, Download, CheckCircle, XCircle, Clock, Archive, Shield, Trash2, ShieldAlert, Info } from "lucide-react";
+import { RefreshCw, HardDrive, Database, Activity, Server, Download, CheckCircle, XCircle, Clock, Archive, Shield, Trash2, ShieldAlert, Info, History, Plus, Pencil } from "lucide-react";
+import { adminApi, type AuditEntry } from "@/lib/adminData";
+
+const AUDIT_KEY_LABEL: Record<string, string> = {
+  clients: "Klienti", categories: "Betóny", services: "Služby",
+  delivery: "Doprava — zóny", transport_zones: "Doprava — sadzby",
+};
 
 interface ServerStatus {
   pm2: { status: string; uptimeMs: number; restarts: number; memoryBytes: number };
@@ -67,6 +73,15 @@ export default function ServerTab() {
   const [backupMsg, setBackupMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [deletingFile, setDeletingFile] = useState<string | null>(null);
   const [wpInfoOpen, setWpInfoOpen] = useState(false);
+  const [audit, setAudit] = useState<AuditEntry[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+
+  const loadAudit = useCallback(async () => {
+    setAuditLoading(true);
+    try { const r = await adminApi.getAuditLog(); if (r?.ok) setAudit(r.entries); } catch { /* ignore */ }
+    setAuditLoading(false);
+  }, []);
+  useEffect(() => { loadAudit(); }, [loadAudit]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -448,6 +463,71 @@ export default function ServerTab() {
               return `Automatická záloha (${c})`;
             })() : "Automatická záloha každý deň o 02:00"}
           </p>
+        </div>
+      </div>
+
+      {/* Audit log — kto čo menil (multi-admin) */}
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
+          <div className="flex items-center gap-2 text-secondary text-xs font-black uppercase tracking-widest">
+            <History className="w-3.5 h-3.5" />
+            Záznam zmien — kto čo menil
+          </div>
+          <button onClick={loadAudit} disabled={auditLoading}
+            className="flex items-center gap-1 text-[11px] font-bold text-secondary/60 hover:text-secondary transition-colors cursor-pointer disabled:opacity-50">
+            <RefreshCw className={`w-3 h-3 ${auditLoading ? "animate-spin" : ""}`} /> Obnoviť
+          </button>
+        </div>
+
+        {audit.length === 0 ? (
+          <div className="px-4 py-6 text-center text-sm text-gray-400">Zatiaľ žiadne zaznamenané zmeny.</div>
+        ) : (
+          <div className="divide-y divide-gray-50 max-h-[420px] overflow-y-auto">
+            {audit.map((e, i) => {
+              const when = new Date(e.ts);
+              const sameDay = when.toDateString() === new Date().toDateString();
+              const timeStr = sameDay
+                ? `Dnes ${when.toLocaleTimeString("sk-SK", { hour: "2-digit", minute: "2-digit" })}`
+                : when.toLocaleString("sk-SK", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" });
+              return (
+                <div key={i} className="px-4 py-2.5 flex items-start gap-2.5">
+                  <span className="mt-1 w-1.5 h-1.5 rounded-full bg-secondary/40 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-xs font-bold text-gray-700">{e.device}</span>
+                      {e.role === "reader" && <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-1 rounded">čítateľ</span>}
+                      <span className="text-[10px] text-gray-400">· {AUDIT_KEY_LABEL[e.key] ?? e.key}</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1 mt-1">
+                      {e.added.map((n, j) => (
+                        <span key={`a${j}`} className="inline-flex items-center gap-0.5 text-[10px] font-bold text-green-700 bg-green-50 border border-green-200 px-1.5 py-0.5 rounded">
+                          <Plus className="w-2.5 h-2.5" /> {n}
+                        </span>
+                      ))}
+                      {e.modified.map((n, j) => (
+                        <span key={`m${j}`} className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                          <Pencil className="w-2.5 h-2.5" /> {n}
+                        </span>
+                      ))}
+                      {e.removed.map((n, j) => (
+                        <span key={`r${j}`} className="inline-flex items-center gap-0.5 text-[10px] font-bold text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded line-through">
+                          <Trash2 className="w-2.5 h-2.5" /> {n}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-[10px] text-gray-400 font-mono whitespace-nowrap">{timeStr}</div>
+                    <div className="text-[9px] text-gray-300 font-mono">{e.ip}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 text-[10px] text-gray-400 flex items-center gap-1.5">
+          <Info className="w-3 h-3 shrink-0" />
+          Posledných {audit.length} zmien. Rozlišuje zariadenie (nie login) — viacero ľudí zdieľa „msbeton".
         </div>
       </div>
     </div>

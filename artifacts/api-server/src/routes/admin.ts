@@ -9,6 +9,8 @@ import { invalidateClientCache } from "./client";
 import { sendRegistrationEmail, sendCredentialsEmail, sendAdminResetCodeEmail } from "../lib/mailer";
 import { signAdminToken, requireAdminJwt } from "../lib/adminJwt";
 import { loginRateLimit } from "../lib/rateLimits";
+import { touchPresence, getActivePresence } from "../lib/adminPresence";
+import type { Request } from "express";
 
 const router = Router();
 
@@ -192,22 +194,102 @@ function mergeItems(incoming: Item[], current: Item[], baseSyncMs: number): Item
   return result;
 }
 
+// ── Diff pre audit log — čo tento admin pridal / zmenil / zmazal vs DB ──────────
+interface SaveDiff { added: string[]; modified: string[]; removed: string[]; others: string[] }
+function computeDiff(incoming: Item[], current: Item[], baseSyncMs: number): SaveDiff {
+  const curById = new Map(current.filter(c => c.id != null).map(c => [String(c.id), c] as const));
+  const incIds = new Set(incoming.filter(i => i.id != null).map(i => String(i.id)));
+  const added: string[] = [], modified: string[] = [], removed: string[] = [], others: string[] = [];
+  for (const inc of incoming) {
+    const id = inc.id != null ? String(inc.id) : null; if (!id) continue;
+    const cur = curById.get(id);
+    if (!cur) added.push(id);
+    else if (ts(inc.updatedAt) > ts(cur.updatedAt)) modified.push(id);
+  }
+  for (const cur of current) {
+    const id = cur.id != null ? String(cur.id) : null; if (!id) continue;
+    if (incIds.has(id)) continue;
+    if (ts(cur.updatedAt) > baseSyncMs) others.push(id); // iný admin pridal/zmenil po mojom syncu
+    else removed.push(id);                               // tento admin zámerne zmazal
+  }
+  return { added, modified, removed, others };
+}
+
+// Ľudský názov položky pre audit (klient = meno/firma, ostatné = name/label)
+function labelOf(key: string, item: Item | undefined): string {
+  if (!item) return "?";
+  if (key === KEYS.clients) {
+    const n = [item.firstName, item.lastName].filter(Boolean).map(String).join(" ").trim();
+    return n || String(item.company ?? "") || String(item.loginId ?? "") || String(item.id ?? "?");
+  }
+  return String(item.name ?? item.label ?? item.id ?? "?");
+}
+
+export interface AuditEntry {
+  ts: string; session: string; device: string; ip: string; role: string;
+  key: string; added: string[]; modified: string[]; removed: string[];
+}
+interface Actor { session: string; device: string; ip: string; role: string }
+function actorOf(req: Request): Actor {
+  return {
+    session: String(req.get("X-Admin-Session") ?? "").slice(0, 16) || "?",
+    device: String(req.get("X-Admin-Device") ?? "").slice(0, 48) || "Zariadenie",
+    ip: (req.headers["cf-connecting-ip"] as string) ?? req.ip ?? "?",
+    role: (req as Request & { adminRole?: string }).adminRole ?? "admin",
+  };
+}
+const AUDIT_KEY = "audit_log";
+const AUDIT_CAP = 400;
+async function appendAudit(entry: AuditEntry): Promise<void> {
+  // Vlastný riadok (audit_log) — žiadna kontencia s clients. FOR UPDATE pre atomický append.
+  await db.transaction(async (tx) => {
+    const rows = await tx.select().from(adminConfig).where(eq(adminConfig.key, AUDIT_KEY)).for("update").limit(1);
+    const log = Array.isArray(rows[0]?.data) ? rows[0]!.data as AuditEntry[] : [];
+    log.push(entry);
+    const capped = log.slice(-AUDIT_CAP);
+    await tx.insert(adminConfig)
+      .values({ key: AUDIT_KEY, data: capped })
+      .onConflictDoUpdate({ target: adminConfig.key, set: { data: capped, updatedAt: new Date() } });
+  });
+}
+
 // Generický merge-save pre array kľúče. baseSync z hlavičky X-Base-Sync.
 // SELECT FOR UPDATE zamkne riadok — paralelné requesty čakajú, nie race condition.
-async function mergeSaveArray(key: string, body: unknown, baseSyncHeader: unknown): Promise<{ kept: number; preserved: number }> {
+// Zároveň zaznamená audit (kto čo pridal/zmenil/zmazal) a vráti mergedFromOthers
+// (počet položiek iného admina ktoré sa zlúčili → frontend re-sync + toast).
+async function mergeSaveArray(key: string, body: unknown, baseSyncHeader: unknown, actor: Actor | null): Promise<{ kept: number; preserved: number; mergedFromOthers: number }> {
   const incoming = Array.isArray(body) ? body as Item[] : [];
   const baseSyncMs = baseSyncHeader != null ? ts(baseSyncHeader) : -1;
 
-  return await db.transaction(async (tx) => {
+  const { merged, diff, current } = await db.transaction(async (tx) => {
     // Zamkni riadok — iný admin musí počkať kým táto transakcia skončí
     const rows = await tx.select().from(adminConfig).where(eq(adminConfig.key, key)).for("update").limit(1);
-    const current = (rows[0]?.data as Item[] | null) ?? [];
-    const merged = mergeItems(incoming, current, baseSyncMs);
+    const cur = (rows[0]?.data as Item[] | null) ?? [];
+    const m = mergeItems(incoming, cur, baseSyncMs);
+    const d = computeDiff(incoming, cur, baseSyncMs);
     await tx.insert(adminConfig)
-      .values({ key, data: merged })
-      .onConflictDoUpdate({ target: adminConfig.key, set: { data: merged, updatedAt: new Date() } });
-    return { kept: merged.length, preserved: merged.length - incoming.length };
+      .values({ key, data: m })
+      .onConflictDoUpdate({ target: adminConfig.key, set: { data: m, updatedAt: new Date() } });
+    return { merged: m, diff: d, current: cur };
   });
+
+  // Audit — len ak tento admin reálne niečo zmenil
+  if (actor && (diff.added.length || diff.modified.length || diff.removed.length)) {
+    const curById = new Map(current.filter(c => c.id != null).map(c => [String(c.id), c] as const));
+    const incById = new Map(incoming.filter(i => i.id != null).map(i => [String(i.id), i] as const));
+    try {
+      await appendAudit({
+        ts: new Date().toISOString(),
+        session: actor.session, device: actor.device, ip: actor.ip, role: actor.role,
+        key,
+        added: diff.added.map(id => labelOf(key, incById.get(id))),
+        modified: diff.modified.map(id => labelOf(key, incById.get(id))),
+        removed: diff.removed.map(id => labelOf(key, curById.get(id))),
+      });
+    } catch { /* audit nesmie zhodiť uloženie */ }
+  }
+
+  return { kept: merged.length, preserved: merged.length - incoming.length, mergedFromOthers: diff.others.length };
 }
 
 // Public read-only endpoints — kalkulačka ich potrebuje bez admin JWT
@@ -234,6 +316,35 @@ router.get("/transport-settings", async (req, res) => {
 
 router.use(requireAdminJwt);
 
+// Presence heartbeat — každý admin request (vrátane pollu /presence) drží session živú.
+router.use((req, _res, next) => {
+  const sid = req.get("X-Admin-Session");
+  if (sid) {
+    const ip = (req.headers["cf-connecting-ip"] as string) ?? req.ip ?? "?";
+    touchPresence(sid, req.get("X-Admin-Device") ?? "", ip, (req as Request & { adminRole?: string }).adminRole ?? "admin");
+  }
+  next();
+});
+
+// Kto je práve online (iní admini). isSelf = volajúci.
+router.get("/presence", (req, res) => {
+  const self = req.get("X-Admin-Session") ?? "";
+  const sessions = getActivePresence().map(e => ({
+    session: e.session.slice(0, 8), device: e.device, ip: e.ip, role: e.role,
+    lastSeen: new Date(e.lastSeen).toISOString(), isSelf: e.session === self,
+  }));
+  res.json({ ok: true, sessions, count: sessions.length });
+});
+
+// Audit log — kto čo menil (multi-admin). Najnovšie hore.
+router.get("/audit-log", async (req, res) => {
+  try {
+    const raw = await getConfig(AUDIT_KEY);
+    const log = Array.isArray(raw) ? raw as AuditEntry[] : [];
+    res.json({ ok: true, entries: [...log].reverse() });
+  } catch (err) { req.log.error({ err }, "Failed to get audit log"); res.status(500).json({ error: "Internal server error" }); }
+});
+
 // Read-only enforcement: admin-čitateľ (reader) smie len GET; mutácie → 403.
 // Server-side ochrana — frontend skrytie nestačí (reader by mohol volať API priamo).
 router.use((req, res, next) => {
@@ -245,17 +356,17 @@ router.use((req, res, next) => {
 });
 
 router.put("/categories", async (req, res) => {
-  try { const r = await mergeSaveArray(KEYS.categories, req.body, req.get("X-Base-Sync")); res.json({ ok: true, ...r }); }
+  try { const r = await mergeSaveArray(KEYS.categories, req.body, req.get("X-Base-Sync"), actorOf(req)); res.json({ ok: true, ...r }); }
   catch (err) { req.log.error({ err }, "Failed to save categories"); res.status(500).json({ error: "Internal server error" }); }
 });
 
 router.put("/delivery", async (req, res) => {
-  try { const r = await mergeSaveArray(KEYS.delivery, req.body, req.get("X-Base-Sync")); res.json({ ok: true, ...r }); }
+  try { const r = await mergeSaveArray(KEYS.delivery, req.body, req.get("X-Base-Sync"), actorOf(req)); res.json({ ok: true, ...r }); }
   catch (err) { req.log.error({ err }, "Failed to save delivery"); res.status(500).json({ error: "Internal server error" }); }
 });
 
 router.put("/services", async (req, res) => {
-  try { const r = await mergeSaveArray(KEYS.services, req.body, req.get("X-Base-Sync")); res.json({ ok: true, ...r }); }
+  try { const r = await mergeSaveArray(KEYS.services, req.body, req.get("X-Base-Sync"), actorOf(req)); res.json({ ok: true, ...r }); }
   catch (err) { req.log.error({ err }, "Failed to save services"); res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -265,7 +376,7 @@ router.get("/clients", async (req, res) => {
 });
 router.put("/clients", async (req, res) => {
   try {
-    const r = await mergeSaveArray(KEYS.clients, req.body, req.get("X-Base-Sync"));
+    const r = await mergeSaveArray(KEYS.clients, req.body, req.get("X-Base-Sync"), actorOf(req));
     invalidateClientCache();
     res.json({ ok: true, ...r });
   }
@@ -313,7 +424,7 @@ router.delete("/clients/:id/webauthn/:credId", async (req, res) => {
 });
 
 router.put("/transport-zones", async (req, res) => {
-  try { const r = await mergeSaveArray(KEYS.transportZones, req.body, req.get("X-Base-Sync")); res.json({ ok: true, ...r }); }
+  try { const r = await mergeSaveArray(KEYS.transportZones, req.body, req.get("X-Base-Sync"), actorOf(req)); res.json({ ok: true, ...r }); }
   catch (err) { req.log.error({ err }, "Failed to save transport zones"); res.status(500).json({ error: "Internal server error" }); }
 });
 

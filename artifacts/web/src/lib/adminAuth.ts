@@ -4,6 +4,37 @@ const TOKEN_KEY = "msbeton_admin_token";
 const ATTEMPTS_KEY = "msbeton_login_attempts";
 const WEBAUTHN_KEY = "msbeton_webauthn_cred";
 const DEVICE_FP_KEY = "msbeton_admin_bio_device";
+const SESSION_ID_KEY = "msbeton_admin_session_id";
+
+// Stabilné ID tohto admin zariadenia/prehliadača — pre presence + audit log.
+// Viacero ľudí zdieľa login "msbeton" (Peter mobil, administratorka NB) → rozlíši ich session, nie login.
+export function getAdminSessionId(): string {
+  let id = localStorage.getItem(SESSION_ID_KEY);
+  if (!id) {
+    id = (crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36));
+    localStorage.setItem(SESSION_ID_KEY, id);
+  }
+  return id;
+}
+
+// Ľudský názov zariadenia z userAgent — "iPhone Safari", "Mac Chrome", "Windows Edge"…
+export function getAdminDeviceLabel(): string {
+  const ua = navigator.userAgent;
+  let os = "Zariadenie";
+  if (/iPhone/.test(ua)) os = "iPhone";
+  else if (/iPad/.test(ua)) os = "iPad";
+  else if (/Android/.test(ua)) os = "Android";
+  else if (/Macintosh|Mac OS X/.test(ua)) os = "Mac";
+  else if (/Windows/.test(ua)) os = "Windows";
+  else if (/Linux/.test(ua)) os = "Linux";
+  let br = "";
+  if (/Edg\//.test(ua)) br = "Edge";
+  else if (/OPR\/|Opera/.test(ua)) br = "Opera";
+  else if (/Chrome\//.test(ua)) br = "Chrome";
+  else if (/Firefox\//.test(ua)) br = "Firefox";
+  else if (/Version\/.*Safari/.test(ua)) br = "Safari";
+  return br ? `${os} ${br}` : os;
+}
 
 function getDeviceFingerprint(): string {
   return [navigator.platform, `${screen.width}x${screen.height}`, navigator.hardwareConcurrency ?? 0].join("|");

@@ -6,6 +6,7 @@ import { VersionBadge } from "@/components/VersionBadge";
 import { isLoggedIn, logout, isBiometricAvailable, hasStoredCredential, isReader } from "@/lib/adminAuth";
 import { adminData, adminApi, syncFromServer, Order } from "@/lib/adminData";
 import { OrderNotificationToast } from "./OrderNotificationToast";
+import { AdminLiveBar } from "./AdminLiveBar";
 
 type Tab = "betony" | "sluzby" | "doprava" | "klienti" | "objednavky" | "analytics" | "statistiky" | "gsc" | "server";
 
@@ -292,6 +293,8 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      <AdminLiveBar />
 
       <OrderNotificationToast
         orders={toastOrders}
