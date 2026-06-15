@@ -193,15 +193,21 @@ function mergeItems(incoming: Item[], current: Item[], baseSyncMs: number): Item
 }
 
 // Generický merge-save pre array kľúče. baseSync z hlavičky X-Base-Sync.
+// SELECT FOR UPDATE zamkne riadok — paralelné requesty čakajú, nie race condition.
 async function mergeSaveArray(key: string, body: unknown, baseSyncHeader: unknown): Promise<{ kept: number; preserved: number }> {
   const incoming = Array.isArray(body) ? body as Item[] : [];
-  const current = (await getConfig(key) as Item[] | null) ?? [];
-  // Bez baseSync hlavičky (legacy klient) → fallback na bezpečný merge: zachovaj
-  // všetky DB položky ktoré incoming nemá (nikdy nemaž bez explicitného baseSync).
   const baseSyncMs = baseSyncHeader != null ? ts(baseSyncHeader) : -1;
-  const merged = mergeItems(incoming, current, baseSyncMs);
-  await setConfig(key, merged);
-  return { kept: merged.length, preserved: merged.length - incoming.length };
+
+  return await db.transaction(async (tx) => {
+    // Zamkni riadok — iný admin musí počkať kým táto transakcia skončí
+    const rows = await tx.select().from(adminConfig).where(eq(adminConfig.key, key)).for("update").limit(1);
+    const current = (rows[0]?.data as Item[] | null) ?? [];
+    const merged = mergeItems(incoming, current, baseSyncMs);
+    await tx.insert(adminConfig)
+      .values({ key, data: merged })
+      .onConflictDoUpdate({ target: adminConfig.key, set: { data: merged, updatedAt: new Date() } });
+    return { kept: merged.length, preserved: merged.length - incoming.length };
+  });
 }
 
 // Public read-only endpoints — kalkulačka ich potrebuje bez admin JWT
