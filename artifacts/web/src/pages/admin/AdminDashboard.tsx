@@ -49,6 +49,7 @@ export default function AdminDashboard() {
   const [goToClientId, setGoToClientId] = useState<string | null>(null);
   const [goToOrdersSearch, setGoToOrdersSearch] = useState<string | undefined>(undefined);
   const [goToOrdersFocusId, setGoToOrdersFocusId] = useState<string | undefined>(undefined);
+  const [bioFocus, setBioFocus] = useState<{ loginId?: string; nonce: number } | null>(null);
   const [sluzbyScrollPumpa, setSluzbyScrollPumpa] = useState(false);
   const [bioActive, setBioActive] = useState(() => isBiometricAvailable() && hasStoredCredential());
 
@@ -309,12 +310,12 @@ export default function AdminDashboard() {
             {tab === "betony" && <BetonTab key={syncKey} />}
             {tab === "sluzby" && <SluzbyTab key={syncKey} onGoToDoprava={() => { setTab("doprava"); window.location.hash = "doprava"; }} scrollToPumpa={sluzbyScrollPumpa} onScrollDone={() => setSluzbyScrollPumpa(false)} />}
             {tab === "doprava" && <DopravaTab key={syncKey} onGoToSluzby={() => { setTab("sluzby"); setSluzbyScrollPumpa(true); window.location.hash = "sluzby"; }} />}
-            {tab === "klienti" && <KlientiTab expandClientId={goToClientId} onExpanded={() => setGoToClientId(null)} onGoToOrders={(loginId, focusId) => { setGoToOrdersSearch(loginId); setGoToOrdersFocusId(focusId); setTab("objednavky"); window.location.hash = "objednavky"; }} />}
+            {tab === "klienti" && <KlientiTab expandClientId={goToClientId} onExpanded={() => setGoToClientId(null)} onGoToOrders={(loginId, focusId) => { setGoToOrdersSearch(loginId); setGoToOrdersFocusId(focusId); setTab("objednavky"); window.location.hash = "objednavky"; }} onGoToBiometria={(loginId) => { setBioFocus(prev => ({ loginId, nonce: (prev?.nonce ?? 0) + 1 })); setTab("server"); window.location.hash = "server"; }} />}
             {tab === "objednavky" && <ObjednavkyTab initialClientId={goToOrdersSearch} focusOrderId={goToOrdersFocusId} onGoToClient={(loginId) => { setGoToOrdersSearch(undefined); setGoToOrdersFocusId(undefined); setTab("klienti"); setGoToClientId(loginId); }} />}
             {tab === "analytics" && <AnalyticsTab />}
             {tab === "statistiky" && <StatistikyTab />}
             {tab === "gsc" && <SearchConsoleTab />}
-            {tab === "server" && <ServerTab onOpenClient={(loginId) => { setGoToClientId(loginId); setTab("klienti"); window.location.hash = "klienti"; }} />}
+            {tab === "server" && <ServerTab bioFocus={bioFocus} onOpenClient={(loginId) => { setGoToClientId(loginId); setTab("klienti"); window.location.hash = "klienti"; }} />}
           </Suspense>
         </div>
       </div>

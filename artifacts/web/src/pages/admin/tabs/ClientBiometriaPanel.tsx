@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Fingerprint, AlertTriangle, RefreshCw, Info, ChevronUp, ChevronDown, ShieldCheck, Users, ExternalLink, ClipboardList, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,14 +23,28 @@ const BIO_MAX_PAGES = 5;
 
 // Klientska biometria — prehľad + feed. Presunuté z KlientiTab do SERVER tabu (monitoring).
 // Vlastný fetch → nezávislé od pomalého server-status. onOpenClient prepne na KLIENTI + rozbalí.
-export function ClientBiometriaPanel({ onOpenClient }: { onOpenClient?: (loginId: string) => void }) {
+export function ClientBiometriaPanel({ onOpenClient, focus }: { onOpenClient?: (loginId: string) => void; focus?: { loginId?: string; nonce: number } | null }) {
   const [bioOpen, setBioOpen] = useState(false);
   const [bioInfoOpen, setBioInfoOpen] = useState(false);
   const [bioStats, setBioStats] = useState<BiometricStats | null>(null);
   const [bioPage, setBioPage] = useState(0);
   const [bioRefreshing, setBioRefreshing] = useState(false);
+  const [highlightLogin, setHighlightLogin] = useState<string | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { if (!bioOpen) setBioInfoOpen(false); }, [bioOpen]);
+
+  // Skok z KLIENTI (klik na bio badge / "Aktivita →") → otvor panel, zvýrazni klienta, scrolluj
+  useEffect(() => {
+    if (!focus) return;
+    setBioOpen(true);
+    setBioPage(0);
+    setHighlightLogin(focus.loginId ?? null);
+    const t1 = setTimeout(() => rootRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
+    const t2 = setTimeout(() => setHighlightLogin(null), 4500);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus?.nonce]);
 
   const loadBioStats = useCallback(async () => {
     const token = localStorage.getItem("msbeton_admin_token") ?? "";
@@ -52,7 +66,7 @@ export function ClientBiometriaPanel({ onOpenClient }: { onOpenClient?: (loginId
   }, [bioOpen, loadBioStats]);
 
   return (
-    <div className="bg-white border border-gray-200 shadow-sm overflow-hidden rounded-xl">
+    <div ref={rootRef} className={cn("bg-white border shadow-sm overflow-hidden rounded-xl transition-colors", highlightLogin ? "border-primary ring-2 ring-primary/30" : "border-gray-200")}>
       <div className="w-full flex items-center justify-between px-4 py-2 border-b border-gray-100 bg-gray-50">
         <button type="button" onClick={() => setBioOpen(o => !o)}
           className="flex items-center gap-2 flex-1 hover:opacity-80 transition-opacity cursor-pointer text-left">
@@ -198,11 +212,12 @@ export function ClientBiometriaPanel({ onOpenClient }: { onOpenClient?: (loginId
                 {items.map((e, idx) => {
                   const i = safePage * BIO_PER_PAGE + idx;
                   const canOpen = !!(e.loginId && onOpenClient);
+                  const isHi = !!(highlightLogin && e.loginId === highlightLogin);
                   return (
                   <div key={i}
                     onClick={canOpen ? () => onOpenClient!(e.loginId) : undefined}
                     title={canOpen ? `Otvoriť kartu klienta ${e.clientName}` : undefined}
-                    className={`group px-4 py-2 flex items-start gap-2.5 ${e.ok ? "" : "bg-red-50/40"} ${canOpen ? "cursor-pointer hover:bg-primary/[0.06]" : ""}`}>
+                    className={cn("group px-4 py-2 flex items-start gap-2.5", !e.ok && "bg-red-50/40", isHi && "bg-primary/[0.12] ring-1 ring-inset ring-primary/40", canOpen && "cursor-pointer hover:bg-primary/[0.06]")}>
                     <span className={`mt-0.5 w-1.5 h-1.5 rounded-full shrink-0 ${e.ok ? "bg-emerald-500" : "bg-red-500"}`} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, ChevronRight, Users, Truck, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, Mail, Phone, PenLine, Fingerprint, ShieldX, AlertTriangle, Info, Smartphone, Heart, GripVertical, ArrowDownUp, SlidersHorizontal, Percent, Building2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, ChevronRight, Users, Truck, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, Mail, Phone, PenLine, Fingerprint, ShieldX, AlertTriangle, Info, Smartphone, Heart, GripVertical, ArrowDownUp, SlidersHorizontal, Percent, Building2, Server } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
@@ -339,7 +339,7 @@ ${buildTable(dopravaHdr, dopravaRows)}
   if (!win) { const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.click(); }
 }
 
-export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }: { expandClientId?: string | null; onExpanded?: () => void; onGoToOrders?: (loginId: string, focusOrderId?: string) => void }) {
+export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, onGoToBiometria }: { expandClientId?: string | null; onExpanded?: () => void; onGoToOrders?: (loginId: string, focusOrderId?: string) => void; onGoToBiometria?: (loginId?: string) => void }) {
   const [clients, setClients] = useState<Client[]>(adminData.getClients());
   const [zones] = useState(() => adminData.getDelivery());
   const [pZones] = useState(() => adminData.getTransportZones());
@@ -657,6 +657,20 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
           Klient <span className="font-black">{addSuccessMsg}</span> bol úspešne pridaný
         </div>
       )}
+
+      {/* Previazanie na Biometriu (presunutá do Servera) — discoverability + skok */}
+      <button type="button" onClick={() => onGoToBiometria?.()}
+        className="w-full flex items-center justify-between px-4 py-2 bg-white border border-gray-200 shadow-sm hover:border-secondary/30 hover:bg-gray-50 transition-colors cursor-pointer group rounded-sm">
+        <span className="flex items-center gap-2 text-xs font-bold text-gray-500 group-hover:text-secondary transition-colors">
+          <Fingerprint className="w-3.5 h-3.5" /> Biometria klientov
+          {(() => { const n = clients.filter(c => (c.webauthnCredentials?.length ?? 0) > 0).length; return n > 0 ? (
+            <span className="px-1.5 py-0.5 text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-sm">{n} / {clients.length} má bio</span>
+          ) : null; })()}
+        </span>
+        <span className="flex items-center gap-1 text-[10px] font-bold text-secondary/40 group-hover:text-secondary uppercase tracking-wider transition-colors">
+          <Server className="w-3 h-3" /> Server <ChevronRight className="w-3.5 h-3.5" />
+        </span>
+      </button>
 
       {/* Systémová DPH — collapsible */}
       <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
@@ -1138,17 +1152,19 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                       : <span className={cn("font-black", av.palette.fg, av.mono.length > 1 ? "text-xs" : "text-sm")}>{av.mono || av.char}</span>
                     }
                   </div>
-                  {/* Biometria aktívna → fingerprint odznak na avatare (owner=admin bio, klient=server bio) */}
+                  {/* Biometria aktívna → fingerprint odznak na avatare (owner=admin bio, klient=server bio). Klik → Biometria v Serveri */}
                   {(() => {
                     const ownerBio = c.isOwner && isAdminBioAvail() && hasAdminBio();
                     const clientBio = (c.webauthnCredentials?.length ?? 0) > 0;
                     if (!ownerBio && !clientBio) return null;
                     return (
-                      <span className="absolute -top-1 -right-1 min-w-4 h-4 px-0.5 rounded-full bg-emerald-500 ring-2 ring-white flex items-center justify-center gap-px"
-                        title={ownerBio ? "Admin biometria aktívna na tomto zariadení" : `Biometria aktívna — ${c.webauthnCredentials!.length} zariadenie`}>
+                      <button type="button"
+                        onClick={(e) => { e.stopPropagation(); onGoToBiometria?.(c.loginId); }}
+                        className="absolute -top-1 -right-1 min-w-4 h-4 px-0.5 rounded-full bg-emerald-500 ring-2 ring-white flex items-center justify-center gap-px hover:bg-emerald-600 hover:scale-110 transition-all cursor-pointer"
+                        title={ownerBio ? "Admin biometria aktívna — otvoriť Biometriu" : `Biometria aktívna — ${c.webauthnCredentials!.length} zariadenie · otvoriť aktivitu`}>
                         <Fingerprint className="w-2.5 h-2.5 text-white" />
                         {clientBio && <span className="text-white text-[8px] font-black leading-none">{c.webauthnCredentials!.length}</span>}
-                      </span>
+                      </button>
                     );
                   })()}
                 </div>
@@ -1493,11 +1509,18 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders }:
                               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
                                 <Fingerprint className="w-3 h-3" /> Biometria
                               </p>
-                              {creds.length > 0 && (
-                                <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold rounded-sm bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                  <Fingerprint className="w-3 h-3" /> {creds.length} zariad.
-                                </span>
-                              )}
+                              <div className="flex items-center gap-2">
+                                {creds.length > 0 && (
+                                  <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold rounded-sm bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    <Fingerprint className="w-3 h-3" /> {creds.length} zariad.
+                                  </span>
+                                )}
+                                <button type="button" onClick={() => onGoToBiometria?.(c.loginId)}
+                                  title="Otvoriť aktivitu biometrie v Serveri"
+                                  className="flex items-center gap-1 text-[10px] font-bold text-secondary/60 hover:text-secondary transition-colors cursor-pointer">
+                                  Aktivita <ChevronRight className="w-3 h-3" />
+                                </button>
+                              </div>
                             </div>
                             {isOwnerClient && (
                               <div className="px-2.5 py-2 bg-primary/8 border border-primary/20 rounded text-[10px] text-secondary/80 mb-2">

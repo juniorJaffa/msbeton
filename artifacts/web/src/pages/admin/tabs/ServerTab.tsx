@@ -61,7 +61,7 @@ function fmtBackupName(file: string): string {
   return `${m[3]}.${m[2]}.${m[1]}  ${m[4]}:${m[5]}`;
 }
 
-export default function ServerTab({ onOpenClient }: { onOpenClient?: (loginId: string) => void }) {
+export default function ServerTab({ onOpenClient, bioFocus }: { onOpenClient?: (loginId: string) => void; bioFocus?: { loginId?: string; nonce: number } | null }) {
   const [data, setData] = useState<ServerStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -138,7 +138,7 @@ export default function ServerTab({ onOpenClient }: { onOpenClient?: (loginId: s
   return (
     <div className="p-4 max-w-2xl mx-auto space-y-4">
       {/* Biometria + admin telemetria — navrch, vlastný fetch (nezávislé od pomalého server-status) */}
-      <ClientBiometriaPanel onOpenClient={onOpenClient} />
+      <ClientBiometriaPanel onOpenClient={onOpenClient} focus={bioFocus} />
       <AdminAccessPanel />
 
       {/* Header */}
