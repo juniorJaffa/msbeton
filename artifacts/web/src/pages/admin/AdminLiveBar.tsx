@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2, Check, GitMerge, AlertTriangle, Users } from "lucide-react";
 import { adminApi, type PresenceSession } from "@/lib/adminData";
-import { DeviceIcon } from "./tabs/AdminAccessPanel";
-import { shortIp } from "@/lib/utils";
+import { DeviceIcon, roleBadge } from "./tabs/AdminAccessPanel";
+import { shortIp, cn } from "@/lib/utils";
+import { getAdminRole } from "@/lib/adminAuth";
 import { toast } from "@/hooks/use-toast";
 
 type SaveState = "saving" | "saved" | "merged" | "error";
@@ -97,6 +98,9 @@ export function AdminLiveBar() {
               <div className="px-3 py-2 flex items-center gap-2 text-xs border-b border-gray-50">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
                 <span className="font-bold text-secondary">Vy (toto zariadenie)</span>
+                {(() => { const rb = roleBadge(getAdminRole() ?? undefined); return (
+                  <span className={cn("ml-auto inline-flex items-center gap-0.5 text-[9px] font-black px-1 py-px rounded border shrink-0", rb.cls)}><rb.Icon className="w-2.5 h-2.5" />{rb.label}</span>
+                ); })()}
               </div>
               {others.map(s => (
                 <div key={s.session} className="px-3 py-2 flex items-center justify-between gap-2 text-xs border-b border-gray-50 last:border-0">
@@ -104,8 +108,9 @@ export function AdminLiveBar() {
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
                     <DeviceIcon label={s.device} className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                     <span className="font-semibold text-gray-700 truncate">{s.device}</span>
-                    {s.role === "reader" && <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-1 rounded shrink-0">čítateľ</span>}
-                    {s.role === "manager" && <span className="text-[9px] font-black text-secondary bg-secondary/10 px-1 rounded shrink-0">správca</span>}
+                    {(() => { const rb = roleBadge(s.role); return (
+                      <span className={cn("inline-flex items-center gap-0.5 text-[9px] font-black px-1 py-px rounded border shrink-0", rb.cls)}><rb.Icon className="w-2.5 h-2.5" />{rb.label}</span>
+                    ); })()}
                   </div>
                   <span className="font-mono text-[10px] text-gray-300 shrink-0" title={s.ip}>{shortIp(s.ip)}</span>
                 </div>

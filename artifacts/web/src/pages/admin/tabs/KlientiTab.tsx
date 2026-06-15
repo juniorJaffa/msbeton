@@ -624,9 +624,10 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
       };
       arr = [...arr].sort(cmp);
     }
-    // 3) Favourite pin hore (owner > favorite > zvyšok) — vo všetkých režimoch
+    // 3) Pin hore (vo všetkých režimoch): Vlastník > Správca > Čítateľ > Obľúbený > zvyšok.
+    //    Admin tím (povýšení klienti) je vždy navrchu — nie sú to bežní zákazníci.
     arr = [...arr].sort((a, b) => {
-      const rank = (c: Client) => c.isOwner ? 2 : c.favorite ? 1 : 0;
+      const rank = (c: Client) => c.isOwner ? 4 : clientRole(c) === "manager" ? 3 : clientRole(c) === "reader" ? 2 : c.favorite ? 1 : 0;
       return rank(b) - rank(a);
     });
     return arr;
@@ -1127,7 +1128,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                 dragOverClientId === c.id ? "border-primary border-2 bg-primary/5 shadow-[0_0_0_3px_rgba(237,197,49,0.25)]"
                   : flashClientId === c.id ? "border-green-400 border-2 bg-green-50"
                   : liftedClientId === c.id ? "border-primary border-2 opacity-50 scale-[0.99] shadow-xl"
-                  : c.isOwner ? "bg-amber-50 border-primary/40 border-l-primary" : !c.active ? "bg-white border-gray-200 border-l-red-400 opacity-50" : c.favorite ? "bg-white border-gray-200 border-l-rose-400" : "bg-white border-gray-200 border-l-green-500")}>
+                  : c.isOwner ? "bg-amber-50 border-primary/40 border-l-primary" : !c.active ? "bg-white border-gray-200 border-l-red-400 opacity-50" : clientRole(c) === "manager" ? "bg-white border-gray-200 border-l-secondary" : clientRole(c) === "reader" ? "bg-white border-gray-200 border-l-blue-400" : c.favorite ? "bg-white border-gray-200 border-l-rose-400" : "bg-white border-gray-200 border-l-green-500")}>
               {/* Card header */}
               <div className="flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => { const next = isExpanded ? null : c.id; setExpanded(next); if (next) scrollToClientCard(next, true); }}>
                 {/* Drag grip + číslo (stacked) — úzky ľavý stĺpec, šetrí šírku */}

@@ -1,8 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { ShieldCheck, ChevronDown, ChevronUp, RefreshCw, Smartphone, Monitor, Laptop, Users, Fingerprint, History, Plus, Pencil, Trash2, Info, Check, X } from "lucide-react";
+import { ShieldCheck, ChevronDown, ChevronUp, RefreshCw, Smartphone, Monitor, Laptop, Users, Fingerprint, History, Plus, Pencil, Trash2, Info, Check, X, Crown, Eye } from "lucide-react";
 import { adminApi, type PresenceSession, type AuditEntry } from "@/lib/adminData";
-import { getAdminDeviceName, setAdminDeviceName, getAdminDeviceAuto } from "@/lib/adminAuth";
+import { getAdminDeviceName, setAdminDeviceName, getAdminDeviceAuto, getAdminRole } from "@/lib/adminAuth";
 import { cn, shortIp } from "@/lib/utils";
+
+// Rola admin session → ikona + label. Vlastník=Crown, Správca=Shield, Čítateľ=Eye.
+export function roleBadge(role?: string): { Icon: React.ElementType; label: string; cls: string } {
+  switch (role) {
+    case "admin":   return { Icon: Crown,       label: "vlastník", cls: "text-primary bg-primary/15 border-primary/30" };
+    case "manager": return { Icon: ShieldCheck, label: "správca",  cls: "text-secondary bg-secondary/10 border-secondary/20" };
+    case "reader":  return { Icon: Eye,         label: "čítateľ",  cls: "text-blue-600 bg-blue-50 border-blue-200" };
+    default:        return { Icon: ShieldCheck, label: "admin",    cls: "text-gray-500 bg-gray-100 border-gray-200" };
+  }
+}
 
 interface AdminBioEntry { ts: string; ok: boolean; event: string; device?: string; ip?: string; reason?: string }
 interface AdminBioStats { devices: number; todayOk: number; todayFail: number; lastActivity: string | null }
@@ -141,6 +151,9 @@ export function AdminAccessPanel() {
               ) : (
                 <>
                   <span className="text-xs font-bold text-secondary truncate">{deviceName || "Vy"} <span className="text-gray-400 font-normal">({getAdminDeviceAuto()})</span></span>
+                  {(() => { const rb = roleBadge(getAdminRole() ?? undefined); return (
+                    <span className={cn("inline-flex items-center gap-0.5 text-[9px] font-black px-1 py-px rounded border shrink-0", rb.cls)}><rb.Icon className="w-2.5 h-2.5" />{rb.label}</span>
+                  ); })()}
                   <button onClick={() => { setNameDraft(deviceName); setEditingName(true); }}
                     title="Pomenovať toto zariadenie (rozlíši 2 rovnaké telefóny)"
                     className="ml-auto flex items-center gap-1 text-[10px] text-gray-400 hover:text-secondary transition-colors shrink-0">
@@ -158,8 +171,9 @@ export function AdminAccessPanel() {
                 </span>
                 <DeviceIcon label={s.device} className="w-3.5 h-3.5 text-gray-500 shrink-0" />
                 <span className="text-xs font-semibold text-gray-700 truncate">{s.device}</span>
-                {s.role === "reader" && <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-1 rounded shrink-0">čítateľ</span>}
-                {s.role === "manager" && <span className="text-[9px] font-black text-secondary bg-secondary/10 px-1 rounded shrink-0">správca</span>}
+                {(() => { const rb = roleBadge(s.role); return (
+                  <span className={cn("inline-flex items-center gap-0.5 text-[9px] font-black px-1 py-px rounded border shrink-0", rb.cls)}><rb.Icon className="w-2.5 h-2.5" />{rb.label}</span>
+                ); })()}
                 <span className="ml-auto text-[10px] text-gray-400 shrink-0 flex items-center gap-1">
                   <span className="font-mono text-gray-300" title={s.ip}>{shortIp(s.ip)}</span>· {relTime(s.lastSeen)}
                 </span>
