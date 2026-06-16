@@ -184,12 +184,15 @@ function mergeItems(incoming: Item[], current: Item[], baseSyncMs: number): Item
       result.push(winner);
     }
   }
-  // 2) Položky len v DB (chýbajú v incoming) — zachovaj ak vznikli/zmenili sa po baseSync
+  // 2) Položky len v DB (chýbajú v incoming):
+  //    - bez updatedAt → ZACHOVAJ vždy (nevieme dokázať že ju admin videl a zámerne zmazal;
+  //      napr. out-of-band insert). Inak by sa stratil novovytvorený klient (bug s Ľubicou).
+  //    - s updatedAt > baseSync → iný admin pridal/zmenil po mojom syncu → zachovaj
+  //    - inak (updatedAt <= baseSync) → tento admin ju zámerne zmazal → nezachovávaj
   for (const cur of current) {
     const id = cur.id != null ? String(cur.id) : null;
     if (id && incIds.has(id)) continue;
-    if (ts(cur.updatedAt) > baseSyncMs) result.push(cur);
-    // inak: incoming admin túto položku zámerne zmazal → nezachovávaj
+    if (cur.updatedAt == null || ts(cur.updatedAt) > baseSyncMs) result.push(cur);
   }
   return result;
 }

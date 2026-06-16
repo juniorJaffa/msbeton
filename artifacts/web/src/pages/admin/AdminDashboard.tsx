@@ -82,6 +82,19 @@ export default function AdminDashboard() {
     syncFromServer().then(() => setSyncKey(k => k + 1));
   }, []);
 
+  // Periodický sync — zmeny iných adminov (noví klienti, ceny…) sa zobrazia takmer okamžite.
+  // Rekurzívny setTimeout (nie setInterval) — na pomalej sieti sa polls neprekrývajú.
+  useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const tick = async () => {
+      try { await syncFromServer(); } catch { /* ticho */ }
+      finally { if (!cancelled) timer = setTimeout(tick, 15000); }
+    };
+    timer = setTimeout(tick, 15000);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, []);
+
   useEffect(() => {
     const handler = () => setSyncKey(k => k + 1);
     window.addEventListener("admin-data-synced", handler);
