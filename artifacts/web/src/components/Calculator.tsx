@@ -1577,7 +1577,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       return `<div style="color:#EDC531;font-size:8pt;margin-top:3px">Zľavy: ${dp.join(", ")}</div>`;
     })();
 
-    const tabLabel = tab === "pumpa" ? "Pumpa" : tab === "mix" ? "Miešačka" : "Vlastná doprava";
+    const tabLabel = tab === "pumpa" ? "Pumpa" : tab === "mix" ? "Domiešavač" : "Vlastná doprava";
     const pdfZoneType = clientDeliveryZone?.pricingType ?? "standard";
     const pdfZoneTypeLabel = pdfZoneType === "km" ? "Kilometre" : pdfZoneType === "auto" ? "Počet áut" : "Štandard";
     const zoneLabel = clientDeliveryZone?.name ?? pdfZoneTypeLabel;

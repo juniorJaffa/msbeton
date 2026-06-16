@@ -84,7 +84,7 @@ export async function sendOrderNotification(order: Record<string, unknown>): Pro
   const conn = createTransport();
   if (!conn) return { ok: false, error: "SMTP not configured" };
 
-  const tabLabel: Record<string, string> = { pumpa: "Pumpa", mix: "Mixér", vlastnadoprava: "Vlastná doprava" };
+  const tabLabel: Record<string, string> = { pumpa: "Pumpa", mix: "Domiešavač", vlastnadoprava: "Vlastná doprava" };
   const tab = tabLabel[String(order.tab ?? "")] ?? String(order.tab ?? "—");
   const priceMode = order.priceMode === "hotovost" ? "Hotovosť" : "Faktúra";
   const eur = (v: unknown) => v != null ? `${Number(v).toFixed(2)} €` : "—";
@@ -143,7 +143,7 @@ export async function sendOrderConfirmation(toEmail: string, order: Record<strin
   const conn = createTransport();
   if (!conn) return { ok: false, error: "SMTP not configured" };
 
-  const tabLabel: Record<string, string> = { pumpa: "Pumpa", mix: "Mixér", vlastnadoprava: "Vlastná doprava" };
+  const tabLabel: Record<string, string> = { pumpa: "Pumpa", mix: "Domiešavač", vlastnadoprava: "Vlastná doprava" };
   const tab = tabLabel[String(order.tab ?? "")] ?? String(order.tab ?? "—");
   const priceMode = order.priceMode === "hotovost" ? "Hotovosť" : "Faktúra";
   const eur = (v: unknown) => v != null ? `${Number(v).toFixed(2)} €` : "—";
