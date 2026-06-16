@@ -77,17 +77,6 @@ export function ContactSection() {
                   </div>
                 </div>
               </div>
-              {/* Malá mapa — embed iframe, lazy (bez LCP penalizácie); rieši „kde nás nájdete" bez duplikovania kontaktov */}
-              <div className="mt-8 rounded-xl overflow-hidden border border-white/10 shadow-lg">
-                <iframe
-                  title="MS-BETON na mape — Kamenná 3, Žilina"
-                  src="https://www.google.com/maps?q=MS-BETON%2C%20Kamenn%C3%A1%203%2C%20010%2001%20%C5%BDilina&output=embed"
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  className="w-full h-44 block"
-                  style={{ border: 0 }}
-                />
-              </div>
             </div>
           </div>
 
@@ -145,6 +134,17 @@ export function ContactSection() {
                   </button>
                 </form>
               )}
+            </div>
+            {/* Mapa pod formulárom — embed iframe, lazy (bez LCP penalizácie) */}
+            <div className="mt-8 rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+              <iframe
+                title="MS-BETON na mape — Kamenná 3, Žilina"
+                src="https://www.google.com/maps?q=MS-BETON%2C%20Kamenn%C3%A1%203%2C%20010%2001%20%C5%BDilina&output=embed"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                className="w-full h-48 sm:h-56 block"
+                style={{ border: 0 }}
+              />
             </div>
           </div>
 
