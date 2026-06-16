@@ -185,6 +185,7 @@ interface UnifiedClient {
   smsShareOnly?: boolean;
   adminReader?: boolean;
   adminRole?: string; // "manager" (Správca) | "reader" (Čítateľ) — vyššie ako adminReader bool
+  noOrderConfirm?: boolean; // neposielať potvrdzovací email (šablónové/zľavové účty)
 }
 
 interface LegacyClientAccount {
@@ -380,14 +381,18 @@ router.post("/order", async (req, res) => {
       try {
         const sRow = await db.select().from(adminConfig).where(eq(adminConfig.key, "transport_settings"));
         const settings = (sRow.length > 0 ? sRow[0].data : {}) as Record<string, unknown>;
-        if (settings.orderConfirmEmail === false) return;
+        if (settings.orderConfirmEmail === false) return; // globálne vypnuté
         let toEmail = order.email ? String(order.email) : "";
-        if (!toEmail && order.clientId) {
+        if (order.clientId) {
           const accts = await getClientAccounts();
           const acc = accts.find((a) => a.loginId === String(order.clientId) || a.id === String(order.clientId));
-          if (acc?.email) toEmail = acc.email;
+          if (!toEmail && acc?.email) toEmail = acc.email;
+          if (acc?.noOrderConfirm) return; // per-klient opt-out (napr. šablónové zľavové účty)
         }
-        if (toEmail) await sendOrderConfirmation(toEmail, order as Record<string, unknown>);
+        if (!toEmail) return;
+        // Vlastná doména = šablónové/interné účty (info@msbeton.sk…) → neposielať potvrdenku sebe
+        if (toEmail.toLowerCase().endsWith("@msbeton.sk")) return;
+        await sendOrderConfirmation(toEmail, order as Record<string, unknown>);
       } catch { /* ignore */ }
     })();
     return res.json({ ok: true });

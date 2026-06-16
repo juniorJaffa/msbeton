@@ -124,6 +124,7 @@ export interface Client {
   favorite?: boolean; // obľúbený klient — pin hore (srdiečko)
   adminReader?: boolean; // admin-čitateľ: read-only prístup (legacy bool; nová je adminRole)
   adminRole?: "reader" | "manager"; // povýšenie klienta: reader (čítateľ) | manager (Správca)
+  noOrderConfirm?: boolean; // neposielať potvrdzovací email po objednávke (šablónové/zľavové účty)
 }
 
 export interface Order {
