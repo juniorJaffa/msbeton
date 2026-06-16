@@ -1,17 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
 
-// v2 — resets stuck localStorage from old key name
-const VERSION_KEY = "msbeton_app_version_v2";
 const CHECK_INTERVAL = 90 * 1000; // 90 s
 
 export function VersionChecker() {
   const [needsRefresh, setNeedsRefresh] = useState(false);
-  const latestHashRef = useRef<string>("");
+  // Baseline = hash servera PRI NAČÍTANÍ tejto stránky (nie persistované).
+  // Banner sa ukáže LEN ak sa hash zmení počas otvorenej session (reálny deploy medzitým).
+  // → každý refresh resetne baseline a banner zmizne (nemusíš klikať Obnoviť).
+  const loadHashRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // Remove old key from previous naming to avoid phantom mismatches
+    // Cleanup po starej (localStorage) implementácii — predtým banner zostával po refreshi
     localStorage.removeItem("msbeton_app_version");
+    localStorage.removeItem("msbeton_app_version_v2");
+    sessionStorage.removeItem("msbeton_refreshed");
 
     async function check() {
       try {
@@ -20,19 +23,8 @@ export function VersionChecker() {
         const data = await res.json() as { hash?: string };
         const hash = data.hash;
         if (!hash || hash === "unknown") return;
-        latestHashRef.current = hash;
-        const stored = localStorage.getItem(VERSION_KEY);
-        if (!stored) {
-          localStorage.setItem(VERSION_KEY, hash);
-          return;
-        }
-        // First check after user clicked Obnoviť — silently accept server hash
-        if (sessionStorage.getItem("msbeton_refreshed")) {
-          sessionStorage.removeItem("msbeton_refreshed");
-          localStorage.setItem(VERSION_KEY, hash);
-          return;
-        }
-        if (stored !== hash) setNeedsRefresh(true);
+        if (loadHashRef.current === null) { loadHashRef.current = hash; return; } // baseline = táto session
+        if (hash !== loadHashRef.current) setNeedsRefresh(true);
       } catch {
         // network error — ignore
       }
@@ -57,10 +49,7 @@ export function VersionChecker() {
       </div>
       <button
         type="button"
-        onClick={() => {
-          sessionStorage.setItem("msbeton_refreshed", "1");
-          window.location.reload();
-        }}
+        onClick={() => window.location.reload()}
         className="shrink-0 bg-primary text-secondary text-xs font-black px-3 py-1.5 rounded-lg hover:bg-primary/80 transition-colors cursor-pointer"
       >
         Obnoviť
