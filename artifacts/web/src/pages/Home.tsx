@@ -412,6 +412,63 @@ export default function Home() {
         `}</style>
       </section>
 
+      {/* Kde nás nájdete — NAP + mapa (lokálne SEO; mapa lazy, dole → bez LCP penalizácie) */}
+      <section id="kontakt" className="py-14 concrete-light border-t border-gray-100" style={{ scrollMarginTop: "96px" }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-8">
+            <p className="text-[10px] font-bold text-gray-400 tracking-[0.28em] uppercase mb-1">Kontakt &amp; prevádzka</p>
+            <h2 className="text-2xl sm:text-3xl font-black text-secondary uppercase tracking-tight" style={{ fontFamily: "Montserrat, sans-serif" }}>Kde nás nájdete</h2>
+            <p className="text-gray-500 text-sm mt-2 max-w-xl mx-auto">Betón a doprava pre <strong className="text-secondary">Žilinu a okolie</strong> — Bytča, Kysucké Nové Mesto, Rajec a okolie do 50 km.</p>
+          </div>
+          <div className="grid lg:grid-cols-5 gap-6 items-stretch">
+            {/* NAP — viditeľný text = lokálny SEO signál */}
+            <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm p-6 flex flex-col gap-4">
+              <div>
+                <div className="text-lg font-black text-secondary">MS-BETON, spol. s r.o.</div>
+                <div className="text-[11px] text-gray-400 mt-0.5">IČO 55747591 · IČ DPH SK2122074603</div>
+              </div>
+              <div className="flex items-start gap-3">
+                <MapPin className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                <div>
+                  <div className="text-sm font-bold text-secondary">Prevádzka</div>
+                  <div className="text-sm text-gray-600">Kamenná 3, 010 01 Žilina</div>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <MapPin className="w-5 h-5 text-gray-300 shrink-0 mt-0.5" />
+                <div>
+                  <div className="text-sm font-bold text-secondary">Sídlo</div>
+                  <div className="text-sm text-gray-600">Turie 468, 013 12 Turie</div>
+                </div>
+              </div>
+              <a href="tel:+421909205205" className="flex items-center gap-3 group">
+                <Phone className="w-5 h-5 text-primary shrink-0" />
+                <span className="text-sm font-bold text-secondary group-hover:text-primary transition-colors">+421 909 205 205</span>
+              </a>
+              <a href="mailto:info@msbeton.sk" className="flex items-center gap-3 group">
+                <Mail className="w-5 h-5 text-primary shrink-0" />
+                <span className="text-sm font-medium text-gray-600 group-hover:text-primary transition-colors">info@msbeton.sk</span>
+              </a>
+              <a href="https://www.google.com/maps/dir/?api=1&destination=49.2232,18.7394" target="_blank" rel="noopener noreferrer"
+                className="mt-1 inline-flex items-center justify-center gap-2 bg-secondary text-white font-bold text-sm py-3 rounded-xl hover:bg-secondary/90 transition-colors">
+                <MapPin className="w-4 h-4" /> Navigovať na prevádzku
+              </a>
+            </div>
+            {/* Mapa — embed iframe, lazy (načíta sa až pri scrolle k pätičke) */}
+            <div className="lg:col-span-3 rounded-2xl overflow-hidden border border-gray-200 shadow-sm min-h-[340px]">
+              <iframe
+                title="MS-BETON na mape — Kamenná 3, Žilina"
+                src="https://www.google.com/maps?q=MS-BETON%2C%20Kamenn%C3%A1%203%2C%20010%2001%20%C5%BDilina&output=embed"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                className="w-full h-full min-h-[340px]"
+                style={{ border: 0 }}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
       <Footer />
     </div>
   );
