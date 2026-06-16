@@ -693,7 +693,10 @@ router.post("/webauthn/auth-complete", async (req, res) => {
         .onConflictDoUpdate({ target: adminConfig.key, set: { data: updated, updatedAt: new Date() } });
       invalidateClientCache();
     }
-    return res.json({ ok: true, client: buildClientResponse(client) });
+    // Povýšený klient (Správca/Čítateľ) → aj cez biometriu dostane admin token
+    const role = clientAdminRole(client);
+    const adminToken = role ? signAdminToken(role) : undefined;
+    return res.json({ ok: true, client: buildClientResponse(client), ...(adminToken ? { adminToken } : {}) });
   } catch (err) {
     req.log.error({ err }, "WebAuthn auth-complete failed");
     return res.status(500).json({ ok: false, error: "Interná chyba" });

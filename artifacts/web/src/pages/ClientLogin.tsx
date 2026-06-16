@@ -20,6 +20,11 @@ function generateCaptcha() {
 
 type Screen = "form" | "bio-locked" | "bio-pending" | "bio-failed" | "bio-register";
 
+// Kam po prihlásení: povýšený klient (Správca/Čítateľ) → admin prostredie, inak kalkulačka.
+function adminDest(c?: { adminReader?: boolean; adminRole?: string } | null): string {
+  return c && (c.adminReader || c.adminRole) ? "/admin/dashboard" : "/#calculator";
+}
+
 export default function ClientLogin() {
   const [, setLocation] = useLocation();
   const [screen, setScreen] = useState<Screen>("form");
@@ -42,7 +47,7 @@ export default function ClientLogin() {
   };
 
   useEffect(() => {
-    if (clientAuth.getLoggedClient()) { setLocation("/#calculator"); return; }
+    { const lc = clientAuth.getLoggedClient(); if (lc) { setLocation(adminDest(lc)); return; } }
 
     const info = getClientAttemptInfo();
     setLockInfo({ locked: info.locked, remainingMs: info.remainingMs });
@@ -75,7 +80,7 @@ export default function ClientLogin() {
     authenticateClientBiometric().then(result => {
       if (result.ok && result.session) {
         clientAuth.updateSession(result.session);
-        setLocation("/#calculator");
+        setLocation(adminDest(result.session));
       } else if (!hasClientBiometric()) {
         // Credential bol vymazaný (stale/iné zariadenie) — priamo na formulár
         setScreen("form");
@@ -104,14 +109,13 @@ export default function ClientLogin() {
     setLoading(false);
     if (res.ok && res.client) {
       resetClientAttempts();
-      // Povýšený klient (Správca/Čítateľ) → rovno do admin prostredia
-      if (res.client.adminReader || res.client.adminRole) { setLocation("/admin/dashboard"); return; }
-      // Admin-as-client (loginId "msbeton") nemá server-side credential → neponúkaj klient-bio
+      // Admin-as-client (loginId "msbeton") nemá server-side credential → neponúkaj klient-bio.
+      // Povýšení klienti (Správca/Čítateľ) bio DOSTANÚ — po nej redirect do admin prostredia.
       const isAdminClient = res.client.id === "admin" || res.client.clientId === "msbeton";
       if (!isAdminClient && isBiometricAvailable() && !hasClientBiometric()) {
-        setScreen("bio-register");
+        setScreen("bio-register"); // po registrácii/preskočení → adminDest(getLoggedClient())
       } else {
-        setLocation("/#calculator");
+        setLocation(adminDest(res.client));
       }
     } else {
       const count = recordClientFailedAttempt();
@@ -137,13 +141,14 @@ export default function ClientLogin() {
   const registerBio = async () => {
     const session = clientAuth.getLoggedClient();
     if (!session) { setLocation("/#calculator"); return; }
+    const dest = adminDest(session);
     setBioRegLoading(true);
     setBioRegError("");
     const res = await registerClientBiometric(session.id, session.clientId ?? session.id, session.name);
     setBioRegLoading(false);
     if (res.ok) {
       window.dispatchEvent(new Event("bio-status-changed")); // navbar aktualizuje indikátor
-      setLocation("/#calculator");
+      setLocation(dest);
     } else {
       setBioRegError(res.error ?? "Registrácia zlyhala");
     }
@@ -256,7 +261,7 @@ export default function ClientLogin() {
               {bioRegLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
               {bioRegLoading ? "Aktivujem…" : "Áno, aktivovať"}
             </button>
-            <button onClick={() => setLocation("/#calculator")} disabled={bioRegLoading}
+            <button onClick={() => setLocation(adminDest(clientAuth.getLoggedClient()))} disabled={bioRegLoading}
               className="w-full py-3 border border-white/15 text-white/50 hover:text-white/80 font-semibold text-sm tracking-widest transition-all rounded-sm cursor-pointer disabled:opacity-40">
               Nie, preskočiť
             </button>

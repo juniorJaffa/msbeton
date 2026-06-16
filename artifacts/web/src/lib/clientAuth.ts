@@ -246,12 +246,14 @@ export async function authenticateClientBiometric(): Promise<{ ok: boolean; sess
         credential: serializeAuthentication(cred),
       }),
     });
-    const completeData = await completeRes.json() as { ok: boolean; client?: LoggedClient; error?: string };
+    const completeData = await completeRes.json() as { ok: boolean; client?: LoggedClient; adminToken?: string; error?: string };
     if (!completeData.ok || !completeData.client) {
       // Server odmietol credential (nesúlad, crypto chyba, neznáme zariadenie) — vymaž starý lokálny kľúč
       clearClientBiometric();
       return { ok: false, error: completeData.error ?? "Overenie zlyhalo" };
     }
+    // Povýšený klient (Správca/Čítateľ) cez biometriu → ulož admin token pre admin prostredie
+    if (completeData.adminToken) localStorage.setItem("msbeton_admin_token", completeData.adminToken);
     return { ok: true, session: completeData.client };
   } catch (err: unknown) {
     const msg = String(err);
