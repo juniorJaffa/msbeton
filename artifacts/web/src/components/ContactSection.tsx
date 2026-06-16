@@ -80,8 +80,8 @@ export function ContactSection() {
             </div>
           </div>
 
-          {/* Form */}
-          <div className="lg:col-span-3 p-6 sm:p-10 lg:p-16">
+          {/* Form — vertikálne docentrované, aby biely stĺpec splynul výškou s navy (žiadne prázdne miesto dole) */}
+          <div className="lg:col-span-3 p-6 sm:p-10 lg:p-16 flex flex-col justify-center">
             <button
               className="sm:hidden w-full flex items-center justify-between px-5 py-4 bg-secondary text-white font-bold rounded-xl mb-2 active:scale-[0.98] transition-transform"
               onClick={() => setMobileFormOpen(v => !v)}
