@@ -1374,7 +1374,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                           <span className="text-gray-400 text-xs w-20 shrink-0">Prihlásený</span>
                           <span className={`text-xs font-medium ${c.lastLoginAt ? "text-gray-600" : "text-gray-300"}`}>
                             {c.lastLoginAt
-                              ? new Date(c.lastLoginAt).toLocaleDateString("sk-SK", { day: "numeric", month: "long", year: "numeric" })
+                              ? new Date(c.lastLoginAt).toLocaleString("sk-SK", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })
                               : "—"}
                           </span>
                         </div>
