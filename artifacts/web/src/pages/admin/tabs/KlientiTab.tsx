@@ -1253,38 +1253,37 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                 </div>
                 {/* Ikona tlačidlá — mobile: väčšie touch ciele; desktop w-40 zarovná s hlavičkou */}
                 <div className="flex items-center justify-end gap-0.5 shrink-0 sm:w-40">
-                  {/* Akcie 2×2: hore Kalkulačka+Tabuľka (dôležité), dole Odkaz+Srdiečko */}
-                  <div className="grid grid-cols-2 gap-0.5">
+                  {/* Akcie v jednom riadku, vertikálne v strede */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setExpanded(c.id); setClientDetailTab(prev => ({ ...prev, [c.id]: "calc" })); scrollToClientCard(c.id, true); }}
+                    title="Kalkulačka klienta"
+                    className="p-1.5 text-gray-300 active:text-primary hover:text-primary transition-colors">
+                    <Calculator className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setTablePdfModal(c); setTablePdfMode("faktura"); }}
+                    title="Zľavové tabuľky"
+                    className="p-1.5 text-amber-400 active:text-amber-600 hover:text-amber-600 transition-colors">
+                    <Table2 className="w-5 h-5" />
+                  </button>
+                  {c.sharedLink && (
+                    <a href={c.sharedLink} target="_blank" rel="noopener noreferrer" title="Zdieľaný odkaz"
+                      onClick={e => e.stopPropagation()}
+                      className="p-1.5 text-gray-300 hover:text-primary transition-colors flex items-center justify-center">
+                      {(() => { const { Icon, cls } = sharedLinkIcon(c.sharedLink); return <Icon className={`w-5 h-5 ${cls}`} />; })()}
+                    </a>
+                  )}
+                  {!c.isOwner && (
                     <button
-                      onClick={(e) => { e.stopPropagation(); setExpanded(c.id); setClientDetailTab(prev => ({ ...prev, [c.id]: "calc" })); scrollToClientCard(c.id, true); }}
-                      title="Kalkulačka klienta"
-                      className="p-1.5 text-gray-300 active:text-primary hover:text-primary transition-colors">
-                      <Calculator className="w-5 h-5" />
+                      onClick={(e) => { e.stopPropagation(); update(c.id, { favorite: !c.favorite }); }}
+                      title={c.favorite ? "Odobrať z obľúbených" : "Pridať do obľúbených"}
+                      className={cn("p-1.5 transition-colors", c.favorite ? "text-rose-500 active:text-rose-600" : "text-gray-300 active:text-rose-400")}>
+                      <Heart className={cn("w-5 h-5", c.favorite && "fill-rose-500")} />
                     </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setTablePdfModal(c); setTablePdfMode("faktura"); }}
-                      title="Zľavové tabuľky"
-                      className="p-1.5 text-amber-400 active:text-amber-600 hover:text-amber-600 transition-colors">
-                      <Table2 className="w-5 h-5" />
-                    </button>
-                    {c.sharedLink ? (
-                      <a href={c.sharedLink} target="_blank" rel="noopener noreferrer" title="Zdieľaný odkaz"
-                        onClick={e => e.stopPropagation()}
-                        className="p-1.5 text-gray-300 hover:text-primary transition-colors flex items-center justify-center">
-                        {(() => { const { Icon, cls } = sharedLinkIcon(c.sharedLink); return <Icon className={`w-5 h-5 ${cls}`} />; })()}
-                      </a>
-                    ) : <span className="p-1.5" />}
-                    {!c.isOwner ? (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); update(c.id, { favorite: !c.favorite }); }}
-                        title={c.favorite ? "Odobrať z obľúbených" : "Pridať do obľúbených"}
-                        className={cn("p-1.5 transition-colors", c.favorite ? "text-rose-500 active:text-rose-600" : "text-gray-300 active:text-rose-400")}>
-                        <Heart className={cn("w-5 h-5", c.favorite && "fill-rose-500")} />
-                      </button>
-                    ) : <span className="p-1.5" />}
-                  </div>
-                  <span className="p-1 text-gray-300">
-                    {isExpanded ? <ChevronUp className="w-5 h-5 sm:w-4 sm:h-4" /> : <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4" />}
+                  )}
+                  {/* Šípka rozbalenia — margin + väčší tap pre prst */}
+                  <span className="p-2 ml-1.5 text-gray-300">
+                    {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                   </span>
                 </div>
               </div>
