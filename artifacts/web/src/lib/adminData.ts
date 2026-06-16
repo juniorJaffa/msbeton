@@ -193,6 +193,7 @@ export interface TransportSettings {
   dph?: number;
   defaultHotovostDph?: number;
   smsOrderEnabled?: boolean;
+  orderConfirmEmail?: boolean; // potvrdzovací email klientovi po objednávke (undefined = zapnuté)
   condPumpaMin?: number;  // Podmienky – min počet Pumpa vozidiel (default 1)
   condPumpaMax?: number;  // Podmienky – max počet Pumpa vozidiel (default 2)
   condMixMin?: number;    // Podmienky – min počet Mix vozidiel v pumpa tab (default 0)

@@ -814,6 +814,26 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                 </button>
               </div>
             </div>
+            {/* Potvrdzovací email klientovi — default zapnutý (undefined = zap) */}
+            <div className="flex items-start gap-4 flex-wrap border-t border-gray-100 pt-3">
+              <div className="flex-1 min-w-[220px]">
+                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Potvrdzovací email klientovi</div>
+                <div className="text-[11px] text-gray-500">
+                  Po objednávke pošle klientovi (ak má email) automatické „Prijali sme, pracujeme na nej, budeme kontaktovať".
+                </div>
+              </div>
+              <div className="flex items-center gap-3 shrink-0 pt-0.5">
+                <span className={`text-xs font-bold ${ts.orderConfirmEmail !== false ? "text-green-600" : "text-gray-400"}`}>
+                  {ts.orderConfirmEmail !== false ? "Zapnuté" : "Vypnuté"}
+                </span>
+                <button
+                  onClick={() => saveTs({ ...ts, orderConfirmEmail: ts.orderConfirmEmail === false ? true : false })}
+                  className={`relative w-11 h-6 rounded-full transition-colors focus:outline-none ${ts.orderConfirmEmail !== false ? "bg-green-500" : "bg-gray-300"}`}
+                  title={ts.orderConfirmEmail !== false ? "Vypnúť potvrdzovací email" : "Zapnúť potvrdzovací email"}>
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${ts.orderConfirmEmail !== false ? "translate-x-5" : "translate-x-0"}`} />
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
