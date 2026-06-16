@@ -113,28 +113,27 @@ export function AdminLiveBar() {
             <Users className="w-3.5 h-3.5" /> {others.length + 1} adminov online
           </button>
           {showList && (
-            <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 w-60 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden text-left">
+            <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 w-[19rem] max-w-[90vw] bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden text-left">
               <div className="px-3 py-1.5 bg-gray-50 border-b border-gray-100 text-[10px] uppercase tracking-wider text-gray-400 font-bold">Prihlásení súčasne</div>
-              <div className="px-3 py-2 flex items-center gap-2 text-xs border-b border-gray-50">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                <span className="font-bold text-secondary">Vy (toto zariadenie)</span>
-                {(() => { const rb = roleBadge(getAdminRole() ?? undefined); return (
-                  <span className={cn("ml-auto inline-flex items-center gap-0.5 text-[9px] font-black px-1 py-px rounded border shrink-0", rb.cls)}><rb.Icon className="w-2.5 h-2.5" />{rb.label}</span>
-                ); })()}
+              {/* Vy — zariadenie je hlavná info; rola len ikona */}
+              <div className="px-3 py-2.5 flex items-center gap-2 text-xs border-b border-gray-50">
+                <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
+                {(() => { const rb = roleBadge(getAdminRole() ?? undefined); return <rb.Icon className={cn("w-4 h-4 shrink-0", rb.cls.split(" ").find(c => c.startsWith("text-")))} aria-label={rb.label} />; })()}
+                <span className="font-bold text-secondary flex-1 min-w-0 truncate">Vy <span className="font-normal text-gray-400">· toto zariadenie</span></span>
               </div>
-              {others.map(s => (
-                <div key={s.session} className="px-3 py-2 flex items-center justify-between gap-2 text-xs border-b border-gray-50 last:border-0">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
-                    <DeviceIcon label={s.device} className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                    <span className="font-semibold text-gray-700 truncate">{s.device}</span>
-                    {(() => { const rb = roleBadge(s.role); return (
-                      <span className={cn("inline-flex items-center gap-0.5 text-[9px] font-black px-1 py-px rounded border shrink-0", rb.cls)}><rb.Icon className="w-2.5 h-2.5" />{rb.label}</span>
-                    ); })()}
-                  </div>
-                  <span className="font-mono text-[10px] text-gray-300 shrink-0" title={s.ip}>{shortIp(s.ip)}</span>
+              {others.map(s => {
+                const rb = roleBadge(s.role);
+                const roleColor = rb.cls.split(" ").find(c => c.startsWith("text-"));
+                return (
+                <div key={s.session} className="px-3 py-2.5 flex items-center gap-2 text-xs border-b border-gray-50 last:border-0">
+                  <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+                  <DeviceIcon label={s.device} className="w-4 h-4 text-gray-500 shrink-0" />
+                  <rb.Icon className={cn("w-4 h-4 shrink-0", roleColor)} aria-label={rb.label} />
+                  <span className="font-bold text-gray-800 flex-1 min-w-0 truncate" title={s.device}>{s.device}</span>
+                  <span className="font-mono text-[9px] text-gray-300 shrink-0" title={s.ip}>{shortIp(s.ip)}</span>
                 </div>
-              ))}
+                );
+              })}
               <div className="px-3 py-1.5 bg-blue-50/60 text-[10px] text-blue-700 leading-snug">
                 Zmeny sa <strong>zlučujú automaticky</strong> — nikto neprepíše prácu druhého.
               </div>
