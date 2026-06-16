@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2, Check, GitMerge, AlertTriangle, Users, X } from "lucide-react";
 import { adminApi, type PresenceSession } from "@/lib/adminData";
+import { Fingerprint } from "lucide-react";
 import { DeviceIcon, roleBadge } from "./tabs/AdminAccessPanel";
 import { shortIp, cn } from "@/lib/utils";
-import { getAdminRole } from "@/lib/adminAuth";
+import { getAdminRole, hasStoredCredential } from "@/lib/adminAuth";
+import { hasClientBiometric } from "@/lib/clientAuth";
 
 type SaveState = "saving" | "saved" | "merged" | "error";
 interface SaveEvt { key: string; state: SaveState }
@@ -115,11 +117,19 @@ export function AdminLiveBar() {
           {showList && (
             <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 w-[19rem] max-w-[90vw] bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden text-left">
               <div className="px-3 py-1.5 bg-gray-50 border-b border-gray-100 text-[10px] uppercase tracking-wider text-gray-400 font-bold">Prihlásení súčasne</div>
-              {/* Vy — zariadenie je hlavná info; rola len ikona */}
+              {/* Vy — zariadenie je hlavná info; rola len ikona; bio stav tohto zariadenia */}
               <div className="px-3 py-2.5 flex items-center gap-2 text-xs border-b border-gray-50">
                 <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
                 {(() => { const rb = roleBadge(getAdminRole() ?? undefined); return <rb.Icon className={cn("w-4 h-4 shrink-0", rb.cls.split(" ").find(c => c.startsWith("text-")))} aria-label={rb.label} />; })()}
                 <span className="font-bold text-secondary flex-1 min-w-0 truncate">Vy <span className="font-normal text-gray-400">· toto zariadenie</span></span>
+                {(() => {
+                  const bio = getAdminRole() === "admin" ? hasStoredCredential() : hasClientBiometric();
+                  return (
+                    <span className="shrink-0 flex items-center gap-0.5" title={bio ? "Biometria aktívna na tomto zariadení" : "Biometria neaktívna na tomto zariadení"}>
+                      <Fingerprint className={cn("w-3.5 h-3.5", bio ? "text-emerald-500" : "text-gray-300")} />
+                    </span>
+                  );
+                })()}
               </div>
               {others.map(s => {
                 const rb = roleBadge(s.role);
