@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Fingerprint, AlertTriangle, RefreshCw, Info, ChevronUp, ChevronDown, ShieldCheck, Users, ExternalLink, ClipboardList, ChevronRight } from "lucide-react";
+import { Fingerprint, AlertTriangle, RefreshCw, Info, ChevronUp, ChevronDown, ShieldCheck, Users, ExternalLink, ClipboardList, ChevronRight, Smartphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface BioFeedEntry {
@@ -117,7 +117,11 @@ export function ClientBiometriaPanel({ onOpenClient, focus }: { onOpenClient?: (
           </div>
           <div className="flex items-start gap-2.5">
             <Users className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-            <div><span className="font-black text-gray-700">Viac zariadení — max. 8.</span> Každý klient môže mať biometriu na <strong>max. 8 zariadeniach</strong> súčasne (iPhone, iPad, Mac, Chrome, Safari…). Každé zariadenie má vlastný kľúč. Pri 9. vypadne najstaršie. Admin je per-zariadenie.</div>
+            <div><span className="font-black text-gray-700">Viac zariadení — max. 8.</span> Každý klient môže mať biometriu na <strong>max. 8 zariadeniach</strong> súčasne (iPhone, iPad, Mac, Chrome, Safari…). Pri 9. vypadne najstaršie.</div>
+          </div>
+          <div className="flex items-start gap-2.5">
+            <Smartphone className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div><span className="font-black text-gray-700">Apple passkey = 1 kľúč na všetkých.</span> Na iPhone/iPad/Macu s <strong>rovnakým Apple ID</strong> sa kľúč <strong>synchronizuje cez iCloud</strong> — registrácia na jednom zariadení rovno funguje aj na ostatných. Počet ukáže <strong>„1"</strong>, ale prihlásenie ide na všetkých. Android/Chrome a Windows majú vlastný kľúč per zariadenie.</div>
           </div>
           <div className="flex items-start gap-2.5">
             <ExternalLink className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
