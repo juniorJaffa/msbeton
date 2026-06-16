@@ -114,32 +114,34 @@ export function AdminLiveBar() {
             </span>
             <Users className="w-3.5 h-3.5" /> {others.length + 1} adminov online
           </button>
-          {showList && (
+          {showList && (() => {
+            // Rola → farebný akcent (ľavý pruh + tint) + poradie (vlastník > správca > čítateľ)
+            const accent = (r?: string) => r === "admin" ? "border-l-primary bg-primary/[0.06]" : r === "manager" ? "border-l-secondary bg-secondary/[0.06]" : r === "reader" ? "border-l-blue-400 bg-blue-50/50" : "border-l-gray-200";
+            const rank = (r?: string) => r === "admin" ? 3 : r === "manager" ? 2 : r === "reader" ? 1 : 0;
+            const myRole = getAdminRole() ?? undefined;
+            const myRb = roleBadge(myRole);
+            const myBio = myRole === "admin" ? hasStoredCredential() : hasClientBiometric();
+            const sortedOthers = [...others].sort((a, b) => rank(b.role) - rank(a.role));
+            return (
             <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 w-[19rem] max-w-[90vw] bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden text-left">
               <div className="px-3 py-1.5 bg-gray-50 border-b border-gray-100 text-[10px] uppercase tracking-wider text-gray-400 font-bold">Prihlásení súčasne</div>
-              {/* Vy — zariadenie je hlavná info; rola len ikona; bio stav tohto zariadenia */}
-              <div className="px-3 py-2.5 flex items-center gap-2 text-xs border-b border-gray-50">
-                <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
-                {(() => { const rb = roleBadge(getAdminRole() ?? undefined); return <rb.Icon className={cn("w-4 h-4 shrink-0", rb.cls.split(" ").find(c => c.startsWith("text-")))} aria-label={rb.label} />; })()}
-                <span className="font-bold text-secondary flex-1 min-w-0 truncate">Vy <span className="font-normal text-gray-400">· toto zariadenie</span></span>
-                {(() => {
-                  const bio = getAdminRole() === "admin" ? hasStoredCredential() : hasClientBiometric();
-                  return (
-                    <span className="shrink-0 flex items-center gap-0.5" title={bio ? "Biometria aktívna na tomto zariadení" : "Biometria neaktívna na tomto zariadení"}>
-                      <Fingerprint className={cn("w-3.5 h-3.5", bio ? "text-emerald-500" : "text-gray-300")} />
-                    </span>
-                  );
-                })()}
+              {/* Vy — farebný pruh podľa roly, rola text + ikona, bio stav */}
+              <div className={cn("pl-2.5 pr-3 py-2.5 flex items-center gap-2 text-xs border-b border-gray-50 border-l-[3px]", accent(myRole))}>
+                <myRb.Icon className={cn("w-4 h-4 shrink-0", myRb.cls.split(" ").find(c => c.startsWith("text-")))} aria-label={myRb.label} />
+                <span className="font-bold text-secondary truncate">Vy</span>
+                <span className={cn("text-[9px] font-black uppercase tracking-wide shrink-0", myRb.cls.split(" ").find(c => c.startsWith("text-")))}>{myRb.label}</span>
+                <span className="text-gray-400 text-[10px] flex-1 min-w-0 truncate">· toto zariadenie</span>
+                <Fingerprint className={cn("w-3.5 h-3.5 shrink-0", myBio ? "text-emerald-500" : "text-gray-300")} aria-label={myBio ? "biometria aktívna" : "biometria neaktívna"} />
               </div>
-              {others.map(s => {
+              {sortedOthers.map(s => {
                 const rb = roleBadge(s.role);
                 const roleColor = rb.cls.split(" ").find(c => c.startsWith("text-"));
                 return (
-                <div key={s.session} className="px-3 py-2.5 flex items-center gap-2 text-xs border-b border-gray-50 last:border-0">
-                  <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
-                  <DeviceIcon label={s.device} className="w-4 h-4 text-gray-500 shrink-0" />
+                <div key={s.session} className={cn("pl-2.5 pr-3 py-2.5 flex items-center gap-2 text-xs border-b border-gray-50 last:border-0 border-l-[3px]", accent(s.role))}>
                   <rb.Icon className={cn("w-4 h-4 shrink-0", roleColor)} aria-label={rb.label} />
-                  <span className="font-bold text-gray-800 flex-1 min-w-0 truncate" title={s.device}>{s.device}</span>
+                  <span className={cn("text-[9px] font-black uppercase tracking-wide shrink-0", roleColor)}>{rb.label}</span>
+                  <DeviceIcon label={s.device} className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                  <span className="font-semibold text-gray-700 flex-1 min-w-0 truncate" title={s.device}>{s.device}</span>
                   <span className="font-mono text-[9px] text-gray-300 shrink-0" title={s.ip}>{shortIp(s.ip)}</span>
                 </div>
                 );
@@ -148,7 +150,8 @@ export function AdminLiveBar() {
                 Zmeny sa <strong>zlučujú automaticky</strong> — nikto neprepíše prácu druhého.
               </div>
             </div>
-          )}
+            );
+          })()}
         </div>
       )}
     </div>
