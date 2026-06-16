@@ -95,11 +95,9 @@ export default function AdminDashboard() {
     return () => { cancelled = true; clearTimeout(timer); };
   }, []);
 
-  useEffect(() => {
-    const handler = () => setSyncKey(k => k + 1);
-    window.addEventListener("admin-data-synced", handler);
-    return () => window.removeEventListener("admin-data-synced", handler);
-  }, []);
+  // POZN.: NEremountovať taby na každý admin-data-synced — všetky taby sa samé aktualizujú
+  // cez vlastný admin-data-synced listener (setCats/setClients/…). Remount cez key={syncKey}
+  // pri periodickom synci (15s) ničil rozrobené UI (napr. formulár Pridať typ betónu).
 
   const [orderBadge, setOrderBadge] = useState(0);
   // baseline = videné objednávky z localStorage (prežijú re-mount/reload) ∪ aktuálny localStorage
