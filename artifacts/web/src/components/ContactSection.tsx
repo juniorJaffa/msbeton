@@ -80,8 +80,8 @@ export function ContactSection() {
             </div>
           </div>
 
-          {/* Form — vertikálne docentrované, aby biely stĺpec splynul výškou s navy (žiadne prázdne miesto dole) */}
-          <div className="lg:col-span-3 p-6 sm:p-10 lg:p-16 flex flex-col justify-center">
+          {/* Form — vertikálne docentrované, kompaktné (menší padding/medzery) aby výška sadla na navy stĺpec */}
+          <div className="lg:col-span-3 p-6 sm:p-8 lg:p-10 flex flex-col justify-center">
             <button
               className="sm:hidden w-full flex items-center justify-between px-5 py-4 bg-secondary text-white font-bold rounded-xl mb-2 active:scale-[0.98] transition-transform"
               onClick={() => setMobileFormOpen(v => !v)}
@@ -89,7 +89,7 @@ export function ContactSection() {
               <span>Napísať správu</span>
               <ChevronDown className={`w-5 h-5 transition-transform duration-200 ${mobileFormOpen ? "rotate-180" : ""}`} />
             </button>
-            <h4 className="hidden sm:block text-2xl font-bold text-secondary mb-8">Rýchly formulár</h4>
+            <h4 className="hidden sm:block text-2xl font-bold text-secondary mb-6">Rýchly formulár</h4>
             <div className={`${mobileFormOpen ? "block" : "hidden"} sm:block`}>
               {submitted ? (
                 <div className="bg-green-50 border border-green-200 rounded-2xl p-8 text-center">
@@ -100,7 +100,7 @@ export function ContactSection() {
                   <p className="text-green-700">Ďakujeme za váš záujem. Budeme vás kontaktovať čo najskôr.</p>
                 </div>
               ) : (
-                <form onSubmit={handleContactSubmit} className="space-y-6">
+                <form onSubmit={handleContactSubmit} className="space-y-5">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-bold text-secondary mb-2">Meno a Priezvisko</label>
@@ -123,7 +123,7 @@ export function ContactSection() {
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-secondary mb-2">Vaša správa / Požiadavka</label>
-                    <textarea required rows={4} value={contactMessage} onChange={e => setContactMessage(e.target.value)}
+                    <textarea required rows={3} value={contactMessage} onChange={e => setContactMessage(e.target.value)}
                       className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-[border-color,box-shadow] resize-none"
                       placeholder="Mám záujem o cenovú ponuku na betón pre základovú dosku..."></textarea>
                   </div>
