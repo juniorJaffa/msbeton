@@ -7,7 +7,7 @@ import { PhoneInput } from "@/components/PhoneInput";
 import { cn, formatPhone } from "@/lib/utils";
 import { adminData, adminApi, syncFromServer, Client, TransportSettings, Order, SYSTEM_OWNER_ID, getKamenivoGroup, readerBlocked } from "@/lib/adminData";
 import { clientAvatar } from "@/lib/clientAvatar";
-import { isBiometricAvailable as isAdminBioAvail, hasStoredCredential as hasAdminBio, isReader, isSuper } from "@/lib/adminAuth";
+import { isBiometricAvailable as isAdminBioAvail, hasStoredCredential as hasAdminBio, isReader, isSuper, getAdminDeviceLabel } from "@/lib/adminAuth";
 import { EditableField, authFetch } from "./_shared";
 
 function genPassword() {
@@ -1462,11 +1462,17 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                             </button>
                           </div>
                         </div>
-                        <button onClick={() => update(c.id, { active: !c.active })}
+                        <button onClick={() => update(c.id, { active: !c.active, activeChangedAt: new Date().toISOString(), activeChangedBy: getAdminDeviceLabel() })}
                           className={`w-full flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-bold uppercase border transition-colors ${c.active ? "bg-green-50 border-green-300 text-green-700 hover:bg-green-100" : "bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100"}`}>
                           {c.active ? <ShieldCheck className="w-4 h-4" /> : <ShieldOff className="w-4 h-4" />}
                           {c.active ? "Prístup aktívny" : "Prístup neaktívny"}
                         </button>
+                        {c.activeChangedAt && (
+                          <div className={cn("text-[10px] mt-1 flex items-center gap-1", c.active ? "text-gray-400" : "text-red-500")}>
+                            {c.active ? <ShieldCheck className="w-3 h-3 shrink-0" /> : <ShieldOff className="w-3 h-3 shrink-0" />}
+                            <span>{c.active ? "Aktivovaný" : "Deaktivovaný"} {new Date(c.activeChangedAt).toLocaleString("sk-SK", { day: "numeric", month: "numeric", year: "2-digit", hour: "2-digit", minute: "2-digit" })}{c.activeChangedBy ? ` · ${c.activeChangedBy}` : ""}</span>
+                          </div>
+                        )}
 
                         {/* Odoslať prihlasovacie údaje */}
                         {hasLogin && (

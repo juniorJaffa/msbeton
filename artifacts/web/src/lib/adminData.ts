@@ -125,6 +125,8 @@ export interface Client {
   adminReader?: boolean; // admin-čitateľ: read-only prístup (legacy bool; nová je adminRole)
   adminRole?: "reader" | "manager"; // povýšenie klienta: reader (čítateľ) | manager (Správca)
   noOrderConfirm?: boolean; // neposielať potvrdzovací email po objednávke (šablónové/zľavové účty)
+  activeChangedAt?: string;  // kedy sa naposledy zmenila aktívnosť prístupu
+  activeChangedBy?: string;  // kto (zariadenie admina/správcu) zmenil aktívnosť
 }
 
 export interface Order {
