@@ -137,6 +137,64 @@ export async function sendOrderNotification(order: Record<string, unknown>): Pro
   }
 }
 
+// Potvrdenie objednávky KLIENTOVI — "prijali sme, pracujeme na nej, budeme kontaktovať".
+// Transakčný email priamo objednávateľovi (nie autoreply na objednavky@). Bez review CTA (predčasné).
+export async function sendOrderConfirmation(toEmail: string, order: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
+  const conn = createTransport();
+  if (!conn) return { ok: false, error: "SMTP not configured" };
+
+  const tabLabel: Record<string, string> = { pumpa: "Pumpa", mix: "Mixér", vlastnadoprava: "Vlastná doprava" };
+  const tab = tabLabel[String(order.tab ?? "")] ?? String(order.tab ?? "—");
+  const priceMode = order.priceMode === "hotovost" ? "Hotovosť" : "Faktúra";
+  const eur = (v: unknown) => v != null ? `${Number(v).toFixed(2)} €` : "—";
+  const row = (label: string, val: string, bold = false) =>
+    `<tr><td style="padding:5px 0;color:#888;width:140px;vertical-align:top">${label}</td><td style="padding:5px 0;color:#333;${bold ? "font-weight:bold" : ""}">${val}</td></tr>`;
+  const name = String(order.clientName ?? "").trim();
+
+  const html = `<!DOCTYPE html><html lang="sk"><head><meta charset="UTF-8">
+<title>Prijali sme Vašu objednávku – MS-BETON</title></head>
+<body style="font-family:Arial,sans-serif;background:#f5f5f5;margin:0;padding:20px">
+<div style="max-width:560px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1)">
+  <div style="background:#001D3D;padding:24px 28px">
+    <h1 style="color:#EDC531;font-size:22px;margin:0">&#10003; Prijali sme Vašu objednávku</h1>
+    <p style="color:#fff;margin:6px 0 0;font-size:13px;opacity:.6">MS-BETON · ${new Date().toLocaleString("sk-SK")}</p>
+  </div>
+  <div style="padding:24px 28px">
+    <p style="font-size:15px;color:#222;margin:0 0 6px">${name ? `Dobrý deň, <strong>${name}</strong>,` : "Dobrý deň,"}</p>
+    <p style="font-size:14px;color:#444;line-height:1.6;margin:0 0 18px">ďakujeme za Vašu objednávku! <strong>Pracujeme na nej</strong> a čoskoro Vás budeme <strong>kontaktovať ohľadom termínu dodania</strong>.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:14px;border-top:1px solid #eee;padding-top:8px">
+      ${row("Typ dopravy", tab, true)}
+      ${row("Betón", String(order.concreteType ?? "—"))}
+      ${row("Množstvo", `${order.quantity ?? "—"} m³${order.totalQty && order.totalQty !== order.quantity ? ` (celk. ${order.totalQty} m³)` : ""}`)}
+      ${order.address ? row("Adresa", String(order.address)) : ""}
+      ${order.km ? row("Vzdialenosť", `${order.km} km`) : ""}
+      ${row("Platba", priceMode)}
+      <tr><td style="padding:8px 0 0;color:#888">Cena</td><td style="padding:8px 0 0;font-weight:bold;font-size:16px;color:#001D3D">${eur(order.totalSDph)}</td></tr>
+    </table>
+    <div style="margin-top:20px;padding:14px 16px;background:#f8f8f8;border-radius:6px;font-size:13px;color:#555;line-height:1.6">
+      Máte otázku? Zavolajte nám: <a href="tel:+421909205205" style="color:#001D3D;font-weight:bold;text-decoration:none">+421 909 205 205</a><br>
+      alebo napíšte na <a href="mailto:objednavky@msbeton.sk" style="color:#001D3D;text-decoration:none">objednavky@msbeton.sk</a>
+    </div>
+  </div>
+  <div style="background:#001D3D;padding:16px 28px;text-align:center">
+    <p style="color:rgba(255,255,255,0.4);font-size:11px;margin:0">MS-BETON, spol. s r.o. · Turie 468, 013 12 Turie · msbeton.sk</p>
+  </div>
+</div>
+</body></html>`;
+
+  try {
+    await conn.transport.sendMail({
+      from: conn.from,
+      to: toEmail,
+      subject: "Prijali sme Vašu objednávku – MS-BETON",
+      html,
+    });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
+}
+
 export async function sendRegistrationEmail(opts: {
   toEmail: string;
   clientName: string;

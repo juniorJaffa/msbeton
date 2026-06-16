@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, adminConfig } from "@workspace/db";
-import { sendOrderNotification, sendPasswordResetEmail } from "../lib/mailer";
+import { sendOrderNotification, sendPasswordResetEmail, sendOrderConfirmation } from "../lib/mailer";
 import { eq } from "drizzle-orm";
 import { createHash, randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
@@ -375,6 +375,21 @@ router.post("/order", async (req, res) => {
       .onConflictDoUpdate({ target: adminConfig.key, set: { data: updated, updatedAt: new Date() } });
     // Fire-and-forget — neblokuje odpoveď
     sendOrderNotification(order as Record<string, unknown>).catch(() => {});
+    // Potvrdzovací email KLIENTOVI (ak má email + zapnuté v nastaveniach, default zap)
+    (async () => {
+      try {
+        const sRow = await db.select().from(adminConfig).where(eq(adminConfig.key, "transport_settings"));
+        const settings = (sRow.length > 0 ? sRow[0].data : {}) as Record<string, unknown>;
+        if (settings.orderConfirmEmail === false) return;
+        let toEmail = order.email ? String(order.email) : "";
+        if (!toEmail && order.clientId) {
+          const accts = await getClientAccounts();
+          const acc = accts.find((a) => a.loginId === String(order.clientId) || a.id === String(order.clientId));
+          if (acc?.email) toEmail = acc.email;
+        }
+        if (toEmail) await sendOrderConfirmation(toEmail, order as Record<string, unknown>);
+      } catch { /* ignore */ }
+    })();
     return res.json({ ok: true });
   } catch (err) {
     req.log.error({ err }, "Failed to create order");
