@@ -23,7 +23,7 @@ export default function OchranaOsobnychUdajov() {
               <strong>MS-BETON, spol. s r.o.</strong><br />
               Turie 468, 013 12 Turie, Slovenská republika<br />
               IČO: 55747591 | DIČ: 2122074603 | IČ DPH: SK2122074603<br />
-              Kontakt: <a href="mailto:peter@msbeton.sk" className="text-primary underline">peter@msbeton.sk</a> | 0944 069 305
+              Kontakt: <a href="mailto:info@msbeton.sk" className="text-primary underline">info@msbeton.sk</a> | 0944 069 305
             </p>
           </div>
 
@@ -65,7 +65,7 @@ export default function OchranaOsobnychUdajov() {
           <div>
             <h2 className="text-lg font-bold text-secondary mb-2">6. Vaše práva</h2>
             <p>Máte právo na prístup, opravu, vymazanie, obmedzenie spracúvania a prenosnosť údajov. Máte právo podať sťažnosť na <strong>Úrad na ochranu osobných údajov SR</strong> (dataprotection.gov.sk).</p>
-            <p className="mt-2">Žiadosti zasielajte na: <a href="mailto:peter@msbeton.sk" className="text-primary underline">peter@msbeton.sk</a></p>
+            <p className="mt-2">Žiadosti zasielajte na: <a href="mailto:info@msbeton.sk" className="text-primary underline">info@msbeton.sk</a></p>
           </div>
 
           <div>

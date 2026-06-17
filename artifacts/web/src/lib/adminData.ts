@@ -347,7 +347,7 @@ const SYSTEM_OWNER_CLIENT: Client = {
   firstName: "Peter",
   lastName: "Staňo",
   company: "MS-BETON",
-  email: "peter@msbeton.sk",
+  email: "info@msbeton.sk",
   phone: "0909205205",
   loginId: "",
   password: "",

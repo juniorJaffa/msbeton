@@ -15,7 +15,7 @@ import type { Request } from "express";
 const router = Router();
 
 // Firemný email kam chodí admin reset kód (hardcoded — kontakt vlastníka)
-const ADMIN_RESET_EMAIL = process.env.ADMIN_RESET_EMAIL ?? "peter@msbeton.sk";
+const ADMIN_RESET_EMAIL = process.env.ADMIN_RESET_EMAIL ?? "info@msbeton.sk";
 
 // Overí admin heslo: najprv DB hash (admin_secret, ak bol nastavený resetom),
 // inak fallback na ENV ADMIN_PASSWORD. Migrácia ENV→DB je tým spätne kompatibilná.
