@@ -626,7 +626,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
         const result = await adminApi.getOrders();
         if (result?.data) {
           const data = result.data as Order[];
-          adminData.saveOrders(data);
+          adminData.cacheOrders(data); // len lokálny refresh — žiaden re-PUT (inak stale poll prepíše čerstvú zmenu)
           setOrders(prev => {
             const prevIds = new Set(prev.map(o => o.id));
             const added = data.filter(o => !prevIds.has(o.id)).length;

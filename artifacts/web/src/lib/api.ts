@@ -55,7 +55,7 @@ export const adminApi = {
   saveClientAccounts: (data: unknown) => apiFetch(API_BASE, "/client-accounts", { method: "PUT", body: JSON.stringify(data) }),
 
   getOrders: () => apiFetch<{ data: unknown }>(API_BASE, "/orders"),
-  saveOrders: (data: unknown) => apiFetch(API_BASE, "/orders", { method: "PUT", body: JSON.stringify(data) }),
+  saveOrders: (data: unknown) => apiFetch(API_BASE, "/orders", { method: "PUT", body: JSON.stringify(data), headers: baseSyncHeader() }),
 
   // Multi-admin awareness
   getPresence: () => apiFetch<{ ok: boolean; sessions: PresenceSession[]; count: number }>(API_BASE, "/presence"),

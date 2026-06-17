@@ -166,7 +166,9 @@ async function setConfig(key: string, data: unknown): Promise<void> {
 type Item = Record<string, unknown> & { id?: unknown; updatedAt?: unknown; types?: unknown };
 function ts(v: unknown): number { const t = new Date(String(v ?? 0)).getTime(); return isNaN(t) ? 0 : t; }
 
-function mergeItems(incoming: Item[], current: Item[], baseSyncMs: number): Item[] {
+// preserveUnstamped: položky bez updatedAt chýbajúce v incoming → zachovať (clients: out-of-band insert
+// ochrana, napr. Ľubica). Pre orders=false: legacy bez updatedAt sa dá zmazať (inak by sa vracali).
+function mergeItems(incoming: Item[], current: Item[], baseSyncMs: number, preserveUnstamped = true): Item[] {
   const curById = new Map(current.filter(c => c.id != null).map(c => [String(c.id), c] as const));
   const incIds = new Set(incoming.filter(i => i.id != null).map(i => String(i.id)));
   const result: Item[] = [];
@@ -178,21 +180,20 @@ function mergeItems(incoming: Item[], current: Item[], baseSyncMs: number): Item
     const winner = ts(cur.updatedAt) > ts(inc.updatedAt) ? cur : inc;
     // Vnorené types merge (ak existujú v oboch)
     if (Array.isArray(inc.types) && Array.isArray(cur.types)) {
-      const mergedTypes = mergeItems(inc.types as Item[], cur.types as Item[], baseSyncMs);
+      const mergedTypes = mergeItems(inc.types as Item[], cur.types as Item[], baseSyncMs, preserveUnstamped);
       result.push({ ...winner, types: mergedTypes });
     } else {
       result.push(winner);
     }
   }
   // 2) Položky len v DB (chýbajú v incoming):
-  //    - bez updatedAt → ZACHOVAJ vždy (nevieme dokázať že ju admin videl a zámerne zmazal;
-  //      napr. out-of-band insert). Inak by sa stratil novovytvorený klient (bug s Ľubicou).
+  //    - bez updatedAt → ZACHOVAJ ak preserveUnstamped (clients: ochrana out-of-band insertu, bug s Ľubicou)
   //    - s updatedAt > baseSync → iný admin pridal/zmenil po mojom syncu → zachovaj
-  //    - inak (updatedAt <= baseSync) → tento admin ju zámerne zmazal → nezachovávaj
+  //    - inak (updatedAt <= baseSync, alebo unstamped pri preserveUnstamped=false) → zmazané → nezachovávaj
   for (const cur of current) {
     const id = cur.id != null ? String(cur.id) : null;
     if (id && incIds.has(id)) continue;
-    if (cur.updatedAt == null || ts(cur.updatedAt) > baseSyncMs) result.push(cur);
+    if ((cur.updatedAt == null && preserveUnstamped) || (cur.updatedAt != null && ts(cur.updatedAt) > baseSyncMs)) result.push(cur);
   }
   return result;
 }
@@ -260,7 +261,7 @@ async function appendAudit(entry: AuditEntry): Promise<void> {
 // SELECT FOR UPDATE zamkne riadok — paralelné requesty čakajú, nie race condition.
 // Zároveň zaznamená audit (kto čo pridal/zmenil/zmazal) a vráti mergedFromOthers
 // (počet položiek iného admina ktoré sa zlúčili → frontend re-sync + toast).
-async function mergeSaveArray(key: string, body: unknown, baseSyncHeader: unknown, actor: Actor | null, transform?: (incoming: Item[], current: Item[]) => Item[]): Promise<{ kept: number; preserved: number; mergedFromOthers: number }> {
+async function mergeSaveArray(key: string, body: unknown, baseSyncHeader: unknown, actor: Actor | null, transform?: (incoming: Item[], current: Item[]) => Item[], preserveUnstamped = true): Promise<{ kept: number; preserved: number; mergedFromOthers: number }> {
   const incomingRaw = Array.isArray(body) ? body as Item[] : [];
   const baseSyncMs = baseSyncHeader != null ? ts(baseSyncHeader) : -1;
 
@@ -270,7 +271,7 @@ async function mergeSaveArray(key: string, body: unknown, baseSyncHeader: unknow
     const cur = (rows[0]?.data as Item[] | null) ?? [];
     // transform (napr. manager sanitizácia) beží vnútri zámku s čerstvým `cur`
     const inc = transform ? transform(incomingRaw, cur) : incomingRaw;
-    const m = mergeItems(inc, cur, baseSyncMs);
+    const m = mergeItems(inc, cur, baseSyncMs, preserveUnstamped);
     const d = computeDiff(inc, cur, baseSyncMs);
     await tx.insert(adminConfig)
       .values({ key, data: m })
@@ -470,7 +471,9 @@ router.get("/orders", async (req, res) => {
   catch (err) { req.log.error({ err }, "Failed to get orders"); res.status(500).json({ error: "Internal server error" }); }
 });
 router.put("/orders", async (req, res) => {
-  try { await setConfig(KEYS.orders, req.body); res.json({ ok: true }); }
+  // Atomický item-level merge (rovnako ako klienti) — zabráni strate zmien (paid→nová, delete→návrat)
+  // pri súbežných adminoch a stale polloch. preserveUnstamped=false → legacy objednávky sa dajú zmazať.
+  try { const r = await mergeSaveArray(KEYS.orders, req.body, req.get("X-Base-Sync"), null, undefined, false); res.json({ ok: true, ...r }); }
   catch (err) { req.log.error({ err }, "Failed to save orders"); res.status(500).json({ error: "Internal server error" }); }
 });
 

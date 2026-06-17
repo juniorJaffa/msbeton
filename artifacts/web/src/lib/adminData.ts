@@ -164,6 +164,7 @@ export interface Order {
   pumpTimer?: { start: string; stop: string };
   podmienky?: { trucks: number; pumpa: number; mix: number; m3PerTruck: number; isRisk?: boolean };
   paidAmount?: number;
+  updatedAt?: string; // item-level merge (multi-admin) — zabráni strate zmien stavu/mazania
   // Kto objednávku vytvoril (multi-admin): "admin" | "reader" | "klient" | "anonym"
   createdByRole?: string;
   createdByDevice?: string;   // názov zariadenia (admin) alebo meno klienta
@@ -569,11 +570,15 @@ export const adminData = {
   },
 
   getOrders: (): Order[] => loadData("msbeton_orders", []),
+  // Reálna zmena (stav/paid/delete/enrich) — stampne updatedAt + atomický merge na serveri
   saveOrders: (data: Order[]) => {
     if (readerBlocked()) return;
-    saveData("msbeton_orders", data);
-    adminApi.saveOrders(data);
+    const stamped = stampArray(data, "msbeton_orders");
+    saveData("msbeton_orders", stamped);
+    trackSave("orders", adminApi.saveOrders(stamped));
   },
+  // Iba lokálne osvieženie z GET pollu — NIKDY nere-PUTuj server (inak stale poll prepíše čerstvú zmenu)
+  cacheOrders: (data: Order[]) => saveData("msbeton_orders", data),
 
   generateId: () => Math.random().toString(36).slice(2, 10),
 };

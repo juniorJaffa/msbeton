@@ -487,7 +487,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   // Načítaj objednávky pre štatistiky klienta
   useEffect(() => {
     adminApi.getOrders().then(r => {
-      if (r?.data) { adminData.saveOrders(r.data as Order[]); setAllOrders(r.data as Order[]); }
+      if (r?.data) { adminData.cacheOrders(r.data as Order[]); setAllOrders(r.data as Order[]); }
     }).catch(() => {});
   }, []);
 
