@@ -453,7 +453,19 @@ router.put("/transport-zones", async (req, res) => {
 });
 
 router.put("/transport-settings", async (req, res) => {
-  try { await setConfig(KEYS.transportSettings, req.body); res.json({ ok: true }); }
+  // Atomický field-merge: frontend posiela LEN zmenené polia (patch). Dvaja admini meniaci
+  // rôzne nastavenia naraz → oba sa zachovajú (FOR UPDATE serializuje). Rovnaké pole → posledný vyhrá.
+  try {
+    const patch = (req.body && typeof req.body === "object" && !Array.isArray(req.body)) ? req.body as Record<string, unknown> : {};
+    await db.transaction(async (tx) => {
+      const rows = await tx.select().from(adminConfig).where(eq(adminConfig.key, KEYS.transportSettings)).for("update").limit(1);
+      const cur = (rows[0]?.data && typeof rows[0].data === "object" && !Array.isArray(rows[0].data)) ? rows[0].data as Record<string, unknown> : {};
+      const merged = { ...cur, ...patch };
+      await tx.insert(adminConfig).values({ key: KEYS.transportSettings, data: merged })
+        .onConflictDoUpdate({ target: adminConfig.key, set: { data: merged, updatedAt: new Date() } });
+    });
+    res.json({ ok: true });
+  }
   catch (err) { req.log.error({ err }, "Failed to save transport settings"); res.status(500).json({ error: "Internal server error" }); }
 });
 

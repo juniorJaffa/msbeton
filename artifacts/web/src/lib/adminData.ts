@@ -558,8 +558,16 @@ export const adminData = {
   getTransportSettings: (): TransportSettings => loadData("msbeton_transport_settings", DEFAULT_TRANSPORT_SETTINGS),
   saveTransportSettings: (data: TransportSettings) => {
     if (readerBlocked()) return;
-    saveData("msbeton_transport_settings", data);
-    adminApi.saveTransportSettings(data);
+    // Pošli LEN zmenené polia (patch) → server atomicky zlúči. Dvaja admini meniaci rôzne
+    // nastavenia naraz sa neprepíšu (predtým full replace = last-writer-wins na celom objekte).
+    const prev = loadData<Record<string, unknown>>("msbeton_transport_settings", {} as Record<string, unknown>);
+    saveData("msbeton_transport_settings", data); // lokálne celý objekt (pre okamžité zobrazenie)
+    const next = data as unknown as Record<string, unknown>;
+    const patch: Record<string, unknown> = {};
+    for (const k of Object.keys(next)) {
+      if (JSON.stringify(next[k]) !== JSON.stringify(prev[k])) patch[k] = next[k];
+    }
+    if (Object.keys(patch).length > 0) adminApi.saveTransportSettings(patch);
   },
 
   getClientAccounts: (): ClientAccount[] => loadData("msbeton_client_accounts", DEFAULT_CLIENT_ACCOUNTS),
