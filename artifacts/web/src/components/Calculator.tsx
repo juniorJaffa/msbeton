@@ -1130,7 +1130,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const totalConcreteBezDph = concreteBreakdown.reduce((s, i) => s + i.bezDph, 0);
     const totalConcreteFinal = concreteBreakdown.reduce((s, i) => s + i.bezDphFinal, 0);
     const totalConcreteFinalHotovost = concreteBreakdown.reduce((s, i) => s + i.bezDphFinalHotovost, 0);
-    const extraQty = extraItems.reduce((s, i) => s + (parseFloat(i.quantity) || 0), 0);
+    // m³ total: SČÍTAJ len betónové (m³) položky — ks-additíva (drôtiky, vlákna; noDoprava kategórie)
+    // sa NErátajú do kubíkov (predtým 10 m³ + 5 ks drôtikov = nesprávne 15 m³).
+    const extraQty = extraItems.reduce((s, i) => {
+      const cat = allCategories.find(c => c.name === i.categoryName) ?? allCategories.find(c => c.types.some(t => t.label === i.typeLabel));
+      if (cat?.noDoprava) return s; // ks-additívum → nie m³
+      return s + (parseFloat(i.quantity) || 0);
+    }, 0);
     const totalQty = qty + extraQty;
 
     // Celková doprava = súčet per-item dopráv (zhodné s pôvodnou kalkulačkou)
