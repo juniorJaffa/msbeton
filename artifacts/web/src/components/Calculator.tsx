@@ -1633,7 +1633,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     <div>
       <div style="font-size:20pt;font-weight:bold;letter-spacing:-0.5px;margin-bottom:2px">MS-BETON, spol. s r.o.</div>
       <div style="font-size:8pt;opacity:0.7;margin-bottom:1px">${companyAddress} &nbsp;|&nbsp; Slovenská republika</div>
-      <div style="font-size:8pt;opacity:0.6">+421&nbsp;909&nbsp;205&nbsp;205 &nbsp;|&nbsp; info@msbeton.sk &nbsp;|&nbsp; msbeton.sk</div>
+      <div style="font-size:8pt;opacity:0.6">+421&nbsp;944&nbsp;069&nbsp;305 &nbsp;|&nbsp; peter@msbeton.sk &nbsp;|&nbsp; msbeton.sk</div>
     </div>
     <div style="text-align:right;font-size:8pt;opacity:0.65;line-height:1.8">
       IČO: ${ico}<br>DIČ: ${companyDic}<br>IČ DPH: ${icoDph}
@@ -1692,7 +1692,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   <div style="padding-top:4mm;border-top:1px solid #ddd;font-size:7.5pt;color:#888;line-height:1.7">
     * Cena je orientačná. Závisí od aktuálneho cenníka a dostupnosti. Kontaktujte nás pre presnú ponuku.<br>
     MS-BETON, spol. s r.o. &nbsp;|&nbsp; IČO: ${ico} &nbsp;|&nbsp; DIČ: ${companyDic} &nbsp;|&nbsp; IČ DPH: ${icoDph} &nbsp;|&nbsp;
-    ${companyAddress} &nbsp;|&nbsp; +421&nbsp;909&nbsp;205&nbsp;205 &nbsp;|&nbsp; info@msbeton.sk
+    ${companyAddress} &nbsp;|&nbsp; +421&nbsp;944&nbsp;069&nbsp;305 &nbsp;|&nbsp; peter@msbeton.sk
   </div>
 </div>
 
