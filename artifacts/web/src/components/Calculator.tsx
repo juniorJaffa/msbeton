@@ -1580,23 +1580,40 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       if (discountDoprava > 0) dp.push(`Doprava ${discountDoprava}%`);
       if (discountSluzby  > 0) dp.push(`Služby ${discountSluzby}%`);
       if (discountCelkovo > 0) dp.push(`Celkovo ${discountCelkovo}%`);
-      return `<div style="color:#EDC531;font-size:8pt;margin-top:3px">Zľavy: ${dp.join(", ")}</div>`;
+      return `<div style="font-size:7.5pt;color:#b45309;margin-top:4px;font-weight:bold">Zľavy: ${dp.join(", ")}</div>`;
     })();
 
     const tabLabel = tab === "pumpa" ? "Pumpa" : tab === "mix" ? "Domiešavač" : "Vlastná doprava";
     const pdfZoneType = clientDeliveryZone?.pricingType ?? "standard";
     const pdfZoneTypeLabel = pdfZoneType === "km" ? "Kilometre" : pdfZoneType === "auto" ? "Počet áut" : "Štandard";
     const zoneLabel = clientDeliveryZone?.name ?? pdfZoneTypeLabel;
-    const zoneTypeBadge = pdfZoneType !== "standard" ? ` <span style="color:#b58c00;font-weight:700">(${pdfZoneType === "km" ? "€/km" : "€/auto"})</span>` : "";
-    const transportModeInfo = `<div style="color:#555;font-size:8pt;margin-top:2px">Typ dopravy: ${tabLabel} – ${zoneLabel}${zoneTypeBadge}</div>`;
-    const clientBlock = loggedClient ? `
-      <div style="border:1px solid #ddd;border-radius:3px;padding:6px 10px;margin-bottom:5mm;font-size:8.5pt">
-        <div style="font-weight:bold;color:#001D3D">${loggedClient.name}${loggedClient.company ? ` – ${loggedClient.company}` : ""}</div>
-        ${loggedClient.clientId ? `<div style="color:#777;font-size:8pt">ID klienta: ${loggedClient.clientId}</div>` : ""}
-        ${loggedClient.name ? `<div style="color:#555">${loggedClient.name}</div>` : ""}
-        ${transportModeInfo}
-        ${discountInfo}
-      </div>` : `<div style="margin-bottom:5mm">${transportModeInfo}${hasDiscount ? discountInfo : ""}</div>`;
+    const zoneTypeBadge = pdfZoneType !== "standard" ? ` <span style="font-size:7.5pt;color:#b58c00;font-weight:700">(${pdfZoneType === "km" ? "€/km" : "€/auto"})</span>` : "";
+
+    // KLIENT + DORUČENIE — rovnaký 2-stĺpcový grid ako Objednávka PDF (1:1)
+    const dRow = (label: string, val: string, bold = false) => `<tr><td style="color:#888;padding:1px 6px 1px 0;width:84px;vertical-align:top">${label}</td><td${bold ? ' style="font-weight:bold"' : ""}>${val}</td></tr>`;
+    const cpAddr = (typeof address === "string" ? address : "") || "";
+    const clientBlock = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5mm;margin-bottom:5mm">
+        <div style="border:1px solid #e0e0ec;padding:4mm;border-radius:3px">
+          <div style="font-size:8pt;font-weight:bold;color:#001D3D;border-bottom:1px solid #eee;padding-bottom:2mm;margin-bottom:3mm">KLIENT</div>
+          <div style="font-size:8.5pt;font-weight:bold;color:#111;margin-bottom:2px">${loggedClient?.name ?? "—"}</div>
+          ${loggedClient?.company ? `<div style="font-size:8pt;color:#555">${loggedClient.company}</div>` : ""}
+          ${loggedClient?.clientId ? `<div style="font-size:8pt;color:#777;margin-top:2px">ID klienta: ${loggedClient.clientId}</div>` : ""}
+          ${loggedClient?.phone ? `<div style="font-size:8pt;color:#555">${formatPhone(loggedClient.phone)}</div>` : ""}
+          ${discountInfo}
+        </div>
+        <div style="border:1px solid #e0e0ec;padding:4mm;border-radius:3px">
+          <div style="font-size:8pt;font-weight:bold;color:#001D3D;border-bottom:1px solid #eee;padding-bottom:2mm;margin-bottom:3mm">DORUČENIE</div>
+          <table style="font-size:8.5pt"><tbody>
+            ${dRow("Typ", tabLabel, true)}
+            ${dRow("Množstvo", `${result.totalQty} m³${result.fillupM3 > 0 ? ` <span style="color:#92400e;font-weight:normal">+ ${result.fillupM3} m³ doťaženie</span>` : ""}`, true)}
+            ${result.km > 0 ? dRow("Vzdialenosť", `${result.km} km`) : ""}
+            ${cpAddr ? dRow("Adresa", `${cpAddr}${mapPlusCode ? `<br><span style="font-family:monospace;font-size:7.5pt;color:#aaa">${mapPlusCode}</span>` : ""}`) : (mapPlusCode ? dRow("Adresa", `<span style="font-family:monospace;font-size:7.5pt;color:#aaa">${mapPlusCode}</span>`) : "")}
+            ${dRow("Typ dopravy", `${zoneLabel}${zoneTypeBadge}`)}
+            ${dRow("Platba", priceMode === "hotovost" ? "Hotovosť" : "Faktúra", true)}
+          </tbody></table>
+        </div>
+      </div>`;
 
     const ownNote = result.isOwn
       ? `<tr><td colspan="5" style="font-style:italic;color:#888;font-size:8pt;padding:5px 8px;border-bottom:1px solid #eee">Vlastná doprava – zákazník zabezpečuje dopravu vlastným vozidlom</td></tr>` : "";
