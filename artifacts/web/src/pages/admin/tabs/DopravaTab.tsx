@@ -306,14 +306,14 @@ export default function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void
                         {/* Min. objednávka */}
                         <div className="px-3 py-2.5 sm:px-4 sm:py-3 bg-white">
                           <div className="text-[9px] sm:text-[10px] text-gray-400 uppercase tracking-wide mb-1">Min. obj.</div>
-                          <div className="font-bold text-secondary text-sm flex flex-nowrap items-baseline gap-1 whitespace-nowrap">
+                          <div className="font-bold text-secondary text-sm flex flex-wrap items-baseline gap-x-1 gap-y-0.5">
                             <EditableField value={ts.minimumLoadM3 as number} type="number" onSave={v => saveTs({ ...ts, minimumLoadM3: parseFloat(v) || 0 })} /> <span>m³</span>
                           </div>
                         </div>
                         {/* Min. cena / auto */}
                         <div className="px-3 py-2.5 sm:px-4 sm:py-3 bg-white">
                           <div className="text-[9px] sm:text-[10px] text-gray-400 uppercase tracking-wide mb-1">Min. cena/auto</div>
-                          <div className="font-bold text-secondary text-sm flex flex-nowrap items-baseline gap-1 whitespace-nowrap">
+                          <div className="font-bold text-secondary text-sm flex flex-wrap items-baseline gap-x-1 gap-y-0.5">
                             <EditableField value={ts.minimumFee as number} type="number" onSave={v => saveTs({ ...ts, minimumFee: parseFloat(v) || 0 })} /> <span>€</span>
                           </div>
                         </div>
@@ -429,13 +429,13 @@ export default function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void
                       {zt.key === "km" && <>
                         <div className="px-3 py-2.5 sm:px-4 sm:py-3 bg-amber-50/60">
                           <div className="text-[9px] sm:text-[10px] text-amber-600 font-bold uppercase tracking-wide mb-1">Min. pop. Pumpa</div>
-                          <div className="font-bold text-secondary text-sm flex flex-nowrap items-center gap-1 whitespace-nowrap">
+                          <div className="font-bold text-secondary text-sm flex flex-wrap items-center gap-x-1 gap-y-0.5">
                             <EditableField value={z.minimumFeeKmPumpa ?? z.minimumFeeKm ?? 0} type="number" onSave={v => updateZone(z.id, { minimumFeeKmPumpa: parseFloat(v) || undefined })} /> €/auto
                           </div>
                         </div>
                         <div className="col-span-2 px-3 py-2.5 sm:px-4 sm:py-3 bg-amber-50/30">
                           <div className="text-[9px] sm:text-[10px] text-amber-600 font-bold uppercase tracking-wide mb-1">Min. pop. Mixer</div>
-                          <div className="font-bold text-secondary text-sm flex flex-nowrap items-center gap-1 whitespace-nowrap">
+                          <div className="font-bold text-secondary text-sm flex flex-wrap items-center gap-x-1 gap-y-0.5">
                             <EditableField value={z.minimumFeeKmMix ?? z.minimumFeeKm ?? 0} type="number" onSave={v => updateZone(z.id, { minimumFeeKmMix: parseFloat(v) || undefined })} /> €/auto
                           </div>
                         </div>
