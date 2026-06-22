@@ -37,7 +37,7 @@ export function EditableField({ value, onSave, type = "text", suggestionSuffixes
     </span>
   );
   return (
-    <span className="flex items-start gap-1.5 w-full">
+    <span className="flex flex-wrap items-center gap-1.5 w-full">
       {type === "number" ? (
         <input
           type="number"
@@ -47,7 +47,7 @@ export function EditableField({ value, onSave, type = "text", suggestionSuffixes
           onChange={e => setVal(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); save(); } if (e.key === "Escape") cancel(); }}
           onBlur={e => { if (parseFloat(e.target.value) < 0) setVal("0"); save(); }}
-          className="bg-amber-50 border-2 border-primary px-2.5 py-1 text-secondary text-sm focus:outline-none rounded-sm w-28 text-right"
+          className="bg-amber-50 border-2 border-primary px-2.5 py-1 text-secondary text-sm focus:outline-none rounded-sm w-full sm:w-28 text-right"
           autoFocus
           onFocus={e => e.target.select()}
         />
@@ -84,10 +84,10 @@ export function EditableField({ value, onSave, type = "text", suggestionSuffixes
           )}
         </span>
       )}
-      <button onMouseDown={e => e.preventDefault()} onClick={save} className="p-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors" aria-label="Uložiť">
+      <button onMouseDown={e => e.preventDefault()} onClick={save} className="shrink-0 p-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors" aria-label="Uložiť">
         <Check className="w-4 h-4" />
       </button>
-      <button onMouseDown={e => e.preventDefault()} onClick={cancel} className="p-1.5 text-red-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors" aria-label="Zrušiť">
+      <button onMouseDown={e => e.preventDefault()} onClick={cancel} className="shrink-0 p-1.5 text-red-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors" aria-label="Zrušiť">
         <X className="w-4 h-4" />
       </button>
     </span>
