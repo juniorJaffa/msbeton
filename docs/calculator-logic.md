@@ -132,6 +132,23 @@ if isMin → fillupM3 = 0, fillupCost = 0
 Cena = `zone.ratePerM3 × totalQty` (vrátane fill-up m³)
 Ak `costPerTruck < minRate` → platí `minRate × trucks`
 
+#### `transportFillupTarget` — label „Doťaženie do X m³" (KRITICKÉ)
+
+`fillupTarget` = objem **na ktorý sa doťažuje** (X v labeli „Doťaženie do X m³"). Pri `qty < fillupMin` musí byť `X = fillupMin`.
+
+**INVARIANTA:** `fillupTarget` MUSÍ použiť **rovnaký qty ako fillup výpočet**:
+```typescript
+// fillupM3 sa počíta v calcTransport z (qty + addToMainQty) pre hlavnú položku
+mainTC = calcTransport(km, qty + addToMainQty, ...)
+// → target MUSÍ pridať addToMainQty tiež:
+fillupTarget = round(qty + addToMainQty + fillupM3, 1)   // NIE (qty + fillupM3)
+```
+
+**Bug (opravený):** target používal len `qty` (hlavná položka bez addToMain), fillup z `qty + addToMainQty`.
+Príklad: hlavná 3.1 m³ + 1 m³ addToMain → fillupM3 = 5 − 4.1 = 0.9. Target nesprávne `3.1 + 0.9 = 4` → label „do 4 m³". Správne `4.1 + 0.9 = 5` → „do 5 m³" (= fillupMin). Platí na **dvoch miestach**: `concreteBreakdown[0].transportFillupTarget` aj `result.fillupTarget`.
+
+> **Pravidlo (addToMain — tretia dimenzia):** popri `extraTrucks=0` a `mainTrucks=calcPumpTrucks(qty+addToMainQty)` platí aj **`fillupTarget` musí rátať s `addToMainQty`**. Tri hodnoty, jeden zdroj (`qty + addToMainQty`) — pri zmene addToMain logiky over všetky tri.
+
 ### km typ
 
 ```

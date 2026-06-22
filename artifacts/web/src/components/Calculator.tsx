@@ -1066,7 +1066,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       transport: mainTC.cost,
       transportFillup: mainTC.fillupCost,
       transportFillupM3: mainTC.fillupM3,
-      transportFillupTarget: mainTC.fillupM3 > 0 ? Math.round((qty + mainTC.fillupM3) * 10) / 10 : 0,
+      // Target = celkové qty (vrátane addToMain extra) + doťaženie — fillupM3 sa počíta z (qty + addToMainQty),
+      // preto target MUSÍ pridať addToMainQty tiež, inak label "do X m³" nesedí s minimom (napr. 3.1+1 → do 5, nie do 4).
+      transportFillupTarget: mainTC.fillupM3 > 0 ? Math.round((qty + addToMainQty + mainTC.fillupM3) * 10) / 10 : 0,
       transportIsMin: mainTC.isMin,
       transportTrucks: mainTrucks,
       svcPumpHrs: 0, svcPumpMs: 0, svcPumpCost: 0,
@@ -1275,7 +1277,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       : null;
 
     const fillupM3 = transportCalc.fillupM3;
-    const fillupTarget = fillupM3 > 0 ? Math.round((qty + fillupM3) * 10) / 10 : 0;
+    // Target = celkové qty hlavnej položky (vrátane addToMain extra) + doťaženie. fillupM3 pochádza z mainTC
+    // počítaného z (qty + addToMainQty) → target musí pridať addToMainQty, inak label "do X m³" ≠ skutočné minimum.
+    const fillupTarget = fillupM3 > 0 ? Math.round((qty + addToMainQty + fillupM3) * 10) / 10 : 0;
 
     return {
       trucks, truckCapacity, mixTrucksCount, items, totalBezDph, totalSDph: totalBezDph * (1 + VAT),

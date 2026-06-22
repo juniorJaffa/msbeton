@@ -99,12 +99,15 @@ Služby vždy **pod dopravou**.
 
 ### Kalkulačka – transportMode "addToMain" — KRITICKÁ INVARIANTA
 
-Extra položky s `transportMode === "addToMain"` zlučujú svoje m³ do dopravy Hlavnej položky. Platia **dve podmienky súčasne** — ak sa zmení jedna, musí sa zmeniť aj druhá:
+Extra položky s `transportMode === "addToMain"` zlučujú svoje m³ do dopravy Hlavnej položky. Platia **tri podmienky súčasne** — ak sa zmení jedna, musia sa zmeniť aj ostatné:
 
 1. **`extraTrucks = 0`** — extra addToMain položka nepridáva žiadne auto do celkového počtu
 2. **`mainTrucks = calcPumpTrucks(qty + addToMainQty)`** — hlavná položka počíta autá pre celkové m³ (vrátane addToMain)
+3. **`fillupTarget = round(qty + addToMainQty + fillupM3, 1)`** — label „Doťaženie do X m³". `fillupM3` sa počíta z `(qty + addToMainQty)`, preto target MUSÍ pridať `addToMainQty` (NIE `qty + fillupM3`). Inak label nesedí s minimom: 3.1 + 1 addToMain → fillupM3=0.9 → správne „do 5 m³" (=fillupMin), nesprávne „do 4 m³". Platí na DVOCH miestach: `concreteBreakdown[0].transportFillupTarget` aj `result.fillupTarget`.
 
 `addToMainQty` = `extraItems.reduce(...)` sum za všetky items kde `transportMode === "addToMain" && q > 0`.
+
+**Jeden zdroj `qty + addToMainQty`** — trucks, fillupM3 aj fillupTarget ho musia použiť rovnako. Pri zmene addToMain logiky over všetky tri.
 
 **Kapacity (default):** `PUMP_TRUCK_CAPACITY = 7 m³`, `MIX_TRUCK_CAPACITY = 9 m³`  
 Príklad: 12 + 2 addToMain = 14 m³ → `calcPumpTrucks(14)` = 1 pump + 1 mix = **2 vozidlá** (nie 3).
@@ -223,9 +226,10 @@ qPT = (qty + transportFillupM3) / totalTrucks
 - Fleet capacity badge: `pumpa × pumpCap + mix × mixCap` — zelená ≥ qty, červená < qty
 - `buildBreakdown` PRETAŽENIE riadok: vždy zobrazený keď `podmienkyEnabled && idx === 0`
 
-**KRITICKÉ — dve dimenzie pre addToMain + podmienky:**
+**KRITICKÉ — tri dimenzie pre addToMain + podmienky** (viď „transportMode addToMain — KRITICKÁ INVARIANTA"):
 - `extraTrucks = 0` pre addToMain extra (nepridal by auto)
 - `mainTrucks = calcPumpTrucks(qty + addToMainQty)` pre hlavnú položku
+- `fillupTarget = round(qty + addToMainQty + fillupM3, 1)` — label „Doťaženie do X m³"
 
 **Admin limity podmienok** (tsettings):
 ```
