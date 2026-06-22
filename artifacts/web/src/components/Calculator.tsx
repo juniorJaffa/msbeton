@@ -1009,6 +1009,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       if (qty < fillupMin) fillupM3 = fillupMin - qty;
       else if (qty > mixCap && qty < 2 * fillupMin) fillupM3 = 2 * fillupMin - qty;
     }
+    // Zaokrúhli na 1 desatinné — inak floating point (napr. 5 - 3.1 = 0.9000000000000004).
+    fillupM3 = Math.round(fillupM3 * 10) / 10;
 
     const baseCost = qty * ratePerM3;
     const fillupCost = fillupM3 * ratePerM3;
