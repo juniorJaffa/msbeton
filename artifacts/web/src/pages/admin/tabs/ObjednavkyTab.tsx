@@ -8,6 +8,16 @@ import { SlidersHorizontal, ShoppingCart, MessageSquare, MapPin, Navigation, Cop
 // Zaokrúhli m³ na 1 desatinné — staré objednávky majú v JSON floating point rozvoj (napr. 0.9000000000000004).
 const fM3 = (n?: number) => Math.round((n ?? 0) * 10) / 10;
 
+// Doťaženie cieľ — dodatočná oprava starých objednávok. Bug (chýbal addToMainQty) ukladal target < minimum
+// (napr. „do 4 m³" miesto „do 5"). Doťaženie NIKDY nemôže byť pod minimum (fillupMin) → ak je, oprav naň.
+// Číta aktuálny minimumLoadM3 (admin Doprava). Staré objednávky bez historickej hodnoty → aktuálne minimum.
+const fTgt = (target?: number, fillupM3?: number): number => {
+  const t = Math.round((target ?? 0) * 10) / 10;
+  if ((fillupM3 ?? 0) <= 0) return t;
+  const min = adminData.getTransportSettings()?.minimumLoadM3 ?? 5;
+  return Math.max(t, min);
+};
+
 function creatorMeta(role?: string): { Icon: React.ElementType; label: string; cls: string } | null {
   switch (role) {
     case "admin":   return { Icon: Crown,       label: "admin",    cls: "bg-primary/15 text-secondary border-primary/30" };
@@ -247,10 +257,17 @@ function exportOrderPDF(o: Order, format: "a4" | "a5" = "a4") {
   if (parsed) {
     // Floating point sanitizácia — staré objednávky majú v texte dlhý rozvoj (napr. "0.9000000000000004 m³").
     const fixFloat = (s: string) => s.replace(/\d+\.\d{4,}/g, (m) => String(Math.round(parseFloat(m) * 10) / 10));
+    const fillupMinTs = adminData.getTransportSettings()?.minimumLoadM3 ?? 5;
     const fixRows = (rows: typeof parsed.s[0]["rows"]) => rows.forEach(row => {
       const r = row as typeof row & { q?: string };
       if (r.l) r.l = fixFloat(r.l);
       if (r.q) r.q = fixFloat(r.q);
+      // Doťaženie cieľ — oprav label „Doťaženie do X m³" ak target < minimum (bug: chýbal addToMainQty).
+      const dm = r.l.match(/Doťaženie do[\s&nbsp;]*([\d.,]+)/);
+      if (dm) {
+        const cur = parseFloat(dm[1].replace(",", "."));
+        if (cur > 0 && cur < fillupMinTs) r.l = r.l.replace(dm[0], dm[0].replace(dm[1], String(fillupMinTs)));
+      }
       const isDoprava = r.l.toLowerCase().includes("doprava") || r.l.startsWith("HLAVNÁ ");
       if (!isDoprava) return;
       const isMinRow = r.l.includes("Min. doprava");
@@ -492,7 +509,7 @@ function exportOrderPDF(o: Order, format: "a4" | "a5" = "a4") {
       <table style="font-size:8.5pt"><tbody>
         <tr><td style="color:#888;padding:1px 6px 1px 0;width:88px">Typ</td><td style="font-weight:bold">${tabLabels[o.tab] ?? o.tab}</td></tr>
         <tr><td style="color:#888;padding:1px 6px 1px 0">Množstvo</td><td style="font-weight:bold">${o.totalQty} m³${(o.fillupM3 ?? 0) > 0 ? ` <span style="color:#92400e;font-size:8pt;font-weight:normal">+ ${fM3(o.fillupM3)} m³ doťaženie</span>` : ""}</td></tr>
-        ${(o.fillupM3 ?? 0) > 0 ? `<tr><td style="color:#888;padding:1px 6px 1px 0;vertical-align:top">Doťaženie</td><td style="color:#92400e;font-size:8.5pt">${o.totalQty}&nbsp;m³ → +${fM3(o.fillupM3)}&nbsp;m³ → <strong>${o.fillupTarget}&nbsp;m³/auto</strong></td></tr>` : ""}
+        ${(o.fillupM3 ?? 0) > 0 ? `<tr><td style="color:#888;padding:1px 6px 1px 0;vertical-align:top">Doťaženie</td><td style="color:#92400e;font-size:8.5pt">${o.totalQty}&nbsp;m³ → +${fM3(o.fillupM3)}&nbsp;m³ → <strong>${fTgt(o.fillupTarget, o.fillupM3)}&nbsp;m³/auto</strong></td></tr>` : ""}
         ${o.podmienky ? `<tr><td style="color:#888;padding:1px 6px 1px 0;vertical-align:top">Podmienky</td><td style="${o.podmienky.isRisk ? "color:#991b1b" : "color:#92400e"};font-size:8pt;font-weight:600">${o.podmienky.isRisk ? "⚠ Minusové pretaženie" : "★ Pretaženie"}: ${o.podmienky.pumpa > 0 ? `1× Pumpa + ${o.podmienky.mix}× Mix` : `${o.podmienky.trucks}× Mix`} · ∅ ${o.podmienky.m3PerTruck?.toFixed(1) ?? "—"} m³/vozidlo</td></tr>` : ""}
         ${o.km ? `<tr><td style="color:#888;padding:1px 6px 1px 0">Vzdialenosť</td><td>${o.km} km</td></tr>` : ""}
         ${(o.address || o.mapPlusCode) ? `<tr><td style="color:#888;padding:1px 6px 1px 0;vertical-align:top">Adresa</td><td>${o.address ? o.address : ""}${o.mapPlusCode ? `<br><span style="font-family:monospace;font-size:7.5pt;color:#aaa">${o.mapPlusCode}${o.mapLocality ? " · " + o.mapLocality : ""}</span>` : ""}</td></tr>` : ""}
@@ -1357,7 +1374,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                 <span className="text-amber-400 font-bold">→</span>
                                 <span className="text-amber-600">+{fM3(o.fillupM3)} m³</span>
                                 <span className="text-amber-400 font-bold">→</span>
-                                <span className="font-black">{o.fillupTarget} m³/auto</span>
+                                <span className="font-black">{fTgt(o.fillupTarget, o.fillupM3)} m³/auto</span>
                               </div>
                               {o.podmienky && (() => { const ir = getOrderIsRisk(o); return (
                                 <div className={`flex items-start gap-1.5 mt-1 px-2 py-1.5 rounded-sm ${ir ? "bg-red-50 border border-red-200" : "bg-amber-50 border border-amber-200"}`}>
