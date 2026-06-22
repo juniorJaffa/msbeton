@@ -152,12 +152,12 @@ export default function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void
             {/* Tabuľka: PUMPA tab */}
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-[10px] font-black uppercase tracking-widest text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">PUMPA TAB</span>
-                <span className="text-[10px] text-gray-400">pri výbere Pumpa</span>
+                <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">PUMPA TAB</span>
+                <span className="text-[9px] sm:text-[10px] text-gray-400">pri výbere Pumpa</span>
               </div>
               <div className="grid grid-cols-2 border border-gray-200 rounded overflow-hidden text-sm">
-                <div className="px-4 py-3 border-r border-gray-200">
-                  <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wide mb-2">Pumpa vozidlá</div>
+                <div className="px-3 py-2.5 sm:px-4 sm:py-3 border-r border-gray-200">
+                  <div className="text-[9px] sm:text-[10px] text-gray-500 font-bold uppercase tracking-wide mb-2">Pumpa vozidlá</div>
                   <div className="flex items-end gap-3">
                     <div>
                       <div className="text-[9px] text-gray-400 mb-0.5">Min</div>
@@ -174,8 +174,8 @@ export default function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void
                     </div>
                   </div>
                 </div>
-                <div className="px-4 py-3">
-                  <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wide mb-2">Mix doplnkový <span className="text-[9px] text-amber-500 font-normal normal-case">(vrátane otočiek)</span></div>
+                <div className="px-3 py-2.5 sm:px-4 sm:py-3">
+                  <div className="text-[9px] sm:text-[10px] text-gray-500 font-bold uppercase tracking-wide mb-2">Mix doplnkový <span className="text-[9px] text-amber-500 font-normal normal-case">(vrátane otočiek)</span></div>
                   <div className="flex items-end gap-3">
                     <div>
                       <div className="text-[9px] text-gray-400 mb-0.5">Min</div>
@@ -200,10 +200,10 @@ export default function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void
             {/* MIX tab */}
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-[10px] font-black uppercase tracking-widest text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">MIX TAB</span>
-                <span className="text-[10px] text-gray-400">pri výbere Domiešavač</span>
+                <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">MIX TAB</span>
+                <span className="text-[9px] sm:text-[10px] text-gray-400">pri výbere Domiešavač</span>
               </div>
-              <div className="border border-gray-200 rounded px-4 py-3 text-sm">
+              <div className="border border-gray-200 rounded px-3 py-2.5 sm:px-4 sm:py-3 text-sm">
                 <div className="flex items-end gap-3">
                   <div>
                     <div className="text-[9px] text-gray-400 mb-0.5">Min</div>
@@ -219,7 +219,7 @@ export default function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void
                     </div>
                   </div>
                 </div>
-                <p className="text-[10px] text-gray-400 mt-2">Max zdieľaný s Mix doplnkovým v Pumpa tab</p>
+                <p className="text-[9px] sm:text-[10px] text-gray-400 mt-2">Max zdieľaný s Mix doplnkovým v Pumpa tab</p>
               </div>
             </div>
 
@@ -266,7 +266,7 @@ export default function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void
                 {/* Type header */}
                 <button type="button" onClick={() => setExpandedTypes(prev => ({ ...prev, [zt.key]: !prev[zt.key] }))}
                   className={`w-full flex items-center gap-3 px-5 py-3 text-left cursor-pointer select-none ${headerBg}`}>
-                  <span className={`w-5 h-5 rounded-full text-white text-[10px] font-black flex items-center justify-center flex-shrink-0 ${badgeBg}`}>
+                  <span className={`w-5 h-5 rounded-full text-white text-[9px] sm:text-[10px] font-black flex items-center justify-center flex-shrink-0 ${badgeBg}`}>
                     {idx + 1}
                   </span>
                   <div className="flex-1 min-w-0">
@@ -276,7 +276,7 @@ export default function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void
                     </div>
                     {isStandard && (
                       <div className="mt-1">
-                        <span className="text-[10px] text-blue-400">cena €/m³ podľa vzdialenosti · pravidlá doťaženia</span>
+                        <span className="text-[9px] sm:text-[10px] text-blue-400">cena €/m³ podľa vzdialenosti · pravidlá doťaženia</span>
                       </div>
                     )}
                   </div>
@@ -304,74 +304,74 @@ export default function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void
                     return (
                       <div className="grid grid-cols-3 divide-x divide-y divide-blue-100 border-t border-blue-100 mt-2 w-full">
                         {/* Min. objednávka */}
-                        <div className="px-4 py-3 bg-white">
-                          <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Min. obj.</div>
+                        <div className="px-3 py-2.5 sm:px-4 sm:py-3 bg-white">
+                          <div className="text-[9px] sm:text-[10px] text-gray-400 uppercase tracking-wide mb-1">Min. obj.</div>
                           <div className="font-bold text-secondary text-sm flex flex-nowrap items-baseline gap-1 whitespace-nowrap">
                             <EditableField value={ts.minimumLoadM3 as number} type="number" onSave={v => saveTs({ ...ts, minimumLoadM3: parseFloat(v) || 0 })} /> <span>m³</span>
                           </div>
                         </div>
                         {/* Min. cena / auto */}
-                        <div className="px-4 py-3 bg-white">
-                          <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Min. cena/auto</div>
+                        <div className="px-3 py-2.5 sm:px-4 sm:py-3 bg-white">
+                          <div className="text-[9px] sm:text-[10px] text-gray-400 uppercase tracking-wide mb-1">Min. cena/auto</div>
                           <div className="font-bold text-secondary text-sm flex flex-nowrap items-baseline gap-1 whitespace-nowrap">
                             <EditableField value={ts.minimumFee as number} type="number" onSave={v => saveTs({ ...ts, minimumFee: parseFloat(v) || 0 })} /> <span>€</span>
                           </div>
                         </div>
                         {/* Čerpanie pumpy — read-only */}
-                        <div className="px-4 py-3 bg-yellow-50/60 flex flex-col gap-1">
-                          <div className="text-[10px] text-yellow-600 font-bold uppercase tracking-wide">Čerpanie pumpy</div>
+                        <div className="px-3 py-2.5 sm:px-4 sm:py-3 bg-yellow-50/60 flex flex-col gap-1">
+                          <div className="text-[9px] sm:text-[10px] text-yellow-600 font-bold uppercase tracking-wide">Čerpanie pumpy</div>
                           <div className="font-bold text-secondary text-sm">{pumpRate != null ? `${pumpRate.toFixed(2)} €/hod` : "—"}</div>
                           {onGoToSluzby && (
                             <button onClick={onGoToSluzby} className="flex items-center gap-0.5 text-[9px] text-yellow-600 hover:text-secondary transition-colors font-semibold mt-0.5">
-                              <ExternalLink className="w-2.5 h-2.5" /> Nastaviť v Službách
+                              <ExternalLink className="w-2.5 h-2.5" /> Služby
                             </button>
                           )}
                         </div>
                         {/* Pumpa — kapacita + čakačka */}
-                        <div className="px-4 py-3 bg-yellow-50/30">
+                        <div className="px-3 py-2.5 sm:px-4 sm:py-3 bg-yellow-50/30">
                           <div className="text-[9px] font-black text-secondary uppercase tracking-wide mb-2">Pumpa</div>
                           <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-x-4 gap-y-2">
                             <div>
-                              <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Kapacita</div>
+                              <div className="text-[9px] sm:text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Kapacita</div>
                               <div className="font-bold text-secondary text-sm flex items-baseline gap-0.5">
                                 <EditableField value={ref?.pumpTruckCapacity ?? 7} type="number" onSave={v => updateAll2({ pumpTruckCapacity: parseFloat(v) })} /> <span>m³</span>
                               </div>
                             </div>
                             <div>
-                              <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Čakačka / 15 min</div>
+                              <div className="text-[9px] sm:text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Čakačka / 15 min</div>
                               <div className="font-bold text-secondary text-sm">{waitingRatePumpa != null ? `${waitingRatePumpa.toFixed(2)} €` : "—"}</div>
                             </div>
                           </div>
                         </div>
                         {/* Mixér — kapacita + čakačka */}
-                        <div className="col-span-2 px-4 py-3 bg-yellow-50/20">
+                        <div className="col-span-2 px-3 py-2.5 sm:px-4 sm:py-3 bg-yellow-50/20">
                           <div className="text-[9px] font-black text-secondary uppercase tracking-wide mb-2">Mixér</div>
                           <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-x-4 gap-y-2">
                             <div>
-                              <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Kapacita</div>
+                              <div className="text-[9px] sm:text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Kapacita</div>
                               <div className="font-bold text-secondary text-sm flex items-baseline gap-0.5">
                                 <EditableField value={ref?.truckCapacity ?? 9} type="number" onSave={v => updateAll2({ truckCapacity: parseFloat(v) })} /> <span>m³</span>
                               </div>
                             </div>
                             <div>
-                              <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Čakačka / int.</div>
+                              <div className="text-[9px] sm:text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Čakačka / int.</div>
                               <div className="font-bold text-secondary text-sm">{waitingRateMix != null ? `${waitingRateMix.toFixed(2)} €` : "—"}</div>
                             </div>
                           </div>
                         </div>
                         {/* Pravidlá čakačky mix */}
-                        <div className="col-span-3 px-4 py-3 bg-orange-50/30 border-t border-orange-100">
+                        <div className="col-span-3 px-3 py-2.5 sm:px-4 sm:py-3 bg-orange-50/30 border-t border-orange-100">
                           <div className="text-[9px] font-black text-secondary uppercase tracking-wide mb-2">Pravidlá čakačky (Mix)</div>
                           <div className="grid grid-cols-2 gap-x-6">
                             <div>
-                              <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Voľný čas</div>
+                              <div className="text-[9px] sm:text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Voľný čas</div>
                               <div className="font-bold text-secondary text-sm flex items-baseline gap-0.5">
                                 <EditableField value={ts.waitFreeMinutesMix ?? 30} type="number" onSave={v => saveTs({ ...ts, waitFreeMinutesMix: parseFloat(v) || 0 })} /> <span>min</span>
                               </div>
                               <div className="text-[9px] text-gray-400 mt-0.5">zadarmo pred začatím účtovania</div>
                             </div>
                             <div>
-                              <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Interval účtovania</div>
+                              <div className="text-[9px] sm:text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Interval účtovania</div>
                               <div className="font-bold text-secondary text-sm flex items-baseline gap-0.5">
                                 <EditableField value={ts.waitIntervalMinutes ?? 15} type="number" onSave={v => saveTs({ ...ts, waitIntervalMinutes: parseFloat(v) || 15 })} /> <span>min</span>
                               </div>
@@ -397,8 +397,8 @@ export default function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void
                     {/* Fields grid — nový clean layout */}
                     <div className="grid grid-cols-3 divide-x divide-y divide-gray-100 border-t border-gray-100">
                       {/* Hlavná sadzba */}
-                      <div className={`px-4 py-3 ${zt.key === "km" ? "bg-slate-50/70" : "bg-blue-50/50"}`}>
-                        <div className={`text-[10px] font-bold uppercase tracking-wide mb-1 ${zt.key === "km" ? "text-slate-500" : "text-blue-500"}`}>{zt.rateLabel}</div>
+                      <div className={`px-3 py-2.5 sm:px-4 sm:py-3 ${zt.key === "km" ? "bg-slate-50/70" : "bg-blue-50/50"}`}>
+                        <div className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-wide mb-1 ${zt.key === "km" ? "text-slate-500" : "text-blue-500"}`}>{zt.rateLabel}</div>
                         <div className="font-bold text-secondary text-sm flex flex-wrap items-baseline gap-1">
                           {zt.key === "auto"
                             ? <><EditableField value={z.ratePerTruck ?? 0} type="number" onSave={v => updateZone(z.id, { ratePerTruck: parseFloat(v) })} /> <span>€/voz.</span></>
@@ -406,8 +406,8 @@ export default function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void
                         </div>
                       </div>
                       {/* Min */}
-                      <div className="px-4 py-3 bg-white">
-                        <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">{zt.key === "km" ? "Min. km" : "Min. áut"}</div>
+                      <div className="px-3 py-2.5 sm:px-4 sm:py-3 bg-white">
+                        <div className="text-[9px] sm:text-[10px] text-gray-400 uppercase tracking-wide mb-1">{zt.key === "km" ? "Min. km" : "Min. áut"}</div>
                         <div className="font-bold text-secondary text-sm flex flex-wrap items-baseline gap-1">
                           {zt.key === "km"
                             ? <><EditableField value={z.minKm ?? 5} type="number" onSave={v => updateZone(z.id, { minKm: parseFloat(v) || undefined })} /> <span>km</span></>
@@ -416,8 +416,8 @@ export default function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void
                         <div className="text-[9px] text-gray-400 mt-0.5 leading-tight">{zt.key === "km" ? "zaokrúhlená fakt." : "min. počet vozidiel"}</div>
                       </div>
                       {/* Max */}
-                      <div className="px-4 py-3 bg-white">
-                        <div className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">{zt.key === "km" ? "Max. km" : "Max. áut"}</div>
+                      <div className="px-3 py-2.5 sm:px-4 sm:py-3 bg-white">
+                        <div className="text-[9px] sm:text-[10px] text-gray-400 uppercase tracking-wide mb-1">{zt.key === "km" ? "Max. km" : "Max. áut"}</div>
                         <div className="font-bold text-secondary text-sm flex flex-wrap items-baseline gap-1">
                           {zt.key === "km"
                             ? <><EditableField value={z.maxKm ?? 100} type="number" onSave={v => updateZone(z.id, { maxKm: parseFloat(v) || undefined })} /> <span>km</span></>
@@ -427,14 +427,14 @@ export default function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void
                       </div>
                       {/* KM: Min. poplatok Pumpa + Mixer */}
                       {zt.key === "km" && <>
-                        <div className="px-4 py-3 bg-amber-50/60">
-                          <div className="text-[10px] text-amber-600 font-bold uppercase tracking-wide mb-1">Min. pop. Pumpa</div>
+                        <div className="px-3 py-2.5 sm:px-4 sm:py-3 bg-amber-50/60">
+                          <div className="text-[9px] sm:text-[10px] text-amber-600 font-bold uppercase tracking-wide mb-1">Min. pop. Pumpa</div>
                           <div className="font-bold text-secondary text-sm flex flex-nowrap items-center gap-1 whitespace-nowrap">
                             <EditableField value={z.minimumFeeKmPumpa ?? z.minimumFeeKm ?? 0} type="number" onSave={v => updateZone(z.id, { minimumFeeKmPumpa: parseFloat(v) || undefined })} /> €/auto
                           </div>
                         </div>
-                        <div className="col-span-2 px-4 py-3 bg-amber-50/30">
-                          <div className="text-[10px] text-amber-600 font-bold uppercase tracking-wide mb-1">Min. pop. Mixer</div>
+                        <div className="col-span-2 px-3 py-2.5 sm:px-4 sm:py-3 bg-amber-50/30">
+                          <div className="text-[9px] sm:text-[10px] text-amber-600 font-bold uppercase tracking-wide mb-1">Min. pop. Mixer</div>
                           <div className="font-bold text-secondary text-sm flex flex-nowrap items-center gap-1 whitespace-nowrap">
                             <EditableField value={z.minimumFeeKmMix ?? z.minimumFeeKm ?? 0} type="number" onSave={v => updateZone(z.id, { minimumFeeKmMix: parseFloat(v) || undefined })} /> €/auto
                           </div>
@@ -443,13 +443,13 @@ export default function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void
                       {/* Čerpanie pumpy — read-only, zo Služieb */}
                       <div className="col-span-3 px-4 py-2.5 bg-yellow-50/50 flex items-center justify-between gap-2">
                         <div>
-                          <div className="text-[10px] text-yellow-600 font-bold uppercase tracking-wide">Čerpanie pumpy</div>
+                          <div className="text-[9px] sm:text-[10px] text-yellow-600 font-bold uppercase tracking-wide">Čerpanie pumpy</div>
                           <div className="text-sm font-bold text-secondary">{pumpRate != null ? `${pumpRate.toFixed(2)} €/hod` : "—"}</div>
                         </div>
                         {onGoToSluzby && (
-                          <button onClick={onGoToSluzby} className="flex items-center gap-1 text-[10px] text-yellow-600 hover:text-secondary transition-colors font-semibold shrink-0">
+                          <button onClick={onGoToSluzby} className="flex items-center gap-1 text-[9px] sm:text-[10px] text-yellow-600 hover:text-secondary transition-colors font-semibold shrink-0">
                             <ExternalLink className="w-3 h-3" />
-                            Nastaviť v Službách
+                            Služby
                           </button>
                         )}
                       </div>
@@ -457,18 +457,18 @@ export default function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void
                       <div className="col-span-3 px-4 py-2.5 bg-orange-50/40 flex items-center justify-between gap-2">
                         <div className="flex items-center gap-6">
                           <div>
-                            <div className="text-[10px] text-orange-500 font-bold uppercase tracking-wide">Čakačka Pumpa</div>
+                            <div className="text-[9px] sm:text-[10px] text-orange-500 font-bold uppercase tracking-wide">Čakačka Pumpa</div>
                             <div className="text-sm font-bold text-secondary">{waitingRatePumpa != null ? `${waitingRatePumpa.toFixed(2)} €/hod` : "—"}</div>
                           </div>
                           <div>
-                            <div className="text-[10px] text-orange-500 font-bold uppercase tracking-wide">Čakačka Mix / 15 min</div>
+                            <div className="text-[9px] sm:text-[10px] text-orange-500 font-bold uppercase tracking-wide">Čakačka Mix / 15 min</div>
                             <div className="text-sm font-bold text-secondary">{waitingRateMix != null ? `${waitingRateMix.toFixed(2)} €` : "—"}</div>
                           </div>
                         </div>
                         {onGoToSluzby && (
-                          <button onClick={onGoToSluzby} className="flex items-center gap-1 text-[10px] text-orange-500 hover:text-secondary transition-colors font-semibold shrink-0">
+                          <button onClick={onGoToSluzby} className="flex items-center gap-1 text-[9px] sm:text-[10px] text-orange-500 hover:text-secondary transition-colors font-semibold shrink-0">
                             <ExternalLink className="w-3 h-3" />
-                            Nastaviť v Službách
+                            Služby
                           </button>
                         )}
                       </div>
@@ -488,7 +488,7 @@ export default function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void
                         <button type="button" onClick={() => setStdZonesOpen(o => !o)}
                           className="w-full flex items-center gap-2 px-5 py-2 border-b border-blue-100 hover:bg-blue-50 transition-colors text-left cursor-pointer select-none">
                           <span className="font-black text-secondary text-xs uppercase tracking-widest">Zóny dopravy</span>
-                          <span className="text-[10px] text-blue-500 font-semibold">cenník €/m³</span>
+                          <span className="text-[9px] sm:text-[10px] text-blue-500 font-semibold">cenník €/m³</span>
                           <div className="ml-auto">{stdZonesOpen ? <ChevronUp className="w-3.5 h-3.5 text-gray-400" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400" />}</div>
                         </button>
                         {stdZonesOpen && (<>
@@ -496,9 +496,9 @@ export default function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void
                         <table className="w-full text-sm">
                           <thead>
                             <tr className="border-b border-blue-100 bg-blue-50/30">
-                              <th className="text-left px-5 py-2 text-[10px] font-bold text-blue-400 uppercase tracking-wide">Od km</th>
-                              <th className="text-left px-4 py-2 text-[10px] font-bold text-blue-400 uppercase tracking-wide">Do km</th>
-                              <th className="text-right px-4 py-2 text-[10px] font-bold text-blue-400 uppercase tracking-wide">€/m³</th>
+                              <th className="text-left px-5 py-2 text-[9px] sm:text-[10px] font-bold text-blue-400 uppercase tracking-wide">Od km</th>
+                              <th className="text-left px-4 py-2 text-[9px] sm:text-[10px] font-bold text-blue-400 uppercase tracking-wide">Do km</th>
+                              <th className="text-right px-4 py-2 text-[9px] sm:text-[10px] font-bold text-blue-400 uppercase tracking-wide">€/m³</th>
                               <th className="w-8" />
                             </tr>
                           </thead>
@@ -546,12 +546,12 @@ export default function DopravaTab({ onGoToSluzby }: { onGoToSluzby?: () => void
                           <div className="px-5 py-3">
                             <div className="grid sm:grid-cols-2 gap-2 text-xs text-gray-600">
                               <div className="bg-gray-50 border border-gray-100 rounded p-2.5 space-y-1">
-                                <div className="font-black text-secondary text-[10px] uppercase">🚛 Pumpa</div>
+                                <div className="font-black text-secondary text-[9px] sm:text-[10px] uppercase">🚛 Pumpa</div>
                                 <div>množstvo &lt; {ts.minimumLoadM3 ?? 5} m³ → doťaž na {ts.minimumLoadM3 ?? 5} m³</div>
                                 <div>{pumpCap} m³ &lt; mn. &lt; {2 * (ts.minimumLoadM3 ?? 5)} m³ → doťaž na {2 * (ts.minimumLoadM3 ?? 5)} m³</div>
                               </div>
                               <div className="bg-gray-50 border border-gray-100 rounded p-2.5 space-y-1">
-                                <div className="font-black text-secondary text-[10px] uppercase">🔄 Mixér</div>
+                                <div className="font-black text-secondary text-[9px] sm:text-[10px] uppercase">🔄 Mixér</div>
                                 <div>množstvo &lt; {ts.minimumLoadM3 ?? 5} m³ → doťaž na {ts.minimumLoadM3 ?? 5} m³</div>
                                 <div>{mixCap} m³ &lt; mn. &lt; {2 * (ts.minimumLoadM3 ?? 5)} m³ → doťaž na {2 * (ts.minimumLoadM3 ?? 5)} m³</div>
                               </div>

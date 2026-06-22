@@ -33,7 +33,7 @@ export function EditableField({ value, onSave, type = "text", suggestionSuffixes
   if (!editing) return (
     <span className="cursor-pointer hover:text-primary transition-colors group flex items-center gap-1.5 min-w-0" onClick={e => { e.stopPropagation(); startEdit(); }}>
       <span className={`min-w-0 leading-snug ${type === "number" ? "whitespace-nowrap" : "break-words"}`}>{value}</span>
-      <Pencil className="w-3.5 h-3.5 opacity-0 group-hover:opacity-40 transition-opacity shrink-0" />
+      <Pencil className="w-3.5 h-3.5 opacity-0 group-hover:opacity-40 transition-opacity shrink-0 hidden sm:inline-block" />
     </span>
   );
   return (
