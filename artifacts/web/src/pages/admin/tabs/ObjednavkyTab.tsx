@@ -262,11 +262,17 @@ function exportOrderPDF(o: Order, format: "a4" | "a5" = "a4") {
       const r = row as typeof row & { q?: string };
       if (r.l) r.l = fixFloat(r.l);
       if (r.q) r.q = fixFloat(r.q);
-      // Doťaženie cieľ — oprav label „Doťaženie do X m³" ak target < minimum (bug: chýbal addToMainQty).
+      // Doťaženie cieľ — oprav label „Doťaženie do X m³" (dve staré chyby):
+      // 1. target < minimum (chýbal addToMainQty) → oprav na fillupMin
+      // 2. target má desatinné (napr. 5.1 — rounding bug 1.25→1.3→5.05→5.1) → round na integer
       const dm = r.l.match(/Doťaženie do[\s&nbsp;]*([\d.,]+)/);
       if (dm) {
         const cur = parseFloat(dm[1].replace(",", "."));
-        if (cur > 0 && cur < fillupMinTs) r.l = r.l.replace(dm[0], dm[0].replace(dm[1], String(fillupMinTs)));
+        if (cur > 0 && cur < fillupMinTs) {
+          r.l = r.l.replace(dm[0], dm[0].replace(dm[1], String(fillupMinTs)));
+        } else if (cur > 0 && cur !== Math.round(cur)) {
+          r.l = r.l.replace(dm[0], dm[0].replace(dm[1], String(Math.round(cur))));
+        }
       }
       const isDoprava = r.l.toLowerCase().includes("doprava") || r.l.startsWith("HLAVNÁ ");
       if (!isDoprava) return;

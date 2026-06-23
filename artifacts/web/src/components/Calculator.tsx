@@ -953,8 +953,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     return trucks;
   }
 
-  function calcTransport(km: number, qty: number, tabType: Tab, dZone: typeof clientDeliveryZone, overrideTrucks?: number): { cost: number; isMin: boolean; fillupM3: number; fillupCost: number } {
-    if (km === 0) return { cost: 0, isMin: false, fillupM3: 0, fillupCost: 0 };
+  function calcTransport(km: number, qty: number, tabType: Tab, dZone: typeof clientDeliveryZone, overrideTrucks?: number): { cost: number; isMin: boolean; fillupM3: number; fillupCost: number; fillupTarget: number } {
+    if (km === 0) return { cost: 0, isMin: false, fillupM3: 0, fillupCost: 0, fillupTarget: 0 };
 
     const pType = dZone?.pricingType ?? "standard";
     const trucks = overrideTrucks ?? (tabType === "pumpa" ? calcPumpTrucks(qty) : Math.ceil(qty / mixCap));
@@ -974,7 +974,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const kmMinFee = mp[kmMinFeeKey] !== undefined ? mp[kmMinFeeKey] : kmMinFeeBase;
       const minCost = kmMinFee != null ? trucks * kmMinFee : 0;
       const isMin = !!(kmMinFee != null && trucks > 0 && cost / trucks < kmMinFee);
-      return { cost: isMin ? minCost : cost, isMin, fillupM3: 0, fillupCost: 0 };
+      return { cost: isMin ? minCost : cost, isMin, fillupM3: 0, fillupCost: 0, fillupTarget: 0 };
     }
 
     if (pType === "auto") {
@@ -984,7 +984,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       const autoMinFee = dZone?.minimumFeeAuto;
       const cost = trucks * rpt;
       const isMin = !!(autoMinFee && trucks > 0 && rpt < autoMinFee);
-      return { cost: isMin ? trucks * autoMinFee : cost, isMin, fillupM3: 0, fillupCost: 0 };
+      return { cost: isMin ? trucks * autoMinFee : cost, isMin, fillupM3: 0, fillupCost: 0, fillupTarget: 0 };
     }
 
     // standard – km pásma: fill-up logika zhodná s pôvodnou WP kalkulačkou
@@ -996,29 +996,31 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
     const fillupMin = tsettings.minimumLoadM3 ?? 5;
     let fillupM3 = 0;
+    let fillupTarget = 0;
     if (overrideTrucks) {
       const qtyPerTruck = qty / overrideTrucks;
       let fillupPerTruck = 0;
-      if (qtyPerTruck < fillupMin) fillupPerTruck = fillupMin - qtyPerTruck;
+      if (qtyPerTruck < fillupMin) { fillupPerTruck = fillupMin - qtyPerTruck; fillupTarget = overrideTrucks * fillupMin; }
       // overloaded trucks (qPT > cap) → no fill-up; admin chose fewer trucks intentionally
-      fillupM3 = Math.round(Math.max(0, fillupPerTruck) * overrideTrucks * 10) / 10;
+      fillupM3 = Math.round(Math.max(0, fillupPerTruck) * overrideTrucks * 100) / 100;
     } else if (tabType === "pumpa") {
-      if (qty < fillupMin) fillupM3 = fillupMin - qty;
-      else if (qty > pumpCap && qty < 2 * fillupMin) fillupM3 = 2 * fillupMin - qty;
+      if (qty < fillupMin) { fillupM3 = fillupMin - qty; fillupTarget = fillupMin; }
+      else if (qty > pumpCap && qty < 2 * fillupMin) { fillupM3 = 2 * fillupMin - qty; fillupTarget = 2 * fillupMin; }
     } else {
-      if (qty < fillupMin) fillupM3 = fillupMin - qty;
-      else if (qty > mixCap && qty < 2 * fillupMin) fillupM3 = 2 * fillupMin - qty;
+      if (qty < fillupMin) { fillupM3 = fillupMin - qty; fillupTarget = fillupMin; }
+      else if (qty > mixCap && qty < 2 * fillupMin) { fillupM3 = 2 * fillupMin - qty; fillupTarget = 2 * fillupMin; }
     }
-    // Zaokrúhli na 1 desatinné — inak floating point (napr. 5 - 3.1 = 0.9000000000000004).
-    fillupM3 = Math.round(fillupM3 * 10) / 10;
+    // Zaokrúhli na 2 desatinné — inak floating point (napr. 5 - 3.1 = 0.9000000000000004).
+    // POZOR: 1 des. miesto by spôsobilo 1.25→1.3 (Math.round(12.5)=13) → target 5.05→5.1 (bug).
+    fillupM3 = Math.round(fillupM3 * 100) / 100;
 
     const baseCost = qty * ratePerM3;
     const fillupCost = fillupM3 * ratePerM3;
     const totalVolumeCost = baseCost + fillupCost;
     const minCost = trucks * effectiveMinFee;
     const isMin = trucks > 0 && totalVolumeCost / trucks < effectiveMinFee;
-    if (isMin) return { cost: minCost, isMin, fillupM3: 0, fillupCost: 0 };
-    return { cost: baseCost, isMin, fillupM3, fillupCost };
+    if (isMin) return { cost: minCost, isMin, fillupM3: 0, fillupCost: 0, fillupTarget: 0 };
+    return { cost: baseCost, isMin, fillupM3, fillupCost, fillupTarget };
   }
 
   const result = useMemo(() => {
@@ -1068,7 +1070,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       transportFillupM3: mainTC.fillupM3,
       // Target = celkové qty (vrátane addToMain extra) + doťaženie — fillupM3 sa počíta z (qty + addToMainQty),
       // preto target MUSÍ pridať addToMainQty tiež, inak label "do X m³" nesedí s minimom (napr. 3.1+1 → do 5, nie do 4).
-      transportFillupTarget: mainTC.fillupM3 > 0 ? Math.round((qty + addToMainQty + mainTC.fillupM3) * 10) / 10 : 0,
+      transportFillupTarget: mainTC.fillupTarget,
       transportIsMin: mainTC.isMin,
       transportTrucks: mainTrucks,
       svcPumpHrs: 0, svcPumpMs: 0, svcPumpCost: 0,
@@ -1121,7 +1123,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
           transport: extraTC.cost,
           transportFillup: extraTC.fillupCost,
           transportFillupM3: extraTC.fillupM3,
-          transportFillupTarget: extraTC.fillupM3 > 0 ? Math.round((q + extraTC.fillupM3) * 10) / 10 : 0,
+          transportFillupTarget: extraTC.fillupTarget,
           transportIsMin: extraTC.isMin,
           transportTrucks: extraTrucks,
           svcPumpHrs, svcPumpMs, svcPumpCost,
@@ -1277,9 +1279,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       : null;
 
     const fillupM3 = transportCalc.fillupM3;
-    // Target = celkové qty hlavnej položky (vrátane addToMain extra) + doťaženie. fillupM3 pochádza z mainTC
-    // počítaného z (qty + addToMainQty) → target musí pridať addToMainQty, inak label "do X m³" ≠ skutočné minimum.
-    const fillupTarget = fillupM3 > 0 ? Math.round((qty + addToMainQty + fillupM3) * 10) / 10 : 0;
+    // fillupTarget priamo z threshold (fillupMin / 2*fillupMin) — NIE qty + fillupM3_rounded.
+    // Dôvod: rounding fillupM3 môže spôsobiť drift (napr. 1.25→1.3 → target 5.05→5.1).
+    // calcTransport volaný s (qty + addToMainQty) → fillupTarget už zahŕňa addToMain.
+    const fillupTarget = concreteBreakdown[0]?.transportFillupTarget ?? 0;
 
     return {
       trucks, truckCapacity, mixTrucksCount, items, totalBezDph, totalSDph: totalBezDph * (1 + VAT),
