@@ -649,6 +649,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const plusCodeBackfilledRef = useRef<Set<string>>(new Set());
   const [ordersPage, setOrdersPage] = useState(0);
   const ORDERS_PAGE_SIZE = 30;
+  const [scaleAlertDismissed, setScaleAlertDismissed] = useState(false);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -867,6 +868,42 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
           </div>
         )}
       </div>
+
+      {/* Scale alert — zobrazuje sa keď objednávok je >1000/2000/5000 */}
+      {!scaleAlertDismissed && (() => {
+        const n = orders.length;
+        if (n >= 5000) return (
+          <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm">
+            <span className="text-red-500 text-base shrink-0 mt-0.5">⚠</span>
+            <div className="flex-1 min-w-0">
+              <span className="font-bold text-red-700">Kritické: {n} objednávok</span>
+              <span className="text-red-600 ml-1">— JSONB blob je príliš veľký. Nutná migrácia na orders tabuľku + server-side páging. Pozri <code className="text-xs bg-red-100 px-1 rounded">docs/db-scalability.md</code>.</span>
+            </div>
+            <button onClick={() => setScaleAlertDismissed(true)} className="text-red-400 hover:text-red-600 transition-colors shrink-0 p-0.5" aria-label="Zavrieť"><X className="w-4 h-4" /></button>
+          </div>
+        );
+        if (n >= 2000) return (
+          <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm">
+            <span className="text-amber-500 text-base shrink-0 mt-0.5">◈</span>
+            <div className="flex-1 min-w-0">
+              <span className="font-bold text-amber-700">{n} objednávok</span>
+              <span className="text-amber-600 ml-1">— viditeľné spomalenie admin načítania (JSONB ~{Math.round(n * 1.2 / 1000)} MB). Plánujte migráciu na orders tabuľku. Pozri <code className="text-xs bg-amber-100 px-1 rounded">docs/db-scalability.md</code>.</span>
+            </div>
+            <button onClick={() => setScaleAlertDismissed(true)} className="text-amber-400 hover:text-amber-600 transition-colors shrink-0 p-0.5" aria-label="Zavrieť"><X className="w-4 h-4" /></button>
+          </div>
+        );
+        if (n >= 1000) return (
+          <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm">
+            <span className="text-blue-400 text-base shrink-0 mt-0.5">ℹ</span>
+            <div className="flex-1 min-w-0">
+              <span className="font-bold text-blue-700">{n} objednávok</span>
+              <span className="text-blue-600 ml-1">— stránkovanie beží (30/strana). Čoskoro bude vhodné prejsť na server-side páging a filtrovanie na DB. Pozri <code className="text-xs bg-blue-100 px-1 rounded">docs/db-scalability.md</code>.</span>
+            </div>
+            <button onClick={() => setScaleAlertDismissed(true)} className="text-blue-400 hover:text-blue-600 transition-colors shrink-0 p-0.5" aria-label="Zavrieť"><X className="w-4 h-4" /></button>
+          </div>
+        );
+        return null;
+      })()}
 
       {/* Filter panel — sticky, collapsible */}
       <div className="sticky top-0 z-20">
