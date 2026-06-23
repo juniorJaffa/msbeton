@@ -484,10 +484,33 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     return () => window.removeEventListener("admin-data-synced", handler);
   }, []);
 
-  // Načítaj objednávky pre štatistiky klienta
+  // Načítaj objednávky pre štatistiky klienta + auto-oprava orphaned clientId po zmene loginId
   useEffect(() => {
     adminApi.getOrders().then(r => {
-      if (r?.data) { adminData.cacheOrders(r.data as Order[]); setAllOrders(r.data as Order[]); }
+      if (!r?.data) return;
+      const loaded = r.data as Order[];
+      adminData.cacheOrders(loaded);
+      setAllOrders(loaded);
+
+      // Auto-oprava: orders kde clientId neexistuje v žiadnom klientovi (napr. po zmene loginId)
+      const currentClients = adminData.getClients();
+      const validIds = new Set(currentClients.flatMap(c => [c.loginId, c.id].filter(Boolean) as string[]));
+      const hasOrphans = loaded.some(o => o.clientId && !validIds.has(o.clientId));
+      if (!hasOrphans) return;
+
+      let changed = false;
+      const repaired = loaded.map(o => {
+        if (!o.clientId || validIds.has(o.clientId) || !o.clientName) return o;
+        const name = o.clientName.toLowerCase();
+        const matches = currentClients.filter(c => {
+          const fn = [c.firstName, c.lastName].filter(Boolean).join(" ").toLowerCase();
+          return fn && fn === name;
+        });
+        if (matches.length !== 1 || !matches[0].loginId) return o;
+        changed = true;
+        return { ...o, clientId: matches[0].loginId };
+      });
+      if (changed) { setAllOrders(repaired); adminData.saveOrders(repaired); }
     }).catch(() => {});
   }, []);
 
