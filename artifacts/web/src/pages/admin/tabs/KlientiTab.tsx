@@ -1444,6 +1444,15 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                               if (clients.some(other => other.id !== c.id && other.loginId?.toLowerCase() === v.toLowerCase())) { alert(`Login ID '${v}' už existuje.`); return; }
                               const phoneMatch = v.match(/^(\+?(?:00421|421|0)[0-9\s\-]{7,})/);
                               const extracted = phoneMatch ? formatPhone(phoneMatch[1].trim()) : "";
+                              const oldLoginId = c.loginId;
+                              if (oldLoginId && oldLoginId !== v) {
+                                const affected = allOrders.filter(o => o.clientId === oldLoginId);
+                                if (affected.length > 0) {
+                                  const updatedOrders = allOrders.map(o => o.clientId === oldLoginId ? { ...o, clientId: v } : o);
+                                  setAllOrders(updatedOrders);
+                                  adminData.saveOrders(updatedOrders);
+                                }
+                              }
                               update(c.id, { loginId: v, ...(!c.phone && extracted ? { phone: extracted } : {}) });
                             }} />
                           </div>
@@ -1682,6 +1691,12 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                         const cOrders = allOrders
                           .filter(o => o.clientId != null && (o.clientId === c.loginId || o.clientId === c.id))
                           .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+                        const cFullName = [c.firstName, c.lastName].filter(Boolean).join(" ");
+                        const orphanedOrders = cOrders.length === 0 ? allOrders.filter(o =>
+                          o.clientId && o.clientName && cFullName &&
+                          !clients.some(cl => cl.loginId === o.clientId || cl.id === o.clientId) &&
+                          o.clientName.toLowerCase() === cFullName.toLowerCase()
+                        ) : [];
                         const totalM3 = cOrders.reduce((s, o) => s + o.quantity, 0);
                         const totalEur = cOrders.reduce((s, o) => s + o.totalBezDph, 0);
                         const last = cOrders[0];
@@ -1697,7 +1712,31 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                           <div className="border-t border-gray-100 pt-3 mt-2">
                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Štatistiky</p>
                             {cOrders.length === 0 ? (
-                              <p className="text-[10px] text-gray-400 text-center py-1">Žiadne objednávky</p>
+                              orphanedOrders.length > 0 ? (
+                                <div className="bg-amber-50 border border-amber-200 rounded px-3 py-2.5">
+                                  <p className="text-[10px] font-bold text-amber-700 mb-1">
+                                    {orphanedOrders.length} objednávk{orphanedOrders.length === 1 ? "a" : orphanedOrders.length < 5 ? "y" : "í"} so starým ID klienta
+                                  </p>
+                                  <p className="text-[9px] text-amber-600 mb-2 leading-relaxed">
+                                    Prihlasovacie ID bolo zmenené po uložení objednávok. Pripojiť k tomuto klientovi?
+                                  </p>
+                                  <button
+                                    onClick={() => {
+                                      if (!c.loginId) return;
+                                      const updated = allOrders.map(o =>
+                                        orphanedOrders.some(orph => orph.id === o.id) ? { ...o, clientId: c.loginId! } : o
+                                      );
+                                      setAllOrders(updated);
+                                      adminData.saveOrders(updated);
+                                    }}
+                                    className="text-[10px] font-bold bg-amber-500 hover:bg-amber-600 text-white px-2.5 py-1 rounded transition-colors"
+                                  >
+                                    Pripojiť {orphanedOrders.length} objednávk{orphanedOrders.length === 1 ? "u" : orphanedOrders.length < 5 ? "y" : "í"}
+                                  </button>
+                                </div>
+                              ) : (
+                                <p className="text-[10px] text-gray-400 text-center py-1">Žiadne objednávky</p>
+                              )
                             ) : (
                               <>
                                 <div className="grid grid-cols-3 gap-1.5 mb-2">
