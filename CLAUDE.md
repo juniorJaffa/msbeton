@@ -103,7 +103,9 @@ Extra položky s `transportMode === "addToMain"` zlučujú svoje m³ do dopravy 
 
 1. **`extraTrucks = 0`** — extra addToMain položka nepridáva žiadne auto do celkového počtu
 2. **`mainTrucks = calcPumpTrucks(qty + addToMainQty)`** — hlavná položka počíta autá pre celkové m³ (vrátane addToMain)
-3. **`fillupTarget = round(qty + addToMainQty + fillupM3, 1)`** — label „Doťaženie do X m³". `fillupM3` sa počíta z `(qty + addToMainQty)`, preto target MUSÍ pridať `addToMainQty` (NIE `qty + fillupM3`). Inak label nesedí s minimom: 3.1 + 1 addToMain → fillupM3=0.9 → správne „do 5 m³" (=fillupMin), nesprávne „do 4 m³". Platí na DVOCH miestach: `concreteBreakdown[0].transportFillupTarget` aj `result.fillupTarget`.
+3. **`fillupTarget` = vždy čisté celé číslo (5, 10, 15…)** — priamo z prahu `fillupMin` alebo `2 × fillupMin`, **NIKDY z `qty + fillupM3`**. `calcTransport()` vracia `fillupTarget` priamo; volajúci len zoberie `mainTC.fillupTarget`. Platí na DVOCH miestach: `concreteBreakdown[0].transportFillupTarget` aj `result.fillupTarget = concreteBreakdown[0].transportFillupTarget`.
+
+   > **Zakázaný vzorec:** `round(qty + addToMainQty + fillupM3, 1)` — floating point v `fillupM3` (napr. 1.25 → `Math.round(12.5)=13` → 1.3) → target `3.75+1.3=5.05` → `5.1` (bug). Vždy `fillupTarget = fillupMin` (alebo `2×fillupMin`), nie odvodené z qty.
 
 `addToMainQty` = `extraItems.reduce(...)` sum za všetky items kde `transportMode === "addToMain" && q > 0`.
 
@@ -229,7 +231,7 @@ qPT = (qty + transportFillupM3) / totalTrucks
 **KRITICKÉ — tri dimenzie pre addToMain + podmienky** (viď „transportMode addToMain — KRITICKÁ INVARIANTA"):
 - `extraTrucks = 0` pre addToMain extra (nepridal by auto)
 - `mainTrucks = calcPumpTrucks(qty + addToMainQty)` pre hlavnú položku
-- `fillupTarget = round(qty + addToMainQty + fillupM3, 1)` — label „Doťaženie do X m³"
+- `fillupTarget` = čisté celé číslo z `calcTransport().fillupTarget` — NIKDY `qty + fillupM3_rounded`
 
 **Admin limity podmienok** (tsettings):
 ```

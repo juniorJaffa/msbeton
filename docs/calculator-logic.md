@@ -134,20 +134,35 @@ Ak `costPerTruck < minRate` → platí `minRate × trucks`
 
 #### `transportFillupTarget` — label „Doťaženie do X m³" (KRITICKÉ)
 
-`fillupTarget` = objem **na ktorý sa doťažuje** (X v labeli „Doťaženie do X m³"). Pri `qty < fillupMin` musí byť `X = fillupMin`.
+`fillupTarget` = objem **na ktorý sa doťažuje** (X v labeli „Doťaženie do X m³"). **Vždy čisté celé číslo** — `fillupMin` (napr. 5) alebo `2 × fillupMin` (napr. 10). Nikdy desatinné.
 
-**INVARIANTA:** `fillupTarget` MUSÍ použiť **rovnaký qty ako fillup výpočet**:
+**INVARIANTA: `calcTransport()` vracia `fillupTarget` priamo z prahu — NIKDY z `qty + fillupM3`.**
+
 ```typescript
-// fillupM3 sa počíta v calcTransport z (qty + addToMainQty) pre hlavnú položku
-mainTC = calcTransport(km, qty + addToMainQty, ...)
-// → target MUSÍ pridať addToMainQty tiež:
-fillupTarget = round(qty + addToMainQty + fillupM3, 1)   // NIE (qty + fillupM3)
+// calcTransport vnútri — správne:
+if (qty < fillupMin)                          { fillupM3 = fillupMin - qty;      fillupTarget = fillupMin; }
+else if (qty > cap && qty < 2 * fillupMin)    { fillupM3 = 2 * fillupMin - qty;  fillupTarget = 2 * fillupMin; }
+
+// Volajúci kód len zoberie:
+transportFillupTarget: mainTC.fillupTarget                          // concreteBreakdown[0]
+fillupTarget = concreteBreakdown[0]?.transportFillupTarget ?? 0     // result useMemo
 ```
 
-**Bug (opravený):** target používal len `qty` (hlavná položka bez addToMain), fillup z `qty + addToMainQty`.
-Príklad: hlavná 3.1 m³ + 1 m³ addToMain → fillupM3 = 5 − 4.1 = 0.9. Target nesprávne `3.1 + 0.9 = 4` → label „do 4 m³". Správne `4.1 + 0.9 = 5` → „do 5 m³" (= fillupMin). Platí na **dvoch miestach**: `concreteBreakdown[0].transportFillupTarget` aj `result.fillupTarget`.
+**ZAKÁZANÝ VZOREC — dvakrát spôsobil bug:**
+```typescript
+// ❌ NIKDY:
+fillupTarget = round(qty + addToMainQty + fillupM3, 1)
+// Prečo: floating point drift — napr. qty=3.75, fillupM3 po round(×10)=1.3 → 3.75+1.3=5.05 → 5.1
+// Math.round(1.25 * 10) = Math.round(12.5) = 13 → 1.3  ← JS round-half-up bug
+```
 
-> **Pravidlo (addToMain — tretia dimenzia):** popri `extraTrucks=0` a `mainTrucks=calcPumpTrucks(qty+addToMainQty)` platí aj **`fillupTarget` musí rátať s `addToMainQty`**. Tri hodnoty, jeden zdroj (`qty + addToMainQty`) — pri zmene addToMain logiky over všetky tri.
+**`fillupM3` zaokrúhľuje na 2 des. miesta** (nie 1) — `Math.round(x * 100) / 100`. Dôvod: 1 des. miesto spôsobuje `1.25 → 1.3` (Math.round(12.5)=13).
+
+**Bughist:**
+1. Target bez addToMainQty: `3.1 + 0.9 = 4` → „do 4 m³" (malo byť „do 5 m³")
+2. Target z `qty + fillupM3_rounded(×10)`: `3.75 + 1.3 = 5.05 → 5.1` (malo byť „do 5 m³")
+
+> **Pravidlo:** `calcTransport` volaný s `qty + addToMainQty` → `fillupTarget` z neho automaticky zahŕňa addToMain. Volajúci kód nič nepridáva ani neráta.
 
 ### km typ
 
