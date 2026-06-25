@@ -1490,7 +1490,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       ? trow(`Doťaženie do&nbsp;${result.fillupTarget}&nbsp;m³`, `${mainCI?.transportFillupM3}&nbsp;m³`, transRateStr(mainFillupOrig, mainCI?.transportFillupM3 ?? 0, result.fFillup), mainFillupOrig, mainFillupDisc)
       : "";
     const zimneRow = origItems.zimne > 0
-      ? trow(`Zimné opatrenia`, `${result.qty}&nbsp;m³`, `${fmtN(zimneServicePrice)}&nbsp;€/m³`, origItems.zimne, baseItems.zimne)
+      ? trow(`Zimné opatrenia`, `${pdfAddToMainQty > 0 ? result.qty + pdfAddToMainQty : result.qty}&nbsp;m³`, `${fmtN(zimneServicePrice)}&nbsp;€/m³`, origItems.zimne, baseItems.zimne)
       : "";
 
     // Main item services (pumpa only, first item — per-item values, not aggregated)
