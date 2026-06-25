@@ -22,6 +22,7 @@ interface ServerStatus {
     wpBannedList: { ip: string; country?: string; countryCode?: string; org?: string }[];
     wpBantime: number;
     topIps: { ip: string; count: number }[];
+    cfGuard?: { active: boolean; lastRun: string | null; lastUnbanned: number };
   };
 }
 
@@ -283,6 +284,21 @@ export default function ServerTab({ onOpenClient, bioFocus }: { onOpenClient?: (
                 <span className="text-xs text-white/40">Fail2ban ban</span>
                 <span className={`text-sm font-black ${data.security.bannedIps > 0 ? "text-red-400" : "text-green-400"}`}>{data.security.bannedIps}</span>
               </div>
+              {data.security.cfGuard && (
+                <div className="flex items-center justify-between pt-1 mt-1 border-t border-white/8">
+                  <span className="text-xs text-white/40">CF Guard</span>
+                  {data.security.cfGuard.active
+                    ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/15 text-green-400 font-bold">Aktívny ✓</span>
+                    : <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/8 text-white/30 font-bold">Neznámy</span>
+                  }
+                </div>
+              )}
+              {data.security.cfGuard?.lastRun && (
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-white/25">posl. beh</span>
+                  <span className="text-[10px] font-mono text-white/40">{data.security.cfGuard.lastRun.slice(11, 16)}</span>
+                </div>
+              )}
             </div>
           </div>
           {data.security.wpBannedList.length > 0 && (

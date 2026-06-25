@@ -921,7 +921,18 @@ router.get("/server-status", async (req, res) => {
       .slice(0, 5)
       .map(([ip, count]) => ({ ip, count }));
 
-    return { hits4xx, hits5xx, wpProbes, rateLimitHits, bannedIps, wpBannedList, wpBantime, topIps };
+    const cfGuard = safe(() => {
+      const log = execSync("tail -n 50 /root/backups/db/cf-ban-guard.log 2>/dev/null", { encoding: "utf-8", timeout: 2000 });
+      const lines = log.trim().split("\n").filter(Boolean);
+      if (!lines.length) return { active: true, lastRun: null as string | null, lastUnbanned: 0 };
+      const lastLine = lines[lines.length - 1];
+      const lastRun = lastLine.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/)?.[1] ?? null;
+      const summaryLine = [...lines].reverse().find(l => l.includes("cf-ban-guard: unbanned"));
+      const lastUnbanned = summaryLine ? (parseInt(summaryLine.match(/unbanned (\d+)/)?.[1] ?? "0") || 0) : 0;
+      return { active: true, lastRun, lastUnbanned };
+    }, { active: false, lastRun: null as string | null, lastUnbanned: 0 });
+
+    return { hits4xx, hits5xx, wpProbes, rateLimitHits, bannedIps, wpBannedList, wpBantime, topIps, cfGuard };
   })();
 
   res.json({ pm2, disk, dbSize, uptime, backups, lastLog, sslExpiry, backupCron, security });
