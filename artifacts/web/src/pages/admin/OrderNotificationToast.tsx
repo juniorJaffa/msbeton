@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { X, MapPin, Package, CreditCard, Mountain, Waves } from "lucide-react";
+import { X, MapPin, Package, CreditCard, Mountain, Waves, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Order } from "@/lib/adminData";
 import { getKamenivoGroup } from "@/lib/adminData";
@@ -152,6 +152,23 @@ export function OrderNotificationToast({ orders, onDismiss, onOpen }: Props) {
                     </div>
                   </div>
                 </div>
+
+                {order.createdAt && (() => {
+                  const d = new Date(order.createdAt);
+                  const now = new Date();
+                  const toDay = now.toISOString().slice(0, 10);
+                  const yesterday = new Date(now.getTime() - 86400000).toISOString().slice(0, 10);
+                  const ds = order.createdAt.slice(0, 10);
+                  const t = d.toLocaleTimeString("sk", { hour: "2-digit", minute: "2-digit" });
+                  const label = ds === toDay ? `Dnes ${t}` : ds === yesterday ? `Včera ${t}` : `${d.getDate()}.${d.getMonth() + 1}. ${t}`;
+                  const isOld = ds !== toDay && ds !== yesterday;
+                  return (
+                    <div className="border-t border-white/8 px-2.5 py-1.5 flex items-center gap-2" style={{ background: "rgba(255,255,255,0.02)" }}>
+                      <Clock className="w-2.5 h-2.5 text-white/30 shrink-0" />
+                      <span className={`text-[10px] font-bold ${isOld ? "text-amber-400" : "text-white/75"}`}>{label}</span>
+                    </div>
+                  );
+                })()}
 
                 <div className="border-t border-white/8 px-2.5 py-1.5 flex items-center gap-2" style={{ background: "rgba(255,255,255,0.02)" }}>
                   <span className="text-white/30 text-[9px] font-bold uppercase tracking-wide shrink-0">Betón</span>
