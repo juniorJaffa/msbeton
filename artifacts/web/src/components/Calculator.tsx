@@ -1470,7 +1470,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       }
       return transRateStr(mainTransportOrig, qty, result.fTransport);
     };
-    const transportUnitStr = buildTransportUnitStr(result.transportIsMin, result.qty);
+    const transportUnitStr = buildTransportUnitStr(result.transportIsMin, pdfAddToMainQty > 0 ? result.qty + pdfAddToMainQty : result.qty);
     const truckWord = (n: number) => n === 1 ? "auto" : "autá";
     const mainTransportMnozstvo = mainPricingType === "km"
       ? `${result.trucks}&nbsp;${truckWord(result.trucks)}&nbsp;(${result.km}&nbsp;km)`
@@ -2014,11 +2014,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         const uTrans = isKmBd
           ? (ci.transportIsMin ? (nTrucks > 0 ? fmt2(tDisc / nTrucks) : undefined) : (result.km > 0 && nTrucks > 0 ? fmt2(tDisc / result.km / nTrucks) : undefined))
           : (isAutoBd || ci.transportIsMin) ? (nTrucks > 0 ? fmt2(tDisc / nTrucks) : undefined)
-          : (ci.qty > 0 ? fmt2(tDisc / ci.qty) : undefined);
+          : (ci.qty > 0 ? fmt2(tDisc / (addToMainQtyBd > 0 ? ci.qty + addToMainQtyBd : ci.qty)) : undefined);
         const uTransOrig = isKmBd
           ? (ci.transportIsMin ? (nTrucks > 0 ? fmt2(tOrig / nTrucks) : undefined) : (result.km > 0 && nTrucks > 0 ? fmt2(tOrig / result.km / nTrucks) : undefined))
           : (isAutoBd || ci.transportIsMin) ? (nTrucks > 0 ? fmt2(tOrig / nTrucks) : undefined)
-          : (ci.qty > 0 ? fmt2(tOrig / ci.qty) : undefined);
+          : (ci.qty > 0 ? fmt2(tOrig / (addToMainQtyBd > 0 ? ci.qty + addToMainQtyBd : ci.qty)) : undefined);
         const uSuffixTrans = isKmBd ? (ci.transportIsMin ? "€/auto" : "€/km") : isAutoBd ? "€/auto" : (ci.transportIsMin ? "€/auto" : "€/m³");
         const bdTransQ = isAutoBd ? `${nTrucks} autá` : `${nTrucks} autá (${qtyStr})`;
         rows.push({ l: dopravaLbl, q: bdTransQ, v: tDisc, ...(Math.abs(tOrig - tDisc) > 0.01 ? { o: tOrig } : {}), ...(uTrans !== undefined ? { u: uTrans, uSuffix: uSuffixTrans, ...(uTransOrig !== undefined && Math.abs(uTransOrig - uTrans) > 0.001 ? { uOrig: uTransOrig } : {}) } : {}) });
