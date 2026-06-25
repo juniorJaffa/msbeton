@@ -671,7 +671,14 @@ router.get("/analytics/gsc", async (req, res) => {
       daily: dailyRows.map(r => ({ date: r.keys[0], clicks: r.clicks, impressions: r.impressions })),
     });
   } catch (err) {
-    res.status(502).json({ error: String(err instanceof Error ? err.message : err) });
+    const msg = String(err instanceof Error ? err.message : err);
+    // GSC permission error → user-friendly message
+    const isPermErr = msg.includes("403") || msg.includes("permission") || msg.includes("forbidden");
+    const userMsg = isPermErr
+      ? `GSC: Servisný účet nemá prístup k Search Console property. Pridaj ga4-claude-reader@ms-beton-sk.iam.gserviceaccount.com do GSC → Nastavenia → Používatelia a povolenia.`
+      : msg;
+    // 400 instead of 502 — 5xx triggers nginx/CF error page (returns HTML instead of JSON)
+    res.status(400).json({ error: userMsg });
   }
 });
 
