@@ -375,6 +375,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [podmienkyInfoOpen, setPodmienkyInfoOpen] = useState(false);
   const calcWrapRef = useRef<HTMLDivElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
+  const priceModeTabRef = useRef<HTMLDivElement>(null);
   const [categoryName, setCategoryName] = useState<string | null>(null);
   const [concreteTypeLabel, setConcreteTypeLabel] = useState<string | null>(null);
   const [quantity, setQuantity] = useState("");
@@ -396,7 +397,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [hoseMeters, setHoseMeters] = useState(0);
   const [washing, setWashing] = useState(false);
   const [showResult, setShowResult] = useState(false);
-  const [priceMode, setPriceMode] = useState<PriceMode>("faktura");
+  const [priceMode, setPriceMode] = useState<PriceMode>(adminAuth.isLoggedIn() ? "hotovost" : "faktura");
   const [loggedClientState, setLoggedClient] = useState<LoggedClient | null>(() => clientOverride ? null : clientAuth.getLoggedClient());
   // Priama hodnota pre useState initializery nižšie (pred useMemo deklaráciou loggedClient)
   const loggedClientBase = clientOverride ?? loggedClientState;
@@ -424,9 +425,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
   useEffect(() => {
     if (!showResult) return;
-    requestAnimationFrame(() => {
-      resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+    // Small delay ensures element is visible before scrolling (hidden→visible transition)
+    const t = setTimeout(() => {
+      (priceModeTabRef.current ?? resultRef.current)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+    return () => clearTimeout(t);
   }, [showResult]);
 
   useEffect(() => {
@@ -3487,7 +3490,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             const canCalc = hasQty && hasKm;
             return (
               <div className="space-y-1 mt-2">
-                <button onClick={() => { if (canCalc) { setShowResult(true); gtagEvent("calculator_complete", { tab, quantity, type: selectedType?.label }); requestAnimationFrame(() => { resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }); } }} disabled={!canCalc}
+                <button onClick={() => { if (canCalc) { setShowResult(true); gtagEvent("calculator_complete", { tab, quantity, type: selectedType?.label }); setTimeout(() => { (priceModeTabRef.current ?? resultRef.current)?.scrollIntoView({ behavior: "smooth", block: "start" }); }, 80); } }} disabled={!canCalc}
                   className={cn("w-full py-4 border-2 font-bold text-base tracking-widest transition-all duration-200",
                     canCalc
                       ? "bg-transparent border-primary text-primary hover:bg-primary hover:text-white cursor-pointer"
@@ -3518,7 +3521,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 const modes = showHotovost ? (["faktura", "hotovost"] as PriceMode[]) : (["faktura"] as PriceMode[]);
                 return (
                   <>
-                    <div className={cn("grid border-b border-primary/30", modes.length === 1 ? "grid-cols-1" : "grid-cols-2")}>
+                    <div ref={priceModeTabRef} className={cn("grid border-b border-primary/30 scroll-mt-20", modes.length === 1 ? "grid-cols-1" : "grid-cols-2")}>
                       {modes.map((mode) => (
                         <button key={mode} onClick={() => setPriceMode(mode)}
                           className={cn("py-3 text-sm font-black tracking-widest transition-all cursor-pointer",
