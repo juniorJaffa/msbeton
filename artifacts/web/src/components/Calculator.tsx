@@ -423,13 +423,26 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [turnstileToken, setTurnstileToken] = useState<string>("");
   const [priceTableMode, setPriceTableMode] = useState<"faktura" | "hotovost">("faktura");
 
+  const scrollToResult = () => {
+    const el = priceModeTabRef.current ?? resultRef.current;
+    if (!el) return;
+    const adminContent = document.getElementById("admin-content");
+    const sticky = document.getElementById("klienti-sticky");
+    const offset = sticky ? sticky.getBoundingClientRect().height + 8 : 100;
+    const elTop = el.getBoundingClientRect().top;
+    if (adminContent) {
+      const containerTop = adminContent.getBoundingClientRect().top;
+      adminContent.scrollTo({ top: Math.max(0, adminContent.scrollTop + elTop - containerTop - offset), behavior: "smooth" });
+    } else {
+      window.scrollTo({ top: Math.max(0, window.scrollY + elTop - offset), behavior: "smooth" });
+    }
+  };
+
   useEffect(() => {
     if (!showResult) return;
-    // Small delay ensures element is visible before scrolling (hidden→visible transition)
-    const t = setTimeout(() => {
-      (priceModeTabRef.current ?? resultRef.current)?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 80);
+    const t = setTimeout(scrollToResult, 300);
     return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showResult]);
 
   useEffect(() => {
@@ -3490,7 +3503,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             const canCalc = hasQty && hasKm;
             return (
               <div className="space-y-1 mt-2">
-                <button onClick={() => { if (canCalc) { setShowResult(true); gtagEvent("calculator_complete", { tab, quantity, type: selectedType?.label }); setTimeout(() => { (priceModeTabRef.current ?? resultRef.current)?.scrollIntoView({ behavior: "smooth", block: "start" }); }, 80); } }} disabled={!canCalc}
+                <button onClick={() => { if (canCalc) { setShowResult(true); gtagEvent("calculator_complete", { tab, quantity, type: selectedType?.label }); setTimeout(scrollToResult, 300); } }} disabled={!canCalc}
                   className={cn("w-full py-4 border-2 font-bold text-base tracking-widest transition-all duration-200",
                     canCalc
                       ? "bg-transparent border-primary text-primary hover:bg-primary hover:text-white cursor-pointer"
