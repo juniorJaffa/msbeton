@@ -525,19 +525,17 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   const scrollToClientCard = (id: string, toTabs = false) => {
     setTimeout(() => {
       const container = document.getElementById("admin-content");
-      const toolbar = document.getElementById("klienti-toolbar");
       if (!container) return;
       const cR = container.getBoundingClientRect();
-      const toolbarH = toolbar?.getBoundingClientRect().height ?? 82;
-      const floatingEl = document.getElementById("floating-client-indicator");
-      const floatingH = floatingEl ? floatingEl.getBoundingClientRect().height : 32;
+      const sticky = document.getElementById("klienti-sticky");
+      const stickyH = sticky ? sticky.getBoundingClientRect().height : 82;
       const targetEl = toTabs
         ? (document.getElementById(`client-tabs-${id}`) ?? document.getElementById(`client-card-${id}`))
         : document.getElementById(`client-card-${id}`);
       if (!targetEl) return;
       const eR = targetEl.getBoundingClientRect();
-      container.scrollTo({ top: container.scrollTop + (eR.top - cR.top) - toolbarH - floatingH - 4, behavior: "smooth" });
-    }, 250);
+      container.scrollTo({ top: container.scrollTop + (eR.top - cR.top) - stickyH - 4, behavior: "smooth" });
+    }, 350);
   };
 
   useEffect(() => {
