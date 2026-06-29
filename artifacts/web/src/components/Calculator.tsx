@@ -1213,7 +1213,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       else if (pricingType === "auto" && mp[`auto_rate_${clientDeliveryZone?.id}`] !== undefined) fTransport = 1;
       else if (pricingType === "standard") {
         const appliedZone = tzones.find((z) => km >= z.fromKm && km < z.toKm) ?? tzones[tzones.length - 1];
-        if ((appliedZone && mp[appliedZone.id] !== undefined) || (mp["min_fee"] !== undefined && transportCalc.isMin)) fTransport = 1;
+        // isMin: min. poplatok aktívny → zone rate je irelevantná, kontroluj len mp["min_fee"]
+        // !isMin: účtuje sa zone rate → kontroluj mp[zone.id]
+        if (transportCalc.isMin ? mp["min_fee"] !== undefined : (appliedZone && mp[appliedZone.id] !== undefined)) fTransport = 1;
       }
     }
     const fFillup = fTransport;
