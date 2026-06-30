@@ -1034,7 +1034,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const fillupCost = fillupM3 * ratePerM3;
     const totalVolumeCost = baseCost + fillupCost;
     const minCost = trucks * effectiveMinFee;
-    const isMin = trucks > 0 && totalVolumeCost / trucks < effectiveMinFee;
+    // isMin rozhodnutie musí porovnávať NET ceny (čo klient reálne platí), nie gross.
+    // Zóna a min. fee môžu mať asymetrický discount: manuálna cena → faktor 1, nemanuálna → dopravaFactor.
+    // Faktory MUSIA zodpovedať fTransport logike v result useMemo (mp[zone.id] vs mp["min_fee"]).
+    const zoneFactor = mpStd[zone?.id ?? ""] !== undefined ? 1 : dopravaFactor;
+    const minFactor  = mpStd["min_fee"] !== undefined ? 1 : dopravaFactor;
+    const isMin = trucks > 0 && (totalVolumeCost / trucks) * zoneFactor < effectiveMinFee * minFactor;
     if (isMin) return { cost: minCost, isMin, fillupM3: 0, fillupCost: 0, fillupTarget: 0 };
     return { cost: baseCost, isMin, fillupM3, fillupCost, fillupTarget };
   }
