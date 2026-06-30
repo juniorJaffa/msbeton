@@ -407,6 +407,28 @@ const fPump  = (pumpSvc  && mp[pumpSvc.id]  !== undefined) ? 1 : sluzbyFactor;
 
 Faktory sa používajú v: `discountedItems`, `hotovostDiscItems`, UI `PriceRow`, PDF `trow`/`svcRateStr`, SMS export.
 
+### Standard doprava — `isMin` musí porovnávať NET ceny (KRITICKÉ)
+
+`calcTransport()` v štandardnom (pásmo) režime rozhoduje: použiť zónovú sadzbu alebo minimálnu dopravu? Toto rozhodnutie MUSÍ porovnávať **net** ceny (čo klient reálne zaplatí), nie gross.
+
+**Problém:** Zóna a min.fee môžu mať **asymetrický faktor**:
+- Manuálna zónová cena (`mp[zone.id]` definovaná) → `fTransport = 1` (bez zľavy)
+- Min.fee bez manuálu → `fTransport = dopravaFactor` (so zľavou)
+
+Gross porovnanie `totalVolumeCost/trucks < effectiveMinFee` ignoruje tieto rôzne faktory → pri viac autách môže klesol zóna/auto pod min.fee gross → prepne na min.fee → zľava → výsledok nižší ako pri menej autách. **Viac áut = lacnejšie = bug.**
+
+**Správna implementácia** (v `calcTransport`, standard vetva):
+```typescript
+// faktory MUSIA zodpovedať fTransport logike v result useMemo
+const zoneFactor = mpStd[zone?.id ?? ""] !== undefined ? 1 : dopravaFactor;
+const minFactor  = mpStd["min_fee"] !== undefined ? 1 : dopravaFactor;
+const isMin = trucks > 0 && (totalVolumeCost / trucks) * zoneFactor < effectiveMinFee * minFactor;
+```
+
+**Prečo km/auto nie sú postihnuté:** majú jeden faktor pre celú dopravu → gross == net (faktor sa vykráti). Iba standard má dve nezávislé zložky (zóna + min.fee) s potenciálne rôznymi kľúčmi → jediný vulnerable.
+
+**Nezmyselný indikátor bugu:** klient s manuálnou zónovou cenou + percentuálnou zľavou → viac áut = lacnejšia doprava.
+
 ### Admin Doprava – typy dopravy UI
 
 Každý typ dopravy (Standard / Kilometre / Počet aut) je vlastná karta s farebnými akcentmi:
