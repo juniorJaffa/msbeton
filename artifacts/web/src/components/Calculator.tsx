@@ -570,7 +570,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
     const initMaps = () => {
       if (!addressInputRef.current) return;
-      const ac = new google.maps.places.Autocomplete(addressInputRef.current, { types: ["geocode"] });
+      const ac = new google.maps.places.Autocomplete(addressInputRef.current, { types: ["geocode"], componentRestrictions: { country: "sk" } });
       ac.addListener("place_changed", () => {
         const place = ac.getPlace();
         if (!place?.formatted_address) return;
