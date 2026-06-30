@@ -296,7 +296,7 @@ export default function ServerTab({ onOpenClient, bioFocus }: { onOpenClient?: (
               {data.security.cfGuard?.lastRun && (
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-white/25">posl. beh</span>
-                  <span className="text-[10px] font-mono text-white/40">{data.security.cfGuard.lastRun.slice(11, 16)}</span>
+                  <span className="text-[10px] font-mono text-white/40">{new Date(data.security.cfGuard.lastRun).toLocaleTimeString("sk-SK", { hour: "2-digit", minute: "2-digit" })}</span>
                 </div>
               )}
             </div>
