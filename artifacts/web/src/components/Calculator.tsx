@@ -1940,9 +1940,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const rawPhone = loggedClient?.phone ?? "";
     const normalPhone = rawPhone.startsWith("0") ? "+421" + rawPhone.slice(1) : rawPhone.replace(/^00421/, "+421");
     // smsShareOnly: zobraziť share menu namiesto auto-otvorenia SMS aplikácie
-    if (!loggedClient?.smsShareOnly && normalPhone && normalPhone.length > 6) {
+    // Na desktope (žiadny touchscreen) sms: link neotvára mobilnú SMS app → rovno clipboard
+    const isTouchDevice = navigator.maxTouchPoints > 0;
+    if (!loggedClient?.smsShareOnly && isTouchDevice && normalPhone && normalPhone.length > 6) {
       window.open(`sms:${normalPhone}?body=${encodeURIComponent(text)}`, "_blank");
-    } else if (navigator.share) {
+    } else if (loggedClient?.smsShareOnly && navigator.share) {
       navigator.share({ text }).catch(() => {});
     } else {
       navigator.clipboard.writeText(text).then(() => {
