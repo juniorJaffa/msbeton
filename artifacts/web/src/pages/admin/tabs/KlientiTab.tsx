@@ -1900,13 +1900,11 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                               <div className="text-[11px] text-gray-400">Pretlačí globálne nastavenie · klik SMS = iba text, bez záznamu</div>
                             </div>
                           </label>
-                          <div className="px-3 pt-2 pb-0">
-                            <span className="text-[9px] font-semibold uppercase tracking-widest text-gray-300">Vytváranie objednávok</span>
-                          </div>
                           <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50 select-none">
                             <input type="checkbox" checked={c.smsShareOnly ?? false} onChange={e => update(c.id, { smsShareOnly: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />
                             <div className="flex-1 min-w-0">
                               <span className="text-sm text-gray-700">Zobraziť share menu</span>
+                              <span className="ml-1.5 text-[9px] text-gray-300 font-medium">vytváranie objednávok</span>
                               <div className="text-[11px] text-gray-400">Namiesto auto-otvorenia SMS aplikácie · zdieľacie okno</div>
                             </div>
                           </label>
@@ -1914,6 +1912,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                             <input type="checkbox" checked={c.noOrderConfirm ?? false} onChange={e => update(c.id, { noOrderConfirm: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />
                             <div className="flex-1 min-w-0">
                               <span className="text-sm text-gray-700">Neposielať potvrdzovací email</span>
+                              <span className="ml-1.5 text-[9px] text-gray-300 font-medium">vytváranie objednávok</span>
                               <div className="text-[11px] text-gray-400">Pre admin SMS objednávky — klient už dostal SMS, potvrdzovací email sa nevyšle (max. 1 správa). Adresy @msbeton.sk sa preskakujú automaticky.</div>
                             </div>
                           </label>
