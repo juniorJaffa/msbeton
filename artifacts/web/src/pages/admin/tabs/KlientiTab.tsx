@@ -1911,7 +1911,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                             <input type="checkbox" checked={c.noOrderConfirm ?? false} onChange={e => update(c.id, { noOrderConfirm: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />
                             <div className="flex-1 min-w-0">
                               <span className="text-sm text-gray-700">Neposielať potvrdzovací email</span>
-                              <div className="text-[11px] text-gray-400">Pre šablónové/zľavové účty · emaily @msbeton.sk sa preskakujú automaticky</div>
+                              <div className="text-[11px] text-gray-400">Po každej objednávke klient dostane email s potvrdením. Zaškrtni ak klient email nechce (napr. interný účet). Adresy @msbeton.sk sa preskakujú automaticky.</div>
                             </div>
                           </label>
                           <div className="px-3 py-2.5">
