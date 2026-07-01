@@ -1900,6 +1900,9 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                               <div className="text-[11px] text-gray-400">Pretlačí globálne nastavenie · klik SMS = iba text, bez záznamu</div>
                             </div>
                           </label>
+                          <div className="px-3 pt-1.5 pb-0.5 bg-gray-50">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Vytváranie objednávok</span>
+                          </div>
                           <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50 select-none">
                             <input type="checkbox" checked={c.smsShareOnly ?? false} onChange={e => update(c.id, { smsShareOnly: e.target.checked })} className="accent-secondary w-4 h-4 shrink-0" />
                             <div className="flex-1 min-w-0">
