@@ -76,6 +76,28 @@ Nové polia na objednávke, vyplnia sa **po ukončení zákazky** (niekedy), vyk
 
 ---
 
+---
+
+## Časť 3 — Marketing / CRM nápady (ďalší cyklus, neplánované)
+
+Nápady na základe prvého klienta (TRINEKO) s aktívnou biometriou a zmeneným heslom.
+
+### 3a — Review email po objednávke
+Po N dňoch od `status → vyplatená/odoslaná` → email klientovi: "Bolo všetko v poriadku? ⭐" → priamy link na Google Maps recenziu msbeton.sk.
+- Implementácia: cron na serveri + email šablóna v `mailer.ts` (stub je tam, komentár "Bez review CTA — predčasné")
+- Odhadovaný čas: ~3–4 h
+- Pozn.: najvyšší marketing ROI — 1 recenzia > 100 € reklamy
+
+### 3b — Onboarding email pri prvej biometrii
+Trigger: `biometricAuthLog` vytvorí prvý záznam → email klientovi "Biometria aktivovaná, rýchly prístup kedykoľvek". Buduje dôveru, pripomenie app.
+- Odhadovaný čas: ~1–2 h
+
+### 3c — Admin notifikácia — engagement milestones
+Keď klient zmení heslo / aktivuje biometriu / prvýkrát objedná → notifikácia v admin dashboarde alebo email adminovi. Teraz viditeľné len pri ručnom otvorení karty klienta.
+- Odhadovaný čas: ~2–3 h
+
+---
+
 ## Otvorené otázky pred štartom
 - Podpisy: tlačené linky vs čisto digitálne (bez papiera)?
 - Cenová úprava: uloží späť do existujúcej objednávky (history?) alebo verzia/audit zmeny ceny?
