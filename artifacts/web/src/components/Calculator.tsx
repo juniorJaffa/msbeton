@@ -1944,7 +1944,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const isTouchDevice = navigator.maxTouchPoints > 0;
     if (!loggedClient?.smsShareOnly && isTouchDevice && normalPhone && normalPhone.length > 6) {
       window.open(`sms:${normalPhone}?body=${encodeURIComponent(text)}`, "_blank");
-    } else if (loggedClient?.smsShareOnly && navigator.share) {
+    } else if (loggedClient?.smsShareOnly && isTouchDevice && navigator.share) {
+      // share menu len na mobile (touch) — na desktope navigator.share nefunguje pre SMS
       navigator.share({ text }).catch(() => {});
     } else {
       navigator.clipboard.writeText(text).then(() => {

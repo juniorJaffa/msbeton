@@ -543,7 +543,12 @@ export const adminData = {
     if (readerBlocked()) return;
     const safe = stampArray(ensureOwner(data), "msbeton_clients");
     saveData("msbeton_clients", safe);
-    trackSave("clients", adminApi.saveClients(safe));
+    // Po uložení vždy sync zo servera — zabráni race condition pri súbežných adminoch
+    // (mergeItems na serveri vyberie verziu s novším updatedAt; sync zabezpečí, že ďalší
+    // save má čerstvé timestamp a nevráti staré hodnoty checkboxov).
+    const saveP = adminApi.saveClients(safe);
+    trackSave("clients", saveP);
+    Promise.resolve(saveP).then(() => syncFromServer().catch(() => {}));
     window.dispatchEvent(new Event("admin-data-synced"));
   },
 
