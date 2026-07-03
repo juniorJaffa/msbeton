@@ -156,11 +156,19 @@ fillupTarget = round(qty + addToMainQty + fillupM3, 1)
 // Math.round(1.25 * 10) = Math.round(12.5) = 13 → 1.3  ← JS round-half-up bug
 ```
 
-**`fillupM3` zaokrúhľuje na 2 des. miesta** (nie 1) — `Math.round(x * 100) / 100`. Dôvod: 1 des. miesto spôsobuje `1.25 → 1.3` (Math.round(12.5)=13).
+**`fillupM3` zaokrúhľuje pomocou `parseFloat(x.toFixed(2))`** — nie `Math.round(x*100)/100` ani `Math.round(x*10)/10`.
+
+Prečo:
+- `Math.round(x * 10) / 10` → `1.25 → 1.3` (`Math.round(12.5) = 13` v JS)
+- `Math.round(x * 100) / 100` → `5 - 4.2 = 0.7999...` → `Math.round(79.999...) / 100` nespoľahlivé
+- `parseFloat(x.toFixed(2))` → používa iný rounding algoritmus, zvláda oba edge cases
 
 **Bughist:**
-1. Target bez addToMainQty: `3.1 + 0.9 = 4` → „do 4 m³" (malo byť „do 5 m³")
+1. Target bez addToMainQty: `4.1 + 0.9 = 5.0 = 4` → „do 4 m³" (malo byť „do 5 m³")
 2. Target z `qty + fillupM3_rounded(×10)`: `3.75 + 1.3 = 5.05 → 5.1` (malo byť „do 5 m³")
+3. `fillupM3` pri `qty=4.2`: `5 - 4.2 = 0.7999...` zobrazené v SMS ako `0.7999999999999998 m³` — `Math.round(*100/100)` neopravilo; fix: `parseFloat(toFixed(2))` (commit `bddd7b4`)
+
+**Regresné testy:** `artifacts/web/src/lib/calcFillup.test.ts` — pokrýva všetky float edge cases. Spustiť: `pnpm --filter @workspace/web test`.
 
 > **Pravidlo:** `calcTransport` volaný s `qty + addToMainQty` → `fillupTarget` z neho automaticky zahŕňa addToMain. Volajúci kód nič nepridáva ani neráta.
 
