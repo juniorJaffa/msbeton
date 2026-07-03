@@ -1018,7 +1018,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       let fillupPerTruck = 0;
       if (qtyPerTruck < fillupMin) { fillupPerTruck = fillupMin - qtyPerTruck; fillupTarget = overrideTrucks * fillupMin; }
       // overloaded trucks (qPT > cap) → no fill-up; admin chose fewer trucks intentionally
-      fillupM3 = Math.round(Math.max(0, fillupPerTruck) * overrideTrucks * 100) / 100;
+      fillupM3 = parseFloat((Math.max(0, fillupPerTruck) * overrideTrucks).toFixed(2));
     } else if (tabType === "pumpa") {
       if (qty < fillupMin) { fillupM3 = fillupMin - qty; fillupTarget = fillupMin; }
       else if (qty > pumpCap && qty < 2 * fillupMin) { fillupM3 = 2 * fillupMin - qty; fillupTarget = 2 * fillupMin; }
@@ -1026,9 +1026,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       if (qty < fillupMin) { fillupM3 = fillupMin - qty; fillupTarget = fillupMin; }
       else if (qty > mixCap && qty < 2 * fillupMin) { fillupM3 = 2 * fillupMin - qty; fillupTarget = 2 * fillupMin; }
     }
-    // Zaokrúhli na 2 desatinné — inak floating point (napr. 5 - 3.1 = 0.9000000000000004).
-    // POZOR: 1 des. miesto by spôsobilo 1.25→1.3 (Math.round(12.5)=13) → target 5.05→5.1 (bug).
-    fillupM3 = Math.round(fillupM3 * 100) / 100;
+    // parseFloat+toFixed(2): spoľahlivejšie ako Math.round(*100)/100 pre IEEE 754 edge cases
+    // napr. 5-4.2=0.7999... → Math.round(79.999...)/100 nie je garantované, toFixed(2) áno.
+    fillupM3 = parseFloat(fillupM3.toFixed(2));
 
     const baseCost = qty * ratePerM3;
     const fillupCost = fillupM3 * ratePerM3;
