@@ -205,6 +205,41 @@ lines.push(row("Doprava", transportDisc));
 
 `row(label, val)` = `label.padEnd(22) + "= " + val.toFixed(2) + " €"` — zarovnaný formát.
 
+### SMS odoslanie — platformové vetvy (KRITICKÉ)
+
+```typescript
+const cleanPhone = (loggedClient?.phone ?? "").replace(/[\s\-]/g, "");
+const normalPhone = cleanPhone.startsWith("0")
+  ? "+421" + cleanPhone.slice(1)
+  : cleanPhone.replace(/^00421/, "+421");
+const hasPhone = normalPhone.length > 6;
+const isTouchDevice = navigator.maxTouchPoints > 0;
+
+if (loggedClient?.smsShareOnly && isTouchDevice && navigator.share) {
+  navigator.share({ text }).catch(() => {});
+} else if (hasPhone) {
+  window.open(`sms:${normalPhone}?body=${encodeURIComponent(text)}`, "_blank");
+} else {
+  navigator.clipboard.writeText(text).then(() => { ... });
+}
+```
+
+**Pravidlá:**
+
+1. **`cleanPhone` pred normalizáciou** — `formatPhone()` ukladá čísla S medzerami (`"0918 906 913"`). `rawPhone.slice(1)` = `"918 906 913"` → `sms:+421918 906 913` (medzery v URL = broken na iOS). Vždy `replace(/[\s\-]/g, "")` pred akoukoľvek manipuláciou.
+
+2. **`isTouchDevice = navigator.maxTouchPoints > 0`** — `navigator.share` existuje aj na macOS Chrome/Safari, ale na desktope otvorí zbytočný zdieľací dialog bez SMS. Guard `isTouchDevice` zabezpečuje `smsShareOnly` path len na mobile/tablet.
+
+3. **`smsShareOnly` path** — iba pre klientov s `smsShareOnly: true` AND touch zariadenie AND `navigator.share`. Všetci ostatní dostanú `sms:` URL.
+
+4. **`sms:` URL formát** — `sms:+421918906913?body=...` (bez medzier, s country prefix). Funguje: iOS Messages, Android Messages, macOS Messages.app. Desktop browsers: otvára Messages.app ak je nastavená ako default SMS app.
+
+### Bughist SMS
+
+**Bug (jul 2026, fix `af73aa3`):** Klienti s medzerami v čísle (uložené cez `formatPhone()`) dostávali broken `sms:` URL → Messages.app sa neotvárala. Fixnuté `cleanPhone` pred normalizáciou.
+
+**Bug (jul 2026, fix `af73aa3`):** `smsShareOnly` na desktope otváral zdieľací dialog (nie SMS). Fixnuté `isTouchDevice` guard.
+
 ### cleanType()
 
 ```typescript

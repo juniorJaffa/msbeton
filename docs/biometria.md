@@ -158,13 +158,44 @@ Zapisuje sa pri:
 
 ```
 Admin bio flow:
-1. navigator.credentials.create({user: {id: "msbeton-admin"}}) → uloží credId do msbeton_webauthn_cred
-2. Pri ďalšom prihlásení: navigator.credentials.get() → ak OK → POST /api/admin/biometric-token → JWT
+1. navigator.credentials.create({residentKey: "preferred"}) → passkey v iCloud Keychain / platform
+2. localStorage["msbeton_webauthn_cred"] = "1"  ← iba flag, NIE rawId
+3. Pri ďalšom prihlásení: navigator.credentials.get() BEZ allowCredentials → iCloud nájde passkey sám
+4. → POST /api/admin/biometric-token → JWT
 ```
 
 `/api/admin/biometric-token` je rate-limited (rovnako ako `/api/admin/login`). JWT je vydaný bez overenia WebAuthn na serveri — bezpečnostný predpoklad: ak zariadenie povolí WebAuthn, admin je prítomný fyzicky.
 
-`hasStoredCredential()` navyše kontroluje `DEVICE_FP_KEY` (platform + screen + hardwareConcurrency) — credential z iného zariadenia/profilu je ignorovaný.
+`hasStoredCredential()` = `!!localStorage.getItem("msbeton_webauthn_cred")` — žiadny fingerprint.
+
+### Prečo ŽIADNY rawId a ŽIADNY allowCredentials (KRITICKÉ)
+
+`residentKey: "preferred"` → Safari vytvára **passkey synced cez iCloud Keychain**. Keď admin registruje na iPhone, nový `credId` sa uloží do iCloudu. Mac má v localStorage starý `credId`. `allowCredentials: [oldId]` → credential not found → `NotAllowedError` → `clearBiometric()` → re-register. Cyklus sa opakuje pri každom cross-device prechode.
+
+**Správna implementácia:**
+```typescript
+// registerBiometric() — ukladaj iba flag
+localStorage.setItem(WEBAUTHN_KEY, "1");  // NIE b64url(cred.rawId)
+
+// authenticateBiometric() — žiadne allowCredentials
+await navigator.credentials.get({
+  publicKey: {
+    challenge: randomBytes(32),
+    rpId: location.hostname,
+    // allowCredentials: VYNECHANÉ — iCloud/platform nájde passkey podľa rpId
+    userVerification: "required",
+    timeout: 60000,
+  },
+});
+```
+
+**Multi-admin bezpečnosť:** Passkey je viazaný na Apple ID (iCloud account). Peter, Marian, Klara majú rôzne Apple ID → rôzne iCloud Keychains → passkeys sa nemiešajú. Peter iPhone + Peter Mac (rovnaké Apple ID) → jeden passkey synced → auth na oboch bez re-registrácie.
+
+### Bughist admin biometria
+
+**Bug (jul 2026, fix `e555cae`):** Peter/Marian museli re-registrovať bio každý deň (10× denne). Príčina: `registerBiometric()` ukladal `cred.rawId` + `authenticateBiometric()` používal `allowCredentials: [rawId]`. iCloud Keychain pri cross-device registrácii nahradil credId → starý rawId zlyhával s `NotAllowedError` → `clearBiometric()` → re-register loop. Fixnuté: flag `"1"` namiesto rawId, auth bez `allowCredentials`.
+
+**Bug (predtým):** `getDeviceFingerprint()` obsahoval `screen.width×screen.height`. Na iPhone sa orientácia otáčaním menila → fingerprint mismatch → `hasStoredCredential()` false → bio sa nespustilo. Fixnuté: fingerprint zrušený.
 
 ---
 
