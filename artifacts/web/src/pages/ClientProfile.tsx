@@ -3,14 +3,24 @@ import { useLocation } from "wouter";
 import { Navbar } from "@/components/Navbar";
 import { SEOHead } from "@/components/SEOHead";
 import { clientAuth, isBiometricAvailable, hasClientBiometric, registerClientBiometric, forgetClientBiometric } from "@/lib/clientAuth";
-import { clientApi } from "@/lib/api";
-import { Eye, EyeOff, Check, AlertCircle, Mail, User, Lock, KeyRound, Fingerprint, ShieldCheck, ShieldOff } from "lucide-react";
+import { clientApi, type ClientOrder } from "@/lib/api";
+import { Eye, EyeOff, Check, AlertCircle, Mail, User, Lock, KeyRound, Fingerprint, ShieldCheck, ShieldOff, ClipboardList } from "lucide-react";
 
 function generateCaptcha() {
   const a = Math.floor(Math.random() * 9) + 1;
   const b = Math.floor(Math.random() * 9) + 1;
   return { a, b, answer: a + b };
 }
+
+const STATUS_MAP: Record<string, { label: string; cls: string }> = {
+  nova:       { label: "Nová",       cls: "bg-blue-500/15 text-blue-400 border-blue-500/30" },
+  potvrdena:  { label: "Potvrdená", cls: "bg-yellow-400/15 text-yellow-400 border-yellow-400/30" },
+  odoslana:   { label: "Odoslaná",  cls: "bg-green-600/15 text-green-400 border-green-600/30" },
+  vyuctovana: { label: "Vyúčtovaná", cls: "bg-purple-500/15 text-purple-400 border-purple-500/30" },
+  vyplatena:  { label: "Vyplatená", cls: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" },
+  zrusena:    { label: "Zrušená",   cls: "bg-red-500/15 text-red-400 border-red-500/30" },
+  vybavena:   { label: "Vybavená",  cls: "bg-gray-500/15 text-gray-400 border-gray-500/30" },
+};
 
 const fieldCls = "w-full bg-white/10 border border-white/20 focus:border-primary text-white px-3 py-2.5 focus:outline-none placeholder:text-white/35 text-base font-medium rounded-sm transition-colors";
 const labelCls = "block text-xs font-bold text-white/60 mb-1.5 tracking-widest uppercase";
@@ -98,6 +108,13 @@ export default function ClientProfile() {
   const [bioAvailable] = useState(() => isBiometricAvailable());
   const [bioLoading, setBioLoading] = useState(false);
   const [bioMsg, setBioMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const [orders, setOrders] = useState<ClientOrder[]>([]);
+  useEffect(() => {
+    if (!client?.id) return;
+    clientApi.getMyOrders(client.id).then(r => { if (r?.ok && r.orders) setOrders(r.orders); }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!client || client.id === "admin") { navigate("/prihlasenie"); return null; }
 
@@ -342,6 +359,66 @@ export default function ClientProfile() {
                   )}
                   <Msg msg={bioMsg} />
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Moje objednávky ── */}
+          {orders.length > 0 && (
+            <div className="mt-5 bg-secondary rounded-xl border border-white/10 shadow-xl overflow-hidden">
+              <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-white/8 bg-white/5">
+                <ClipboardList className="w-4 h-4 text-primary shrink-0" />
+                <p className="text-[11px] font-black text-white/80 uppercase tracking-widest">Moje objednávky</p>
+                <span className="ml-auto text-[10px] text-white/35 font-mono">{orders.length}</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-white/8">
+                      <th className="text-left px-4 py-2 text-[10px] font-black text-white/35 uppercase tracking-widest">Dátum</th>
+                      <th className="text-left px-4 py-2 text-[10px] font-black text-white/35 uppercase tracking-widest">Betón</th>
+                      <th className="text-right px-4 py-2 text-[10px] font-black text-white/35 uppercase tracking-widest">Množstvo</th>
+                      <th className="text-right px-4 py-2 text-[10px] font-black text-white/35 uppercase tracking-widest hidden sm:table-cell">Suma</th>
+                      <th className="text-center px-4 py-2 text-[10px] font-black text-white/35 uppercase tracking-widest">Stav</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {orders.map(o => {
+                      const d = new Date(o.createdAt);
+                      const dateStr = d.toLocaleDateString("sk-SK", { day: "2-digit", month: "2-digit", year: "2-digit" });
+                      const timeStr = d.toLocaleTimeString("sk-SK", { hour: "2-digit", minute: "2-digit" });
+                      const typeShort = (o.concreteType ?? "").replace(/^Betón\s+/i, "").replace(/ – [\d.]+.*/, "");
+                      const tab = o.tab === "pumpa" ? "P" : o.tab === "mix" ? "M" : "V";
+                      const tabCls = o.tab === "pumpa" ? "text-blue-400" : o.tab === "mix" ? "text-amber-400" : "text-gray-400";
+                      const { label: stLabel, cls: stCls } = STATUS_MAP[o.status] ?? STATUS_MAP["nova"];
+                      return (
+                        <tr key={o.id} className="hover:bg-white/[0.03] transition-colors">
+                          <td className="px-4 py-2.5 text-white/55 font-mono whitespace-nowrap">
+                            <div>{dateStr}</div>
+                            <div className="text-[10px] text-white/30">{timeStr}</div>
+                          </td>
+                          <td className="px-4 py-2.5 max-w-[140px]">
+                            <div className="flex items-center gap-1.5">
+                              <span className={`text-[10px] font-black shrink-0 ${tabCls}`}>{tab}</span>
+                              <span className="text-white/70 truncate">{typeShort || "—"}</span>
+                            </div>
+                            {o.address && <div className="text-[10px] text-white/30 truncate mt-0.5">{o.address}</div>}
+                          </td>
+                          <td className="px-4 py-2.5 text-right text-white/60 font-mono whitespace-nowrap">
+                            {o.totalQty ?? o.quantity ?? "—"} m³
+                          </td>
+                          <td className="px-4 py-2.5 text-right text-white/55 font-mono whitespace-nowrap hidden sm:table-cell">
+                            {o.totalBezDph != null ? `${o.totalBezDph.toFixed(0)} €` : "—"}
+                            <div className="text-[10px] text-white/30">{o.priceMode === "hotovost" ? "hotov." : "fakt."}</div>
+                          </td>
+                          <td className="px-4 py-2.5 text-center">
+                            <span className={`inline-block text-[10px] font-black px-2 py-0.5 rounded-full border ${stCls}`}>{stLabel}</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}

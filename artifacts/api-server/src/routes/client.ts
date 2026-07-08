@@ -404,6 +404,34 @@ router.post("/order", async (req, res) => {
   }
 });
 
+// Objednávky klienta — filtrované podľa jeho loginId (overenie cez id z session)
+router.get("/orders", async (req, res) => {
+  try {
+    const { id } = req.query;
+    if (!id) return res.status(400).json({ ok: false });
+    const accounts = await getClientAccounts();
+    const account = accounts.find((a) => a.id === String(id) && a.active !== false);
+    if (!account) return res.status(404).json({ ok: false });
+    const ordersRaw = await db.select().from(adminConfig).where(eq(adminConfig.key, "orders"));
+    const all = Array.isArray(ordersRaw[0]?.data) ? ordersRaw[0].data as Array<{ id: string; createdAt: string; status: string; clientId?: string; concreteType?: string; concreteCategory?: string; quantity?: number; totalQty?: number; totalBezDph?: number; totalSDph?: number; tab?: string; address?: string; priceMode?: string }> : [];
+    const mine = all
+      .filter((o) => o.clientId != null && (o.clientId === account.loginId || o.clientId === account.id))
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+      .slice(0, 50)
+      .map((o) => ({
+        id: o.id, createdAt: o.createdAt, status: o.status,
+        concreteType: o.concreteType, concreteCategory: o.concreteCategory,
+        quantity: o.quantity, totalQty: o.totalQty,
+        totalBezDph: o.totalBezDph, totalSDph: o.totalSDph,
+        tab: o.tab, address: o.address, priceMode: o.priceMode,
+      }));
+    return res.json({ ok: true, orders: mine });
+  } catch (err) {
+    req.log.error({ err }, "Client orders failed");
+    return res.status(500).json({ ok: false });
+  }
+});
+
 // Aktualizácia loginId / emailu klienta (vyžaduje overenie aktuálneho hesla)
 router.put("/profile", async (req, res) => {
   try {

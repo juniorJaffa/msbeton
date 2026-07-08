@@ -127,4 +127,21 @@ export const clientApi = {
       method: "POST",
       body: JSON.stringify({ token, newPassword }),
     }),
+  getMyOrders: (id: string) =>
+    apiFetch<{ ok: boolean; orders?: ClientOrder[] }>(CLIENT_API, `/orders?id=${encodeURIComponent(id)}`),
 };
+
+export interface ClientOrder {
+  id: string;
+  createdAt: string;
+  status: string;
+  concreteType?: string;
+  concreteCategory?: string;
+  quantity?: number;
+  totalQty?: number;
+  totalBezDph?: number;
+  totalSDph?: number;
+  tab?: string;
+  address?: string;
+  priceMode?: string;
+}
