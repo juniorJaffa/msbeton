@@ -57,9 +57,6 @@ export function getAdminDeviceLabel(): string {
   return `${getAdminDeviceAuto()} · #${getAdminSessionId().replace(/-/g, "").slice(0, 4)}`;
 }
 
-function getDeviceFingerprint(): string {
-  return [navigator.platform, `${screen.width}x${screen.height}`, navigator.hardwareConcurrency ?? 0].join("|");
-}
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_DURATION = 5 * 60 * 1000;
@@ -178,32 +175,18 @@ export function isBiometricAvailable(): boolean {
 }
 
 export function hasStoredCredential(): boolean {
-  if (!localStorage.getItem(WEBAUTHN_KEY)) return false;
-  const fp = localStorage.getItem(DEVICE_FP_KEY);
-  if (!fp) return true; // legacy registration without fingerprint
-  return fp === getDeviceFingerprint();
+  return !!localStorage.getItem(WEBAUTHN_KEY);
 }
 
 export function clearBiometric(): void {
   localStorage.removeItem(WEBAUTHN_KEY);
-  localStorage.removeItem(DEVICE_FP_KEY);
+  localStorage.removeItem(DEVICE_FP_KEY); // cleanup legacy fingerprint
 }
 
 function randomBytes(n: number): Uint8Array {
   const arr = new Uint8Array(n);
   crypto.getRandomValues(arr);
   return arr;
-}
-
-function b64url(buf: ArrayBuffer): string {
-  return btoa(String.fromCharCode(...new Uint8Array(buf)))
-    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-}
-
-function b64urlDecode(s: string): Uint8Array {
-  const b64 = s.replace(/-/g, "+").replace(/_/g, "/");
-  const bin = atob(b64);
-  return Uint8Array.from(bin, c => c.charCodeAt(0));
 }
 
 // Nahlás admin bio udalosť na server (informačný log — admin bio je client-side)
@@ -220,7 +203,7 @@ export function reportAdminBioEvent(event: "register" | "auth", ok: boolean, rea
 
 export async function registerBiometric(): Promise<{ ok: boolean; error?: string }> {
   try {
-    const cred = await navigator.credentials.create({
+    await navigator.credentials.create({
       publicKey: {
         challenge: randomBytes(32),
         rp: { name: "MS-BETON Admin", id: location.hostname },
@@ -240,9 +223,13 @@ export async function registerBiometric(): Promise<{ ok: boolean; error?: string
         },
         timeout: 60000,
       },
-    }) as PublicKeyCredential;
-    localStorage.setItem(WEBAUTHN_KEY, b64url(cred.rawId));
-    localStorage.setItem(DEVICE_FP_KEY, getDeviceFingerprint());
+    });
+    // Store only a flag — NOT the rawId. Each device discovers its own passkey
+    // via iCloud Keychain during auth (no allowCredentials). Storing rawId caused
+    // cross-device invalidation: iPhone register → new credId in iCloud → Mac auth
+    // fails with stored old credId → NotAllowedError → clearBiometric → re-register loop.
+    localStorage.setItem(WEBAUTHN_KEY, "1");
+    localStorage.removeItem(DEVICE_FP_KEY); // cleanup legacy fingerprint
     reportAdminBioEvent("register", true);
     return { ok: true };
   } catch (err: unknown) {
@@ -252,14 +239,15 @@ export async function registerBiometric(): Promise<{ ok: boolean; error?: string
 }
 
 export async function authenticateBiometric(): Promise<{ ok: boolean; error?: string }> {
-  const stored = localStorage.getItem(WEBAUTHN_KEY);
-  if (!stored) return { ok: false, error: "No credential stored" };
+  if (!localStorage.getItem(WEBAUTHN_KEY)) return { ok: false, error: "No credential stored" };
   try {
     await navigator.credentials.get({
       publicKey: {
         challenge: randomBytes(32),
         rpId: location.hostname,
-        allowCredentials: [{ type: "public-key", id: b64urlDecode(stored) }],
+        // No allowCredentials — let platform/iCloud pick the passkey.
+        // Pinning to a specific rawId causes NotAllowedError when iCloud syncs
+        // a new credId from another device (iPhone↔Mac re-register loop).
         userVerification: "required",
         timeout: 60000,
       },
@@ -267,7 +255,7 @@ export async function authenticateBiometric(): Promise<{ ok: boolean; error?: st
     return { ok: true };
   } catch (err: unknown) {
     const msg = String(err);
-    // If credential not found on this device, clear stale key so next visit shows form directly
+    // NotAllowedError = no passkey for this site → clear flag so form shows directly
     if (msg.includes("NotAllowedError") || msg.includes("NotSupportedError") || msg.includes("InvalidStateError")) {
       clearBiometric();
     }
