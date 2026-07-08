@@ -195,7 +195,7 @@ export function reportAdminBioEvent(event: "register" | "auth", ok: boolean, rea
     fetch("/api/admin/biometric-event", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ event, ok, reason }),
+      body: JSON.stringify({ event, ok, reason, deviceLabel: getAdminDeviceLabel() }),
       keepalive: true,
     }).catch(() => {});
   } catch { /* fire-and-forget */ }
@@ -255,8 +255,9 @@ export async function authenticateBiometric(): Promise<{ ok: boolean; error?: st
     return { ok: true };
   } catch (err: unknown) {
     const msg = String(err);
-    // NotAllowedError = no passkey for this site → clear flag so form shows directly
-    if (msg.includes("NotAllowedError") || msg.includes("NotSupportedError") || msg.includes("InvalidStateError")) {
+    // NotSupportedError = platform permanently can't do WebAuthn → clear flag
+    // NotAllowedError = user cancelled OR no passkey — don't auto-clear (user can retry or use password fallback)
+    if (msg.includes("NotSupportedError")) {
       clearBiometric();
     }
     return { ok: false, error: msg };

@@ -104,11 +104,14 @@ function parseDeviceUA(ua: string): string {
   return `${device} · ${browser}`;
 }
 
-async function appendAdminBioLog(req: { headers: Record<string, unknown>; ip?: string }, entry: Omit<AdminBioEntry, "device" | "ip">): Promise<void> {
+async function appendAdminBioLog(req: { headers: Record<string, unknown>; ip?: string }, entry: Omit<AdminBioEntry, "device" | "ip"> & { deviceLabel?: string }): Promise<void> {
   try {
     const ua = (req.headers["user-agent"] as string) ?? "";
     const ip = (req.headers["cf-connecting-ip"] as string) ?? req.ip ?? "unknown";
-    const full: AdminBioEntry = { ...entry, device: parseDeviceUA(ua), ip };
+    // Prefer client-sent deviceLabel (includes custom name + session hash) over UA parse
+    const device = entry.deviceLabel?.trim() || parseDeviceUA(ua);
+    const { deviceLabel: _dl, ...rest } = entry;
+    const full: AdminBioEntry = { ...rest, device, ip };
     const existing = await getConfig("admin_bio_log");
     const log = Array.isArray(existing) ? existing as AdminBioEntry[] : [];
     await setConfig("admin_bio_log", [...log, full].slice(-40)); // posledných 40 udalostí
@@ -124,9 +127,9 @@ router.post("/biometric-token", loginRateLimit, (req, res) => {
 
 // Admin bio udalosť — klient hlási registráciu / zlyhanie (admin bio je client-side)
 router.post("/biometric-event", loginRateLimit, async (req, res) => {
-  const { event, ok, reason } = req.body as { event?: string; ok?: boolean; reason?: string };
+  const { event, ok, reason, deviceLabel } = req.body as { event?: string; ok?: boolean; reason?: string; deviceLabel?: string };
   const ev: "register" | "auth" = event === "register" ? "register" : "auth";
-  await appendAdminBioLog(req, { ts: new Date().toISOString(), ok: ok === true, event: ev, reason: reason ? String(reason).slice(0, 120) : undefined });
+  await appendAdminBioLog(req, { ts: new Date().toISOString(), ok: ok === true, event: ev, reason: reason ? String(reason).slice(0, 120) : undefined, deviceLabel: deviceLabel ? String(deviceLabel).slice(0, 60) : undefined });
   res.json({ ok: true });
 });
 

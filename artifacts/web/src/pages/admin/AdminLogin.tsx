@@ -5,7 +5,7 @@ import { SEOHead } from "@/components/SEOHead";
 import { Eye, EyeOff, Lock, User, AlertCircle, Clock, Fingerprint, Mail, KeyRound, Check, ArrowLeft, ShieldCheck } from "lucide-react";
 import {
   loginWithApi, isLoggedIn, getAttemptInfo, recordFailedAttempt, resetAttempts,
-  isBiometricAvailable, hasStoredCredential, authenticateBiometricAndGetToken, registerBiometric, clearBiometric, reportAdminBioEvent,
+  isBiometricAvailable, hasStoredCredential, authenticateBiometricAndGetToken, registerBiometric, clearBiometric, reportAdminBioEvent, getAdminDeviceLabel,
 } from "@/lib/adminAuth";
 import { canAutoTriggerBio, bioErrorToSk } from "@/lib/bioPlatform";
 import { VersionBadge } from "@/components/VersionBadge";
@@ -68,16 +68,17 @@ export default function AdminLogin() {
 
   // Spustí admin biometriu — z user gesta (onClick) na iOS, alebo auto na non-iOS
   const startBiometric = () => {
+    setBioFailReason(""); // reset predchádzajúcej chyby
     setScreen("bio-pending");
     authenticateBiometricAndGetToken().then(result => {
       if (result.ok) { navigate("/admin/dashboard"); return; }
       const skReason = bioErrorToSk(result.error);
       reportAdminBioEvent("auth", false, skReason);
-      // Credential bol vymazaný (stale/iné zariadenie/nepodporované) → retry je zbytočný, rovno formulár
+      // Credential vymazaný (NotSupportedError → clearBiometric) → formulár
       if (!hasStoredCredential()) { setBioFailReason(""); setScreen("form"); return; }
-      // Genuine transient zlyhanie (credential existuje) → ukáž dôvod + ponúkni retry
+      // Transient zlyhanie (user zrušil, timeout) → späť na bio-locked s inline dôvodom
       setBioFailReason(skReason);
-      setScreen("bio-failed");
+      setScreen("bio-locked");
     });
   };
 
@@ -230,19 +231,24 @@ export default function AdminLogin() {
                 <div className="flex flex-col items-center gap-6 py-4">
                   <div className="relative w-20 h-20">
                     <span className="absolute inset-0 rounded-full bg-primary/15" />
-                    <span className="absolute inset-0 rounded-full border-2 border-primary/40 flex items-center justify-center">
-                      <Fingerprint className="w-10 h-10 text-primary" />
+                    <span className={`absolute inset-0 rounded-full border-2 flex items-center justify-center ${bioFailReason ? "border-amber-400/50" : "border-primary/40"}`}>
+                      <Fingerprint className={`w-10 h-10 ${bioFailReason ? "text-amber-400" : "text-primary"}`} />
                     </span>
                   </div>
                   <div className="text-center">
                     <p className="text-white font-black text-xl">Vitajte späť</p>
-                    <p className="text-white/50 text-sm mt-2">Prihláste sa biometricky — Face ID, Touch ID alebo Windows Hello.</p>
+                    <p className="text-white/40 text-xs mt-1 font-mono">{getAdminDeviceLabel()}</p>
+                    {bioFailReason ? (
+                      <p className="text-amber-400/80 text-xs mt-2 leading-snug">{bioFailReason} — skúste znova.</p>
+                    ) : (
+                      <p className="text-white/50 text-sm mt-2">Prihláste sa biometricky — Face ID, Touch ID alebo Windows Hello.</p>
+                    )}
                   </div>
                   <div className="w-full space-y-2">
                     <button onClick={startBiometric}
                       className="w-full bg-primary text-secondary font-black text-sm uppercase tracking-widest py-4 hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                       style={{ fontFamily: "Montserrat, sans-serif" }}>
-                      <Fingerprint className="w-4 h-4" /> Odomknúť
+                      <Fingerprint className="w-4 h-4" /> {bioFailReason ? "Skúsiť znova" : "Odomknúť"}
                     </button>
                     <button onClick={() => setScreen("form")}
                       className="w-full py-3 text-white/40 hover:text-white/70 text-sm transition-colors">
