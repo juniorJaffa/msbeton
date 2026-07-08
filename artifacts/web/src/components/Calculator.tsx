@@ -1937,17 +1937,21 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       }).catch(() => {});
     }
 
-    const rawPhone = loggedClient?.phone ?? "";
-    const normalPhone = rawPhone.startsWith("0") ? "+421" + rawPhone.slice(1) : rawPhone.replace(/^00421/, "+421");
-    // smsShareOnly: zobraziť share menu namiesto auto-otvorenia SMS aplikácie
-    // Na desktope (žiadny touchscreen) sms: link neotvára mobilnú SMS app → rovno clipboard
+    // Odstrán medzery/pomlčky pred normalizáciou — inak sms: URL sa zlomí na iOS
+    // napr. "0918 906 913" → rawPhone.slice(1) = "918 906 913" → "+421918 906 913" (broken)
+    const cleanPhone = (loggedClient?.phone ?? "").replace(/[\s\-]/g, "");
+    const normalPhone = cleanPhone.startsWith("0") ? "+421" + cleanPhone.slice(1) : cleanPhone.replace(/^00421/, "+421");
+    const hasPhone = normalPhone.length > 6;
+    // smsShareOnly: zobraziť share menu namiesto auto-otvorenia SMS aplikácie (iba mobile/touch)
     const isTouchDevice = navigator.maxTouchPoints > 0;
-    if (!loggedClient?.smsShareOnly && isTouchDevice && normalPhone && normalPhone.length > 6) {
-      window.open(`sms:${normalPhone}?body=${encodeURIComponent(text)}`, "_blank");
-    } else if (loggedClient?.smsShareOnly && isTouchDevice && navigator.share) {
-      // share menu len na mobile (touch) — na desktope navigator.share nefunguje pre SMS
+    if (loggedClient?.smsShareOnly && isTouchDevice && navigator.share) {
+      // share menu na mobile — bez prefill telefónu (zámer klienta)
       navigator.share({ text }).catch(() => {});
+    } else if (hasPhone) {
+      // sms: funguje na iOS, Android aj macOS Messages.app — bez isTouchDevice obmedzenia
+      window.open(`sms:${normalPhone}?body=${encodeURIComponent(text)}`, "_blank");
     } else {
+      // fallback: žiadny telefón → clipboard
       navigator.clipboard.writeText(text).then(() => {
         setSmsCopied(true);
         setTimeout(() => setSmsCopied(false), 3000);
