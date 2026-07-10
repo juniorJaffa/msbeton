@@ -870,9 +870,10 @@ router.get("/server-status", async (req, res) => {
     const nginxLog = safe(() => execSync("tail -n 3000 /var/log/nginx/access.log 2>/dev/null", { encoding: "utf-8", timeout: 4000 }), "");
     for (const line of nginxLog.split("\n")) {
       if (!line.includes(todayNginx)) continue;
-      const m = line.match(/^(\S+) .+ (\d{3}) /);
-      if (!m) continue;
-      const ip = m[1], status = parseInt(m[2]);
+      const ipM = line.match(/^(\S+)/);
+      const stM = line.match(/"[^"]*"\s+(\d{3})\s/);
+      if (!ipM || !stM) continue;
+      const ip = ipM[1], status = parseInt(stM[1]);
       const isWp = line.includes("/wp-login.php") || line.includes("/xmlrpc.php") || line.includes("/.env");
       if (isWp) { wpProbes++; ipCounts[ip] = (ipCounts[ip] ?? 0) + 1; }
       if (status >= 400 && status < 500) { hits4xx++; ipCounts[ip] = (ipCounts[ip] ?? 0) + 1; }
