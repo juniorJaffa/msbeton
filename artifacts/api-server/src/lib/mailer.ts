@@ -24,20 +24,19 @@ function emailShell(bodyHtml: string): string {
 <tr><td style="background:linear-gradient(90deg,#c9a820,#EDC531,#c9a820);height:3px;font-size:0;line-height:0">&nbsp;</td></tr>
 
 <!-- BODY -->
-<tr><td style="background:#ffffff;padding:36px 40px">
+<tr><td style="background:#ffffff;padding:20px 32px">
 ${bodyHtml}
 </td></tr>
 
 <!-- GOOGLE REVIEW -->
-<tr><td style="background:#fffcee;border-top:2px solid rgba(237,197,49,0.25);padding:30px 40px;text-align:center">
-  <p style="margin:0 0 10px;font-size:26px;letter-spacing:5px;line-height:1">&#11088;&#11088;&#11088;&#11088;&#11088;</p>
-  <p style="margin:0 0 6px;color:#1a1400;font-size:15px;font-weight:800">Páčilo sa vám?</p>
-  <p style="margin:0 0 20px;color:#999;font-size:13px;line-height:1.55">Krátke hodnotenie na Google nám veľmi pomôže.<br>Zaberá to 30 sekúnd &mdash; ďakujeme!</p>
+<tr><td style="background:#fffcee;border-top:2px solid rgba(237,197,49,0.25);padding:14px 32px;text-align:center">
+  <a href="https://g.page/r/CeTg2gjXL3dWEBM/review" target="_blank"
+     style="display:inline-block;font-size:22px;letter-spacing:3px;text-decoration:none;line-height:1;margin:0 0 10px">&#11088;&#11088;&#11088;&#11088;&#11088;</a><br>
   <table cellpadding="0" cellspacing="0" role="presentation" style="margin:0 auto">
-  <tr><td style="background:#EDC531;border-radius:8px;box-shadow:0 3px 10px rgba(237,197,49,0.45)">
+  <tr><td style="background:#EDC531;border-radius:8px">
     <a href="https://g.page/r/CeTg2gjXL3dWEBM/review" target="_blank"
-       style="display:inline-block;color:#001D3D;text-decoration:none;font-weight:900;font-size:14px;letter-spacing:0.3px;padding:14px 30px">
-      &#11088;&nbsp; Ohodnoťte MS&#8209;BETON na Google
+       style="display:inline-block;color:#001D3D;text-decoration:none;font-weight:900;font-size:13px;letter-spacing:0.2px;padding:10px 24px">
+      Ohodnoťte MS&#8209;BETON na Google
     </a>
   </td></tr>
   </table>
@@ -162,8 +161,8 @@ export async function sendOrderConfirmation(toEmail: string, order: Record<strin
   // Riadok tabuľky objednávky
   const row = (label: string, val: string) =>
     `<tr>
-      <td style="padding:9px 0;color:#6b7280;font-size:13px;width:130px;vertical-align:middle;border-bottom:1px solid #e8e6e1">${label}</td>
-      <td style="padding:9px 0;color:#1a1a2c;font-size:13px;font-weight:600;vertical-align:middle;border-bottom:1px solid #e8e6e1">${val}</td>
+      <td style="padding:6px 0;color:#6b7280;font-size:12px;width:120px;vertical-align:middle;border-bottom:1px solid #e8e6e1">${label}</td>
+      <td style="padding:6px 0;color:#1a1a2c;font-size:12px;font-weight:600;vertical-align:middle;border-bottom:1px solid #e8e6e1">${val}</td>
     </tr>`;
 
   const qtyStr = order.totalQty && Number(order.totalQty) !== Number(order.quantity)
@@ -172,46 +171,45 @@ export async function sendOrderConfirmation(toEmail: string, order: Record<strin
 
   const body = `
 <!-- Pozdrav -->
-<p style="margin:0 0 4px;font-size:16px;color:#1a1a2c">${name ? `Dobr&yacute; de&nacute;, <strong>${name}</strong>,` : "Dobr&yacute; de&nacute;,"}</p>
-<p style="margin:0 0 24px;font-size:14px;color:#6b7280;line-height:1.7">ďakujeme za Va&scaron;u objedn&aacute;vku! <strong style="color:#1a1a2c">Pracujeme na nej</strong> a čoskoro V&aacute;s budeme kontaktova&#x165; ohľadom term&iacute;nu dod&aacute;nia.</p>
+<p style="margin:0 0 3px;font-size:15px;color:#1a1a2c">${name ? `Dobr&yacute; de&nacute;, <strong>${name}</strong>,` : "Dobr&yacute; de&nacute;,"}</p>
+<p style="margin:0 0 14px;font-size:13px;color:#6b7280;line-height:1.6">ďakujeme za Va&scaron;u objedn&aacute;vku! <strong style="color:#1a1a2c">Pracujeme na nej</strong> a čoskoro V&aacute;s budeme kontaktova&#x165;.</p>
 
-<!-- Stav potvrdenej objednávky -->
-<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 20px">
-<tr><td style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:14px 18px">
-  <table cellpadding="0" cellspacing="0" role="presentation"><tr>
-    <td style="width:36px;height:36px;background:#16a34a;border-radius:50%;text-align:center;vertical-align:middle;font-size:0;line-height:0">
-      <span style="color:#fff;font-size:20px;font-weight:900;line-height:1">&#10003;</span>
-    </td>
-    <td style="padding-left:12px;vertical-align:middle">
-      <p style="margin:0;color:#166534;font-size:14px;font-weight:800">Objedn&aacute;vka prijat&aacute;</p>
-      <p style="margin:2px 0 0;color:#4ade80;font-size:12px">${fmtDate}</p>
-    </td>
-  </tr></table>
-</td></tr>
-</table>
-
-<!-- Typ dopravy -->
-<table cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 20px">
-<tr><td style="background:#001D3D;border-radius:8px;padding:10px 18px">
-  <span style="color:#EDC531;font-size:14px;font-weight:800;letter-spacing:0.3px">${tabIco}&nbsp; ${tabLabel}</span>
-</td></tr>
+<!-- Stav + typ dopravy vedľa seba -->
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 12px">
+<tr>
+  <td style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:10px 14px;vertical-align:middle">
+    <table cellpadding="0" cellspacing="0" role="presentation"><tr>
+      <td style="width:28px;height:28px;background:#16a34a;border-radius:50%;text-align:center;vertical-align:middle;font-size:0;line-height:0">
+        <span style="color:#fff;font-size:16px;font-weight:900;line-height:1">&#10003;</span>
+      </td>
+      <td style="padding-left:10px;vertical-align:middle">
+        <p style="margin:0;color:#166534;font-size:13px;font-weight:800">Objedn&aacute;vka prijat&aacute;</p>
+        <p style="margin:1px 0 0;color:#4ade80;font-size:11px">${fmtDate}</p>
+      </td>
+    </tr></table>
+  </td>
+  <td style="width:12px"></td>
+  <td style="background:#001D3D;border-radius:8px;padding:10px 14px;vertical-align:middle;white-space:nowrap">
+    <span style="color:#EDC531;font-size:13px;font-weight:800">${tabIco}&nbsp;${tabLabel}</span>
+  </td>
+</tr>
 </table>
 
 <!-- Karta objednávky -->
-<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 22px;background:#f5f4f1;border-radius:12px">
-<tr><td style="padding:4px 22px 0">
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 12px;background:#f5f4f1;border-radius:12px">
+<tr><td style="padding:4px 18px 0">
   <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
 
     <!-- Betón — farebný badge triedy pevnosti -->
     <tr>
-      <td style="padding:12px 0 10px;color:#6b7280;font-size:13px;width:130px;vertical-align:middle;border-bottom:1px solid #e8e6e1">Bet&oacute;n</td>
-      <td style="padding:12px 0 10px;vertical-align:middle;border-bottom:1px solid #e8e6e1">
-        <span style="background:${concColor};color:#fff;padding:3px 12px;border-radius:6px;font-weight:700;font-size:13px;letter-spacing:0.3px">${concType}</span>
+      <td style="padding:9px 0 7px;color:#6b7280;font-size:12px;width:120px;vertical-align:middle;border-bottom:1px solid #e8e6e1">Bet&oacute;n</td>
+      <td style="padding:9px 0 7px;vertical-align:middle;border-bottom:1px solid #e8e6e1">
+        <span style="background:${concColor};color:#fff;padding:2px 10px;border-radius:5px;font-weight:700;font-size:12px;letter-spacing:0.3px">${concType}</span>
       </td>
     </tr>
     ${showCat ? row("Kateg&oacute;ria", concCat) : ""}
     ${row("Mno&#382;stvo", qtyStr)}
-    ${order.address ? row("Adresa dod&aacute;vky", String(order.address)) : ""}
+    ${order.address ? row("Adresa", String(order.address)) : ""}
     ${order.km ? row("Vzdialenos&#x165;", `${order.km}&thinsp;km`) : ""}
     ${row("Platba", priceMode)}
     ${order.totalBezDph ? row("Bez DPH", eur(order.totalBezDph)) : ""}
@@ -220,8 +218,8 @@ export async function sendOrderConfirmation(toEmail: string, order: Record<strin
   <!-- Cena celkom — výrazná -->
   <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-top:2px solid #dbd9d4">
   <tr>
-    <td style="padding:16px 0;color:#6b7280;font-size:13px">Cena celkom</td>
-    <td style="padding:16px 0;text-align:right;color:#001D3D;font-size:28px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums">${eur(order.totalSDph)}</td>
+    <td style="padding:10px 0;color:#6b7280;font-size:12px">Cena celkom</td>
+    <td style="padding:10px 0;text-align:right;color:#001D3D;font-size:24px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums">${eur(order.totalSDph)}</td>
   </tr>
   </table>
 </td></tr>
@@ -229,12 +227,12 @@ export async function sendOrderConfirmation(toEmail: string, order: Record<strin
 
 <!-- Kontakt — zlatý ľavý pruh -->
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-<tr><td style="background:#f5f4f1;border-left:4px solid #EDC531;border-radius:0 8px 8px 0;padding:14px 18px">
-  <p style="margin:0;color:#555;font-size:13px;line-height:1.8">
+<tr><td style="background:#f5f4f1;border-left:4px solid #EDC531;border-radius:0 8px 8px 0;padding:10px 14px">
+  <p style="margin:0;color:#555;font-size:12px;line-height:1.7">
     M&aacute;te ot&aacute;zku? Zavolajte n&aacute;m:<br>
-    <a href="tel:+421909205205" style="color:#001D3D;font-weight:900;text-decoration:none;font-size:15px">+421&thinsp;909&thinsp;205&thinsp;205</a>
+    <a href="tel:+421909205205" style="color:#001D3D;font-weight:900;text-decoration:none;font-size:14px">+421&thinsp;909&thinsp;205&thinsp;205</a>
     &nbsp;&middot;&nbsp;
-    <a href="mailto:objednavky@msbeton.sk" style="color:#001D3D;text-decoration:none;font-weight:600">objednavky@msbeton.sk</a>
+    <a href="mailto:objednavky@msbeton.sk" style="color:#001D3D;text-decoration:none;font-weight:600;font-size:12px">objednavky@msbeton.sk</a>
   </p>
 </td></tr>
 </table>`;
