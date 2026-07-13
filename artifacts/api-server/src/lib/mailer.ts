@@ -154,9 +154,20 @@ export async function sendOrderConfirmation(toEmail: string, order: Record<strin
   const cls = clsM ? parseInt(clsM[1]) : 0;
   const concColor = cls >= 35 ? "#001D3D" : cls >= 25 ? "#1e40af" : cls >= 16 ? "#2563eb" : "#6b7280";
 
-  // Kategória (riečny / drvené kamenivo) — zobraziť ak je rôzna od typu
+  // Kategória (riečny / drvené kamenivo)
   const concCat = String(order.concreteCategory ?? "").trim();
-  const showCat = concCat && concCat !== concType;
+  const catU = concCat.toUpperCase();
+  const catGroup: 'drvene' | 'riecne' | null = catU.includes('DRVEN') ? 'drvene' : (catU.includes('RIEC') || catU.includes('RIEČ')) ? 'riecne' : null;
+  const catIcon = catGroup === 'drvene'
+    ? `<svg style="display:inline-block;vertical-align:middle;margin-right:3px;margin-bottom:1px" width="10" height="10" viewBox="0 0 24 24" fill="#6b7280"><path d="M12 3L2 21h20L12 3z"/></svg>`
+    : catGroup === 'riecne'
+    ? `<svg style="display:inline-block;vertical-align:middle;margin-right:3px;margin-bottom:1px" width="12" height="10" viewBox="0 0 24 18" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"><path d="M2 5 Q6 2 10 5 Q14 8 18 5 Q22 2 26 5"/><path d="M2 11 Q6 8 10 11 Q14 14 18 11 Q22 8 26 11"/><path d="M2 17 Q6 14 10 17 Q14 20 18 17 Q22 14 26 17"/></svg>`
+    : '';
+  const catBg = catGroup === 'drvene' ? '#f3f4f6' : catGroup === 'riecne' ? '#eff6ff' : '#f3f4f6';
+  const catColor = catGroup === 'drvene' ? '#374151' : catGroup === 'riecne' ? '#1d4ed8' : '#374151';
+  const catBadge = concCat
+    ? `&nbsp;<span style="display:inline-block;background:${catBg};color:${catColor};padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;vertical-align:middle">${catIcon}${concCat}</span>`
+    : '';
 
   // Riadok tabuľky objednávky
   const row = (label: string, val: string) =>
@@ -200,14 +211,13 @@ export async function sendOrderConfirmation(toEmail: string, order: Record<strin
 <tr><td style="padding:4px 18px 0">
   <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
 
-    <!-- Betón — farebný badge triedy pevnosti -->
+    <!-- Betón — farebný badge + kategória inline -->
     <tr>
       <td style="padding:9px 0 7px;color:#6b7280;font-size:12px;width:120px;vertical-align:middle;border-bottom:1px solid #e8e6e1">Bet&oacute;n</td>
       <td style="padding:9px 0 7px;vertical-align:middle;border-bottom:1px solid #e8e6e1">
-        <span style="background:${concColor};color:#fff;padding:2px 10px;border-radius:5px;font-weight:700;font-size:12px;letter-spacing:0.3px">${concType}</span>
+        <span style="background:${concColor};color:#fff;padding:2px 10px;border-radius:5px;font-weight:700;font-size:12px;letter-spacing:0.3px">${concType}</span>${catBadge}
       </td>
     </tr>
-    ${showCat ? row("Kateg&oacute;ria", concCat) : ""}
     ${row("Mno&#382;stvo", qtyStr)}
     ${order.address ? row("Adresa", String(order.address)) : ""}
     ${order.km ? row("Vzdialenos&#x165;", `${order.km}&thinsp;km`) : ""}
