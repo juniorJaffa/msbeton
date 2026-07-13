@@ -27,7 +27,8 @@ function emailShell(bodyHtml: string): string {
     </td></tr>
     <tr><td align="center">
       <h1 style="margin:0;color:#EDC531;font-size:34px;font-weight:900;letter-spacing:5px;line-height:1">MS&#183;BETON</h1>
-      <p style="margin:8px 0 0;color:rgba(255,255,255,0.45);font-size:11px;letter-spacing:3px;text-transform:uppercase">Kalkulačka betónu</p>
+      <p style="margin:4px 0 0;color:rgba(255,255,255,0.65);font-size:12px;letter-spacing:2px;font-weight:600">spol. s r.o.</p>
+      <p style="margin:10px 0 0;color:rgba(255,255,255,0.35);font-size:10px;letter-spacing:3px;text-transform:uppercase">Kalkulačka betónu</p>
     </td></tr>
   </table>
 </td></tr>
@@ -57,8 +58,15 @@ ${bodyHtml}
 
 <!-- FOOTER -->
 <tr><td style="background:#001D3D;border-radius:0 0 14px 14px;padding:22px 40px;text-align:center">
-  <p style="margin:0 0 6px;color:rgba(255,255,255,0.35);font-size:11px;letter-spacing:1px">MS-BETON, spol. s r.o. &nbsp;·&nbsp; Turie 468, 013 12 Turie</p>
-  <a href="mailto:info@msbeton.sk" style="color:#EDC531;text-decoration:none;font-size:11px">info@msbeton.sk</a>
+  <p style="margin:0 0 3px;color:rgba(255,255,255,0.55);font-size:12px;font-weight:700;letter-spacing:0.5px">MS-BETON, spol. s r.o.</p>
+  <p style="margin:0 0 10px;color:rgba(255,255,255,0.28);font-size:10px;letter-spacing:0.3px">Turie 468, 013 12 Turie &nbsp;·&nbsp; IČO: 55747591 &nbsp;·&nbsp; IČ DPH: SK2122074603</p>
+  <table cellpadding="0" cellspacing="0" role="presentation" style="margin:0 auto">
+    <tr>
+      <td><a href="https://msbeton.sk" style="color:#EDC531;text-decoration:none;font-size:11px">msbeton.sk</a></td>
+      <td style="color:rgba(255,255,255,0.2);font-size:11px;padding:0 8px">&middot;</td>
+      <td><a href="mailto:info@msbeton.sk" style="color:#EDC531;text-decoration:none;font-size:11px">info@msbeton.sk</a></td>
+    </tr>
+  </table>
 </td></tr>
 
 </table>
@@ -138,49 +146,113 @@ export async function sendOrderNotification(order: Record<string, unknown>): Pro
 }
 
 // Potvrdenie objednávky KLIENTOVI — "prijali sme, pracujeme na nej, budeme kontaktovať".
-// Transakčný email priamo objednávateľovi (nie autoreply na objednavky@). Bez review CTA (predčasné).
+// Používa emailShell (jednotná hlavička + Google review CTA + footer).
 export async function sendOrderConfirmation(toEmail: string, order: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
   const conn = createTransport();
   if (!conn) return { ok: false, error: "SMTP not configured" };
 
-  const tabLabel: Record<string, string> = { pumpa: "Pumpa", mix: "Domiešavač", vlastnadoprava: "Vlastná doprava" };
-  const tab = tabLabel[String(order.tab ?? "")] ?? String(order.tab ?? "—");
+  const tabFullLabel: Record<string, string> = { pumpa: "Betónová pumpa", mix: "Domiešavač", vlastnadoprava: "Vlastná doprava" };
+  const tabIcon: Record<string, string> = { pumpa: "&#9650;", mix: "&#9711;", vlastnadoprava: "&#9658;" };
+  const tabKey = String(order.tab ?? "");
+  const tabLabel = tabFullLabel[tabKey] ?? tabKey;
+  const tabIco = tabIcon[tabKey] ?? "&bull;";
   const priceMode = order.priceMode === "hotovost" ? "Hotovosť" : "Faktúra";
-  const eur = (v: unknown) => v != null ? `${Number(v).toFixed(2)} €` : "—";
-  const row = (label: string, val: string, bold = false) =>
-    `<tr><td style="padding:5px 0;color:#888;width:140px;vertical-align:top">${label}</td><td style="padding:5px 0;color:#333;${bold ? "font-weight:bold" : ""}">${val}</td></tr>`;
+  const eur = (v: unknown) => v != null ? `${Number(v).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €` : "—";
   const name = String(order.clientName ?? "").trim();
+  const now = new Date();
+  const fmtDate = `${String(now.getDate()).padStart(2,"0")}.${String(now.getMonth()+1).padStart(2,"0")}.${now.getFullYear()} o ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
 
-  const html = `<!DOCTYPE html><html lang="sk"><head><meta charset="UTF-8">
-<title>Prijali sme Vašu objednávku – MS-BETON</title></head>
-<body style="font-family:Arial,sans-serif;background:#f5f5f5;margin:0;padding:20px">
-<div style="max-width:560px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1)">
-  <div style="background:#001D3D;padding:24px 28px">
-    <h1 style="color:#EDC531;font-size:22px;margin:0">&#10003; Prijali sme Vašu objednávku</h1>
-    <p style="color:#fff;margin:6px 0 0;font-size:13px;opacity:.6">MS-BETON · ${new Date().toLocaleString("sk-SK")}</p>
-  </div>
-  <div style="padding:24px 28px">
-    <p style="font-size:15px;color:#222;margin:0 0 6px">${name ? `Dobrý deň, <strong>${name}</strong>,` : "Dobrý deň,"}</p>
-    <p style="font-size:14px;color:#444;line-height:1.6;margin:0 0 18px">ďakujeme za Vašu objednávku! <strong>Pracujeme na nej</strong> a čoskoro Vás budeme <strong>kontaktovať ohľadom termínu dodania</strong>.</p>
-    <table style="width:100%;border-collapse:collapse;font-size:14px;border-top:1px solid #eee;padding-top:8px">
-      ${row("Typ dopravy", tab, true)}
-      ${row("Betón", String(order.concreteType ?? "—"))}
-      ${row("Množstvo", `${order.quantity ?? "—"} m³${order.totalQty && order.totalQty !== order.quantity ? ` (celk. ${order.totalQty} m³)` : ""}`)}
-      ${order.address ? row("Adresa", String(order.address)) : ""}
-      ${order.km ? row("Vzdialenosť", `${order.km} km`) : ""}
-      ${row("Platba", priceMode)}
-      <tr><td style="padding:8px 0 0;color:#888">Cena</td><td style="padding:8px 0 0;font-weight:bold;font-size:16px;color:#001D3D">${eur(order.totalSDph)}</td></tr>
-    </table>
-    <div style="margin-top:20px;padding:14px 16px;background:#f8f8f8;border-radius:6px;font-size:13px;color:#555;line-height:1.6">
-      Máte otázku? Zavolajte nám: <a href="tel:+421909205205" style="color:#001D3D;font-weight:bold;text-decoration:none">+421 909 205 205</a><br>
-      alebo napíšte na <a href="mailto:objednavky@msbeton.sk" style="color:#001D3D;text-decoration:none">objednavky@msbeton.sk</a>
-    </div>
-  </div>
-  <div style="background:#001D3D;padding:16px 28px;text-align:center">
-    <p style="color:rgba(255,255,255,0.4);font-size:11px;margin:0">MS-BETON, spol. s r.o. · Turie 468, 013 12 Turie · msbeton.sk</p>
-  </div>
-</div>
-</body></html>`;
+  // Farba triedy betónu podľa pevnosti
+  const concType = String(order.concreteType ?? "—");
+  const clsM = concType.match(/C(\d+)/);
+  const cls = clsM ? parseInt(clsM[1]) : 0;
+  const concColor = cls >= 35 ? "#001D3D" : cls >= 25 ? "#1e40af" : cls >= 16 ? "#2563eb" : "#6b7280";
+
+  // Kategória (riečny / drvené kamenivo) — zobraziť ak je rôzna od typu
+  const concCat = String(order.concreteCategory ?? "").trim();
+  const showCat = concCat && concCat !== concType;
+
+  // Riadok tabuľky objednávky
+  const row = (label: string, val: string) =>
+    `<tr>
+      <td style="padding:9px 0;color:#6b7280;font-size:13px;width:130px;vertical-align:middle;border-bottom:1px solid #e8e6e1">${label}</td>
+      <td style="padding:9px 0;color:#1a1a2c;font-size:13px;font-weight:600;vertical-align:middle;border-bottom:1px solid #e8e6e1">${val}</td>
+    </tr>`;
+
+  const qtyStr = order.totalQty && Number(order.totalQty) !== Number(order.quantity)
+    ? `${order.quantity} m&sup3; <span style="color:#9ca3af;font-size:12px;font-weight:400">(celk. ${order.totalQty} m&sup3;)</span>`
+    : `${order.quantity ?? "—"} m&sup3;`;
+
+  const body = `
+<!-- Pozdrav -->
+<p style="margin:0 0 4px;font-size:16px;color:#1a1a2c">${name ? `Dobr&yacute; de&nacute;, <strong>${name}</strong>,` : "Dobr&yacute; de&nacute;,"}</p>
+<p style="margin:0 0 24px;font-size:14px;color:#6b7280;line-height:1.7">ďakujeme za Va&scaron;u objedn&aacute;vku! <strong style="color:#1a1a2c">Pracujeme na nej</strong> a čoskoro V&aacute;s budeme kontaktova&#x165; ohľadom term&iacute;nu dod&aacute;nia.</p>
+
+<!-- Stav potvrdenej objednávky -->
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 20px">
+<tr><td style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:14px 18px">
+  <table cellpadding="0" cellspacing="0" role="presentation"><tr>
+    <td style="width:36px;height:36px;background:#16a34a;border-radius:50%;text-align:center;vertical-align:middle;font-size:0;line-height:0">
+      <span style="color:#fff;font-size:20px;font-weight:900;line-height:1">&#10003;</span>
+    </td>
+    <td style="padding-left:12px;vertical-align:middle">
+      <p style="margin:0;color:#166534;font-size:14px;font-weight:800">Objedn&aacute;vka prijat&aacute;</p>
+      <p style="margin:2px 0 0;color:#4ade80;font-size:12px">${fmtDate}</p>
+    </td>
+  </tr></table>
+</td></tr>
+</table>
+
+<!-- Typ dopravy -->
+<table cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 20px">
+<tr><td style="background:#001D3D;border-radius:8px;padding:10px 18px">
+  <span style="color:#EDC531;font-size:14px;font-weight:800;letter-spacing:0.3px">${tabIco}&nbsp; ${tabLabel}</span>
+</td></tr>
+</table>
+
+<!-- Karta objednávky -->
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 22px;background:#f5f4f1;border-radius:12px">
+<tr><td style="padding:4px 22px 0">
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+
+    <!-- Betón — farebný badge triedy pevnosti -->
+    <tr>
+      <td style="padding:12px 0 10px;color:#6b7280;font-size:13px;width:130px;vertical-align:middle;border-bottom:1px solid #e8e6e1">Bet&oacute;n</td>
+      <td style="padding:12px 0 10px;vertical-align:middle;border-bottom:1px solid #e8e6e1">
+        <span style="background:${concColor};color:#fff;padding:3px 12px;border-radius:6px;font-weight:700;font-size:13px;letter-spacing:0.3px">${concType}</span>
+      </td>
+    </tr>
+    ${showCat ? row("Kateg&oacute;ria", concCat) : ""}
+    ${row("Mno&#382;stvo", qtyStr)}
+    ${order.address ? row("Adresa dod&aacute;vky", String(order.address)) : ""}
+    ${order.km ? row("Vzdialenos&#x165;", `${order.km}&thinsp;km`) : ""}
+    ${row("Platba", priceMode)}
+    ${order.totalBezDph ? row("Bez DPH", eur(order.totalBezDph)) : ""}
+
+  </table>
+  <!-- Cena celkom — výrazná -->
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-top:2px solid #dbd9d4">
+  <tr>
+    <td style="padding:16px 0;color:#6b7280;font-size:13px">Cena celkom</td>
+    <td style="padding:16px 0;text-align:right;color:#001D3D;font-size:28px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums">${eur(order.totalSDph)}</td>
+  </tr>
+  </table>
+</td></tr>
+</table>
+
+<!-- Kontakt — zlatý ľavý pruh -->
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+<tr><td style="background:#f5f4f1;border-left:4px solid #EDC531;border-radius:0 8px 8px 0;padding:14px 18px">
+  <p style="margin:0;color:#555;font-size:13px;line-height:1.8">
+    M&aacute;te ot&aacute;zku? Zavolajte n&aacute;m:<br>
+    <a href="tel:+421909205205" style="color:#001D3D;font-weight:900;text-decoration:none;font-size:15px">+421&thinsp;909&thinsp;205&thinsp;205</a>
+    &nbsp;&middot;&nbsp;
+    <a href="mailto:objednavky@msbeton.sk" style="color:#001D3D;text-decoration:none;font-weight:600">objednavky@msbeton.sk</a>
+  </p>
+</td></tr>
+</table>`;
+
+  const html = emailShell(body);
 
   try {
     await conn.transport.sendMail({

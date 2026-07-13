@@ -6,6 +6,7 @@ import { createHash, randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { loginRateLimit } from "../lib/rateLimits";
 import { signAdminToken } from "../lib/adminJwt";
+import { logEvent } from "../lib/eventLog";
 import {
   generateRegistrationOptions,
   verifyRegistrationResponse,
@@ -339,16 +340,20 @@ async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
 }
 
 router.post("/order", async (req, res) => {
+  const ip = (req.headers["cf-connecting-ip"] as string) ?? req.ip ?? "unknown";
   try {
     const order = req.body;
     if (!order || !order.id) {
+      logEvent({ ev: "order_rejected", reason: "missing_data", ip });
       return res.status(400).json({ ok: false, error: "Chýbajú dáta objednávky" });
     }
     // Honeypot: skryté pole — ľudia ho nechajú prázdne, boti ho vyplnia
-    if (order._hp) return res.status(400).json({ ok: false, error: "Chýbajú dáta objednávky" });
+    if (order._hp) {
+      logEvent({ ev: "order_rejected", reason: "honeypot", ip });
+      return res.status(400).json({ ok: false, error: "Chýbajú dáta objednávky" });
+    }
 
     const turnstileToken = order.turnstileToken as string | undefined;
-    const ip = (req.headers["cf-connecting-ip"] as string) ?? req.ip ?? "unknown";
     // Prihlásený klient (clientId overený voči DB) nepotrebuje Turnstile ani rate limit
     let isVerifiedClient = false;
     if (order.clientId) {
@@ -357,14 +362,19 @@ router.post("/order", async (req, res) => {
     }
     // Rate limit: anonymní = 5 objednávok/hodinu per IP
     if (!isVerifiedClient && !checkRate(`order:${ip}`, 5, 60 * 60 * 1000)) {
+      logEvent({ ev: "order_rejected", reason: "rate_limit", ip, clientId: order.clientId ?? null });
       return res.status(429).json({ ok: false, error: "Príliš veľa objednávok. Skúste neskôr." });
     }
     if (process.env.TURNSTILE_SECRET && !turnstileToken && !isVerifiedClient) {
+      logEvent({ ev: "order_rejected", reason: "captcha_missing", ip, clientId: order.clientId ?? null });
       return res.status(400).json({ ok: false, error: "Chýba overenie CAPTCHA" });
     }
     if (turnstileToken && !isVerifiedClient) {
       const ok = await verifyTurnstile(turnstileToken, ip);
-      if (!ok) return res.status(400).json({ ok: false, error: "CAPTCHA overenie zlyhalo" });
+      if (!ok) {
+        logEvent({ ev: "order_rejected", reason: "captcha_fail", ip });
+        return res.status(400).json({ ok: false, error: "CAPTCHA overenie zlyhalo" });
+      }
     }
     // Append to orders list in DB
     const rows = await db.select().from(adminConfig).where(eq(adminConfig.key, "orders"));
@@ -376,6 +386,23 @@ router.post("/order", async (req, res) => {
       .insert(adminConfig)
       .values({ key: "orders", data: updated })
       .onConflictDoUpdate({ target: adminConfig.key, set: { data: updated, updatedAt: new Date() } });
+    const logFields = {
+      ev: "order_saved",
+      orderId: order.id,
+      clientId: order.clientId ?? null,
+      clientName: order.clientName ?? null,
+      tab: order.tab,
+      concreteType: order.concreteType,
+      qty: order.quantity,
+      totalSDph: order.totalSDph,
+      ip,
+      isVerifiedClient,
+      viaSms: !!order.viaSms,
+      address: order.address ?? null,
+      km: order.km ?? null,
+    };
+    req.log.info(logFields, "Order saved OK");
+    logEvent(logFields);
     // Fire-and-forget — neblokuje odpoveď
     sendOrderNotification(order as Record<string, unknown>).catch(() => {});
     // Potvrdzovací email KLIENTOVI (ak má email + zapnuté v nastaveniach, default zap)
@@ -394,12 +421,16 @@ router.post("/order", async (req, res) => {
         if (!toEmail) return;
         // Vlastná doména = šablónové/interné účty (info@msbeton.sk…) → neposielať potvrdenku sebe
         if (toEmail.toLowerCase().endsWith("@msbeton.sk")) return;
-        await sendOrderConfirmation(toEmail, order as Record<string, unknown>);
-      } catch { /* ignore */ }
+        const emailResult = await sendOrderConfirmation(toEmail, order as Record<string, unknown>);
+        logEvent({ ev: emailResult.ok ? "email_sent" : "email_failed", orderId: order.id, toEmail, error: emailResult.error ?? null });
+      } catch (e) {
+        logEvent({ ev: "email_failed", orderId: order.id, error: String(e) });
+      }
     })();
     return res.json({ ok: true });
   } catch (err) {
     req.log.error({ err }, "Failed to create order");
+    logEvent({ ev: "order_error", ip, error: String(err) });
     return res.status(500).json({ ok: false, error: "Internal server error" });
   }
 });

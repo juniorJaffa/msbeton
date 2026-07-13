@@ -24,7 +24,8 @@ export function AdminLiveBar() {
       setSave(d.state);
       if (hideTimer.current) clearTimeout(hideTimer.current);
       if (d.state !== "saving") {
-        const dur = d.state === "merged" ? 3500 : d.state === "error" ? 4500 : 1600;
+        // Error ostáva 20s — admin musí vidieť že save zlyhal a skúsiť znova
+        const dur = d.state === "merged" ? 3500 : d.state === "error" ? 20000 : 1600;
         hideTimer.current = setTimeout(() => setSave(null), dur);
       }
     };

@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, HardDrive, Database, Activity, Server, Download, CheckCircle, XCircle, Clock, Archive, Shield, Trash2, ShieldAlert, Info } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { RefreshCw, HardDrive, Database, Activity, Server, Download, CheckCircle, XCircle, Clock, Archive, Shield, Trash2, ShieldAlert, Info, List, PackageCheck, UserPlus, Mail, AlertCircle, Ban } from "lucide-react";
 import { ClientBiometriaPanel } from "./ClientBiometriaPanel";
 import { AdminAccessPanel } from "./AdminAccessPanel";
 import { isSuper } from "@/lib/adminAuth";
@@ -63,6 +63,83 @@ function fmtBackupName(file: string): string {
   return `${m[3]}.${m[2]}.${m[1]}  ${m[4]}:${m[5]}`;
 }
 
+// ── Activity Log typovanie ────────────────────────────────────────────────────
+interface AppEvent {
+  ts: string;
+  ev: string;
+  orderId?: string;
+  clientId?: string;
+  clientName?: string;
+  tab?: string;
+  concreteType?: string;
+  qty?: number;
+  totalSDph?: number;
+  ip?: string;
+  isVerifiedClient?: boolean;
+  viaSms?: boolean;
+  address?: string;
+  km?: number;
+  reason?: string;
+  kept?: number;
+  preserved?: number;
+  mergedFromOthers?: number;
+  device?: string;
+  role?: string;
+  toEmail?: string;
+  error?: string | null;
+  [key: string]: unknown;
+}
+
+function evIcon(ev: string) {
+  if (ev === "order_saved") return <PackageCheck className="w-3.5 h-3.5 text-green-600 shrink-0" />;
+  if (ev === "order_rejected") return <Ban className="w-3.5 h-3.5 text-red-500 shrink-0" />;
+  if (ev === "order_error") return <AlertCircle className="w-3.5 h-3.5 text-red-600 shrink-0" />;
+  if (ev === "clients_saved") return <UserPlus className="w-3.5 h-3.5 text-blue-600 shrink-0" />;
+  if (ev === "email_sent") return <Mail className="w-3.5 h-3.5 text-purple-500 shrink-0" />;
+  if (ev === "email_failed") return <Mail className="w-3.5 h-3.5 text-red-400 shrink-0" />;
+  return <Activity className="w-3.5 h-3.5 text-gray-400 shrink-0" />;
+}
+function evBg(ev: string) {
+  if (ev === "order_saved") return "bg-green-50 border-green-100";
+  if (ev.startsWith("order_rej") || ev.startsWith("order_err")) return "bg-red-50 border-red-100";
+  if (ev === "clients_saved") return "bg-blue-50 border-blue-100";
+  if (ev === "email_sent") return "bg-purple-50 border-purple-100";
+  if (ev === "email_failed") return "bg-red-50 border-red-100";
+  return "bg-gray-50 border-gray-100";
+}
+function evSummary(e: AppEvent): string {
+  if (e.ev === "order_saved") {
+    const tab = e.tab === "pumpa" ? "Pumpa" : e.tab === "mix" ? "Mix" : "Vlastná";
+    const who = e.clientName ? e.clientName : e.clientId ? `ID ${e.clientId}` : "Anon";
+    return `Objednávka — ${who} · ${e.concreteType ?? "?"} · ${e.qty ?? "?"}m³ · ${tab}${e.totalSDph != null ? ` · ${Number(e.totalSDph).toLocaleString("sk-SK", { minimumFractionDigits: 2 })}€` : ""}`;
+  }
+  if (e.ev === "order_rejected") {
+    const why: Record<string, string> = { rate_limit: "Rate limit", captcha_missing: "Chýba CAPTCHA", captcha_fail: "CAPTCHA fail", honeypot: "Bot", missing_data: "Zlé dáta" };
+    return `Odmietnutá objednávka — ${why[e.reason ?? ""] ?? e.reason ?? "?"} · IP ${e.ip ?? "?"}`;
+  }
+  if (e.ev === "order_error") return `Chyba ukladania objednávky · ${e.error ?? ""}`;
+  if (e.ev === "clients_saved") {
+    const by = e.device ? ` · ${e.device}` : "";
+    const merged = e.mergedFromOthers ? ` · zlúčené: ${e.mergedFromOthers}` : "";
+    return `Klienti uložení — ${e.kept ?? "?"} záznamov${merged}${by}`;
+  }
+  if (e.ev === "email_sent") return `Email odoslaný → ${e.toEmail ?? "?"}`;
+  if (e.ev === "email_failed") return `Email zlyhal → ${e.toEmail ?? "?"} · ${e.error ?? ""}`;
+  return e.ev;
+}
+function fmtEventTime(ts: string): string {
+  const d = new Date(ts);
+  return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}:${String(d.getSeconds()).padStart(2,"0")}`;
+}
+function fmtEventDate(ts: string): string {
+  const d = new Date(ts);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) return "Dnes";
+  const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) return "Včera";
+  return `${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}`;
+}
+
 export default function ServerTab({ onOpenClient, bioFocus }: { onOpenClient?: (loginId: string) => void; bioFocus?: { loginId?: string; nonce: number } | null }) {
   const [data, setData] = useState<ServerStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -71,6 +148,12 @@ export default function ServerTab({ onOpenClient, bioFocus }: { onOpenClient?: (
   const [backupMsg, setBackupMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [deletingFile, setDeletingFile] = useState<string | null>(null);
   const [wpInfoOpen, setWpInfoOpen] = useState(false);
+
+  // Activity Log stav
+  const [events, setEvents] = useState<AppEvent[]>([]);
+  const [evFilter, setEvFilter] = useState<string>("all");
+  const [evLoading, setEvLoading] = useState(false);
+  const evTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -90,6 +173,27 @@ export default function ServerTab({ onOpenClient, bioFocus }: { onOpenClient?: (
   useEffect(() => { load(); }, [load]);
 
   const authHeader = () => ({ Authorization: `Bearer ${localStorage.getItem("msbeton_admin_token") ?? ""}` });
+
+  // Activity Log — auto-refresh každých 20s
+  const loadEvents = useCallback(async () => {
+    setEvLoading(true);
+    try {
+      const r = await fetch("/api/admin/event-log?limit=150", { headers: authHeader() });
+      if (r.ok) {
+        const j = await r.json() as { ok: boolean; events: AppEvent[] };
+        if (j.ok) setEvents(j.events);
+      }
+    } finally {
+      setEvLoading(false);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    loadEvents();
+    const tick = () => { loadEvents(); evTimer.current = setTimeout(tick, 20000); };
+    evTimer.current = setTimeout(tick, 20000);
+    return () => { if (evTimer.current) clearTimeout(evTimer.current); };
+  }, [loadEvents]);
 
   const runBackup = async () => {
     if (!confirm("Spustiť manuálnu zálohu databázy teraz?")) return;
@@ -479,6 +583,83 @@ export default function ServerTab({ onOpenClient, bioFocus }: { onOpenClient?: (
           </p>
         </div>
       </div>
+
+      {/* Activity Log */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/60">
+          <div className="flex items-center gap-2">
+            <List className="w-4 h-4 text-secondary" />
+            <span className="text-sm font-black text-secondary uppercase tracking-widest">Activity Log</span>
+            <span className="text-[10px] text-gray-400 font-normal">(posledné udalosti)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={loadEvents} disabled={evLoading} className="flex items-center gap-1 text-[11px] text-secondary/50 hover:text-secondary cursor-pointer transition-colors">
+              <RefreshCw className={`w-3 h-3 ${evLoading ? "animate-spin" : ""}`} />
+            </button>
+          </div>
+        </div>
+
+        {/* Filter chipy */}
+        <div className="flex gap-1.5 px-3 py-2 border-b border-gray-50 flex-wrap">
+          {[
+            { k: "all", label: "Všetko" },
+            { k: "order_saved", label: "Objednávky" },
+            { k: "order_rejected", label: "Odmietnuté" },
+            { k: "clients_saved", label: "Klienti" },
+            { k: "email_", label: "Email" },
+          ].map(f => (
+            <button key={f.k} onClick={() => setEvFilter(f.k)}
+              className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border transition-colors cursor-pointer
+                ${evFilter === f.k ? "bg-secondary text-white border-secondary" : "bg-gray-100 text-gray-500 border-gray-200 hover:border-secondary/40"}`}>
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Zoznam udalostí */}
+        <div className="max-h-[340px] overflow-y-auto divide-y divide-gray-50">
+          {(evFilter === "all" ? events : events.filter(e =>
+            evFilter === "email_" ? e.ev.startsWith("email_") : e.ev === evFilter
+          )).length === 0 ? (
+            <div className="py-8 text-center text-[12px] text-gray-400">
+              {events.length === 0 ? "Žiadne udalosti od posledného reštartu PM2" : "Žiadne udalosti tohto typu"}
+            </div>
+          ) : (
+            (evFilter === "all" ? events : events.filter(e =>
+              evFilter === "email_" ? e.ev.startsWith("email_") : e.ev === evFilter
+            )).map((e, i) => (
+              <div key={i} className={`flex items-start gap-2.5 px-3 py-2.5 border-l-2 ${evBg(e.ev)} ${
+                e.ev === "order_saved" ? "border-l-green-400" :
+                e.ev.startsWith("order_rej") || e.ev.startsWith("order_err") ? "border-l-red-400" :
+                e.ev === "clients_saved" ? "border-l-blue-400" :
+                e.ev === "email_sent" ? "border-l-purple-400" :
+                e.ev === "email_failed" ? "border-l-red-300" : "border-l-gray-200"
+              }`}>
+                <div className="flex flex-col items-center gap-0.5 shrink-0 pt-0.5">
+                  {evIcon(e.ev)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] text-gray-800 leading-snug font-medium">{evSummary(e)}</p>
+                  {e.ev === "order_saved" && e.address && (
+                    <p className="text-[10px] text-gray-400 mt-0.5 truncate">{e.address}{e.km ? ` · ${e.km} km` : ""}{e.ip ? ` · IP ${e.ip}` : ""}</p>
+                  )}
+                  {e.ev === "clients_saved" && e.role && (
+                    <p className="text-[10px] text-gray-400 mt-0.5">{e.role} · {e.ip}</p>
+                  )}
+                </div>
+                <div className="shrink-0 text-right">
+                  <span className="text-[10px] text-gray-400 font-mono block">{fmtEventTime(e.ts)}</span>
+                  <span className="text-[9px] text-gray-300 block">{fmtEventDate(e.ts)}</span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+        <div className="px-3 py-1.5 bg-gray-50/40 border-t border-gray-100 text-[10px] text-gray-400 text-center">
+          In-memory · maže sa pri PM2 reštarte · max 500 udalostí
+        </div>
+      </div>
+
     </div>
   );
 }

@@ -563,7 +563,16 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const remove = (id: string) => { if (id === SYSTEM_OWNER_ID) return; if (confirm("Vymazať klienta?")) save(clients.filter(c => c.id !== id)); };
+  const remove = (id: string) => {
+    if (id === SYSTEM_OWNER_ID) return;
+    const client = clients.find(c => c.id === id);
+    const name = [client?.firstName, client?.lastName].filter(Boolean).join(" ") || client?.company || client?.loginId || "?";
+    const loginId = client?.loginId ?? client?.id ?? id;
+    // Počet objednávok tohto klienta — varuj admina pred zmazaním
+    const orderCount = allOrders.filter(o => o.clientId != null && (o.clientId === loginId || o.clientId === id)).length;
+    const orderWarning = orderCount > 0 ? `\n\n⚠ Tento klient má ${orderCount} objednávok. Objednávky zostanú v systéme ale zobrazia sa bez mena klienta.` : "";
+    if (confirm(`Vymazať klienta "${name}"?${orderWarning}`)) save(clients.filter(c => c.id !== id));
+  };
   const update = (id: string, patch: Partial<Client>) => save(clients.map(c => c.id === id ? { ...c, ...patch } : c));
   const togglePassVis = (id: string) => setShowPass(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
 

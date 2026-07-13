@@ -491,12 +491,15 @@ if (isBiometricAvailable() && hasClientBiometric()) { /* bio auto-trigger */ }
 | DELETE | `/api/client/webauthn/credential/:credId` | Zabudnúť zariadenie (klient) |
 | DELETE | `/api/admin/clients/:id/webauthn` | Admin revoke biometrie klienta |
 | GET | `/api/admin/biometric-stats` | Globálne bio štatistiky pre ServerTab |
+| GET | `/api/client/orders?id=` | Posledných 50 objednávok klienta (autentifikácia cez session UUID) |
+| GET | `/api/client/me?id=` | Aktuálny profil klienta (refresh session) |
 
 ### Kľúčové komponenty
 
 - `PhoneInput` — globálny komponent pre telefónne čísla, formátuje na blur, normalizuje +421/00421 → 0xxx
 - `Calculator.tsx` — celá logika kalkulačky vrátane extra položiek, per-item služieb, PDF exportu, SMS exportu
 - `AdminDashboard.tsx` — všetky admin tabuľky; každá sekcia je samostatná funkcia (napr. `KlientiTab`, `ObjednavkyTab`)
+- `ClientProfile.tsx` — klientský profil (`/klient-profil`): zmena hesla/loginId/emailu, správa biometrie, sekcia **Moje objednávky** (posledných 50, stĺpce: Dátum / Betón / Množstvo / Suma / Stav)
 
 ### Štýlovanie
 

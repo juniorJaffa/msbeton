@@ -8,6 +8,7 @@ import bcrypt from "bcryptjs";
 import { invalidateClientCache } from "./client";
 import { sendRegistrationEmail, sendCredentialsEmail, sendAdminResetCodeEmail } from "../lib/mailer";
 import { signAdminToken, requireAdminJwt, requireSuper } from "../lib/adminJwt";
+import { logEvent, getEvents } from "../lib/eventLog";
 import { loginRateLimit } from "../lib/rateLimits";
 import { touchPresence, getActivePresence } from "../lib/adminPresence";
 import type { Request } from "express";
@@ -369,6 +370,13 @@ router.get("/audit-log", async (req, res) => {
   } catch (err) { req.log.error({ err }, "Failed to get audit log"); res.status(500).json({ error: "Internal server error" }); }
 });
 
+// In-memory ring buffer posledných udalostí (objednávky, klienti, emaile, rejecty)
+router.get("/event-log", (req, res) => {
+  const limit = Math.min(Number(req.query.limit ?? 150), 500);
+  const evFilter = req.query.ev ? String(req.query.ev) : undefined;
+  res.json({ ok: true, events: getEvents(limit, evFilter) });
+});
+
 // Read-only enforcement: admin-čitateľ (reader) smie len GET; mutácie → 403.
 // Server-side ochrana — frontend skrytie nestačí (reader by mohol volať API priamo).
 router.use((req, res, next) => {
@@ -405,6 +413,18 @@ router.put("/clients", async (req, res) => {
     const transform = actor.role === "manager" ? sanitizeClientsForManager : undefined;
     const r = await mergeSaveArray(KEYS.clients, req.body, req.get("X-Base-Sync"), actor, transform);
     invalidateClientCache();
+    const logFields = {
+      ev: "clients_saved",
+      kept: r.kept,
+      preserved: r.preserved,
+      mergedFromOthers: r.mergedFromOthers,
+      device: actor.device,
+      role: actor.role,
+      session: actor.session?.slice(0, 8) ?? null,
+      ip: String(req.headers["cf-connecting-ip"] ?? req.ip ?? "unknown"),
+    };
+    req.log.info(logFields, "Clients saved OK");
+    logEvent(logFields);
     res.json({ ok: true, ...r });
   }
   catch (err) { req.log.error({ err }, "Failed to save clients"); res.status(500).json({ error: "Internal server error" }); }
