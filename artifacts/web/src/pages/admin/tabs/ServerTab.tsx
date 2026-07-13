@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { RefreshCw, HardDrive, Database, Activity, Server, Download, CheckCircle, XCircle, Clock, Archive, Shield, Trash2, ShieldAlert, Info, List, PackageCheck, UserPlus, Mail, AlertCircle, Ban } from "lucide-react";
+import { RefreshCw, HardDrive, Database, Activity, Server, Download, CheckCircle, XCircle, Clock, Archive, Shield, Trash2, ShieldAlert, Info, List, PackageCheck, UserPlus, Mail, AlertCircle, Ban, AlertTriangle } from "lucide-react";
 import { ClientBiometriaPanel } from "./ClientBiometriaPanel";
 import { AdminAccessPanel } from "./AdminAccessPanel";
 import { isSuper } from "@/lib/adminAuth";
@@ -97,11 +97,13 @@ function evIcon(ev: string) {
   if (ev === "clients_saved") return <UserPlus className="w-3.5 h-3.5 text-blue-600 shrink-0" />;
   if (ev === "email_sent") return <Mail className="w-3.5 h-3.5 text-purple-500 shrink-0" />;
   if (ev === "email_failed") return <Mail className="w-3.5 h-3.5 text-red-400 shrink-0" />;
+  if (ev === "order_large_breakdown") return <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />;
   return <Activity className="w-3.5 h-3.5 text-gray-400 shrink-0" />;
 }
 function evBg(ev: string) {
   if (ev === "order_saved") return "bg-green-50 border-green-100";
   if (ev.startsWith("order_rej") || ev.startsWith("order_err")) return "bg-red-50 border-red-100";
+  if (ev === "order_large_breakdown") return "bg-amber-50 border-amber-100";
   if (ev === "clients_saved") return "bg-blue-50 border-blue-100";
   if (ev === "email_sent") return "bg-purple-50 border-purple-100";
   if (ev === "email_failed") return "bg-red-50 border-red-100";
@@ -125,6 +127,12 @@ function evSummary(e: AppEvent): string {
   }
   if (e.ev === "email_sent") return `Email odoslaný → ${e.toEmail ?? "?"}`;
   if (e.ev === "email_failed") return `Email zlyhal → ${e.toEmail ?? "?"} · ${e.error ?? ""}`;
+  if (e.ev === "order_large_breakdown") {
+    const kb = e.breakdownBytes ? Math.round((e.breakdownBytes as number) / 1024) : "?";
+    const stripped = (e.breakdownTruncated as boolean) ? " — breakdown VYNECHANÉ" : "";
+    const via = (e.viaSms as boolean) ? " · SMS" : " · Košík";
+    return `Veľký breakdown — ${kb} KB${via}${stripped}${e.orderId ? ` · ID ${e.orderId}` : ""}`;
+  }
   return e.ev;
 }
 function fmtEventTime(ts: string): string {
@@ -605,6 +613,7 @@ export default function ServerTab({ onOpenClient, bioFocus }: { onOpenClient?: (
             { k: "all", label: "Všetko" },
             { k: "order_saved", label: "Objednávky" },
             { k: "order_rejected", label: "Odmietnuté" },
+            { k: "order_large_breakdown", label: "Veľký JSON" },
             { k: "clients_saved", label: "Klienti" },
             { k: "email_", label: "Email" },
           ].map(f => (
@@ -631,6 +640,7 @@ export default function ServerTab({ onOpenClient, bioFocus }: { onOpenClient?: (
               <div key={i} className={`flex items-start gap-2.5 px-3 py-2.5 border-l-2 ${evBg(e.ev)} ${
                 e.ev === "order_saved" ? "border-l-green-400" :
                 e.ev.startsWith("order_rej") || e.ev.startsWith("order_err") ? "border-l-red-400" :
+                e.ev === "order_large_breakdown" ? "border-l-amber-400" :
                 e.ev === "clients_saved" ? "border-l-blue-400" :
                 e.ev === "email_sent" ? "border-l-purple-400" :
                 e.ev === "email_failed" ? "border-l-red-300" : "border-l-gray-200"

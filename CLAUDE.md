@@ -579,6 +579,46 @@ const cOrders = allOrders.filter(o => o.clientId != null && (o.clientId === c.lo
 
 ---
 
+## Keepalive 64 KB limit — known risk (SMS objednávky)
+
+`clientApi.submitOrder()` používa `keepalive: true` — fetch prežije iOS page suspension, keď sa otvorí SMS app. Prehliadač (Chromium + Safari) **enforces max ~64 KB** tela pre keepalive requesty. Prekročenie = silentný drop requestu.
+
+### Čo je riziko
+
+`buildBreakdown()` generuje JSON s kompletnou kalkulačkou (všetky sekcie, riadky, ceny). Pre veľmi komplexné objednávky (mnoho extra položiek, dlhé popisy) môže JSON presiahnuť 64 KB.
+
+### Implementácia ochrany
+
+**Klient (`Calculator.tsx`):**
+```typescript
+const rawBreakdown = buildBreakdown();
+const breakdownBytes = new Blob([rawBreakdown]).size;
+const KEEPALIVE_STRIP_THRESHOLD = 60_000; // 60 KB — bezpečný buffer pod 64 KB
+const breakdownTruncated = breakdownBytes > KEEPALIVE_STRIP_THRESHOLD;
+// submitOrder: breakdown: breakdownTruncated ? undefined : rawBreakdown
+// + breakdownBytes, breakdownTruncated: breakdownTruncated || undefined
+```
+
+**Server (`client.ts`):** Ak `breakdownTruncated` alebo `breakdownBytes > 50_000` → loguje `order_large_breakdown` event do in-memory logu.
+
+**Admin ServerTab:** Filter chip "Veľký JSON" — žlté karty s `AlertTriangle` ikonou.
+
+### Dôsledok stripenutého breakdown
+
+- Objednávka sa **uloží** (s `breakdown: null`)
+- `ObjednavkyTab.tsx` zobrazí prázdny detail namiesto tabuľky
+- `exportOrderPDF` z objednávky nebude mať detail riadky
+
+### UI upozornenie
+
+Červený banner v SMS export UI: `"Nepodarilo sa uložiť objednávku..."` — zobrazí sa pri `smsOrderError === true` (keď fetch `.catch()` alebo `r?.ok === false`).
+
+### Kedy nastáva
+
+V praxi: bežná objednávka je 2–5 KB. Riziko nastáva iba pri extrémne komplexných kalkuláciách (desiatky extra položiek + dlhé adresy + mnoho vozidiel). Zatiaľ nebolo pozorované v produkcii.
+
+---
+
 ## Nginx — povinná konfigurácia (pri každej novej inštalácii servera)
 
 **KRITICKÉ:** Tieto `location` bloky sú povinné na každom novom VPS. Bez nich nefunguje admin PWA ani error stránky.

@@ -1911,6 +1911,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     );
     if (canSaveOrder) {
       const isFakt = priceMode === "faktura";
+      // keepalive body limit ~64KB — breakdown môže byť veľký pri zložitých objednávkach.
+      // Ak je > 60KB, pošleme bez breakdown (order sa uloží, detail chýba) + server zaloguje.
+      const rawBreakdown = buildBreakdown();
+      const breakdownBytes = new Blob([rawBreakdown]).size;
+      const KEEPALIVE_STRIP_THRESHOLD = 60_000; // 60KB — bezpečná rezerva pod 64KB limit
+      const breakdownTruncated = breakdownBytes > KEEPALIVE_STRIP_THRESHOLD;
       clientApi.submitOrder({
         id: Math.random().toString(36).slice(2, 10),
         status: "nova",
@@ -1930,7 +1936,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         priceMode,
         totalBezDph: result.totalDiscBezDph,
         totalSDph: isFakt ? result.totalDiscSDph : result.hotovostTotal,
-        breakdown: buildBreakdown(),
+        breakdown: breakdownTruncated ? undefined : rawBreakdown,
+        breakdownBytes,           // server zaloguje veľkosť vždy
+        breakdownTruncated: breakdownTruncated || undefined,
         viaSms: true,
         deliveryZoneType: clientDeliveryZone?.pricingType ?? "standard",
         deliveryZoneName: clientDeliveryZone?.name ?? undefined,

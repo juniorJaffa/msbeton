@@ -386,6 +386,12 @@ router.post("/order", async (req, res) => {
       .insert(adminConfig)
       .values({ key: "orders", data: updated })
       .onConflictDoUpdate({ target: adminConfig.key, set: { data: updated, updatedAt: new Date() } });
+    const breakdownBytes = Number((order as Record<string, unknown>).breakdownBytes ?? 0);
+    const breakdownTruncated = !!(order as Record<string, unknown>).breakdownTruncated;
+    if (breakdownTruncated || breakdownBytes > 50_000) {
+      logEvent({ ev: "order_large_breakdown", orderId: order.id, breakdownBytes, breakdownTruncated, ip, viaSms: !!order.viaSms });
+      req.log.warn({ orderId: order.id, breakdownBytes, breakdownTruncated }, "LARGE BREAKDOWN — keepalive riziko");
+    }
     const logFields = {
       ev: "order_saved",
       orderId: order.id,
@@ -400,6 +406,8 @@ router.post("/order", async (req, res) => {
       viaSms: !!order.viaSms,
       address: order.address ?? null,
       km: order.km ?? null,
+      breakdownBytes: breakdownBytes || undefined,
+      breakdownTruncated: breakdownTruncated || undefined,
     };
     req.log.info(logFields, "Order saved OK");
     logEvent(logFields);
