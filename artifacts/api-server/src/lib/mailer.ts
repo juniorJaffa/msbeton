@@ -15,22 +15,9 @@ function emailShell(bodyHtml: string): string {
 <table width="520" cellpadding="0" cellspacing="0" role="presentation" style="max-width:520px;width:100%">
 
 <!-- HEADER -->
-<tr><td style="background:#001D3D;border-radius:14px 14px 0 0;padding:40px 40px 32px;text-align:center">
-  <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-    <tr><td align="center" style="padding-bottom:14px">
-      <!-- Logo hex icon -->
-      <table cellpadding="0" cellspacing="0" role="presentation">
-        <tr><td style="background:rgba(237,197,49,0.12);border:2px solid rgba(237,197,49,0.35);border-radius:14px;padding:10px 18px">
-          <span style="color:#EDC531;font-size:13px;font-weight:900;letter-spacing:3px;text-transform:uppercase">&#9899; MS&#183;BETON</span>
-        </td></tr>
-      </table>
-    </td></tr>
-    <tr><td align="center">
-      <h1 style="margin:0;color:#EDC531;font-size:34px;font-weight:900;letter-spacing:5px;line-height:1">MS&#183;BETON</h1>
-      <p style="margin:4px 0 0;color:rgba(255,255,255,0.65);font-size:12px;letter-spacing:2px;font-weight:600">spol. s r.o.</p>
-      <p style="margin:10px 0 0;color:rgba(255,255,255,0.35);font-size:10px;letter-spacing:3px;text-transform:uppercase">Kalkulačka betónu</p>
-    </td></tr>
-  </table>
+<tr><td style="background:#001D3D;border-radius:14px 14px 0 0;padding:28px 40px 24px;text-align:center">
+  <h1 style="margin:0;color:#EDC531;font-size:30px;font-weight:900;letter-spacing:5px;line-height:1">MS&#183;BETON</h1>
+  <p style="margin:4px 0 0;color:rgba(255,255,255,0.55);font-size:11px;letter-spacing:2px;font-weight:600">spol. s r.o.</p>
 </td></tr>
 
 <!-- GOLD LINE -->
