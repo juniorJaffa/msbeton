@@ -408,6 +408,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [loginLoading, setLoginLoading] = useState(false);
   const [smsCopied, setSmsCopied] = useState(false);
   const [smsOrderCreated, setSmsOrderCreated] = useState(false);
+  const [smsOrderError, setSmsOrderError] = useState(false);
   const [showPriceTable, setShowPriceTable] = useState(false);
   const [zimneOpatrenia, setZimneOpatrenia] = useState(false); // default OFF, user zapína manuálne
   const [revision, setRevision] = useState(0);
@@ -1937,11 +1938,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         turnstileToken: turnstileToken || undefined,
         ...(tab === "pumpa" && pumpMode === "timer" && pumpStartTime && pumpStopTime ? { pumpTimer: { start: pumpStartTime, stop: pumpStopTime } } : tab === "pumpa" && pumpMode === "edit" && editStartTime && editStopTime ? { pumpTimer: { start: editStartTime, stop: editStopTime } } : {}),
         ...(podmienkyEnabled ? { podmienky: { trucks: tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks, pumpa: tab === "pumpa" ? podmienkyPumpa : 0, mix: tab === "pumpa" ? podmienkyMixC : podmienkyTrucks, m3PerTruck: (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks) > 0 ? Math.round(((result!.qty + (result!.concreteBreakdown[0]?.transportFillupM3 ?? 0)) / (tab === "pumpa" ? podmienkyPumpa + podmienkyMixC : podmienkyTrucks)) * 10) / 10 : 0, isRisk: tab === "pumpa" ? (podmienkyPumpa * pumpCap + podmienkyMixC * mixCap) < result!.qty : podmienkyTrucks * mixCap < result!.qty } } : {}),
-      }).then(() => {
+      }).then(r => {
+        if (r?.ok === false) { setSmsOrderError(true); return; }
         setSmsOrderCreated(true);
+        setSmsOrderError(false);
         const w = window as Window & { turnstile?: { reset: (id: string) => void } };
         if (turnstileWidgetId.current && w.turnstile) w.turnstile.reset(turnstileWidgetId.current);
-      }).catch(() => {});
+      }).catch(() => { setSmsOrderError(true); });
     }
 
     // Odstrán medzery/pomlčky pred normalizáciou — inak sms: URL sa zlomí na iOS
@@ -2164,6 +2167,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     setOrderDone(true);
     setOrderSubmittedBanner(true);
     setSmsOrderCreated(false);
+    setSmsOrderError(false);
     gtagEvent("order_submitted", { tab, quantity, type: selectedType?.label, priceMode });
     setTimeout(() => { setShowOrderModal(false); setOrderDone(false); }, 3000);
   }
@@ -3945,6 +3949,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     <span>Záväzná objednávka cez SMS bola evidovaná v systéme.</span>
                   </div>
                 )}
+                {smsOrderError && (
+                  <div className="flex items-center gap-2 bg-red-900/40 border border-red-500/40 rounded-sm px-3 py-2.5 text-xs text-red-300">
+                    <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                    <span>⚠ Objednávka sa <strong>neuložila</strong> do systému. Skúste znova alebo kontaktujte administrátora.</span>
+                  </div>
+                )}
 
                 <div ref={turnstileRef} style={{ display: "none" }} aria-hidden="true" />
 
@@ -4273,6 +4283,15 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                       <div>
                         <div className="text-[10px] font-black uppercase tracking-wider text-amber-400 mb-0.5">Objednávka vytvorená cez SMS</div>
                         <div className="text-xs text-amber-200/65">Táto kalkulácia bola pred chvíľou automaticky zaznamenaná pri SMS exporte. Naozaj chcete vytvoriť ďalšiu záväznú objednávku?</div>
+                      </div>
+                    </div>
+                  )}
+                  {smsOrderError && (
+                    <div className="flex items-start gap-2.5 bg-red-500/10 border border-red-400/25 rounded-lg px-3 py-2.5">
+                      <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                      <div>
+                        <div className="text-[10px] font-black uppercase tracking-wider text-red-400 mb-0.5">SMS objednávka sa neuložila</div>
+                        <div className="text-xs text-red-200/65">Skúste znova exportovať SMS alebo vytvorte objednávku manuálne cez košík.</div>
                       </div>
                     </div>
                   )}

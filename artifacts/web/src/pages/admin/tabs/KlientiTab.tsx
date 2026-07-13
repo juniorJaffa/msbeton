@@ -368,6 +368,9 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   const [inlineTableMode, setInlineTableMode] = useState<"faktura" | "hotovost">("faktura");
   const [tablePdfModal, setTablePdfModal] = useState<Client | null>(null);
   const [tablePdfMode, setTablePdfMode] = useState<"faktura" | "hotovost">("faktura");
+  const [showDeleted, setShowDeleted] = useState(false);
+  const [deleteModal, setDeleteModal] = useState<Client | null>(null);
+  const [deleteInput, setDeleteInput] = useState("");
 
   useEffect(() => {
     if (!tablePdfModal) return;
@@ -566,12 +569,25 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   const remove = (id: string) => {
     if (id === SYSTEM_OWNER_ID) return;
     const client = clients.find(c => c.id === id);
-    const name = [client?.firstName, client?.lastName].filter(Boolean).join(" ") || client?.company || client?.loginId || "?";
-    const loginId = client?.loginId ?? client?.id ?? id;
-    // Počet objednávok tohto klienta — varuj admina pred zmazaním
-    const orderCount = allOrders.filter(o => o.clientId != null && (o.clientId === loginId || o.clientId === id)).length;
-    const orderWarning = orderCount > 0 ? `\n\n⚠ Tento klient má ${orderCount} objednávok. Objednávky zostanú v systéme ale zobrazia sa bez mena klienta.` : "";
-    if (confirm(`Vymazať klienta "${name}"?${orderWarning}`)) save(clients.filter(c => c.id !== id));
+    if (!client) return;
+    setDeleteInput("");
+    setDeleteModal(client);
+  };
+  const confirmSoftDelete = () => {
+    if (!deleteModal) return;
+    const deviceLabel = getAdminDeviceLabel();
+    save(clients.map(c => c.id === deleteModal.id
+      ? { ...c, isDeleted: true, deletedAt: new Date().toISOString(), deletedBy: deviceLabel }
+      : c
+    ));
+    setDeleteModal(null);
+  };
+  const hardDelete = (id: string) => {
+    if (!confirm("Trvalo vymazať? Táto akcia je NEVRATNÁ.")) return;
+    save(clients.filter(c => c.id !== id));
+  };
+  const restore = (id: string) => {
+    save(clients.map(c => c.id === id ? { ...c, isDeleted: false, deletedAt: undefined, deletedBy: undefined } : c));
   };
   const update = (id: string, patch: Partial<Client>) => save(clients.map(c => c.id === id ? { ...c, ...patch } : c));
   const togglePassVis = (id: string) => setShowPass(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
@@ -636,6 +652,9 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   const filtered = (() => {
     // 1) Text search + filter kritériá
     let arr = clients.filter(c => {
+      // Soft delete — skryté pokiaľ showDeleted nie je aktívne
+      if (c.isDeleted && !showDeleted) return false;
+      if (!c.isDeleted && showDeleted) return false;
       // Filter: stav
       const hasLogin = !!(c.loginId && c.password);
       if (fStatus === "active" && !(hasLogin && c.active)) return false;
@@ -878,8 +897,15 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
           <div className="hidden sm:flex w-40 shrink-0 items-center justify-end">
             {/* spacer pre badge stĺpec — zrkadlí šírku badge sekcie v riadkoch */}
           </div>
-          <div className="flex items-center justify-end w-40 shrink-0">
-            {!readOnly && (
+          <div className="flex items-center justify-end gap-2 w-40 shrink-0">
+            {isSuper() && (
+              <button onClick={() => setShowDeleted(v => !v)} title={showDeleted ? "Zobraziť aktívnych" : "Koš — zmazaní klienti"}
+                className={`flex items-center gap-1 px-2 py-1.5 text-[10px] font-black uppercase tracking-wide border transition-colors ${showDeleted ? "bg-red-600 text-white border-red-600" : "border-red-300 text-red-400 hover:border-red-500 hover:text-red-600"}`}>
+                <Trash2 className="w-3.5 h-3.5" />
+                {showDeleted && <span>KOŠ</span>}
+              </button>
+            )}
+            {!readOnly && !showDeleted && (
               <button onClick={() => { setAdding(true); setExpanded(null); }} title="Pridať klienta"
                 className="flex items-center gap-1.5 px-2.5 py-1.5 bg-primary text-secondary font-black text-[10px] hover:bg-primary/90 shrink-0 uppercase tracking-wide">
                 <Plus className="w-5 h-5" />
@@ -2003,12 +2029,24 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                           </button>
                         </div>
                       )}
-                      {/* Kôš vpravo — vymazať klienta. Iba superadmin (Správca/Čítateľ nemaže). */}
-                      {c.id !== SYSTEM_OWNER_ID && isSuper() && (
-                        <button onClick={() => remove(c.id)} title="Vymazať klienta"
+                      {/* Kôš / Obnoviť. Iba superadmin. */}
+                      {c.id !== SYSTEM_OWNER_ID && isSuper() && !c.isDeleted && (
+                        <button onClick={() => remove(c.id)} title="Presunúť do koša"
                           className="ml-auto p-2 sm:p-1.5 rounded border border-red-200 text-red-400 hover:text-red-600 hover:border-red-400 active:bg-red-50 transition-colors shrink-0">
                           <Trash2 className="w-4 h-4" />
                         </button>
+                      )}
+                      {c.isDeleted && isSuper() && (
+                        <div className="ml-auto flex items-center gap-1.5">
+                          <button onClick={() => restore(c.id)} title="Obnoviť klienta"
+                            className="flex items-center gap-1 px-2 py-1.5 text-[10px] font-black uppercase tracking-wide border border-green-300 text-green-600 hover:bg-green-50 rounded transition-colors">
+                            <RefreshCw className="w-3 h-3" /> Obnoviť
+                          </button>
+                          <button onClick={() => hardDelete(c.id)} title="Trvalo vymazať"
+                            className="flex items-center gap-1 px-2 py-1.5 text-[10px] font-black uppercase tracking-wide border border-red-400 text-red-600 hover:bg-red-50 rounded transition-colors">
+                            <X className="w-3 h-3" /> Vymazať
+                          </button>
+                        </div>
                       )}
                     </div>
                     {showTableFor === c.id && (
@@ -2138,6 +2176,61 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
           </div>
         </div>
       )}
+
+      {/* Delete confirm modal */}
+      {deleteModal && (() => {
+        const dm = deleteModal;
+        const dmName = [dm.firstName, dm.lastName].filter(Boolean).join(" ") || dm.company || dm.loginId || "?";
+        const dmLoginId = dm.loginId ?? dm.id;
+        const dmOrders = allOrders.filter(o => o.clientId != null && (o.clientId === dmLoginId || o.clientId === dm.id)).length;
+        const confirmKey = dm.loginId || [dm.firstName, dm.lastName].filter(Boolean).join(" ") || dm.company || "";
+        const inputOk = deleteInput.trim().toLowerCase() === confirmKey.toLowerCase();
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                  <Trash2 className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="font-black text-gray-900 text-base">Presunúť do koša?</h3>
+                  <p className="text-sm text-gray-500 mt-0.5">{dmName}</p>
+                </div>
+              </div>
+              {dmOrders > 0 && (
+                <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-sm text-amber-800">
+                  <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
+                  <span>Klient má <strong>{dmOrders} objednávok</strong>. Zostanú v systéme, zobrazia sa bez mena.</span>
+                </div>
+              )}
+              <p className="text-xs text-gray-500 mb-1.5">Na potvrdenie napíšte <strong>{confirmKey}</strong>:</p>
+              <input
+                type="text"
+                value={deleteInput}
+                onChange={e => setDeleteInput(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && inputOk && confirmSoftDelete()}
+                placeholder={confirmKey}
+                autoFocus
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:border-red-400"
+              />
+              <div className="text-xs text-gray-400 mb-4 flex items-start gap-1.5">
+                <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                <span>Klient bude v koši. Môžete ho obnoviť alebo trvalo vymazať neskôr.</span>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => setDeleteModal(null)}
+                  className="flex-1 py-2 text-sm font-bold border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                  Zrušiť
+                </button>
+                <button onClick={confirmSoftDelete} disabled={!inputOk}
+                  className={`flex-1 py-2 text-sm font-black rounded-lg text-white transition-colors ${inputOk ? "bg-red-600 hover:bg-red-700" : "bg-red-200 cursor-not-allowed"}`}>
+                  Presunúť do koša
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

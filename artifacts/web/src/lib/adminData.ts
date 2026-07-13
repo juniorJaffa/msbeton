@@ -127,6 +127,9 @@ export interface Client {
   noOrderConfirm?: boolean; // neposielať potvrdzovací email po objednávke (šablónové/zľavové účty)
   activeChangedAt?: string;  // kedy sa naposledy zmenila aktívnosť prístupu
   activeChangedBy?: string;  // kto (zariadenie admina/správcu) zmenil aktívnosť
+  isDeleted?: boolean;       // soft delete — skrytý v UI, obnoviteľný
+  deletedAt?: string;        // ISO timestamp soft delete
+  deletedBy?: string;        // device label kto zmazal
 }
 
 export interface Order {
