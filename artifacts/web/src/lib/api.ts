@@ -111,6 +111,7 @@ export const clientApi = {
     apiFetch<{ ok: boolean; error?: string }>(CLIENT_API, "/order", {
       method: "POST",
       body: JSON.stringify(order),
+      keepalive: true, // prežije iOS page suspension (otvorenie SMS/share apky)
     }),
   updateProfile: (id: string, currentPassword: string, newLoginId?: string, newEmail?: string, newPassword?: string) =>
     apiFetch<{ ok: boolean; client?: LoggedClient; error?: string }>(CLIENT_API, "/profile", {

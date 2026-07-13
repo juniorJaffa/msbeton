@@ -1900,16 +1900,23 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     lines.push("Tel: +421 909 205 205");
     const text = lines.join("\n");
 
-    // Vytvorenie objednávky — globálne smsOrderEnabled + per-klient smsOrderDisabled override
-    if (loggedClient && selectedType && tsettings.smsOrderEnabled && !loggedClient.smsOrderDisabled) {
+    // Vytvorenie objednávky:
+    // - admin vždy uloží (bez ohľadu na smsOrderEnabled / loggedClient)
+    // - klient: vyžaduje loggedClient + smsOrderEnabled + !smsOrderDisabled
+    const canSaveOrder = selectedType && (
+      isAdminMode
+        ? true
+        : (loggedClient && tsettings.smsOrderEnabled && !loggedClient.smsOrderDisabled)
+    );
+    if (canSaveOrder) {
       const isFakt = priceMode === "faktura";
       clientApi.submitOrder({
         id: Math.random().toString(36).slice(2, 10),
         status: "nova",
-        clientName: loggedClient.name,
-        clientId: loggedClient.clientId,
-        company: loggedClient.company || undefined,
-        phone: loggedClient.phone || undefined,
+        clientName: loggedClient?.name,
+        clientId: loggedClient?.clientId || address || undefined,
+        company: loggedClient?.company || undefined,
+        phone: loggedClient?.phone || undefined,
         tab,
         concreteType: selectedType.label,
         concreteCategory: categoryName || undefined,
