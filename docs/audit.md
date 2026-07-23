@@ -108,6 +108,10 @@
 | 95 | 👤 Admin — Klienti | Clickable tel:/mailto: v admin | Ikona telefónu → `tel:` klik, ikona emailu → `mailto:` klik — v Klienti detail aj Objednávky detail. | ✅ |
 | 96 | 👤 Admin — Klienti | Smart avatar (clientAvatar.ts) | Deterministická farba z hash, detekcia telefónneho čísla ako mena, 8-farebná paleta, kind: owner/phone/initial. adminReader → Eye modrá ikona. | ✅ |
 | 97 | 📋 Admin — Objednávky | Objednávky toast 3G fix | Rekurzívny `setTimeout` (nie `setInterval`) zabraňuje hromadeniu requestov. Videné ID v localStorage (`msbeton_seen_order_ids`, 800) — prežijú re-mount/reload na zlej sieti. | ✅ |
+| 98 | ⚖️ Daňové | **eKasa — zákon č. 289/2008 Z.z.** | 🔴 AKTÍVNE RIZIKO: hotovostné platby na ruku musia byť zaevidované cez eKasa VRP (Virtuálna registračná pokladnica) pripojenú na FS SR. App generuje PDF "Cenová ponuka" — **nie je to eKasa doklad**. Pokuta až 3 320 € pri kontrole. Overiť s Petrom: má fyzickú/VRP pokladnicu? Riešenie bez integrácie: externý VRP softvér (iKasa, FiskalPRO). S integráciou: ~1–4 MD. Detaily: [docs/legal-compliance.md](legal-compliance.md) | 🔴 Urgentné |
+| 99 | ⚖️ Daňové | **Prenos DPH — §69 ods. 12 zákon o DPH** | Pre B2B klientov (platcovia DPH): stavebné práce (čerpanie, umývanie, chémia, hadice) fakturované bez DPH = "prenesenie daňovej povinnosti". Per-klient flag + PDF split DPH tabulka. Plánované Fáza 2 Sekcia C. Spec: [docs/legal-compliance.md](legal-compliance.md) | ❌ Fáza 2 |
+| 100 | ⚖️ Daňové | **Faktúra vs. Cenová ponuka** | App generuje "Cenovú ponuku" — nie právne záväznú faktúru (chýba č. faktúry, dátum dodania, IČO odberateľa, IBAN, splatnosť). Nízke riziko kým zákazníci vedia rozlíšiť. Riešenie: KROS integrácia. Detaily: [docs/legal-compliance.md](legal-compliance.md) | ⚠ KROS integrácia |
+| 101 | ⚖️ GDPR | **Právo na prenosnosť (čl. 20)** | Klient má právo na export svojich dát v strojovo čitateľnom formáte. Chýba endpoint/UI na stiahnutie vlastných dát. ~2h | ❌ ~2h |
 
 ---
 
@@ -117,8 +121,10 @@
 |------|-------|
 | ✅ Hotovo | 79 |
 | ⏳ Čaká (externá podmienka) | 6 |
-| ❌ Plánované | 12 |
-| **Celkom** | **97** |
+| ❌ Plánované | 15 |
+| 🔴 Urgentné (overiť) | 1 |
+| ⚠ Čiastočné | 1 |
+| **Celkom** | **101** |
 
 ---
 
