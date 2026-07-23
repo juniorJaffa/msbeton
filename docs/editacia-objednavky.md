@@ -63,6 +63,40 @@ Nové polia na objednávke, vyplnia sa **po ukončení zákazky** (niekedy), vyk
 
 ---
 
+## Časť 3 — Prenos DPH per klient (§69 ods. 12 zákon o DPH)
+
+> Pridané: 2026-07-23. Požiadavka: Klára (od Petra Staňa)
+
+### Kontext
+
+Pre niektorých klientov (B2B, platcovia DPH) sa fakturujú **stavebné práce** bez DPH — odberateľ si DPH odvedie sám ("prenesenie daňovej povinnosti"). Platí pre: čerpanie, umývanie, chémia, hadice. NEPLAT pre: čakačky, zimné opatrenie (nie stavebné práce).
+
+### Technický rozsah
+
+| Komponent | Čas |
+|-----------|-----|
+| `Client.prenosDph: boolean` + admin toggle (KlientiTab) | 1.5h |
+| Calculator: split DPH kalkulácia (exempt vs. štandardné) | 1.5h |
+| PDF: split DPH tabuľka + "Prenesenie daňovej povinnosti §69 ods. 12" text | 4h |
+| Calculator UI: split totals + service badge "0% DPH" | 1.5h |
+| buildBreakdown: `vatExempt: boolean` per riadok | 1h |
+| SMS export | 0.5h |
+
+### Prepoj na Editáciu objednávky (Časť 1)
+
+Editácia cez kalkulačku automaticky zdedí klientov `prenosDph` flag — keďže beží cez reálny engine, PDF vygeneruje správnu split DPH. **Odporúčané poradie: Prenos DPH pred alebo spolu s Časťou 1.**
+
+Ak Časť 1 príde BEZ Prenos DPH: edit mód nezapočíta reverse charge → PDF faktúry bude mať 23% DPH aj pre eligible klientov.
+
+### Varianta
+
+| Variant | Čas | Cena |
+|---------|-----|------|
+| MVP (flag + admin toggle + PDF split DPH) | 8h / 1 MD | 400 € |
+| Full (+UI badges + buildBreakdown vatExempt + SMS) | 12h / 1,5 MD | 600 € |
+
+---
+
 ## Súhrn a odporúčané poradie
 
 | Časť | Čas | Cena |
@@ -70,9 +104,10 @@ Nové polia na objednávke, vyplnia sa **po ukončení zákazky** (niekedy), vyk
 | 1 — Cenová úprava (full) | 2–2,5 MD | 800–1 000 € |
 | 1 — Cenová úprava (MVP) | 1,5 MD | 600 € |
 | 2 — Čerpací listok + tlač | 1 MD | 400 € |
-| **Obe (full)** | **3–3,5 MD** | **1 200–1 400 €** |
+| 3 — Prenos DPH per klient (full) | 1,5 MD | 600 € |
+| **Obe (full) + Prenos DPH** | **4–5 MD** | **1 800–2 000 €** |
 
-**Poradie:** Časť 2 (čerpací listok) **prvá** — lacná, nezávislá, priamo rieši skenovanie (najväčšia bolesť). Časť 1 (prepočet ceny) potom.
+**Poradie:** Časť 2 (čerpací listok) **prvá** — lacná, nezávislá, priamo rieši skenovanie. Potom Prenos DPH (Časť 3) — zákonná požiadavka, demand od klienta. Nakoniec Časť 1 (cenová úprava) — zdedí Prenos DPH automaticky.
 
 ---
 

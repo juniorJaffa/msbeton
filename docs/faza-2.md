@@ -71,10 +71,28 @@ Keď klient zmení heslo / aktivuje biometriu / prvýkrát objedná → notifik�
 
 ---
 
+## Sekcia C — Prenos DPH per klient
+
+> Pridané: 2026-07-23. Požiadavka: Klára (od Petra Staňa). Spec: [editacia-objednavky.md §Časť 3](editacia-objednavky.md)
+
+Pre B2B klientov (platcovia DPH): stavebné práce (čerpanie, umývanie, chémia, hadice) fakturované bez DPH — odberateľ si DPH odvedie sám podľa **§69 ods. 12 zákona č. 222/2004 Z.z.** Čakačky a zimné opatrenie vždy 23% (nie stavebné práce).
+
+**Súvislosť so Sekciou A:** Editácia cez kalkulačku (A1) automaticky zdedí `prenosDph` flag → správny PDF. Odporúčané poradie: C → A.
+
+| Variant | Čas | Cena |
+|---------|-----|------|
+| MVP (flag + admin toggle + PDF split DPH) | 1 MD | 400 € |
+| Full (+ UI badges + buildBreakdown `vatExempt` + SMS) | 1,5 MD | 600 € |
+
+---
+
 ## Súhrn Fázy 2
 
 | Sekcia | Čas | Cena |
 |--------|-----|------|
 | A — Editácia + čerpací listok (full) | 3–3,5 MD | 1 200–1 400 € |
 | B — Mailing / feedback | ~1 MD | ~400 € |
-| **Fáza 2 celkom** | **4–4,5 MD** | **~1 600–1 800 €** |
+| C — Prenos DPH per klient (full) | 1,5 MD | 600 € |
+| **Fáza 2 celkom** | **5,5–6 MD** | **~2 200–2 400 €** |
+
+**Odporúčané poradie:** A2 (čerpací listok) → C (prenos DPH) → A1 (cenová úprava) → B (mailing)
