@@ -71,9 +71,14 @@ function OrderStatusBadge({ status, onChange, orderTotal }: {
 
   useEffect(() => {
     if (!open) return;
-    const close = () => setOpen(false);
-    document.addEventListener("click", close);
-    return () => document.removeEventListener("click", close);
+    const close = (e: MouseEvent) => {
+      // klik na vlastný trigger → nechaj openDrop toggle riešiť
+      if (btnRef.current && btnRef.current.contains(e.target as Node)) return;
+      setOpen(false);
+    };
+    // capture:true = fired pred stopPropagation iných komponentov
+    document.addEventListener("click", close, true);
+    return () => document.removeEventListener("click", close, true);
   }, [open]);
 
   const openPayModal = () => {
