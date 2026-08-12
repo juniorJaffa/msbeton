@@ -262,56 +262,58 @@ export default function StatistikyTab() {
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-gray-100">
-                <th className="text-left px-4 py-2 text-[10px] font-black text-gray-400 uppercase tracking-wide">Mesiac</th>
-                <th className="text-right px-3 py-2 text-[10px] font-black text-gray-400 uppercase">Obj.</th>
-                <th className="text-right px-3 py-2 text-[10px] font-black text-gray-400 uppercase hidden sm:table-cell">m³</th>
-                <th className="text-right px-3 py-2 text-[10px] font-black text-gray-400 uppercase">Bez DPH</th>
-                <th className="text-right px-3 py-2 text-[10px] font-black text-gray-400 uppercase hidden sm:table-cell">S DPH</th>
-                <th className="text-right px-3 py-2 text-[10px] font-black text-gray-400 uppercase hidden md:table-cell">Faktúra</th>
-                <th className="text-right px-3 py-2 text-[10px] font-black text-gray-400 uppercase hidden md:table-cell">Hotovosť</th>
-                <th className="w-20 px-3 py-2 hidden lg:table-cell"></th>
+                <th className="text-left px-3 py-2 text-[10px] font-black text-gray-400 uppercase tracking-wide">Mesiac</th>
+                <th className="text-right px-2 py-2 text-[10px] font-black text-gray-400 uppercase">Obj.</th>
+                <th className="text-right px-2 py-2 text-[10px] font-black text-gray-400 uppercase">m³</th>
+                <th className="text-right px-2 py-2 text-[10px] font-black text-gray-400 uppercase">Bez DPH</th>
+                <th className="text-right px-2 py-2 text-[10px] font-black text-gray-400 uppercase" title="Zmena vs. predchádzajúci mesiac">Δ</th>
+                <th className="text-right px-2 py-2 text-[10px] font-black text-gray-400 uppercase hidden sm:table-cell">S DPH</th>
+                <th className="text-right px-2 py-2 text-[10px] font-black text-gray-400 uppercase hidden md:table-cell">Faktúra</th>
+                <th className="text-right px-2 py-2 text-[10px] font-black text-gray-400 uppercase hidden md:table-cell">Hotovosť</th>
               </tr>
             </thead>
             <tbody>
               {monthlyData.map(([ym, v], idx) => {
                 const nova = novaByMonth.get(ym);
+                const prevBez = idx < monthlyData.length - 1 ? monthlyData[idx + 1][1].bezDph : null;
+                const delta = prevBez && prevBez > 0 ? ((v.bezDph - prevBez) / prevBez) * 100 : null;
                 return (
                   <tr key={ym} className={`border-b border-gray-50 hover:bg-gray-50/60 transition-colors ${idx === 0 ? "bg-amber-50/40" : ""}`}>
-                    <td className="px-4 py-2.5 whitespace-nowrap">
+                    <td className="px-3 py-2.5 whitespace-nowrap">
                       <span className="font-bold text-secondary">{fmtMonth(ym)}</span>
                       {idx === 0 && <span className="inline-block w-2 h-2 rounded-full bg-primary ml-2 align-middle shrink-0" title="Aktuálny mesiac" aria-label="Aktuálny mesiac" />}
                       {/* Nova annotation — iba v realized mode */}
                       {statsMode === "realized" && nova && nova.count > 0 && (
                         <div className="text-[9px] text-blue-400 font-semibold mt-0.5">
-                          +{nova.count} nova · {fmtEur(nova.bezDph)}
+                          +{nova.count} nova
                         </div>
                       )}
                     </td>
-                    <td className="text-right px-3 py-2.5 font-bold text-gray-700">{v.count}</td>
-                    <td className="text-right px-3 py-2.5 text-gray-600 hidden sm:table-cell">{v.m3.toFixed(1)}</td>
-                    <td className="text-right px-3 py-2.5 font-black text-secondary whitespace-nowrap">{v.bezDph > 0 ? fmtEur(v.bezDph) : <span className="text-gray-300">—</span>}</td>
-                    <td className="text-right px-3 py-2.5 text-gray-500 whitespace-nowrap hidden sm:table-cell">{v.sDph > 0 ? fmtEur(v.sDph) : <span className="text-gray-300">—</span>}</td>
-                    <td className="text-right px-3 py-2.5 text-gray-400 whitespace-nowrap hidden md:table-cell">{v.faktura > 0 ? fmtEur(v.faktura) : "—"}</td>
-                    <td className="text-right px-3 py-2.5 text-gray-400 whitespace-nowrap hidden md:table-cell">{v.hotovost > 0 ? fmtEur(v.hotovost) : "—"}</td>
-                    <td className="px-3 py-2.5 hidden lg:table-cell">
-                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-secondary rounded-full" style={{ width: `${v.bezDph > 0 ? Math.round((v.bezDph / maxMonthRev) * 100) : 0}%` }} />
-                      </div>
+                    <td className="text-right px-2 py-2.5 font-bold text-gray-700">{v.count}</td>
+                    <td className="text-right px-2 py-2.5 text-gray-500">{v.m3.toFixed(1)}</td>
+                    <td className="text-right px-2 py-2.5 font-black text-secondary whitespace-nowrap">{v.bezDph > 0 ? fmtEur(v.bezDph) : <span className="text-gray-300">—</span>}</td>
+                    <td className="text-right px-2 py-2.5 whitespace-nowrap font-bold tabular-nums">
+                      {delta !== null
+                        ? <span className={delta >= 0 ? "text-green-600" : "text-red-500"}>{delta >= 0 ? "+" : ""}{delta.toFixed(1)}%</span>
+                        : <span className="text-gray-300">—</span>}
                     </td>
+                    <td className="text-right px-2 py-2.5 text-gray-500 whitespace-nowrap hidden sm:table-cell">{v.sDph > 0 ? fmtEur(v.sDph) : <span className="text-gray-300">—</span>}</td>
+                    <td className="text-right px-2 py-2.5 text-gray-400 whitespace-nowrap hidden md:table-cell">{v.faktura > 0 ? fmtEur(v.faktura) : "—"}</td>
+                    <td className="text-right px-2 py-2.5 text-gray-400 whitespace-nowrap hidden md:table-cell">{v.hotovost > 0 ? fmtEur(v.hotovost) : "—"}</td>
                   </tr>
                 );
               })}
             </tbody>
             <tfoot>
               <tr className="bg-secondary/5 border-t-2 border-secondary/20">
-                <td className="px-4 py-2.5 font-black text-secondary text-[10px] uppercase tracking-wide">CELKOM</td>
-                <td className="text-right px-3 py-2.5 font-black text-secondary">{statsOrders.length}</td>
-                <td className="text-right px-3 py-2.5 font-black text-secondary hidden sm:table-cell">{statsOrders.reduce((s, o) => s + (o.totalQty || 0), 0).toFixed(1)}</td>
-                <td className="text-right px-3 py-2.5 font-black text-secondary whitespace-nowrap">{fmtEur(totalBezDph)}</td>
-                <td className="text-right px-3 py-2.5 font-black text-secondary whitespace-nowrap hidden sm:table-cell">{fmtEur(totalSDph)}</td>
-                <td className="text-right px-3 py-2.5 font-black text-gray-500 whitespace-nowrap hidden md:table-cell">{fmtEur(statsOrders.filter(o => o.priceMode === "faktura").reduce((s, o) => s + (o.totalBezDph || 0), 0))}</td>
-                <td className="text-right px-3 py-2.5 font-black text-gray-500 whitespace-nowrap hidden md:table-cell">{fmtEur(statsOrders.filter(o => o.priceMode === "hotovost").reduce((s, o) => s + (o.totalBezDph || 0), 0))}</td>
-                <td className="hidden lg:table-cell" />
+                <td className="px-3 py-2.5 font-black text-secondary text-[10px] uppercase tracking-wide">CELKOM</td>
+                <td className="text-right px-2 py-2.5 font-black text-secondary">{statsOrders.length}</td>
+                <td className="text-right px-2 py-2.5 font-black text-secondary">{statsOrders.reduce((s, o) => s + (o.totalQty || 0), 0).toFixed(1)}</td>
+                <td className="text-right px-2 py-2.5 font-black text-secondary whitespace-nowrap">{fmtEur(totalBezDph)}</td>
+                <td className="px-2 py-2.5" />
+                <td className="text-right px-2 py-2.5 font-black text-secondary whitespace-nowrap hidden sm:table-cell">{fmtEur(totalSDph)}</td>
+                <td className="text-right px-2 py-2.5 font-black text-gray-500 whitespace-nowrap hidden md:table-cell">{fmtEur(statsOrders.filter(o => o.priceMode === "faktura").reduce((s, o) => s + (o.totalBezDph || 0), 0))}</td>
+                <td className="text-right px-2 py-2.5 font-black text-gray-500 whitespace-nowrap hidden md:table-cell">{fmtEur(statsOrders.filter(o => o.priceMode === "hotovost").reduce((s, o) => s + (o.totalBezDph || 0), 0))}</td>
               </tr>
             </tfoot>
           </table>
