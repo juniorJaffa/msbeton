@@ -48,16 +48,23 @@ function OrderStatusBadge({ status, onChange, orderTotal }: {
   orderTotal?: number;
 }) {
   const [open, setOpen] = useState(false);
-  const [dropPos, setDropPos] = useState({ top: 0, left: 0 });
+  const [dropPos, setDropPos] = useState<{ top?: number; bottom?: number; left: number }>({ left: 0 });
   const [payModal, setPayModal] = useState(false);
   const [payInput, setPayInput] = useState("");
   const btnRef = useRef<HTMLButtonElement>(null);
   const cur = ORDER_STATUSES.find(s => s.key === status) ?? ORDER_STATUSES.find(s => s.key === "odoslana")!;
 
+  const DROP_H = ORDER_STATUSES.length * 32; // ~32px/položka
   const openDrop = () => {
     if (btnRef.current) {
       const r = btnRef.current.getBoundingClientRect();
-      setDropPos({ top: r.bottom + 2, left: r.left });
+      const spaceBelow = window.innerHeight - r.bottom;
+      if (spaceBelow < DROP_H + 8) {
+        // otvoriť nahor
+        setDropPos({ bottom: window.innerHeight - r.top + 2, left: r.left });
+      } else {
+        setDropPos({ top: r.bottom + 2, left: r.left });
+      }
     }
     setOpen(o => !o);
   };
@@ -85,7 +92,7 @@ function OrderStatusBadge({ status, onChange, orderTotal }: {
       <div className="relative">
         <button ref={btnRef} onClick={e => { e.stopPropagation(); openDrop(); }} className={`px-2 py-1 text-xs font-bold rounded-sm cursor-pointer ${cur.color}`}>{cur.label} ▾</button>
         {open && createPortal(
-          <div className="fixed z-[500] bg-white border border-gray-200 shadow-lg rounded-sm min-w-[110px]" style={{ top: dropPos.top, left: dropPos.left }} onClick={e => e.stopPropagation()}>
+          <div className="fixed z-[500] bg-white border border-gray-200 shadow-lg rounded-sm min-w-[110px]" style={{ top: dropPos.top, bottom: dropPos.bottom, left: dropPos.left }} onClick={e => e.stopPropagation()}>
             {ORDER_STATUSES.map(s => (
               <button key={s.key} onClick={() => {
                 if (s.key === "vyplatena") { openPayModal(); }
