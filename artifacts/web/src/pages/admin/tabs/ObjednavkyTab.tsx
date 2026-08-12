@@ -1171,16 +1171,9 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
               return z?.pricingType ?? "standard";
             })();
             return (
-              <div key={o.id} id={`order-card-${o.id}`} className={`border shadow-sm transition-all duration-700 ${highlightedOrder === o.id ? "ring-2 ring-primary shadow-primary/30 shadow-md" : ""} ${o.createdAt.slice(0,10) === todayStr ? "bg-amber-50 border-amber-200" : "bg-white border-gray-200"}`}>
-                <div className={`flex gap-3 py-3.5 pl-3 pr-4 cursor-pointer transition-colors ${o.createdAt.slice(0,10) === todayStr ? "hover:bg-amber-100" : "hover:bg-gray-50"}`}
-                  style={{ borderLeft: `4px solid ${
-                    o.status === "nova"       ? "#3b82f6" :
-                    o.status === "potvrdena"  ? "#facc15" :
-                    o.status === "odoslana"   ? "#16a34a" :
-                    o.status === "vyuctovana" ? "#9333ea" :
-                    o.status === "vyplatena"  ? "#0d9488" :
-                    "#e5e7eb"
-                  }` }}
+              <div key={o.id} id={`order-card-${o.id}`} className={`border shadow-sm transition-all duration-700 ${highlightedOrder === o.id ? "ring-2 ring-primary shadow-primary/30 shadow-md" : ""} ${o.createdAt.slice(0,10) === todayStr ? "bg-gray-50 border-gray-300" : "bg-white border-gray-200"}`}>
+                <div className={`flex gap-3 py-3.5 cursor-pointer transition-colors ${o.createdAt.slice(0,10) === todayStr ? "hover:bg-gray-100" : "hover:bg-gray-50"} ${o.status === "nova" ? "pl-3 pr-4" : "px-4"}`}
+                  style={o.status === "nova" ? { borderLeft: "4px solid #3b82f6" } : undefined}
                   onClick={() => {
                     const next = isExp ? null : o.id;
                     setExpanded(next);
