@@ -279,7 +279,7 @@ export default function StatistikyTab() {
                   <tr key={ym} className={`border-b border-gray-50 hover:bg-gray-50/60 transition-colors ${idx === 0 ? "bg-amber-50/40" : ""}`}>
                     <td className="px-4 py-2.5 whitespace-nowrap">
                       <span className="font-bold text-secondary">{fmtMonth(ym)}</span>
-                      {idx === 0 && <span className="ml-1.5 text-[9px] font-black text-primary bg-primary/10 px-1 py-0.5 rounded">aktuálny</span>}
+                      {idx === 0 && <span className="inline-block w-2 h-2 rounded-full bg-primary ml-2 align-middle shrink-0" title="Aktuálny mesiac" aria-label="Aktuálny mesiac" />}
                       {/* Nova annotation — iba v realized mode */}
                       {statsMode === "realized" && nova && nova.count > 0 && (
                         <div className="text-[9px] text-blue-400 font-semibold mt-0.5">
