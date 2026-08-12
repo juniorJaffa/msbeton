@@ -1148,12 +1148,15 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
         )}
       </div>
       {floatingOrder && (
-        <div className="bg-secondary/97 border-b border-white/10 px-4 py-1 flex items-center gap-2 text-xs shadow-sm">
+        <div className="bg-secondary/97 border-b border-white/10 px-4 py-1.5 flex items-center gap-2 text-xs shadow-sm">
           <span className="text-white/30 text-[9px]">▸</span>
           <span className="font-bold text-white truncate">{floatingOrder.clientName}</span>
-          {floatingOrder.company && <span className="text-white/40 truncate hidden sm:block">{floatingOrder.company}</span>}
-          <span className="text-white/40 shrink-0">{floatingOrder.tab === "pumpa" ? "Pumpa" : floatingOrder.tab === "mix" ? "Mix" : "Vl."} · {floatingOrder.totalQty} m³</span>
-          <span className={`ml-auto shrink-0 text-[9px] font-black px-1.5 py-0.5 rounded-sm ${floatingOrder.status === "nova" ? "bg-blue-500 text-white" : floatingOrder.status === "potvrdena" ? "bg-yellow-400 text-secondary" : "bg-green-600 text-white"}`}>{floatingOrder.status.toUpperCase()}</span>
+          {floatingOrder.company && <span className="text-white/50 truncate hidden sm:block">{floatingOrder.company}</span>}
+          <span className="text-white/50 shrink-0">{floatingOrder.tab === "pumpa" ? "Pumpa" : floatingOrder.tab === "mix" ? "Mix" : "Vl."} · {floatingOrder.totalQty} m³</span>
+          <span className="text-white/70 font-bold shrink-0 tabular-nums hidden sm:block">{floatingOrder.totalSDph?.toLocaleString("sk", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+          <span className={`ml-auto shrink-0 text-[9px] font-black px-1.5 py-0.5 rounded-sm ${STATUS_ACTIVE_COLORS[floatingOrder.status] ?? "bg-gray-500 text-white"}`}>
+            {ORDER_STATUSES.find(s => s.key === floatingOrder.status)?.label ?? floatingOrder.status}
+          </span>
         </div>
       )}
       </div>
