@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
+import { MessageSquare, ShoppingCart } from "lucide-react";
 import { adminData } from "@/lib/adminData";
 
 // Statusy považované za "realizované" (doručené / fakturované / zaplatené)
@@ -164,23 +165,22 @@ export default function StatistikyTab() {
       )}
 
       <div className="grid sm:grid-cols-2 gap-3">
-        {/* Status */}
+        {/* Status — farby zjednotené s ObjednavkyTab ORDER_STATUSES */}
         <div className="bg-white rounded-sm border border-gray-200 p-4">
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Podľa statusu</p>
           <div className="space-y-2">
             {([
-              { key: "nova",       label: "Nová",        color: "bg-blue-500" },
-              { key: "potvrdena",  label: "Potvrdená",   color: "bg-yellow-400" },
-              { key: "odoslana",   label: "Odoslaná",    color: "bg-green-500" },
-              { key: "vybavena",   label: "Vybavená",    color: "bg-teal-500" },
-              { key: "vyuctovana", label: "Vyúčtovaná",  color: "bg-purple-400" },
-              { key: "vyplatena",  label: "Vyplatená",   color: "bg-green-700" },
-              { key: "zrusena",    label: "Zrušená",     color: "bg-red-400" },
-            ] as { key: string; label: string; color: string }[]).filter(s => byStatus[s.key] > 0).map(s => (
+              { key: "nova",       label: "Nová",        bar: "bg-blue-500",   pill: "bg-blue-100 text-blue-700" },
+              { key: "potvrdena",  label: "Potvrdená",   bar: "bg-yellow-400", pill: "bg-yellow-100 text-yellow-700" },
+              { key: "odoslana",   label: "Odoslaná FA", bar: "bg-green-600",  pill: "bg-green-100 text-green-700" },
+              { key: "vyuctovana", label: "Vyúčtovaná",  bar: "bg-purple-600", pill: "bg-purple-100 text-purple-700" },
+              { key: "vyplatena",  label: "Vyplatená",   bar: "bg-teal-600",   pill: "bg-teal-100 text-teal-700" },
+              { key: "zrusena",    label: "Zrušená",     bar: "bg-red-500",    pill: "bg-red-100 text-red-500" },
+            ] as { key: string; label: string; bar: string; pill: string }[]).filter(s => byStatus[s.key] > 0).map(s => (
               <div key={s.key} className="flex items-center gap-2">
-                <span className="w-20 text-xs text-gray-600 shrink-0">{s.label}</span>
+                <span className={`shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded-sm ${s.pill}`} style={{ minWidth: "72px", textAlign: "center" }}>{s.label}</span>
                 <div className="flex-1 bg-gray-100 rounded-sm h-2 overflow-hidden">
-                  <div className={`h-full rounded-sm ${s.color}`} style={{ width: `${pct(byStatus[s.key])}%` }} />
+                  <div className={`h-full rounded-sm ${s.bar}`} style={{ width: `${pct(byStatus[s.key])}%` }} />
                 </div>
                 <span className="w-6 text-xs font-bold text-gray-500 text-right shrink-0">{byStatus[s.key]}</span>
               </div>
@@ -189,19 +189,30 @@ export default function StatistikyTab() {
         </div>
 
         <div className="space-y-3">
-          {/* Typ */}
+          {/* Typ — pumpa=amber (zhodné s ObjednavkyTab TAB_STYLES) + SVG ikony */}
           <div className="bg-white rounded-sm border border-gray-200 p-4">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Typ</p>
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {([
-                { key: "pumpa",         label: "Pumpa",       color: "bg-secondary" },
-                { key: "mix",           label: "Mix",         color: "bg-primary" },
-                { key: "vlastnadoprava",label: "Vl. doprava", color: "bg-gray-400" },
-              ] as { key: string; label: string; color: string }[]).filter(t => byType[t.key] > 0).map(t => (
+                {
+                  key: "pumpa", label: "Pumpa", bar: "bg-amber-500", pill: "bg-amber-100 text-amber-700",
+                  icon: <svg width="14" height="9" viewBox="0 0 38 22" fill="currentColor"><rect x="1" y="12" width="24" height="6" rx="1"/><rect x="22" y="9" width="9" height="9" rx="1"/><rect x="8" y="8" width="3" height="4" rx="0.5"/><line x1="9.5" y1="8" x2="3" y2="2" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/><line x1="3" y1="2" x2="22" y2="2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><circle cx="6" cy="19" r="3"/><circle cx="14" cy="19" r="3"/><circle cx="27" cy="19" r="3"/></svg>
+                },
+                {
+                  key: "mix", label: "Mix", bar: "bg-primary", pill: "bg-yellow-100 text-yellow-800",
+                  icon: <svg width="14" height="9" viewBox="0 0 38 22" fill="currentColor"><rect x="1" y="12" width="24" height="6" rx="1"/><rect x="22" y="9" width="9" height="9" rx="1"/><ellipse cx="12" cy="9" rx="9" ry="6"/><circle cx="6" cy="19" r="3"/><circle cx="20" cy="19" r="3"/><circle cx="27" cy="19" r="3"/></svg>
+                },
+                {
+                  key: "vlastnadoprava", label: "Vl. doprava", bar: "bg-gray-400", pill: "bg-gray-100 text-gray-600",
+                  icon: <svg width="14" height="9" viewBox="0 0 38 22" fill="currentColor"><rect x="1" y="10" width="30" height="8" rx="1"/><path d="M4 10 L9 4 L24 4 L28 10"/><circle cx="8" cy="19" r="3"/><circle cx="24" cy="19" r="3"/></svg>
+                },
+              ] as { key: string; label: string; bar: string; pill: string; icon: ReactNode }[]).filter(t => byType[t.key] > 0).map(t => (
                 <div key={t.key} className="flex items-center gap-2">
-                  <span className="w-20 text-xs text-gray-600 shrink-0">{t.label}</span>
+                  <span className={`inline-flex items-center gap-1 shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded-sm ${t.pill}`} style={{ minWidth: "80px" }}>
+                    {t.icon}{t.label}
+                  </span>
                   <div className="flex-1 bg-gray-100 rounded-sm h-2 overflow-hidden">
-                    <div className={`h-full rounded-sm ${t.color}`} style={{ width: `${pct(byType[t.key])}%` }} />
+                    <div className={`h-full rounded-sm ${t.bar}`} style={{ width: `${pct(byType[t.key])}%` }} />
                   </div>
                   <span className="w-6 text-xs font-bold text-gray-500 text-right shrink-0">{byType[t.key]}</span>
                 </div>
@@ -210,18 +221,32 @@ export default function StatistikyTab() {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
+            {/* Platba — farebné chips */}
             <div className="bg-white rounded-sm border border-gray-200 p-4">
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Platba</p>
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs"><span className="text-gray-600">Faktúra</span><span className="font-bold text-secondary">{byPayment.faktura ?? 0}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-gray-600">Hotovosť</span><span className="font-bold text-secondary">{byPayment.hotovost ?? 0}</span></div>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-black bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-sm">Faktúra</span>
+                  <span className="text-xs font-bold text-secondary">{byPayment.faktura ?? 0}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-black bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-sm">Hotovosť</span>
+                  <span className="text-xs font-bold text-secondary">{byPayment.hotovost ?? 0}</span>
+                </div>
               </div>
             </div>
+            {/* Zdroj — MessageSquare/ShoppingCart ikony (zhodné s ObjednavkyTab) */}
             <div className="bg-white rounded-sm border border-gray-200 p-4">
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Zdroj</p>
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs"><span className="text-gray-600">Košík</span><span className="font-bold text-secondary">{total - sms}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-gray-600">SMS</span><span className="font-bold text-secondary">{sms}</span></div>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="inline-flex items-center bg-secondary/10 text-secondary px-1.5 py-0.5 rounded-sm gap-1 text-[10px] font-black"><ShoppingCart className="w-3 h-3" />Košík</span>
+                  <span className="text-xs font-bold text-secondary">{total - sms}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="inline-flex items-center gap-0.5 bg-green-100 text-green-700 text-[10px] font-black px-1.5 py-0.5 rounded-sm"><MessageSquare className="w-3 h-3" />SMS</span>
+                  <span className="text-xs font-bold text-secondary">{sms}</span>
+                </div>
               </div>
             </div>
           </div>
