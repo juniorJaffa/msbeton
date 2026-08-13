@@ -52,6 +52,7 @@ function OrderStatusBadge({ status, onChange, orderTotal }: {
   const [payModal, setPayModal] = useState(false);
   const [payInput, setPayInput] = useState("");
   const btnRef = useRef<HTMLButtonElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
   const cur = ORDER_STATUSES.find(s => s.key === status) ?? ORDER_STATUSES.find(s => s.key === "odoslana")!;
 
   const DROP_H = ORDER_STATUSES.length * 32; // ~32px/položka
@@ -74,9 +75,11 @@ function OrderStatusBadge({ status, onChange, orderTotal }: {
     const close = (e: MouseEvent) => {
       // klik na vlastný trigger → nechaj openDrop toggle riešiť
       if (btnRef.current && btnRef.current.contains(e.target as Node)) return;
+      // klik vnútri portálového dropdownu → nechaj onClick na buttone prebublať
+      if (dropRef.current && dropRef.current.contains(e.target as Node)) return;
       setOpen(false);
     };
-    // capture:true = fired pred stopPropagation iných komponentov
+    // capture:true = fired pred stopPropagation iných komponentov (fix multi-dropdown)
     document.addEventListener("click", close, true);
     return () => document.removeEventListener("click", close, true);
   }, [open]);
@@ -97,7 +100,7 @@ function OrderStatusBadge({ status, onChange, orderTotal }: {
       <div className="relative">
         <button ref={btnRef} onClick={e => { e.stopPropagation(); openDrop(); }} className={`px-2 py-1 text-xs font-bold rounded-sm cursor-pointer ${cur.color}`}>{cur.label} ▾</button>
         {open && createPortal(
-          <div className="fixed z-[500] bg-white border border-gray-200 shadow-lg rounded-sm min-w-[110px]" style={{ top: dropPos.top, bottom: dropPos.bottom, left: dropPos.left }} onClick={e => e.stopPropagation()}>
+          <div ref={dropRef} className="fixed z-[500] bg-white border border-gray-200 shadow-lg rounded-sm min-w-[110px]" style={{ top: dropPos.top, bottom: dropPos.bottom, left: dropPos.left }} onClick={e => e.stopPropagation()}>
             {ORDER_STATUSES.map(s => (
               <button key={s.key} onClick={() => {
                 if (s.key === "vyplatena") { openPayModal(); }
