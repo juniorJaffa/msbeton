@@ -234,11 +234,10 @@ function mergeItems(incoming: Item[], current: Item[], baseSyncMs: number, prese
         let updated: Record<string, unknown> = { ...parent, [parts[1]]: unified };
         // Ak je to deposit.transactions → prepočítaj balance z transakcií
         if (parts[0] === "deposit" && parts[1] === "transactions") {
-          const newBal = unified.reduce((s, t) => {
-            const tx = t as Record<string, unknown>;
-            return s + (typeof tx.amount === "number" ? tx.amount : 0);
+          const newBal = (unified as Array<Record<string, unknown>>).reduce((s: number, t: Record<string, unknown>) => {
+            return s + (typeof t.amount === "number" ? t.amount : 0);
           }, 0);
-          updated = { ...updated, balance: Math.round(newBal * 100) / 100 };
+          updated = { ...updated, balance: Math.round((newBal as number) * 100) / 100 };
         }
         merged = { ...merged, [parts[0]]: updated };
       }

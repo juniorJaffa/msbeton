@@ -755,6 +755,8 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const ORDERS_PAGE_SIZE = 30;
   const [scaleAlertDismissed, setScaleAlertDismissed] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  // Deposit reversal — keď admin zmení stav preč z vyplatena a order mal depositUsed > 0
+  const [depositReversal, setDepositReversal] = useState<{ orderId: string; depositUsed: number; clientLoginId: string; newStatus: Order["status"] } | null>(null);
   // Presence: kto iný práve prezerá danú objednávku (soft lock indicator)
   const [presenceMap, setPresenceMap] = useState<Record<string, string[]>>({});
   const [conflictToast, setConflictToast] = useState<string | null>(null);
@@ -851,6 +853,46 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
     // paidAmount = celá suma objednávky, depositUsed = koľko zo zálohy
     updateStatus(orderId, "vyplatena", orderTotal, depositAmount);
   };
+
+  // Reverzia zálohy — vráti depositUsed späť na klientov zostatok, vymaže depositUsed z objednávky
+  const handleDepositReversal = (orderId: string, depositUsed: number, clientLoginId: string, newStatus: Order["status"]) => {
+    if (readerBlocked()) return;
+    const now = new Date().toISOString();
+    const clients = adminData.getClients();
+    const updatedClients = clients.map(c => {
+      if (c.loginId !== clientLoginId && c.id !== clientLoginId) return c;
+      const cur = c.deposit ?? { balance: 0, transactions: [] };
+      const tx = {
+        id: crypto.randomUUID(),
+        type: "topup" as const,
+        amount: depositUsed,  // kladné = credit back
+        orderId,
+        note: `Vrátenie zálohy — zmena stavu objednávky`,
+        createdAt: now,
+        createdBy: getAdminDeviceLabel() || "admin",
+      };
+      return {
+        ...c,
+        deposit: { enabled: c.deposit?.enabled, balance: cur.balance + depositUsed, transactions: [...cur.transactions, tx] },
+      };
+    });
+    adminData.saveClients(updatedClients);
+    // Zmeniť stav + vymazať depositUsed a paidAmount
+    const entry: StatusHistoryEntry = {
+      status: newStatus,
+      changedAt: now,
+      changedBy: getAdminDeviceLabel() || "admin",
+    };
+    save(orders.map(o => {
+      if (o.id !== orderId) return o;
+      const entryWithPrev: StatusHistoryEntry = { ...entry, prevStatus: o.status };
+      const { depositUsed: _d, paidAmount: _p, ...rest } = o;
+      void _d; void _p;
+      return { ...rest, status: newStatus, statusHistory: [...(o.statusHistory ?? []), entryWithPrev], updatedAt: now };
+    }));
+    setDepositReversal(null);
+  };
+
   const updateStatus = (id: string, status: Order["status"], paidAmount?: number, depositUsed?: number) => {
     const now = new Date().toISOString();
     const entry: StatusHistoryEntry = {
@@ -1363,9 +1405,17 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
           {floatingOrder.company && <span className="text-white/50 truncate hidden sm:block">{floatingOrder.company}</span>}
           <span className="text-white/50 shrink-0">{floatingOrder.tab === "pumpa" ? "Pumpa" : floatingOrder.tab === "mix" ? "Mix" : "Vl."} · {floatingOrder.totalQty} m³</span>
           <span className="text-white/70 font-bold shrink-0 tabular-nums hidden sm:block">{floatingOrder.totalSDph?.toLocaleString("sk", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
-          <span className={`ml-auto shrink-0 text-[9px] font-black px-1.5 py-0.5 rounded-sm ${STATUS_ACTIVE_COLORS[floatingOrder.status] ?? "bg-gray-500 text-white"}`}>
-            {ORDER_STATUSES.find(s => s.key === floatingOrder.status)?.label ?? floatingOrder.status}
-          </span>
+          <div className="ml-auto flex items-center gap-1.5 shrink-0">
+            {/* Záloha badge v floating bare */}
+            {floatingOrder.status === "vyplatena" && (floatingOrder.depositUsed !== undefined && floatingOrder.depositUsed > 0) && (
+              <span className="text-[9px] font-black px-1.5 py-0.5 rounded-sm bg-amber-400/30 text-amber-300 border border-amber-400/30">
+                💰 záloha
+              </span>
+            )}
+            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-sm ${STATUS_ACTIVE_COLORS[floatingOrder.status] ?? "bg-gray-500 text-white"}`}>
+              {ORDER_STATUSES.find(s => s.key === floatingOrder.status)?.label ?? floatingOrder.status}
+            </span>
+          </div>
         </div>
       )}
       </div>
@@ -1502,13 +1552,20 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                         </div>
                       )}
                       <div className="flex items-center gap-1 justify-end flex-wrap mt-0.5">
-                        {/* Záloha badge — len keď platená (čiastočne) zo zálohy klienta */}
-                        {o.status === "vyplatena" && o.depositUsed !== undefined && o.depositUsed > 0 && (() => {
-                          const isPartial = o.paidAmount !== undefined && o.depositUsed < o.paidAmount - 0.01;
+                        {/* Záloha badge — depositUsed (nové) ALEBO fallback z client tx (staré orders) */}
+                        {o.status === "vyplatena" && (() => {
+                          const depUsedDirect = o.depositUsed !== undefined && o.depositUsed > 0 ? o.depositUsed : undefined;
+                          // Fallback pre staré orders bez depositUsed: hľadaj v client deposit.transactions
+                          const depUsedFallback = !depUsedDirect && linkedClient
+                            ? linkedClient.deposit?.transactions?.filter(tx => tx.orderId === o.id && tx.type === "payment").reduce((s, tx) => s + Math.abs(tx.amount), 0) || undefined
+                            : undefined;
+                          const depUsed = depUsedDirect ?? depUsedFallback;
+                          if (!depUsed || depUsed <= 0) return null;
+                          const isPartial = o.paidAmount !== undefined && depUsed < o.paidAmount - 0.01;
                           return (
                             <span
                               className={`text-[9px] font-black px-1.5 py-0.5 rounded-sm border leading-tight ${isPartial ? "bg-orange-100 text-orange-700 border-orange-200" : "bg-amber-100 text-amber-700 border-amber-200"}`}
-                              title={isPartial ? `Záloha: ${o.depositUsed.toFixed(2)} € + doplatok: ${(o.paidAmount! - o.depositUsed).toFixed(2)} €` : "Vyplatená zo zálohy klienta"}>
+                              title={isPartial ? `Záloha: ${depUsed.toFixed(2)} € + doplatok: ${(o.paidAmount! - depUsed).toFixed(2)} €` : "Vyplatená zo zálohy klienta"}>
                               💰 {isPartial ? `záloha+doplatok` : "záloha"}
                             </span>
                           );
@@ -1540,7 +1597,14 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                               <OrderStatusBadge
                                 status={o.status}
                                 orderTotal={o.totalSDph}
-                                onChange={(s, amt) => updateStatus(o.id, s, amt)}
+                                onChange={(s, amt) => {
+                                  // Keď order bol vyplatený zo zálohy a admin mení stav preč → ponúknuť reverziu
+                                  if (s !== "vyplatena" && o.depositUsed !== undefined && o.depositUsed > 0 && oc) {
+                                    setDepositReversal({ orderId: o.id, depositUsed: o.depositUsed, clientLoginId: oc.loginId, newStatus: s });
+                                  } else {
+                                    updateStatus(o.id, s, amt);
+                                  }
+                                }}
                                 // depBal/onDepositPay len keď enabled — dvojitá ochrana (canUseDeposit v Badge je tretia)
                                 depositBalance={depEnabled && depBal && depBal > 0 ? depBal : undefined}
                                 depositEnabled={depEnabled}
@@ -2117,6 +2181,38 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
           </div>
         );
       })()}
+
+      {/* ── Deposit reversal confirmation modal ── */}
+      {depositReversal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" onClick={() => setDepositReversal(null)}>
+          <div className="absolute inset-0 bg-black/50" />
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-xs p-5" onClick={e => e.stopPropagation()}>
+            <div className="font-black text-secondary text-sm mb-3">Vrátiť zálohu klientovi?</div>
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg mb-4">
+              <div className="text-sm text-gray-800">
+                Záloha <span className="font-black text-amber-700">{depositReversal.depositUsed.toFixed(2)} €</span> bola odpočítaná pri platbe.
+              </div>
+              <div className="mt-1.5 text-xs text-gray-500">
+                Zmenou stavu môžete zálohu vrátiť späť na zostatok klienta.
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => { updateStatus(depositReversal.orderId, depositReversal.newStatus); setDepositReversal(null); }}
+                className="flex-1 px-3 py-2.5 text-xs font-bold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                Nechať zálohu
+              </button>
+              <button
+                onClick={() => handleDepositReversal(depositReversal.orderId, depositReversal.depositUsed, depositReversal.clientLoginId, depositReversal.newStatus)}
+                className="flex-1 px-3 py-2.5 text-xs font-black text-white bg-amber-500 hover:bg-amber-600 rounded-lg transition-colors cursor-pointer"
+              >
+                Vrátiť {depositReversal.depositUsed.toFixed(2)} €
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

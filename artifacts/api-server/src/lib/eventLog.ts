@@ -11,7 +11,7 @@ const BUF_MAX = 500;
 const buf: AppEvent[] = [];
 
 export function logEvent(fields: Omit<AppEvent, "ts">): void {
-  buf.push({ ts: new Date().toISOString(), ...fields });
+  buf.push({ ts: new Date().toISOString(), ...fields } as AppEvent);
   if (buf.length > BUF_MAX) buf.splice(0, buf.length - BUF_MAX);
 }
 
