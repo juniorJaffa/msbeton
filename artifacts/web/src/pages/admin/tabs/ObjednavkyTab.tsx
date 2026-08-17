@@ -1931,23 +1931,41 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                       <span className={`text-lg font-black ${isNeg ? "text-red-700" : "text-teal-700"}`}>{fmtEur(o.paidAmount)}</span>
                                     </div>
                                     {depUsed !== undefined && (
-                                      <div className={`rounded-sm px-3 py-2 mt-1 border space-y-1 ${isPartialDep ? "bg-orange-50 border-orange-200" : "bg-amber-50 border-amber-200"}`}>
-                                        <div className="flex justify-between items-center">
-                                          <span className={`text-xs font-bold flex items-center gap-1 ${isPartialDep ? "text-orange-700" : "text-amber-700"}`}>💰 Záloha klienta</span>
-                                          <span className={`font-black tabular-nums text-sm ${isPartialDep ? "text-orange-700" : "text-amber-700"}`}>−{depUsed.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+                                      <div className={`rounded-md mt-1.5 border overflow-hidden ${isPartialDep ? "border-orange-300" : "border-amber-200"}`}>
+                                        {/* Záloha riadok */}
+                                        <div className={`flex justify-between items-center px-3 py-2 ${isPartialDep ? "bg-orange-50" : "bg-amber-50"}`}>
+                                          <span className={`text-xs font-bold flex items-center gap-1.5 ${isPartialDep ? "text-orange-700" : "text-amber-700"}`}>
+                                            💰 Záloha klienta
+                                          </span>
+                                          <span className={`font-black tabular-nums text-sm ${isPartialDep ? "text-orange-700" : "text-amber-700"}`}>
+                                            −{depUsed.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                                          </span>
                                         </div>
-                                        {isPartialDep && (
-                                          <>
-                                            <div className="flex justify-between items-center pt-1 border-t border-orange-200">
-                                              <span className="text-xs font-bold text-orange-700">Doplatok (hotovosť/iné)</span>
-                                              <span className="font-black text-orange-700 tabular-nums text-sm">{(o.paidAmount - depUsed).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
-                                            </div>
-                                            <div className="mt-1 pt-1 border-t border-orange-200 flex items-start gap-1.5 text-[10px] text-orange-700 font-bold bg-orange-100 rounded px-2 py-1.5">
-                                              <svg className="w-3 h-3 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/></svg>
-                                              Klient musí doplatiť {(o.paidAmount - depUsed).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € na mieste alebo doplniť zálohu.
-                                            </div>
-                                          </>
-                                        )}
+                                        {isPartialDep && (() => {
+                                          const doplatokVal = o.paidAmount - depUsed;
+                                          return (
+                                            <>
+                                              {/* Doplatok riadok */}
+                                              <div className="flex justify-between items-center px-3 py-2 bg-orange-50 border-t border-orange-200">
+                                                <span className="text-xs font-bold text-orange-600">Doplatok (hotovosť/iné)</span>
+                                                <span className="font-black text-orange-600 tabular-nums text-sm">{doplatokVal.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+                                              </div>
+                                              {/* Call-to-action banner */}
+                                              <div className="bg-orange-500 px-3 py-2.5 flex items-center gap-2.5">
+                                                <svg className="w-4 h-4 shrink-0 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/>
+                                                </svg>
+                                                <div className="flex-1 min-w-0">
+                                                  <div className="text-white font-black text-xs tracking-wide uppercase leading-tight">Klient musí doplatiť</div>
+                                                  <div className="text-white/80 text-[10px] font-semibold">na mieste alebo doplniť zálohu</div>
+                                                </div>
+                                                <span className="text-white font-black text-lg tabular-nums shrink-0 leading-tight">
+                                                  {doplatokVal.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                                                </span>
+                                              </div>
+                                            </>
+                                          );
+                                        })()}
                                       </div>
                                     )}
                                   </>
