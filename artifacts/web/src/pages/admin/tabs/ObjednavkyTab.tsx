@@ -2038,17 +2038,23 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                     }
                                     if (entry.kind === "deposit") {
                                       const tx = entry.tx;
+                                      const isReversal = tx.note?.startsWith("Vrátenie zálohy");
                                       return (
-                                        <div key={`d-${ei}`} className="flex items-center gap-2 text-xs py-1 border-t border-amber-50 bg-amber-50/60 -mx-1 px-1 rounded-sm">
-                                          <span className="text-amber-500 tabular-nums text-[10px] shrink-0 w-24">{fmtTs(entry.ts)}</span>
-                                          <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-amber-400" />
+                                        <div key={`d-${ei}`} className="flex items-start gap-2 text-xs py-1.5 border-t border-amber-50 bg-amber-50/60 -mx-1 px-1 rounded-sm">
+                                          <span className="text-amber-500 tabular-nums text-[10px] shrink-0 w-24 mt-0.5">{fmtTs(entry.ts)}</span>
+                                          <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-amber-400 mt-1" />
                                           <span className="flex-1 text-amber-700 font-semibold text-[11px] min-w-0">
-                                            {tx.type === "payment" ? "💰 Odpočet zo zálohy" : "💰 Záloha"}
-                                            <span className={`ml-1.5 font-black tabular-nums ${tx.amount < 0 ? "text-red-500" : "text-teal-600"}`}>
-                                              {tx.amount > 0 ? "+" : ""}{tx.amount.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                                            <span className="block">
+                                              {isReversal ? "↩ Vrátenie zálohy" : tx.type === "payment" ? "💰 Odpočet zo zálohy" : "💰 Záloha/dobíjanie"}
+                                              <span className={`ml-1.5 font-black tabular-nums ${tx.amount < 0 ? "text-red-500" : "text-teal-600"}`}>
+                                                {tx.amount > 0 ? "+" : ""}{tx.amount.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                                              </span>
                                             </span>
+                                            {tx.note && !isReversal && (
+                                              <span className="block text-[9px] text-amber-500 font-normal leading-tight mt-0.5">{tx.note}</span>
+                                            )}
                                           </span>
-                                          <span className="text-[10px] text-amber-600 shrink-0 truncate max-w-[80px]">{tx.note ?? tx.createdBy}</span>
+                                          {tx.createdBy && <KtoChip label={tx.createdBy} amber />}
                                         </div>
                                       );
                                     }
