@@ -30,6 +30,18 @@ export default function StatistikyTab() {
     if (o.viaSms) sms++;
   });
 
+  // Záloha štatistiky
+  let depositOrderCount = 0;
+  let depositTotal = 0;
+  let doplatokCount = 0;
+  orders.forEach(o => {
+    if (o.depositUsed !== undefined && o.depositUsed > 0) {
+      depositOrderCount++;
+      depositTotal += o.depositUsed;
+      if (o.paidAmount !== undefined && o.depositUsed < o.paidAmount - 0.01) doplatokCount++;
+    }
+  });
+
   // active = všetky okrem zrušených
   const active = orders.filter(o => o.status !== "zrusena");
   // realized = len potvrdené / odoslané / vyúčtované / vyplatené (nie nova)
@@ -233,6 +245,21 @@ export default function StatistikyTab() {
                   <span className="text-[10px] font-black bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-sm">Hotovosť</span>
                   <span className="text-xs font-bold text-secondary">{byPayment.hotovost ?? 0}</span>
                 </div>
+                {depositOrderCount > 0 && (
+                  <>
+                    <div className="border-t border-gray-100 pt-1.5 flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-black bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-sm">💰 Záloha</span>
+                      <span className="text-xs font-bold text-amber-700">{depositOrderCount}</span>
+                    </div>
+                    {doplatokCount > 0 && (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-black bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-sm">+ doplatok</span>
+                        <span className="text-xs font-bold text-orange-700">{doplatokCount}</span>
+                      </div>
+                    )}
+                    <div className="text-[10px] text-amber-600 font-semibold text-right tabular-nums">{fmtEur(depositTotal)} zo zálohy</div>
+                  </>
+                )}
               </div>
             </div>
             {/* Zdroj — MessageSquare/ShoppingCart ikony (zhodné s ObjednavkyTab) */}

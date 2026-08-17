@@ -304,6 +304,9 @@ function exportOrderPDF(o: Order, format: "a4" | "a5" = "a4") {
   const statusLabels: Record<string, string> = { nova: "Nová", potvrdena: "Potvrdená", odoslana: "Odoslaná FA", vyuctovana: "Vyúčtovaná", vyplatena: "Vyplatená", zrusena: "Zrušená" };
   const today = new Date(o.createdAt).toLocaleDateString("sk-SK");
   const fmtEurPdf = (n: number | undefined) => n !== undefined ? n.toFixed(2) + " €" : "";
+  // Čiastočná platba zo zálohy — doplatok banner v PDF
+  const isPartialDepPdf = o.depositUsed !== undefined && o.depositUsed > 0 && o.paidAmount !== undefined && o.depositUsed < o.paidAmount - 0.01;
+  const doplatokPdf = isPartialDepPdf ? (o.paidAmount! - o.depositUsed!) : 0;
 
   let parsed: { v: number; s: { h: string; rows: { l: string; v: number; o?: number; u?: number; uOrig?: number; uSuffix?: string }[] }[]; fT?: number } | null = null;
   try { if (o.breakdown?.startsWith("{")) parsed = JSON.parse(o.breakdown); } catch { /* */ }
@@ -524,13 +527,20 @@ function exportOrderPDF(o: Order, format: "a4" | "a5" = "a4") {
     <tbody>${breakdownHtml}</tbody>
   </table>` : ""}
   <!-- Suma -->
-  <div style="background:#001D3D;color:#fff;padding:3mm 4mm;display:flex;justify-content:space-between;align-items:center">
+  <div style="background:#001D3D;color:#fff;padding:3mm 4mm;display:flex;justify-content:space-between;align-items:center;border-radius:${isPartialDepPdf ? "2px 2px 0 0" : "0"}">
     <div style="font-size:8pt;color:rgba(255,255,255,0.6)">${o.priceMode === "hotovost" ? "Spolu" : "Celkom s DPH"}</div>
     <div style="text-align:right">
       <div style="font-size:15pt;font-weight:bold;color:#EDC531;line-height:1">${fmtEurPdf(o.totalSDph)}</div>
       ${o.status === "vyplatena" && o.paidAmount !== undefined ? `<div style="font-size:7.5pt;color:rgba(255,255,255,0.7);margin-top:1.5mm">Zaplatené ${fmtEurPdf(o.paidAmount)}${Math.abs(o.paidAmount - o.totalSDph) > 0.01 ? ` <span style="font-weight:bold;color:${o.paidAmount > o.totalSDph ? "#86efac" : "#ef4444"}">${o.paidAmount > o.totalSDph ? `+${(o.paidAmount - o.totalSDph).toFixed(2)} € tringelt` : `${(o.paidAmount - o.totalSDph).toFixed(2)} €`}</span>` : ""}${o.depositUsed !== undefined && o.depositUsed > 0 ? `<span style="margin-left:5px;background:rgba(251,191,36,0.25);color:#fcd34d;border-radius:2px;padding:0 3px;font-weight:bold">💰 záloha ${fmtEurPdf(o.depositUsed)}${o.depositUsed < o.paidAmount - 0.01 ? ` + doplatok ${fmtEurPdf(o.paidAmount - o.depositUsed)}` : ""}</span>` : ""}</div>` : ""}
     </div>
   </div>
+  ${isPartialDepPdf ? `<div style="background:#ea580c;color:#fff;padding:2.5mm 4mm;border-radius:0 0 2px 2px;display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <div style="font-size:7.5pt;font-weight:bold;letter-spacing:0.3px;text-transform:uppercase">Klient musí doplatiť</div>
+      <div style="font-size:6.5pt;opacity:0.8;margin-top:0.5mm">na mieste alebo doplniť zálohu</div>
+    </div>
+    <div style="font-size:12pt;font-weight:bold">${fmtEurPdf(doplatokPdf)}</div>
+  </div>` : ""}
   <!-- Podpisy + Google QR — zmenšené, stále na A5 -->
   <div style="display:flex;gap:5mm;margin-top:4mm;align-items:flex-end">
     <div style="flex:1;display:flex;gap:4mm">
@@ -630,7 +640,8 @@ function exportOrderPDF(o: Order, format: "a4" | "a5" = "a4") {
   </div>` : ""}
 
   <!-- Celková suma -->
-  <div style="background:#001D3D;color:#fff;padding:4mm;border-radius:2px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8mm">
+  <div style="margin-bottom:8mm">
+  <div style="background:#001D3D;color:#fff;padding:4mm;border-radius:${isPartialDepPdf ? "2px 2px 0 0" : "2px"};display:flex;justify-content:space-between;align-items:center">
     ${o.priceMode !== "hotovost" ? `<div>
       <div style="font-size:8pt;color:rgba(255,255,255,0.6)">Bez DPH</div>
       <div style="font-size:9.5pt;font-weight:bold;color:rgba(255,255,255,0.8)">${fmtEurPdf(o.totalBezDph)}</div>
@@ -646,6 +657,14 @@ function exportOrderPDF(o: Order, format: "a4" | "a5" = "a4") {
         ${o.depositUsed !== undefined && o.depositUsed > 0 ? `<div style="margin-top:3px;font-size:8pt;background:rgba(251,191,36,0.2);border-radius:3px;padding:2px 5px;color:#fcd34d;font-weight:bold">💰 Záloha: ${fmtEurPdf(o.depositUsed)}${o.depositUsed < o.paidAmount - 0.01 ? ` + doplatok: ${fmtEurPdf(o.paidAmount - o.depositUsed)}` : ""}</div>` : ""}
       </div>` : ""}
     </div>
+  </div>
+  ${isPartialDepPdf ? `<div style="background:#ea580c;color:#fff;padding:3.5mm 4mm;border-radius:0 0 2px 2px;display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <div style="font-size:9pt;font-weight:bold;letter-spacing:0.4px;text-transform:uppercase">Klient musí doplatiť</div>
+      <div style="font-size:7.5pt;opacity:0.8;margin-top:1px">na mieste alebo doplniť zálohu</div>
+    </div>
+    <div style="font-size:15pt;font-weight:bold">${fmtEurPdf(doplatokPdf)}</div>
+  </div>` : ""}
   </div>
 
   <!-- Podpisy — rovnaká štruktúra ako Cenová ponuka -->
