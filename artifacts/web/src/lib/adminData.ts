@@ -130,6 +130,29 @@ export interface Client {
   isDeleted?: boolean;       // soft delete — skrytý v UI, obnoviteľný
   deletedAt?: string;        // ISO timestamp soft delete
   deletedBy?: string;        // device label kto zmazal
+  deposit?: {
+    enabled?: boolean;         // záloha aktívna pre tohto klienta (on/off toggle)
+    balance: number;           // aktuálny zostatok zálohy (€)
+    transactions: DepositTx[]; // história pohybov — append-only
+  };
+}
+
+export interface DepositTx {
+  id: string;
+  type: "topup" | "payment";   // topup = admin pridá, payment = odpočet pri objednávke
+  amount: number;               // topup = kladné, payment = záporné
+  orderId?: string;             // linked order (pre payment)
+  note?: string;
+  createdAt: string;            // ISO
+  createdBy: string;            // getAdminDeviceLabel()
+}
+
+export interface StatusHistoryEntry {
+  status: "nova" | "potvrdena" | "odoslana" | "vyuctovana" | "vyplatena" | "zrusena" | "vybavena";
+  prevStatus?: string;
+  changedAt: string;        // ISO timestamp
+  changedBy: string;        // getAdminDeviceLabel() alebo "systém" / meno klienta
+  paidAmount?: number;      // len pri vyplatena
 }
 
 export interface Order {
@@ -167,6 +190,7 @@ export interface Order {
   pumpTimer?: { start: string; stop: string };
   podmienky?: { trucks: number; pumpa: number; mix: number; m3PerTruck: number; isRisk?: boolean };
   paidAmount?: number;
+  statusHistory?: StatusHistoryEntry[];  // timeline zmien stavu — append-only
   updatedAt?: string; // item-level merge (multi-admin) — zabráni strate zmien stavu/mazania
   // Kto objednávku vytvoril (multi-admin): "admin" | "reader" | "klient" | "anonym"
   createdByRole?: string;

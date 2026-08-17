@@ -28,10 +28,11 @@ function creatorMeta(role?: string): { Icon: React.ElementType; label: string; c
     default: return null; // staré objednávky bez údaja
   }
 }
-import { adminData, adminApi, Order, TransportSettings, getKamenivoGroup, readerBlocked } from "@/lib/adminData";
+import { adminData, adminApi, Order, StatusHistoryEntry, TransportSettings, getKamenivoGroup, readerBlocked } from "@/lib/adminData";
 import { clientAvatar, nameAvatar } from "@/lib/clientAvatar";
 import { cn, formatPhone } from "@/lib/utils";
-import { isReader } from "@/lib/adminAuth";
+import { isReader, getAdminDeviceLabel } from "@/lib/adminAuth";
+import { authFetch } from "./_shared";
 
 const ORDER_STATUSES: { key: Order["status"]; label: string; color: string }[] = [
   { key: "nova",        label: "Nová",        color: "bg-blue-100 text-blue-700" },
@@ -42,15 +43,21 @@ const ORDER_STATUSES: { key: Order["status"]; label: string; color: string }[] =
   { key: "zrusena",     label: "Zrušená",     color: "bg-red-100 text-red-500" },
 ];
 
-function OrderStatusBadge({ status, onChange, orderTotal }: {
+function OrderStatusBadge({ status, onChange, orderTotal, depositBalance, depositEnabled, onDepositPay }: {
   status: Order["status"];
   onChange: (s: Order["status"], paidAmount?: number) => void;
   orderTotal?: number;
+  depositBalance?: number;         // zostatok zálohy klienta (ak má)
+  depositEnabled?: boolean;        // záloha on/off pre tohto klienta
+  onDepositPay?: (amount: number) => void; // callback: odpočítať zo zálohy + zmeniť stav
 }) {
   const [open, setOpen] = useState(false);
   const [dropPos, setDropPos] = useState<{ top?: number; bottom?: number; left: number }>({ left: 0 });
   const [payModal, setPayModal] = useState(false);
   const [payInput, setPayInput] = useState("");
+  const [payTab, setPayTab] = useState<"cash" | "deposit">("cash");
+  // Auto-select deposit tab keď je záloha zapnutá a má balance
+  const canUseDeposit = depositEnabled === true && depositBalance !== undefined && depositBalance > 0 && !!onDepositPay;
   const btnRef = useRef<HTMLButtonElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
   const cur = ORDER_STATUSES.find(s => s.key === status) ?? ORDER_STATUSES.find(s => s.key === "odoslana")!;
@@ -86,12 +93,19 @@ function OrderStatusBadge({ status, onChange, orderTotal }: {
 
   const openPayModal = () => {
     setPayInput(orderTotal !== undefined ? orderTotal.toFixed(2) : "");
+    // Ak záloha je zapnutá a má dostatok → predvolene vybrať zálohu
+    setPayTab(canUseDeposit ? "deposit" : "cash");
     setPayModal(true);
     setOpen(false);
   };
   const confirmPay = () => {
-    const amt = parseFloat(payInput.replace(",", "."));
-    onChange("vyplatena", isNaN(amt) ? undefined : amt);
+    if (payTab === "deposit" && canUseDeposit) {
+      const amt = Math.min(orderTotal ?? depositBalance!, depositBalance!);
+      onDepositPay!(amt);
+    } else {
+      const amt = parseFloat(payInput.replace(",", "."));
+      onChange("vyplatena", isNaN(amt) ? undefined : amt);
+    }
     setPayModal(false);
   };
 
@@ -125,9 +139,50 @@ function OrderStatusBadge({ status, onChange, orderTotal }: {
               </div>
               <div>
                 <div className="font-black text-secondary text-sm">Vyplatená suma</div>
-                <div className="text-xs text-gray-400">Uprav ak klient dal viac (tringelt)</div>
+                <div className="text-xs text-gray-400">{payTab === "deposit" ? "Odpočíta zo zálohy klienta" : "Uprav ak klient dal viac (tringelt)"}</div>
               </div>
             </div>
+
+            {/* Tab prepínač: Hotovosť / Záloha — len keď záloha zapnutá */}
+            {canUseDeposit && (
+              <div className="flex mb-4 rounded-md overflow-hidden border border-gray-200">
+                <button onClick={() => setPayTab("cash")}
+                  className={`flex-1 py-1.5 text-xs font-bold transition-colors ${payTab === "cash" ? "bg-secondary text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}>
+                  💵 Hotovosť
+                </button>
+                <button onClick={() => setPayTab("deposit")}
+                  className={`flex-1 py-1.5 text-xs font-bold transition-colors ${payTab === "deposit" ? "bg-amber-500 text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}>
+                  🏦 Záloha ({depositBalance.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €)
+                </button>
+              </div>
+            )}
+
+            {payTab === "deposit" && depositBalance !== undefined ? (
+              <div className="mb-4 p-3 rounded-md bg-amber-50 border border-amber-200">
+                <div className="text-xs font-bold text-amber-700 mb-1">Záloha klienta</div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-amber-600">Zostatok pred:</span>
+                  <span className="font-black text-amber-700 tabular-nums">{depositBalance.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+                </div>
+                {orderTotal !== undefined && (
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="text-xs text-amber-600">Odpočet za objednávku:</span>
+                    <span className="font-black text-red-500 tabular-nums">−{Math.min(orderTotal, depositBalance).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+                  </div>
+                )}
+                {orderTotal !== undefined && depositBalance >= orderTotal && (
+                  <div className="flex justify-between items-center mt-1 pt-1 border-t border-amber-200">
+                    <span className="text-xs font-bold text-amber-700">Zostatok po:</span>
+                    <span className="font-black text-teal-600 tabular-nums">{(depositBalance - orderTotal).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+                  </div>
+                )}
+                {orderTotal !== undefined && depositBalance < orderTotal && (
+                  <div className="mt-1 pt-1 border-t border-amber-200 text-xs text-red-600 font-bold">
+                    ⚠ Záloha nestačí — nedoplatok {(orderTotal - depositBalance).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                  </div>
+                )}
+              </div>
+            ) : (
             <div className="mb-4">
               <label className="block text-xs font-bold text-gray-600 mb-1.5">Vyplatená suma (€)</label>
               <div className="relative">
@@ -180,14 +235,15 @@ function OrderStatusBadge({ status, onChange, orderTotal }: {
                 );
               })()}
             </div>
+            )}
             <div className="flex gap-2">
               <button onClick={() => setPayModal(false)}
                 className="flex-1 px-3 py-2 text-xs font-bold text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors cursor-pointer">
                 Zrušiť
               </button>
               <button onClick={confirmPay}
-                className="flex-1 px-3 py-2 text-xs font-black text-white bg-teal-600 rounded-md hover:bg-teal-700 transition-colors cursor-pointer">
-                Potvrdiť
+                className={`flex-1 px-3 py-2 text-xs font-black text-white rounded-md transition-colors cursor-pointer ${payTab === "deposit" ? "bg-amber-500 hover:bg-amber-600" : "bg-teal-600 hover:bg-teal-700"}`}>
+                {payTab === "deposit" ? "Odpočítať zo zálohy" : "Potvrdiť"}
               </button>
             </div>
           </div>
@@ -622,6 +678,21 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
     window.addEventListener("admin-data-synced", handler);
     return () => window.removeEventListener("admin-data-synced", handler);
   }, []);
+
+  // Conflict toast: iný admin zmenil objednávky súbežne → "merged" event
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ key: string; state: string }>).detail;
+      if (detail.key === "orders" && detail.state === "merged") {
+        // Refresh lokálneho zoznamu z čerstvého localStorage (syncFromServer ho naplnil)
+        setOrders(adminData.getOrders());
+        setConflictToast("⚠ Iný admin zmenil niektoré objednávky — zobrazujem aktuálny stav");
+        setTimeout(() => setConflictToast(null), 5000);
+      }
+    };
+    window.addEventListener("admin-save-state", handler);
+    return () => window.removeEventListener("admin-save-state", handler);
+  }, []);
   const [expanded, setExpanded] = useState<string | null>(focusOrderId ?? null);
   const [highlightedOrder, setHighlightedOrder] = useState<string | null>(focusOrderId ?? null);
   const [filterStatus, setFilterStatus] = useState<Order["status"] | "vsetky">("vsetky");
@@ -665,6 +736,10 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const [ordersPage, setOrdersPage] = useState(0);
   const ORDERS_PAGE_SIZE = 30;
   const [scaleAlertDismissed, setScaleAlertDismissed] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  // Presence: kto iný práve prezerá danú objednávku (soft lock indicator)
+  const [presenceMap, setPresenceMap] = useState<Record<string, string[]>>({});
+  const [conflictToast, setConflictToast] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -718,9 +793,45 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
 
   const readOnly = isReader(); // admin-čitateľ — žiadne zmeny objednávok
   const save = (data: Order[]) => { if (readerBlocked()) return; setOrders(data); adminData.saveOrders(data); };
-  const remove = (id: string) => { if (confirm("Vymazať objednávku?")) save(orders.filter(o => o.id !== id)); };
-  const updateStatus = (id: string, status: Order["status"], paidAmount?: number) =>
-    save(orders.map(o => o.id === id ? { ...o, status, ...(paidAmount !== undefined ? { paidAmount } : {}) } : o));
+  const remove = (id: string) => { save(orders.filter(o => o.id !== id)); setDeleteConfirmId(null); };
+
+  const handleDepositPay = (orderId: string, amount: number, clientLoginId: string) => {
+    if (readerBlocked()) return;
+    // Deduct from client deposit
+    const clients = adminData.getClients();
+    const updatedClients = clients.map(c => {
+      if (c.loginId !== clientLoginId && c.id !== clientLoginId) return c;
+      const cur = c.deposit ?? { balance: 0, transactions: [] };
+      const tx = {
+        id: crypto.randomUUID(),
+        type: "payment" as const,
+        amount: -amount,
+        orderId,
+        createdAt: new Date().toISOString(),
+        createdBy: getAdminDeviceLabel() || "admin",
+      };
+      return { ...c, deposit: { balance: Math.max(0, cur.balance - amount), transactions: [...cur.transactions, tx] } };
+    });
+    adminData.saveClients(updatedClients);
+    // Zmeniť stav objednávky
+    updateStatus(orderId, "vyplatena", amount);
+  };
+  const updateStatus = (id: string, status: Order["status"], paidAmount?: number) => {
+    const now = new Date().toISOString();
+    const entry: StatusHistoryEntry = {
+      status,
+      changedAt: now,
+      changedBy: getAdminDeviceLabel() || "admin",
+      ...(paidAmount !== undefined ? { paidAmount } : {}),
+    };
+    save(orders.map(o => {
+      if (o.id !== id) return o;
+      const hist = o.statusHistory ?? [];
+      const entryWithPrev: StatusHistoryEntry = { ...entry, prevStatus: o.status };
+      // updatedAt je kritické — mergeSaveArray ho používa na určenie víťaza pri súbežných zmenách
+      return { ...o, status, statusHistory: [...hist, entryWithPrev], updatedAt: now, ...(paidAmount !== undefined ? { paidAmount } : {}) };
+    }));
+  };
 
   const SK_MONTHS = ["Január","Február","Marec","Apríl","Máj","Jún","Júl","August","September","Október","November","December"];
 
@@ -829,6 +940,29 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const pagedOrders = sorted.slice(ordersPage * ORDERS_PAGE_SIZE, (ordersPage + 1) * ORDERS_PAGE_SIZE);
   useEffect(() => { setOrdersPage(0); }, [filterStatus, filterTab, filterPriceMode, filterChannel, clientIdActive, search, dateFrom, dateTo]);
 
+  // ── Presence polling — zisti kto iný prezerá objednávky (každých 30s) ──
+  useEffect(() => {
+    const device = getAdminDeviceLabel() || "admin";
+    const fetchPresence = async () => {
+      try {
+        const r = await authFetch("/api/admin/orders/presence");
+        if (r.ok) {
+          const json = await r.json() as { data: Record<string, string[]> };
+          // Odfiltruj seba samého zo zoznamu
+          const filtered: Record<string, string[]> = {};
+          for (const [id, devs] of Object.entries(json.data ?? {})) {
+            const others = devs.filter((d: string) => d !== device);
+            if (others.length) filtered[id] = others;
+          }
+          setPresenceMap(filtered);
+        }
+      } catch { /* presence je best-effort */ }
+    };
+    fetchPresence();
+    const interval = setInterval(fetchPresence, 30_000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="space-y-3">
       {/* Nastavenia — collapsible, scrolluje preč (nie sticky) */}
@@ -885,6 +1019,15 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
       </div>
 
       {/* Scale alert — zobrazuje sa keď objednávok je >1000/2000/5000 */}
+      {/* Conflict toast — iný admin zmenil objednávky súbežne */}
+      {conflictToast && (
+        <div className="flex items-center gap-2 bg-amber-50 border border-amber-300 rounded-lg px-4 py-2.5 text-sm animate-pulse">
+          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+          <span className="text-amber-800 font-semibold flex-1">{conflictToast}</span>
+          <button onClick={() => setConflictToast(null)} className="text-amber-500 hover:text-amber-700 shrink-0"><X className="w-4 h-4" /></button>
+        </div>
+      )}
+
       {!scaleAlertDismissed && (() => {
         const n = orders.length;
         if (n >= 5000) return (
@@ -1188,6 +1331,13 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                   onClick={() => {
                     const next = isExp ? null : o.id;
                     setExpanded(next);
+                    // Presence: oznám expand (acquire) alebo collapse (release)
+                    const device = getAdminDeviceLabel() || "admin";
+                    if (next) {
+                      authFetch(`/api/admin/orders/${next}/presence`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ device }) }).catch(() => {});
+                    } else if (o.id) {
+                      authFetch(`/api/admin/orders/${o.id}/presence?device=${encodeURIComponent(device)}`, { method: "DELETE" }).catch(() => {});
+                    }
                     if (next) {
                       requestAnimationFrame(() => {
                         const container = document.getElementById("admin-content");
@@ -1295,10 +1445,31 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
+                      {/* Presence: iný admin práve prezerá túto objednávku */}
+                      {presenceMap[o.id] && presenceMap[o.id].length > 0 && (
+                        <span title={`Prezerá: ${presenceMap[o.id].join(", ")}`}
+                          className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-sm bg-amber-100 border border-amber-300 text-amber-700 text-[9px] font-bold whitespace-nowrap">
+                          <Eye className="w-2.5 h-2.5 shrink-0" />
+                          {presenceMap[o.id][0].split(" ·")[0].split(" ")[0]}
+                        </span>
+                      )}
                       {readOnly
                         ? <span className={cn("text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-sm", ORDER_STATUSES.find(s => s.key === o.status)?.color ?? "bg-gray-100 text-gray-600")}>{ORDER_STATUSES.find(s => s.key === o.status)?.label ?? o.status}</span>
-                        : <OrderStatusBadge status={o.status} orderTotal={o.totalSDph} onChange={(s, amt) => updateStatus(o.id, s, amt)} />}
-                      {!readOnly && <button onClick={() => remove(o.id)} className="p-1.5 text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>}
+                        : (() => {
+                            const oc = o.clientId ? adminData.getClients().find(c => c.loginId === String(o.clientId) || c.id === String(o.clientId)) : undefined;
+                            const depBal = oc?.deposit?.balance;
+                            const depEnabled = oc?.deposit?.enabled === true;
+                            return (
+                              <OrderStatusBadge
+                                status={o.status}
+                                orderTotal={o.totalSDph}
+                                onChange={(s, amt) => updateStatus(o.id, s, amt)}
+                                depositBalance={depBal && depBal > 0 ? depBal : undefined}
+                                depositEnabled={depEnabled}
+                                onDepositPay={oc ? (amt) => handleDepositPay(o.id, amt, oc.loginId) : undefined}
+                              />
+                            );
+                          })()}
                     </div>
                   </div>
                 </div>
@@ -1613,6 +1784,131 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                 );
                               })()}
                             </div>
+
+                            {/* ── Unified timeline: História zmien + záloha transakcie ── */}
+                            {(() => {
+                              const hist = o.statusHistory ?? [];
+                              const STATUS_LABELS: Record<string, string> = {
+                                nova: "Nová", potvrdena: "Potvrdená", odoslana: "Odoslaná",
+                                vyuctovana: "Vyúčtovaná", vyplatena: "Vyplatená", zrusena: "Zrušená", vybavena: "Vybavená",
+                              };
+                              const STATUS_DOT: Record<string, string> = {
+                                nova: "bg-blue-400", potvrdena: "bg-yellow-400", odoslana: "bg-green-500",
+                                vyuctovana: "bg-purple-500", vyplatena: "bg-teal-500", zrusena: "bg-red-400", vybavena: "bg-gray-400",
+                              };
+                              const fmtTs = (iso: string) => {
+                                const d = new Date(iso);
+                                const now = new Date();
+                                const todayStr2 = now.toISOString().slice(0,10);
+                                const dStr = d.toISOString().slice(0,10);
+                                const t = d.toLocaleTimeString("sk-SK", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Bratislava" });
+                                if (dStr === todayStr2) return `Dnes ${t}`;
+                                const y = new Date(now); y.setDate(y.getDate()-1);
+                                if (dStr === y.toISOString().slice(0,10)) return `Včera ${t}`;
+                                return `${d.toLocaleDateString("sk-SK", { day:"numeric", month:"numeric", timeZone:"Europe/Bratislava" })} ${t}`;
+                              };
+
+                              // Záloha transakcie viazané na túto objednávku
+                              const ocForTimeline = o.clientId
+                                ? adminData.getClients().find(c => c.loginId === String(o.clientId) || c.id === String(o.clientId))
+                                : undefined;
+                              const depTxForOrder = (ocForTimeline?.deposit?.transactions ?? []).filter(tx => tx.orderId === o.id);
+
+                              // Unified timeline — spojiť + zoradiť chronologicky
+                              type TLEntry =
+                                | { kind: "created"; ts: string }
+                                | { kind: "status"; ts: string; h: typeof hist[0] }
+                                | { kind: "deposit"; ts: string; tx: typeof depTxForOrder[0] };
+                              const entries: TLEntry[] = [
+                                { kind: "created", ts: o.createdAt },
+                                ...hist.map(h => ({ kind: "status" as const, ts: h.changedAt, h })),
+                                ...depTxForOrder.map(tx => ({ kind: "deposit" as const, ts: tx.createdAt, tx })),
+                              ].sort((a, b) => a.ts.localeCompare(b.ts));
+
+                              const hasDepTx = depTxForOrder.length > 0;
+
+                              return (
+                                <div className="mt-3 pt-3 border-t border-gray-100">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">História</span>
+                                    {hasDepTx && (
+                                      <span className="inline-flex items-center gap-0.5 text-[9px] font-black bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-sm uppercase tracking-wide">
+                                        💰 záloha
+                                      </span>
+                                    )}
+                                  </div>
+                                  {entries.map((entry, ei) => {
+                                    if (entry.kind === "created") return (
+                                      <div key="created" className="flex items-center gap-2 text-xs py-1">
+                                        <span className="text-gray-300 tabular-nums text-[10px] shrink-0 w-24">{fmtTs(entry.ts)}</span>
+                                        <span className="w-1.5 h-1.5 rounded-full bg-gray-300 shrink-0" />
+                                        <span className="flex-1 text-gray-400 italic">Objednávka vytvorená</span>
+                                        {o.createdByDevice && <span className="text-[10px] text-gray-300 shrink-0 truncate max-w-[80px]" title={o.createdByDevice}>{o.createdByDevice}</span>}
+                                      </div>
+                                    );
+                                    if (entry.kind === "status") {
+                                      const h = entry.h;
+                                      return (
+                                        <div key={`s-${ei}`} className="flex items-center gap-2 text-xs py-1 border-t border-gray-50">
+                                          <span className="text-gray-400 tabular-nums text-[10px] shrink-0 w-24">{fmtTs(entry.ts)}</span>
+                                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_DOT[h.status] ?? "bg-gray-300"}`} />
+                                          <span className="flex-1 text-gray-600">
+                                            {h.prevStatus && <span className="text-gray-300 text-[10px]">{STATUS_LABELS[h.prevStatus] ?? h.prevStatus} → </span>}
+                                            <span className="font-semibold">{STATUS_LABELS[h.status] ?? h.status}</span>
+                                            {h.paidAmount !== undefined && (
+                                              <span className="ml-1.5 text-[10px] font-bold text-teal-600">{h.paidAmount.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+                                            )}
+                                          </span>
+                                          <span className="text-[10px] text-gray-300 shrink-0 truncate max-w-[80px]" title={h.changedBy}>{h.changedBy}</span>
+                                        </div>
+                                      );
+                                    }
+                                    if (entry.kind === "deposit") {
+                                      const tx = entry.tx;
+                                      return (
+                                        <div key={`d-${ei}`} className="flex items-center gap-2 text-xs py-1 border-t border-amber-50 bg-amber-50/40 -mx-1 px-1 rounded-sm">
+                                          <span className="text-amber-400 tabular-nums text-[10px] shrink-0 w-24">{fmtTs(entry.ts)}</span>
+                                          <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-amber-400" />
+                                          <span className="flex-1 text-amber-700 font-semibold text-[11px]">
+                                            {tx.type === "payment" ? "Odpočet zo zálohy" : "Záloha"}
+                                            <span className={`ml-1.5 font-black tabular-nums ${tx.amount < 0 ? "text-red-500" : "text-teal-600"}`}>
+                                              {tx.amount > 0 ? "+" : ""}{tx.amount.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                                            </span>
+                                          </span>
+                                          <span className="text-[10px] text-amber-400 shrink-0 truncate max-w-[80px]">{tx.note ?? tx.createdBy}</span>
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  })}
+                                  {hist.length === 0 && depTxForOrder.length === 0 && (
+                                    <div className="text-[10px] text-gray-300 italic">Bez záznamu — zmeny sa budú zaznamenávať od teraz</div>
+                                  )}
+                                </div>
+                              );
+                            })()}
+
+                            {/* ── Action strip ── */}
+                            {!readOnly && (
+                              <div className="flex items-center gap-2 pt-3 mt-3 border-t border-gray-100">
+                                {/* Priestor pre budúce akcie: Upraviť, Čerpací listok */}
+                                <div className="flex-1" />
+                                {deleteConfirmId === o.id ? (
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-xs text-red-500 font-semibold">Naozaj zmazať?</span>
+                                    <button onClick={e => { e.stopPropagation(); setDeleteConfirmId(null); }}
+                                      className="px-2.5 py-1.5 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors">Nie</button>
+                                    <button onClick={e => { e.stopPropagation(); remove(o.id); }}
+                                      className="px-2.5 py-1.5 text-xs bg-red-500 text-white rounded hover:bg-red-600 transition-colors font-semibold">Zmazať</button>
+                                  </div>
+                                ) : (
+                                  <button onClick={e => { e.stopPropagation(); setDeleteConfirmId(o.id); }}
+                                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors">
+                                    <Trash2 className="w-3.5 h-3.5" /> Zmazať
+                                  </button>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       );

@@ -12,6 +12,8 @@ const allowedOrigins = [
   "https://msbeton.sk",
   "https://www.msbeton.sk",
   "http://localhost:5173",
+  "http://localhost:5174", // Vite dev fallback (keď 5173 je obsadený)
+  "http://localhost:5175",
 ];
 
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));

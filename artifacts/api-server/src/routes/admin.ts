@@ -167,12 +167,35 @@ async function setConfig(key: string, data: unknown): Promise<void> {
 //                       syncu) ZACHOVAJ; inak (= ja som zmazal) zahoď
 //   - id len incoming → nová/moja položka, zachovaj
 // Rekurzívne aj na vnorené `types` (betóny → typy betónu).
+// appendOnlyFields: názvy polí ktoré sú append-only arrays (statusHistory, deposit.transactions)
+//   → vždy sa UNION-ujú z oboch verzií (winner + loser) aby sa nestratili záznamy
 type Item = Record<string, unknown> & { id?: unknown; updatedAt?: unknown; types?: unknown };
 function ts(v: unknown): number { const t = new Date(String(v ?? 0)).getTime(); return isNaN(t) ? 0 : t; }
 
+// Union dvoch append-only arrays — dedupuje podľa dedup kľúča
+// changedAt+status+changedBy pre statusHistory; id pre deposit.transactions
+function unionAppendOnly(a: unknown[], b: unknown[], dedupKey: (x: unknown) => string): unknown[] {
+  const seen = new Set<string>();
+  const result: unknown[] = [];
+  for (const item of [...a, ...b]) {
+    const k = dedupKey(item);
+    if (!seen.has(k)) { seen.add(k); result.push(item); }
+  }
+  // Zoradiť chronologicky podľa changedAt/createdAt ak existuje
+  return result.sort((x, y) => {
+    const xr = x as Record<string, unknown>;
+    const yr = y as Record<string, unknown>;
+    const ta = xr.changedAt ?? xr.createdAt;
+    const tb = yr.changedAt ?? yr.createdAt;
+    return ta && tb ? ts(ta) - ts(tb) : 0;
+  });
+}
+
 // preserveUnstamped: položky bez updatedAt chýbajúce v incoming → zachovať (clients: out-of-band insert
 // ochrana, napr. Ľubica). Pre orders=false: legacy bez updatedAt sa dá zmazať (inak by sa vracali).
-function mergeItems(incoming: Item[], current: Item[], baseSyncMs: number, preserveUnstamped = true): Item[] {
+function mergeItems(incoming: Item[], current: Item[], baseSyncMs: number, preserveUnstamped = true,
+  appendOnlyFields: string[] = []
+): Item[] {
   const curById = new Map(current.filter(c => c.id != null).map(c => [String(c.id), c] as const));
   const incIds = new Set(incoming.filter(i => i.id != null).map(i => String(i.id)));
   const result: Item[] = [];
@@ -182,13 +205,45 @@ function mergeItems(incoming: Item[], current: Item[], baseSyncMs: number, prese
     const cur = id ? curById.get(id) : undefined;
     if (!cur) { result.push(inc); continue; }
     const winner = ts(cur.updatedAt) > ts(inc.updatedAt) ? cur : inc;
+    const loser  = winner === cur ? inc : cur;
+    let merged: Item = winner;
     // Vnorené types merge (ak existujú v oboch)
     if (Array.isArray(inc.types) && Array.isArray(cur.types)) {
-      const mergedTypes = mergeItems(inc.types as Item[], cur.types as Item[], baseSyncMs, preserveUnstamped);
-      result.push({ ...winner, types: mergedTypes });
-    } else {
-      result.push(winner);
+      merged = { ...merged, types: mergeItems(inc.types as Item[], cur.types as Item[], baseSyncMs, preserveUnstamped, appendOnlyFields) };
     }
+    // Append-only polia — vždy union z oboch (winner + loser), aby sa nestratili záznamy
+    // Podporuje dot-notation: "deposit.transactions" naviguje do vnoreného objektu
+    const dedupKey = (x: unknown): string => {
+      const r = x as Record<string, unknown>;
+      if (r.id) return String(r.id);
+      return `${r.changedAt ?? ""}|${r.status ?? ""}|${r.changedBy ?? ""}`;
+    };
+    for (const field of appendOnlyFields) {
+      const parts = field.split(".");
+      // Získaj nested arrays z merged a loser
+      const getVal = (obj: Item, parts: string[]): unknown => parts.reduce((v: unknown, k) => (v && typeof v === "object" ? (v as Record<string, unknown>)[k] : undefined), obj as unknown);
+      const winArr = Array.isArray(getVal(merged, parts)) ? getVal(merged, parts) as unknown[] : [];
+      const loseArr = Array.isArray(getVal(loser, parts)) ? getVal(loser, parts) as unknown[] : [];
+      if (loseArr.length === 0) continue;
+      const unified = unionAppendOnly(winArr, loseArr, dedupKey);
+      if (parts.length === 1) {
+        merged = { ...merged, [parts[0]]: unified };
+      } else if (parts.length === 2) {
+        // Napr. "deposit.transactions" → update merged.deposit.transactions + recalc balance
+        const parent = (merged[parts[0]] as Record<string, unknown> | undefined) ?? {};
+        let updated: Record<string, unknown> = { ...parent, [parts[1]]: unified };
+        // Ak je to deposit.transactions → prepočítaj balance z transakcií
+        if (parts[0] === "deposit" && parts[1] === "transactions") {
+          const newBal = unified.reduce((s, t) => {
+            const tx = t as Record<string, unknown>;
+            return s + (typeof tx.amount === "number" ? tx.amount : 0);
+          }, 0);
+          updated = { ...updated, balance: Math.round(newBal * 100) / 100 };
+        }
+        merged = { ...merged, [parts[0]]: updated };
+      }
+    }
+    result.push(merged);
   }
   // 2) Položky len v DB (chýbajú v incoming):
   //    - bez updatedAt → ZACHOVAJ ak preserveUnstamped (clients: ochrana out-of-band insertu, bug s Ľubicou)
@@ -265,7 +320,7 @@ async function appendAudit(entry: AuditEntry): Promise<void> {
 // SELECT FOR UPDATE zamkne riadok — paralelné requesty čakajú, nie race condition.
 // Zároveň zaznamená audit (kto čo pridal/zmenil/zmazal) a vráti mergedFromOthers
 // (počet položiek iného admina ktoré sa zlúčili → frontend re-sync + toast).
-async function mergeSaveArray(key: string, body: unknown, baseSyncHeader: unknown, actor: Actor | null, transform?: (incoming: Item[], current: Item[]) => Item[], preserveUnstamped = true): Promise<{ kept: number; preserved: number; mergedFromOthers: number }> {
+async function mergeSaveArray(key: string, body: unknown, baseSyncHeader: unknown, actor: Actor | null, transform?: (incoming: Item[], current: Item[]) => Item[], preserveUnstamped = true, appendOnlyFields: string[] = []): Promise<{ kept: number; preserved: number; mergedFromOthers: number }> {
   const incomingRaw = Array.isArray(body) ? body as Item[] : [];
   const baseSyncMs = baseSyncHeader != null ? ts(baseSyncHeader) : -1;
 
@@ -275,7 +330,7 @@ async function mergeSaveArray(key: string, body: unknown, baseSyncHeader: unknow
     const cur = (rows[0]?.data as Item[] | null) ?? [];
     // transform (napr. manager sanitizácia) beží vnútri zámku s čerstvým `cur`
     const inc = transform ? transform(incomingRaw, cur) : incomingRaw;
-    const m = mergeItems(inc, cur, baseSyncMs, preserveUnstamped);
+    const m = mergeItems(inc, cur, baseSyncMs, preserveUnstamped, appendOnlyFields);
     const d = computeDiff(inc, cur, baseSyncMs);
     await tx.insert(adminConfig)
       .values({ key, data: m })
@@ -411,7 +466,8 @@ router.put("/clients", async (req, res) => {
     const actor = actorOf(req);
     // Správca (manager) má obmedzenia — admin rolu nemení, klientov nemaže (server-enforced)
     const transform = actor.role === "manager" ? sanitizeClientsForManager : undefined;
-    const r = await mergeSaveArray(KEYS.clients, req.body, req.get("X-Base-Sync"), actor, transform);
+    // deposit.transactions je append-only — union z oboch verzií pri súbežných zmenách (topup + platba)
+    const r = await mergeSaveArray(KEYS.clients, req.body, req.get("X-Base-Sync"), actor, transform, true, ["deposit.transactions"]);
     invalidateClientCache();
     const logFields = {
       ev: "clients_saved",
@@ -508,8 +564,58 @@ router.get("/orders", async (req, res) => {
 router.put("/orders", async (req, res) => {
   // Atomický item-level merge (rovnako ako klienti) — zabráni strate zmien (paid→nová, delete→návrat)
   // pri súbežných adminoch a stale polloch. preserveUnstamped=false → legacy objednávky sa dajú zmazať.
-  try { const r = await mergeSaveArray(KEYS.orders, req.body, req.get("X-Base-Sync"), null, undefined, false); res.json({ ok: true, ...r }); }
+  // appendOnlyFields: statusHistory sa union-uje z oboch verziií — nikdy nestratí záznamy pri súbežných zmenách
+  try { const r = await mergeSaveArray(KEYS.orders, req.body, req.get("X-Base-Sync"), null, undefined, false, ["statusHistory"]); res.json({ ok: true, ...r }); }
   catch (err) { req.log.error({ err }, "Failed to save orders"); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// ── Order presence (soft lock indicator) ─────────────────────────────────────
+// In-memory: ephemeral (reset pri PM2 restart) — stačí pre soft lock UX
+// Každý admin pri expand karty oznámi svoju prítomnosť; iní to vidia ako "Prezerá: Peter iPhone"
+interface PresenceEntry { device: string; until: number }
+const orderPresence = new Map<string, PresenceEntry[]>(); // orderId → zoznam admins
+const PRESENCE_TTL_MS = 10 * 60 * 1000; // 10 min
+
+function cleanPresence() {
+  const now = Date.now();
+  for (const [id, list] of orderPresence) {
+    const alive = list.filter(e => e.until > now);
+    if (alive.length === 0) orderPresence.delete(id);
+    else orderPresence.set(id, alive);
+  }
+}
+
+// Nahlásiť prítomnosť (PUT: expand), zrušiť (DELETE: collapse)
+router.put("/orders/:id/presence", (req, res) => {
+  const { id } = req.params;
+  const device = String(req.body?.device ?? "admin").slice(0, 80);
+  if (!id) { res.status(400).json({ ok: false }); return; }
+  cleanPresence();
+  const list = (orderPresence.get(id) ?? []).filter(e => e.device !== device);
+  list.push({ device, until: Date.now() + PRESENCE_TTL_MS });
+  orderPresence.set(id, list);
+  res.json({ ok: true });
+});
+
+router.delete("/orders/:id/presence", (req, res) => {
+  const { id } = req.params;
+  const device = String(req.query.device ?? "").slice(0, 80);
+  if (!id) { res.status(400).json({ ok: false }); return; }
+  const list = (orderPresence.get(id) ?? []).filter(e => e.device !== device);
+  if (list.length === 0) orderPresence.delete(id); else orderPresence.set(id, list);
+  res.json({ ok: true });
+});
+
+// Vrátiť všetkých aktívnych presences (polling každých 30s z klientov)
+router.get("/orders/presence", (_req, res) => {
+  cleanPresence();
+  const now = Date.now();
+  const result: Record<string, string[]> = {};
+  for (const [id, list] of orderPresence) {
+    const alive = list.filter(e => e.until > now).map(e => e.device);
+    if (alive.length) result[id] = alive;
+  }
+  res.json({ data: result });
 });
 
 router.post("/send-registration-email", async (req, res) => {

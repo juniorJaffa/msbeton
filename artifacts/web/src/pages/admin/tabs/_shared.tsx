@@ -27,8 +27,13 @@ export function EditableField({ value, onSave, type = "text", suggestionSuffixes
   };
   const cancel = () => { setVal(String(value)); setEditing(false); };
   const startEdit = () => { setVal(String(value)); setEditing(true); };
-  const activeSuggs = suggestionSuffixes && val.trim() && !suggestionSuffixes.some(s => val.trimEnd().endsWith(s.trim()))
-    ? suggestionSuffixes.map(s => val.trim() + s)
+  // Rovnaká logika ako CompanyInput: strip akejkoľvek variant právnej formy, potom doplniť kanonický suffix
+  const LEGAL_SUFFIX_RE_EF = /[\s,]*(?:s\.?\s*r\.?\s*o|spol\.?\s*s\s*r\.?\s*o|a\.?\s*s|k\.?\s*s|v\.?\s*o\.?\s*s)[.,\s]*$/i;
+  const valTrimmed = val.trim();
+  const efBase = valTrimmed.replace(LEGAL_SUFFIX_RE_EF, "").trimEnd();
+  const efAlreadyComplete = (suggestionSuffixes ?? []).some(s => valTrimmed.toLowerCase() === (efBase + s).toLowerCase());
+  const activeSuggs = suggestionSuffixes && efBase && !efAlreadyComplete
+    ? suggestionSuffixes.map(s => efBase + s)
     : [];
   if (!editing) return (
     <span className="cursor-pointer hover:text-primary transition-colors group flex items-center gap-1.5 min-w-0" onClick={e => { e.stopPropagation(); startEdit(); }}>

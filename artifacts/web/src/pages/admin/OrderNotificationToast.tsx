@@ -144,7 +144,7 @@ export function OrderNotificationToast({ orders, onDismiss, onOpen }: Props) {
                     <CreditCard className="w-3 h-3 text-primary shrink-0" />
                     <div>
                       <div className="text-primary font-black text-sm leading-none">
-                        {order.totalSDph.toLocaleString("sk")} €
+                        {order.totalSDph.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                       </div>
                       <div className="text-white/40 text-[9px] mt-0.5 font-bold uppercase tracking-wide">
                         {order.priceMode === "hotovost" ? "Hotovosť" : "Faktúra"}

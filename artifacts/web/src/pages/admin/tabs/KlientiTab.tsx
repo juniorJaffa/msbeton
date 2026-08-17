@@ -5,7 +5,7 @@ import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
 import { PhoneInput } from "@/components/PhoneInput";
 import { cn, formatPhone } from "@/lib/utils";
-import { adminData, adminApi, syncFromServer, Client, TransportSettings, Order, SYSTEM_OWNER_ID, getKamenivoGroup, readerBlocked } from "@/lib/adminData";
+import { adminData, adminApi, syncFromServer, Client, DepositTx, TransportSettings, Order, SYSTEM_OWNER_ID, getKamenivoGroup, readerBlocked } from "@/lib/adminData";
 import { clientAvatar } from "@/lib/clientAvatar";
 import { isBiometricAvailable as isAdminBioAvail, hasStoredCredential as hasAdminBio, isReader, isSuper, getAdminDeviceLabel } from "@/lib/adminAuth";
 import { EditableField, authFetch } from "./_shared";
@@ -22,11 +22,18 @@ function clientRole(c: Client): "manager" | "reader" | null {
 }
 
 const COMPANY_SUFFIXES = [", s.r.o.", ", spol. s r.o.", ", a.s.", ", k.s.", ", v.o.s."];
+// Zachytí akúkoľvek variant právnej formy na konci reťazca (s bodkami, bez bodiek, s čiarkou, bez)
+const LEGAL_SUFFIX_RE = /[\s,]*(?:s\.?\s*r\.?\s*o|spol\.?\s*s\s*r\.?\s*o|a\.?\s*s|k\.?\s*s|v\.?\s*o\.?\s*s)[.,\s]*$/i;
+/** Vráti meno firmy bez právnej formy (bez ohľadu na formát zápisu) */
+function stripLegalSuffix(v: string): string { return v.replace(LEGAL_SUFFIX_RE, "").trimEnd(); }
 
 function CompanyInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false);
-  const hasNoSuffix = value.trim() && !COMPANY_SUFFIXES.some(s => value.trimEnd().endsWith(s.trim()));
-  const suggs = hasNoSuffix ? COMPANY_SUFFIXES.map(s => value.trim() + s) : [];
+  const valueTrimmed = value.trim();
+  const base = stripLegalSuffix(valueTrimmed);
+  // Už má kanonický suffix? → žiadne suggestions
+  const alreadyComplete = COMPANY_SUFFIXES.some(s => valueTrimmed.toLowerCase() === (base + s).toLowerCase());
+  const suggs = base && !alreadyComplete ? COMPANY_SUFFIXES.map(s => base + s) : [];
   return (
     <div className="relative sm:col-span-2">
       <input
@@ -420,6 +427,9 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   const [editingLinkFor, setEditingLinkFor] = useState<string | null>(null);
   const [addSuccessMsg, setAddSuccessMsg] = useState<string | null>(null);
   const [linkDraft, setLinkDraft] = useState("");
+  const [depositTopupFor, setDepositTopupFor] = useState<string | null>(null);
+  const [depositTopupAmount, setDepositTopupAmount] = useState("");
+  const [depositTopupNote, setDepositTopupNote] = useState("");
 
   const readOnly = isReader(); // admin-čitateľ — žiadne mutácie
   const save = (data: Client[]) => { if (readerBlocked()) return; setClients(data); adminData.saveClients(data); };
@@ -1275,6 +1285,14 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                         {zonePricingType === "km" ? "€/km" : zonePricingType === "auto" ? "€/auto" : "Štd"}
                       </span>
                     )}
+                    {/* Záloha mini badge mobile */}
+                    {c.deposit?.enabled && (
+                      <span className={`flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-black rounded border ${
+                        (c.deposit.balance ?? 0) > 0 ? "bg-amber-50 text-amber-700 border-amber-300" : "bg-gray-50 text-gray-400 border-gray-200"
+                      }`}>
+                        💰 {(c.deposit.balance ?? 0).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                      </span>
+                    )}
                     {c.isOwner && <span className="text-[10px] font-black text-primary/70">Admin</span>}
                   </div>
                 </div>
@@ -1289,7 +1307,17 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                 </div>
 
                 {/* Desktop: badge stĺpec — pevná šírka zodpovedá header spaceru */}
-                <div className="hidden sm:flex w-40 shrink-0 items-center justify-end gap-1">
+                <div className="hidden sm:flex w-40 shrink-0 items-center justify-end gap-1 flex-wrap">
+                  {/* Záloha mini badge — len keď enabled */}
+                  {c.deposit?.enabled && (
+                    <span className={`flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-black rounded-sm border ${
+                      (c.deposit.balance ?? 0) > 0
+                        ? "bg-amber-50 text-amber-700 border-amber-300"
+                        : "bg-gray-50 text-gray-400 border-gray-200"
+                    }`} title="Záloha aktívna">
+                      💰 {(c.deposit.balance ?? 0).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                    </span>
+                  )}
                   {clientZone && (
                     <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold rounded-sm bg-blue-50 text-blue-600 border border-blue-200">
                       <Truck className="w-4 h-4" />
@@ -1865,6 +1893,114 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                               )}
                             </div>
                           </label>
+                          {/* — ZÁLOHA — v MOŽNOSTI, ďaleko od prístupových buttonov */}
+                          {!readOnly && (<>
+                            <div className="px-3 pt-1.5 pb-0.5 bg-amber-50/80">
+                              <span className="text-[9px] font-black uppercase tracking-widest text-amber-600">Záloha</span>
+                            </div>
+                            {/* Hlavný riadok: toggle switch + popis + balance + pridať */}
+                            <div className="px-3 py-2.5">
+                              <div className="flex items-center gap-3">
+                                {/* Toggle switch */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const cur = c.deposit ?? { balance: 0, transactions: [] };
+                                    update(c.id, { deposit: { ...cur, enabled: !(cur.enabled ?? false) } });
+                                  }}
+                                  className={`relative shrink-0 w-10 h-5 rounded-full transition-colors focus:outline-none ${
+                                    (c.deposit?.enabled ?? false) ? "bg-amber-500" : "bg-gray-200 hover:bg-gray-300"
+                                  }`}
+                                  title={(c.deposit?.enabled ?? false) ? "Záloha aktívna — kliknúť pre deaktiváciu" : "Záloha neaktívna — kliknúť pre aktiváciu"}>
+                                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                                    (c.deposit?.enabled ?? false) ? "translate-x-5" : "translate-x-0.5"
+                                  }`} />
+                                </button>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm text-gray-700">Záloha klienta</div>
+                                  {(c.deposit?.enabled ?? false) ? (
+                                    <div className="text-xs font-black text-amber-600 tabular-nums">
+                                      Zostatok: {(c.deposit?.balance ?? 0).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                                    </div>
+                                  ) : (
+                                    <div className="text-[11px] text-gray-400">Odpočet objednávok zo zálohy · neaktívna</div>
+                                  )}
+                                </div>
+                                {/* Pridať tlačidlo — len keď enabled */}
+                                {(c.deposit?.enabled ?? false) && (
+                                  depositTopupFor !== c.id
+                                    ? <button type="button"
+                                        onClick={() => { setDepositTopupFor(c.id); setDepositTopupAmount(""); setDepositTopupNote(""); }}
+                                        className="shrink-0 text-[10px] font-bold text-amber-600 hover:text-amber-800 border border-amber-300 rounded px-2 py-0.5 hover:bg-amber-50 transition-colors">
+                                        + Pridať
+                                      </button>
+                                    : <button type="button" onClick={() => setDepositTopupFor(null)}
+                                        className="shrink-0 text-[10px] text-amber-400 hover:text-amber-600">Zrušiť</button>
+                                )}
+                              </div>
+                              {/* Formulár pridania zálohy */}
+                              {depositTopupFor === c.id && (
+                                <div className="mt-2 pt-2 border-t border-amber-100 space-y-2">
+                                  <div className="flex gap-2">
+                                    <div className="relative flex-1">
+                                      <input type="number" step="0.01" min="0" placeholder="0,00"
+                                        value={depositTopupAmount}
+                                        onChange={e => setDepositTopupAmount(e.target.value)}
+                                        className="w-full border border-amber-200 rounded px-2 py-1.5 text-sm font-bold text-right focus:outline-none focus:ring-1 focus:ring-amber-400 pr-7"
+                                        autoFocus />
+                                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">€</span>
+                                    </div>
+                                    <input type="text" placeholder="Poznámka (nepovinné)"
+                                      value={depositTopupNote}
+                                      onChange={e => setDepositTopupNote(e.target.value)}
+                                      className="flex-[2] border border-amber-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-amber-400" />
+                                  </div>
+                                  <button type="button"
+                                    onClick={() => {
+                                      const amt = parseFloat(depositTopupAmount.replace(",", "."));
+                                      if (isNaN(amt) || amt <= 0) return;
+                                      const tx: DepositTx = {
+                                        id: crypto.randomUUID(),
+                                        type: "topup",
+                                        amount: amt,
+                                        note: depositTopupNote.trim() || undefined,
+                                        createdAt: new Date().toISOString(),
+                                        createdBy: getAdminDeviceLabel() || "admin",
+                                      };
+                                      const cur = c.deposit ?? { balance: 0, transactions: [] };
+                                      update(c.id, { deposit: { ...cur, balance: cur.balance + amt, transactions: [...cur.transactions, tx] } });
+                                      setDepositTopupFor(null);
+                                    }}
+                                    className="w-full py-1.5 text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 rounded transition-colors">
+                                    Pridať zálohu
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                            {/* História zálohy — len keď enabled a má transakcie */}
+                            {(c.deposit?.enabled && (c.deposit?.transactions?.length ?? 0) > 0) && (
+                              <div className="border-t border-amber-100 divide-y divide-amber-50">
+                                {[...(c.deposit!.transactions)].reverse().slice(0, 5).map((tx, ti) => (
+                                  <div key={ti} className="flex items-center gap-2 px-3 py-1.5 text-[10px]">
+                                    <span className="text-amber-400 tabular-nums shrink-0">
+                                      {new Date(tx.createdAt).toLocaleDateString("sk-SK", { day: "numeric", month: "numeric" })}
+                                    </span>
+                                    <span className={`font-black tabular-nums shrink-0 ${tx.type === "topup" ? "text-teal-600" : "text-red-500"}`}>
+                                      {tx.type === "topup" ? "+" : ""}{tx.amount.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                                    </span>
+                                    <span className="text-amber-500 flex-1 truncate">{tx.note ?? (tx.type === "payment" ? "platba" : "záloha")}</span>
+                                    {tx.orderId && <span className="text-amber-300 shrink-0">#{tx.orderId.slice(-4)}</span>}
+                                  </div>
+                                ))}
+                                {(c.deposit?.transactions?.length ?? 0) > 5 && (
+                                  <div className="px-3 py-1 text-[10px] text-amber-400 text-center">
+                                    + {(c.deposit!.transactions.length - 5)} ďalších pohybov
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </>)}
+
                           {/* — KALKULAČKA — */}
                           <div className="px-3 pt-1.5 pb-0.5 bg-gray-50">
                             <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Kalkulačka</span>
