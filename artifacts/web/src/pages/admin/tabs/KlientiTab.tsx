@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, ChevronRight, Users, Truck, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, Mail, Phone, PenLine, Fingerprint, ShieldX, AlertTriangle, Info, Smartphone, Heart, GripVertical, ArrowDownUp, SlidersHorizontal, Percent, Building2, Server } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, ChevronRight, Users, Truck, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, Mail, Phone, PenLine, Fingerprint, ShieldX, AlertTriangle, Info, Smartphone, Heart, GripVertical, ArrowDownUp, SlidersHorizontal, Percent, Building2, Server, Camera } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
@@ -378,6 +378,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   const [showDeleted, setShowDeleted] = useState(false);
   const [deleteModal, setDeleteModal] = useState<Client | null>(null);
   const [deleteInput, setDeleteInput] = useState("");
+  const [photoLightbox, setPhotoLightbox] = useState<{ clientId: string; index: number } | null>(null);
 
   useEffect(() => {
     if (!tablePdfModal) return;
@@ -408,6 +409,68 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     } catch { /* tichý fail — necháme stav */ }
     setDelDeviceState(s => { const n = { ...s }; delete n[key]; return n; });
   };
+  // ── Foto klienta — kompresná utilita (Safari-safe) ──────────────────────────
+  // createImageBitmap s { imageOrientation: "from-image" } = EXIF rotácia na iOS Safari 15+ / Chrome 68+ / FF 93+
+  const compressClientPhoto = async (file: File): Promise<string> => {
+    const MAX_W = 480, MAX_H = 360, QUALITY = 0.65;
+    // pokus createImageBitmap — EXIF-aware (hlavne iOS Safari)
+    let bitmap: ImageBitmap | null = null;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      bitmap = await createImageBitmap(file, { imageOrientation: "from-image" } as any);
+    } catch { /* fallback nižšie */ }
+    if (bitmap) {
+      const ratio = Math.min(MAX_W / bitmap.width, MAX_H / bitmap.height, 1);
+      const w = Math.max(1, Math.round(bitmap.width * ratio));
+      const h = Math.max(1, Math.round(bitmap.height * ratio));
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (ctx) { ctx.drawImage(bitmap, 0, 0, w, h); bitmap.close(); return canvas.toDataURL("image/jpeg", QUALITY); }
+      bitmap.close();
+    }
+    // Fallback: Image element (starší Safari)
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const ratio = Math.min(MAX_W / img.naturalWidth, MAX_H / img.naturalHeight, 1);
+        const w = Math.max(1, Math.round(img.naturalWidth * ratio));
+        const h = Math.max(1, Math.round(img.naturalHeight * ratio));
+        const canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { reject(new Error("no 2d ctx")); return; }
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", QUALITY));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("load failed")); };
+      img.src = url;
+    });
+  };
+
+  const handleAddPhoto = async (clientId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = ""; // reset → rovnaký súbor znova uploadovateľný
+    try {
+      const compressed = await compressClientPhoto(file);
+      const client = clients.find(c => c.id === clientId);
+      const existing = client?.photos ?? [];
+      if (existing.length >= 3) return;
+      update(clientId, { photos: [...existing, compressed] });
+    } catch (err) { console.error("Photo compress failed", err); }
+  };
+
+  const handleDeletePhoto = (clientId: string, index: number) => {
+    const client = clients.find(c => c.id === clientId);
+    const photos = [...(client?.photos ?? [])];
+    photos.splice(index, 1);
+    update(clientId, { photos: photos.length > 0 ? photos : undefined });
+    setPhotoLightbox(null);
+  };
+
   const emptyForm = {
     firstName: "", lastName: "", company: "", email: "", phone: "",
     loginId: "", password: "1234",
@@ -440,8 +503,9 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   const [showFilters, setShowFilters] = useState(false);
   const [fStatus, setFStatus] = useState<"all" | "active" | "inactive" | "noaccess">("all");
   const [fZone, setFZone] = useState<"all" | "standard" | "km" | "auto">("all");
-  const hasActiveFilter = fStatus !== "all" || fZone !== "all";
-  const resetFilters = () => { setFStatus("all"); setFZone("all"); };
+  const [fZaloha, setFZaloha] = useState<"all" | "zaloha" | "dlznik">("all");
+  const hasActiveFilter = fStatus !== "all" || fZone !== "all" || fZaloha !== "all";
+  const resetFilters = () => { setFStatus("all"); setFZone("all"); setFZaloha("all"); };
 
   // ── Drag-drop (manuál režim) — HTML5 desktop + Pointer Events mobile ─────────
   const dragClientId = useRef<string | null>(null);
@@ -672,6 +736,9 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
       if (fStatus === "noaccess" && hasLogin) return false;
       // Filter: typ dopravy
       if (fZone !== "all" && zoneTypeOf(c) !== fZone) return false;
+      // Filter: záloha / dlžník
+      if (fZaloha === "zaloha" && c.deposit?.enabled !== true) return false;
+      if (fZaloha === "dlznik" && !(c.deposit?.enabled === true && c.deposit?.transactions?.some(tx => tx.note?.startsWith("Čiastočná platba")))) return false;
       // Text search
       if (!searchTerms.length) return true;
       const haystack = [c.firstName, c.lastName, c.company, c.email, c.phone, c.loginId].filter(Boolean).join(" ");
@@ -864,7 +931,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
               className={cn("ml-auto flex items-center gap-1 px-2.5 py-2 sm:py-1.5 rounded border text-[11px] sm:text-xs font-bold transition-colors shrink-0", hasActiveFilter || showFilters ? "border-primary bg-primary/10 text-secondary" : "border-gray-200 text-gray-500 active:bg-gray-100")}>
               <SlidersHorizontal className="w-4 h-4" />
               <span className="hidden sm:inline">Filter</span>
-              {hasActiveFilter && <span className="w-4 h-4 rounded-full bg-primary text-secondary text-[9px] font-black flex items-center justify-center">{[fStatus, fZone].filter(v => v !== "all").length}</span>}
+              {hasActiveFilter && <span className="w-4 h-4 rounded-full bg-primary text-secondary text-[9px] font-black flex items-center justify-center">{[fStatus, fZone, fZaloha].filter(v => v !== "all").length}</span>}
             </button>
           </div>
           {/* Filter panel */}
@@ -886,6 +953,26 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                   </div>
                 </div>
               ))}
+              {/* Záloha filter */}
+              <div className="flex items-start gap-1.5">
+                <span className="w-14 shrink-0 text-[9px] font-black uppercase tracking-wider text-gray-400 pt-2">ZÁLOHA</span>
+                <div className="flex flex-wrap gap-1">
+                  <button onClick={() => setFZaloha("all")}
+                    className={cn("px-2.5 py-1.5 rounded text-[11px] sm:text-xs font-bold transition-colors", fZaloha === "all" ? "bg-secondary text-white" : "bg-gray-100 text-gray-500 active:bg-gray-200")}>
+                    Všetko
+                  </button>
+                  <button onClick={() => setFZaloha("zaloha")}
+                    className={cn("inline-flex items-center gap-1 px-2.5 py-1.5 rounded text-[11px] sm:text-xs font-bold transition-colors", fZaloha === "zaloha" ? "bg-amber-500 text-white" : "bg-gray-100 text-gray-500 active:bg-gray-200")}>
+                    💰 Záloha
+                    <span className="text-[9px] opacity-70">{clients.filter(c => c.deposit?.enabled === true).length}</span>
+                  </button>
+                  <button onClick={() => setFZaloha("dlznik")}
+                    className={cn("inline-flex items-center gap-1 px-2.5 py-1.5 rounded text-[11px] sm:text-xs font-bold transition-colors", fZaloha === "dlznik" ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-500 active:bg-gray-200")}>
+                    ⚠ Dlžník
+                    <span className="text-[9px] opacity-70">{clients.filter(c => c.deposit?.enabled === true && c.deposit?.transactions?.some(tx => tx.note?.startsWith("Čiastočná platba"))).length}</span>
+                  </button>
+                </div>
+              </div>
               {hasActiveFilter && (
                 <button onClick={resetFilters} className="text-[10px] font-bold text-red-500 hover:text-red-600 flex items-center gap-1 pt-0.5">
                   <X className="w-3 h-3" /> Zrušiť filtre
@@ -1254,6 +1341,20 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                   })()}
                 </div>
 
+                {/* Fotky miesta — thumbnail strip v zozname */}
+                {c.photos && c.photos.length > 0 && (
+                  <div className="shrink-0 flex gap-1">
+                    {c.photos.slice(0, 3).map((ph, i) => (
+                      <button key={i} type="button"
+                        onClick={(e) => { e.stopPropagation(); setPhotoLightbox({ clientId: c.id, index: i }); }}
+                        className="w-9 h-9 rounded overflow-hidden border-2 border-white shadow hover:border-primary hover:scale-110 transition-all"
+                        title="Foto miesta — klik pre detail">
+                        <img src={ph} alt="" className="w-full h-full object-cover" style={{ imageOrientation: "from-image" }} />
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 {/* Meno + mobile badges */}
                 <div className="flex-1 min-w-0">
                   <div className="font-bold text-secondary text-sm leading-tight flex items-center gap-1.5 flex-wrap" style={{ wordBreak: "normal", overflowWrap: "anywhere" }}>
@@ -1286,13 +1387,16 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                       </span>
                     )}
                     {/* Záloha mini badge mobile */}
-                    {c.deposit?.enabled && (
-                      <span className={`flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-black rounded border ${
-                        (c.deposit.balance ?? 0) > 0 ? "bg-amber-50 text-amber-700 border-amber-300" : "bg-gray-50 text-gray-400 border-gray-200"
-                      }`}>
-                        💰 {(c.deposit.balance ?? 0).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-                      </span>
-                    )}
+                    {c.deposit?.enabled && (() => {
+                      const isDlznik = c.deposit?.transactions?.some(tx => tx.note?.startsWith("Čiastočná platba"));
+                      return (
+                        <span className={`flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-black rounded border ${
+                          isDlznik ? "bg-orange-50 text-orange-700 border-orange-300" : (c.deposit!.balance ?? 0) > 0 ? "bg-amber-50 text-amber-700 border-amber-300" : "bg-gray-50 text-gray-400 border-gray-200"
+                        }`} title={isDlznik ? "Dlžník — má čiastočné platby zo zálohy" : "Záloha aktívna"}>
+                          {isDlznik ? "⚠" : "💰"} {(c.deposit!.balance ?? 0).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                        </span>
+                      );
+                    })()}
                     {c.isOwner && <span className="text-[10px] font-black text-primary/70">Admin</span>}
                   </div>
                 </div>
@@ -1309,15 +1413,16 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                 {/* Desktop: badge stĺpec — pevná šírka zodpovedá header spaceru */}
                 <div className="hidden sm:flex w-40 shrink-0 items-center justify-end gap-1 flex-wrap">
                   {/* Záloha mini badge — len keď enabled */}
-                  {c.deposit?.enabled && (
-                    <span className={`flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-black rounded-sm border ${
-                      (c.deposit.balance ?? 0) > 0
-                        ? "bg-amber-50 text-amber-700 border-amber-300"
-                        : "bg-gray-50 text-gray-400 border-gray-200"
-                    }`} title="Záloha aktívna">
-                      💰 {(c.deposit.balance ?? 0).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-                    </span>
-                  )}
+                  {c.deposit?.enabled && (() => {
+                    const isDlznik = c.deposit?.transactions?.some(tx => tx.note?.startsWith("Čiastočná platba"));
+                    return (
+                      <span className={`flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-black rounded-sm border ${
+                        isDlznik ? "bg-orange-50 text-orange-700 border-orange-300" : (c.deposit!.balance ?? 0) > 0 ? "bg-amber-50 text-amber-700 border-amber-300" : "bg-gray-50 text-gray-400 border-gray-200"
+                      }`} title={isDlznik ? "Dlžník — čiastočná platba zo zálohy" : "Záloha aktívna"}>
+                        {isDlznik ? "⚠" : "💰"} {(c.deposit!.balance ?? 0).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                      </span>
+                    );
+                  })()}
                   {clientZone && (
                     <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold rounded-sm bg-blue-50 text-blue-600 border border-blue-200">
                       <Truck className="w-4 h-4" />
@@ -1395,6 +1500,46 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                   </div>
 
                   {(clientDetailTab[c.id] ?? "detail") === "detail" && (<>
+
+                  {/* ── Fotky miesta (balikobox princíp) ── */}
+                  <div className="px-4 py-3 bg-white border-b border-gray-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                        <Camera className="w-3 h-3" /> Fotky miesta
+                      </p>
+                      {c.photos && c.photos.length > 0 && (
+                        <span className="text-[9px] text-gray-400">{c.photos.length}/3</span>
+                      )}
+                    </div>
+                    <div className="flex gap-2 flex-wrap items-start">
+                      {(c.photos ?? []).map((ph, i) => (
+                        <button key={i} type="button"
+                          onClick={() => setPhotoLightbox({ clientId: c.id, index: i })}
+                          className="relative group w-24 h-18 rounded overflow-hidden border border-gray-200 hover:border-primary transition-colors shadow-sm"
+                          style={{ width: 88, height: 66 }}>
+                          <img src={ph} alt={`foto ${i + 1}`} className="w-full h-full object-cover" style={{ imageOrientation: "from-image" }} />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
+                            <svg className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><circle cx="11" cy="11" r="8"/><path strokeLinecap="round" d="m21 21-4.35-4.35"/></svg>
+                          </div>
+                        </button>
+                      ))}
+                      {(!c.photos || c.photos.length < 3) && !readOnly && (
+                        <label className="flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors border-2 border-dashed border-gray-300 rounded"
+                          style={{ width: 88, height: 66 }}
+                          title="Pridať foto (brána, číslo domu, príjazdová cesta…)">
+                          <Camera className="w-5 h-5 text-gray-400" />
+                          <span className="text-[9px] text-gray-400 mt-0.5 font-semibold">Pridať foto</span>
+                          <input type="file" accept="image/*,image/heic,image/heif" capture="environment" className="hidden"
+                            onChange={(e) => handleAddPhoto(c.id, e)} />
+                        </label>
+                      )}
+                      {(!c.photos || c.photos.length === 0) && (
+                        <p className="text-[10px] text-gray-400 italic self-center ml-1">
+                          Brána, číslo domu, príjazdová cesta — rýchla identifikácia adresy
+                        </p>
+                      )}
+                    </div>
+                  </div>
 
                   {/* Zľavy klienta */}
                   <div className="px-4 py-4 bg-white border-b border-gray-100">
@@ -2337,6 +2482,83 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
           </div>
         </div>
       )}
+
+      {/* ── Photo Lightbox modal ── */}
+      {photoLightbox && (() => {
+        const lbClient = clients.find(c => c.id === photoLightbox.clientId);
+        const photos = lbClient?.photos ?? [];
+        const idx = Math.max(0, Math.min(photoLightbox.index, photos.length - 1));
+        const canPrev = idx > 0;
+        const canNext = idx < photos.length - 1;
+        const lbName = [lbClient?.firstName, lbClient?.lastName].filter(Boolean).join(" ") || lbClient?.company || "Klient";
+        return (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/90" onClick={() => setPhotoLightbox(null)}>
+            {/* Nav prev */}
+            {canPrev && (
+              <button type="button"
+                onClick={e => { e.stopPropagation(); setPhotoLightbox({ clientId: photoLightbox.clientId, index: idx - 1 }); }}
+                className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors cursor-pointer">
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
+              </button>
+            )}
+            {/* Nav next */}
+            {canNext && (
+              <button type="button"
+                onClick={e => { e.stopPropagation(); setPhotoLightbox({ clientId: photoLightbox.clientId, index: idx + 1 }); }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors cursor-pointer">
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+              </button>
+            )}
+            {/* Image */}
+            <div className="relative max-w-[90vw] max-h-[80vh] flex flex-col items-center gap-3" onClick={e => e.stopPropagation()}>
+              <img src={photos[idx]} alt={`Foto ${idx + 1} — ${lbName}`}
+                className="max-w-full max-h-[70vh] rounded-lg shadow-2xl object-contain"
+                style={{ imageOrientation: "from-image" }} />
+              {/* Caption + actions */}
+              <div className="flex items-center justify-between w-full gap-3 px-1">
+                <div className="text-white/80 text-sm font-semibold">
+                  {lbName} — foto {idx + 1}/{photos.length}
+                </div>
+                <div className="flex gap-2">
+                  {/* Add more */}
+                  {photos.length < 3 && !readOnly && (
+                    <label className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-white text-xs font-bold cursor-pointer transition-colors">
+                      <Camera className="w-3.5 h-3.5" /> Pridať
+                      <input type="file" accept="image/*,image/heic,image/heif" capture="environment" className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          e.target.value = "";
+                          try {
+                            const compressed = await compressClientPhoto(file);
+                            const client = clients.find(c => c.id === photoLightbox.clientId);
+                            const existing = client?.photos ?? [];
+                            if (existing.length >= 3) return;
+                            update(photoLightbox.clientId, { photos: [...existing, compressed] });
+                            setPhotoLightbox({ clientId: photoLightbox.clientId, index: existing.length });
+                          } catch (err) { console.error("Photo compress failed", err); }
+                        }} />
+                    </label>
+                  )}
+                  {/* Delete */}
+                  {!readOnly && (
+                    <button type="button"
+                      onClick={() => handleDeletePhoto(photoLightbox.clientId, idx)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/80 hover:bg-red-500 rounded-lg text-white text-xs font-bold transition-colors cursor-pointer">
+                      <Trash2 className="w-3.5 h-3.5" /> Zmazať
+                    </button>
+                  )}
+                  {/* Close */}
+                  <button type="button" onClick={() => setPhotoLightbox(null)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-white text-xs font-bold transition-colors cursor-pointer">
+                    Zavrieť
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Delete confirm modal */}
       {deleteModal && (() => {

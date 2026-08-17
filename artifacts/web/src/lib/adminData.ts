@@ -135,6 +135,7 @@ export interface Client {
     balance: number;           // aktuálny zostatok zálohy (€)
     transactions: DepositTx[]; // história pohybov — append-only
   };
+  photos?: string[];           // lokalizačné fotky (base64 JPEG, max 3, každá ~6-8KB po kompresii)
 }
 
 export interface DepositTx {
