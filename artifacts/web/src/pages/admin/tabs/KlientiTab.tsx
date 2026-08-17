@@ -1341,14 +1341,36 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                   })()}
                 </div>
 
-                {/* Fotky miesta — thumbnail strip v zozname */}
-                {c.photos && c.photos.length > 0 && (
+                {/* Fotky miesta — thumbnail strip + quick-add kamera v zozname */}
+                {!readOnly && (
+                  <div className="shrink-0 flex gap-1 items-center">
+                    {(c.photos ?? []).slice(0, 3).map((ph, i) => (
+                      <button key={i} type="button"
+                        onClick={(e) => { e.stopPropagation(); setPhotoLightbox({ clientId: c.id, index: i }); }}
+                        className="w-9 h-9 rounded overflow-hidden border-2 border-white shadow hover:border-primary hover:scale-110 transition-all"
+                        title="Foto miesta — klik pre detail">
+                        <img src={ph} alt="" className="w-full h-full object-cover" style={{ imageOrientation: "from-image" }} />
+                      </button>
+                    ))}
+                    {(!c.photos || c.photos.length < 3) && (
+                      <label
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-9 h-9 rounded border-2 border-dashed border-gray-300 hover:border-primary hover:bg-primary/10 flex items-center justify-center cursor-pointer transition-colors shrink-0"
+                        title={c.photos && c.photos.length > 0 ? "Pridať ďalšiu fotku miesta" : "Pridať fotku miesta (brána, číslo domu…)"}>
+                        <Camera className="w-4 h-4 text-gray-400 hover:text-primary" />
+                        <input type="file" accept="image/*,image/heic,image/heif" capture="environment" className="hidden"
+                          onChange={(e) => handleAddPhoto(c.id, e)} />
+                      </label>
+                    )}
+                  </div>
+                )}
+                {readOnly && c.photos && c.photos.length > 0 && (
                   <div className="shrink-0 flex gap-1">
                     {c.photos.slice(0, 3).map((ph, i) => (
                       <button key={i} type="button"
                         onClick={(e) => { e.stopPropagation(); setPhotoLightbox({ clientId: c.id, index: i }); }}
                         className="w-9 h-9 rounded overflow-hidden border-2 border-white shadow hover:border-primary hover:scale-110 transition-all"
-                        title="Foto miesta — klik pre detail">
+                        title="Foto miesta">
                         <img src={ph} alt="" className="w-full h-full object-cover" style={{ imageOrientation: "from-image" }} />
                       </button>
                     ))}
