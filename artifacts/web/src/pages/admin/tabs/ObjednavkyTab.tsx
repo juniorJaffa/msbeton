@@ -1945,11 +1945,6 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                           const doplatokVal = o.paidAmount - depUsed;
                                           return (
                                             <>
-                                              {/* Doplatok riadok */}
-                                              <div className="flex justify-between items-center px-3 py-2 bg-orange-50 border-t border-orange-200">
-                                                <span className="text-xs font-bold text-orange-600">Doplatok (hotovosť/iné)</span>
-                                                <span className="font-black text-orange-600 tabular-nums text-sm">{doplatokVal.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
-                                              </div>
                                               {/* Call-to-action banner */}
                                               <div className="bg-orange-500 px-3 py-2.5 flex items-center gap-2.5">
                                                 <svg className="w-4 h-4 shrink-0 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
