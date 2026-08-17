@@ -1901,21 +1901,34 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                             {/* Hlavný riadok: toggle switch + popis + balance + pridať */}
                             <div className="px-3 py-2.5">
                               <div className="flex items-center gap-3">
-                                {/* Toggle switch */}
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const cur = c.deposit ?? { balance: 0, transactions: [] };
-                                    update(c.id, { deposit: { ...cur, enabled: !(cur.enabled ?? false) } });
-                                  }}
-                                  className={`relative shrink-0 w-10 h-5 rounded-full transition-colors focus:outline-none ${
-                                    (c.deposit?.enabled ?? false) ? "bg-amber-500" : "bg-gray-200 hover:bg-gray-300"
-                                  }`}
-                                  title={(c.deposit?.enabled ?? false) ? "Záloha aktívna — kliknúť pre deaktiváciu" : "Záloha neaktívna — kliknúť pre aktiváciu"}>
-                                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
-                                    (c.deposit?.enabled ?? false) ? "translate-x-5" : "translate-x-0.5"
-                                  }`} />
-                                </button>
+                                {/* Toggle switch — inline styles: Tailwind translate-x v Oxide môže mať problém */}
+                                {(() => {
+                                  const on = c.deposit?.enabled ?? false;
+                                  return (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const cur = c.deposit ?? { balance: 0, transactions: [] };
+                                        update(c.id, { deposit: { ...cur, enabled: !on } });
+                                      }}
+                                      title={on ? "Záloha aktívna — vypnúť" : "Záloha neaktívna — zapnúť"}
+                                      style={{
+                                        position: "relative", display: "inline-flex", flexShrink: 0,
+                                        width: 36, height: 20, borderRadius: 10, border: "none",
+                                        cursor: "pointer", padding: 0, outline: "none",
+                                        backgroundColor: on ? "#f59e0b" : "#d1d5db",
+                                        transition: "background-color 0.2s",
+                                      }}>
+                                      <span style={{
+                                        position: "absolute", top: 2, left: on ? 18 : 2,
+                                        width: 16, height: 16, borderRadius: "50%",
+                                        backgroundColor: "white",
+                                        boxShadow: "0 1px 2px rgba(0,0,0,0.25)",
+                                        transition: "left 0.15s",
+                                      }} />
+                                    </button>
+                                  );
+                                })()}
                                 <div className="flex-1 min-w-0">
                                   <div className="text-sm text-gray-700">Záloha klienta</div>
                                   {(c.deposit?.enabled ?? false) ? (
