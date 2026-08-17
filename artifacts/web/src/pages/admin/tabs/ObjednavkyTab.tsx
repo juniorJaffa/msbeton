@@ -1438,10 +1438,20 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                           {fmtEur(o.paidAmount)} <span className={`font-bold ${o.paidAmount > o.totalSDph ? "text-teal-500" : "text-red-500"}`}>{o.paidAmount > o.totalSDph ? `+${fmtEur(o.paidAmount - o.totalSDph)}` : fmtEur(o.paidAmount - o.totalSDph)}</span>
                         </div>
                       )}
-                      <div className={cn("text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-sm mt-0.5 inline-block",
-                        o.priceMode === "hotovost" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
-                      )}>
-                        {o.priceMode === "hotovost" ? "HOT." : "FA"}
+                      <div className="flex items-center gap-1 justify-end flex-wrap mt-0.5">
+                        {/* Záloha badge — len keď platená zo zálohy klienta */}
+                        {o.status === "vyplatena" && (() => {
+                          const ocBadge = o.clientId ? adminData.getClients().find(c => c.loginId === String(o.clientId) || c.id === String(o.clientId)) : undefined;
+                          const paidFromDep = ocBadge?.deposit?.transactions?.some(tx => tx.orderId === o.id && tx.type === "payment") ?? false;
+                          return paidFromDep ? (
+                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded-sm bg-amber-100 text-amber-700 border border-amber-200 leading-tight" title="Vyplatená zo zálohy klienta">💰 záloha</span>
+                          ) : null;
+                        })()}
+                        <div className={cn("text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-sm inline-block",
+                          o.priceMode === "hotovost" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
+                        )}>
+                          {o.priceMode === "hotovost" ? "HOT." : "FA"}
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
@@ -1458,15 +1468,17 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                         : (() => {
                             const oc = o.clientId ? adminData.getClients().find(c => c.loginId === String(o.clientId) || c.id === String(o.clientId)) : undefined;
                             const depBal = oc?.deposit?.balance;
+                            // enabled musí byť explicitne true — undefined/false = záloha vypnutá
                             const depEnabled = oc?.deposit?.enabled === true;
                             return (
                               <OrderStatusBadge
                                 status={o.status}
                                 orderTotal={o.totalSDph}
                                 onChange={(s, amt) => updateStatus(o.id, s, amt)}
-                                depositBalance={depBal && depBal > 0 ? depBal : undefined}
+                                // depBal/onDepositPay len keď enabled — dvojitá ochrana (canUseDeposit v Badge je tretia)
+                                depositBalance={depEnabled && depBal && depBal > 0 ? depBal : undefined}
                                 depositEnabled={depEnabled}
-                                onDepositPay={oc ? (amt) => handleDepositPay(o.id, amt, oc.loginId) : undefined}
+                                onDepositPay={oc && depEnabled ? (amt) => handleDepositPay(o.id, amt, oc.loginId) : undefined}
                               />
                             );
                           })()}
@@ -1840,49 +1852,49 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                   {entries.map((entry, ei) => {
                                     if (entry.kind === "created") return (
                                       <div key="created" className="flex items-center gap-2 text-xs py-1">
-                                        <span className="text-gray-300 tabular-nums text-[10px] shrink-0 w-24">{fmtTs(entry.ts)}</span>
+                                        <span className="text-gray-400 tabular-nums text-[10px] shrink-0 w-24">{fmtTs(entry.ts)}</span>
                                         <span className="w-1.5 h-1.5 rounded-full bg-gray-300 shrink-0" />
                                         <span className="flex-1 text-gray-400 italic">Objednávka vytvorená</span>
-                                        {o.createdByDevice && <span className="text-[10px] text-gray-300 shrink-0 truncate max-w-[80px]" title={o.createdByDevice}>{o.createdByDevice}</span>}
+                                        {o.createdByDevice && <span className="text-[10px] text-gray-500 shrink-0 truncate max-w-[80px]" title={o.createdByDevice}>{o.createdByDevice}</span>}
                                       </div>
                                     );
                                     if (entry.kind === "status") {
                                       const h = entry.h;
                                       return (
                                         <div key={`s-${ei}`} className="flex items-center gap-2 text-xs py-1 border-t border-gray-50">
-                                          <span className="text-gray-400 tabular-nums text-[10px] shrink-0 w-24">{fmtTs(entry.ts)}</span>
+                                          <span className="text-gray-500 tabular-nums text-[10px] shrink-0 w-24">{fmtTs(entry.ts)}</span>
                                           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_DOT[h.status] ?? "bg-gray-300"}`} />
                                           <span className="flex-1 text-gray-600">
-                                            {h.prevStatus && <span className="text-gray-300 text-[10px]">{STATUS_LABELS[h.prevStatus] ?? h.prevStatus} → </span>}
+                                            {h.prevStatus && <span className="text-gray-400 text-[10px]">{STATUS_LABELS[h.prevStatus] ?? h.prevStatus} → </span>}
                                             <span className="font-semibold">{STATUS_LABELS[h.status] ?? h.status}</span>
                                             {h.paidAmount !== undefined && (
                                               <span className="ml-1.5 text-[10px] font-bold text-teal-600">{h.paidAmount.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
                                             )}
                                           </span>
-                                          <span className="text-[10px] text-gray-300 shrink-0 truncate max-w-[80px]" title={h.changedBy}>{h.changedBy}</span>
+                                          <span className="text-[10px] text-gray-500 shrink-0 truncate max-w-[80px]" title={h.changedBy}>{h.changedBy}</span>
                                         </div>
                                       );
                                     }
                                     if (entry.kind === "deposit") {
                                       const tx = entry.tx;
                                       return (
-                                        <div key={`d-${ei}`} className="flex items-center gap-2 text-xs py-1 border-t border-amber-50 bg-amber-50/40 -mx-1 px-1 rounded-sm">
-                                          <span className="text-amber-400 tabular-nums text-[10px] shrink-0 w-24">{fmtTs(entry.ts)}</span>
+                                        <div key={`d-${ei}`} className="flex items-center gap-2 text-xs py-1 border-t border-amber-50 bg-amber-50/60 -mx-1 px-1 rounded-sm">
+                                          <span className="text-amber-500 tabular-nums text-[10px] shrink-0 w-24">{fmtTs(entry.ts)}</span>
                                           <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-amber-400" />
                                           <span className="flex-1 text-amber-700 font-semibold text-[11px]">
-                                            {tx.type === "payment" ? "Odpočet zo zálohy" : "Záloha"}
+                                            {tx.type === "payment" ? "💰 Odpočet zo zálohy" : "💰 Záloha"}
                                             <span className={`ml-1.5 font-black tabular-nums ${tx.amount < 0 ? "text-red-500" : "text-teal-600"}`}>
                                               {tx.amount > 0 ? "+" : ""}{tx.amount.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                                             </span>
                                           </span>
-                                          <span className="text-[10px] text-amber-400 shrink-0 truncate max-w-[80px]">{tx.note ?? tx.createdBy}</span>
+                                          <span className="text-[10px] text-amber-600 shrink-0 truncate max-w-[80px]">{tx.note ?? tx.createdBy}</span>
                                         </div>
                                       );
                                     }
                                     return null;
                                   })}
                                   {hist.length === 0 && depTxForOrder.length === 0 && (
-                                    <div className="text-[10px] text-gray-300 italic">Bez záznamu — zmeny sa budú zaznamenávať od teraz</div>
+                                    <div className="text-[10px] text-gray-400 italic">Bez záznamu — zmeny sa budú zaznamenávať od teraz</div>
                                   )}
                                 </div>
                               );
