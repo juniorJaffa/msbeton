@@ -1407,11 +1407,14 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
           <span className="text-white/70 font-bold shrink-0 tabular-nums hidden sm:block">{floatingOrder.totalSDph?.toLocaleString("sk", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
           <div className="ml-auto flex items-center gap-1.5 shrink-0">
             {/* Záloha badge v floating bare */}
-            {floatingOrder.status === "vyplatena" && (floatingOrder.depositUsed !== undefined && floatingOrder.depositUsed > 0) && (
-              <span className="text-[9px] font-black px-1.5 py-0.5 rounded-sm bg-amber-400/30 text-amber-300 border border-amber-400/30">
-                💰 záloha
-              </span>
-            )}
+            {floatingOrder.status === "vyplatena" && (floatingOrder.depositUsed !== undefined && floatingOrder.depositUsed > 0) && (() => {
+              const isPartialFl = floatingOrder.paidAmount !== undefined && floatingOrder.depositUsed < floatingOrder.paidAmount - 0.01;
+              return (
+                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-sm border ${isPartialFl ? "bg-orange-400/30 text-orange-300 border-orange-400/30" : "bg-amber-400/30 text-amber-300 border-amber-400/30"}`}>
+                  💰 {isPartialFl ? "záloha+doplatok" : "záloha"}
+                </span>
+              );
+            })()}
             <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-sm ${STATUS_ACTIVE_COLORS[floatingOrder.status] ?? "bg-gray-500 text-white"}`}>
               {ORDER_STATUSES.find(s => s.key === floatingOrder.status)?.label ?? floatingOrder.status}
             </span>
