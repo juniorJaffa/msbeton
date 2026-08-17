@@ -190,6 +190,7 @@ export interface Order {
   pumpTimer?: { start: string; stop: string };
   podmienky?: { trucks: number; pumpa: number; mix: number; m3PerTruck: number; isRisk?: boolean };
   paidAmount?: number;
+  depositUsed?: number;     // € zaplatené zo zálohy klienta (čiastočné alebo plné)
   statusHistory?: StatusHistoryEntry[];  // timeline zmien stavu — append-only
   updatedAt?: string; // item-level merge (multi-admin) — zabráni strate zmien stavu/mazania
   // Kto objednávku vytvoril (multi-admin): "admin" | "reader" | "klient" | "anonym"

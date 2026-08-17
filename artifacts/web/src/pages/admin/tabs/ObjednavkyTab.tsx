@@ -43,13 +43,14 @@ const ORDER_STATUSES: { key: Order["status"]; label: string; color: string }[] =
   { key: "zrusena",     label: "Zrušená",     color: "bg-red-100 text-red-500" },
 ];
 
-function OrderStatusBadge({ status, onChange, orderTotal, depositBalance, depositEnabled, onDepositPay }: {
+function OrderStatusBadge({ status, onChange, orderTotal, depositBalance, depositEnabled, onDepositPay, existingDepositUsed }: {
   status: Order["status"];
   onChange: (s: Order["status"], paidAmount?: number) => void;
   orderTotal?: number;
   depositBalance?: number;         // zostatok zálohy klienta (ak má)
   depositEnabled?: boolean;        // záloha on/off pre tohto klienta
   onDepositPay?: (amount: number) => void; // callback: odpočítať zo zálohy + zmeniť stav
+  existingDepositUsed?: number;    // > 0 = záloha už bola odpočítaná — chrániť pred dvojitým odpočtom
 }) {
   const [open, setOpen] = useState(false);
   const [dropPos, setDropPos] = useState<{ top?: number; bottom?: number; left: number }>({ left: 0 });
@@ -98,10 +99,14 @@ function OrderStatusBadge({ status, onChange, orderTotal, depositBalance, deposi
     setPayModal(true);
     setOpen(false);
   };
+  // isPartialDeposit = záloha nestačí → čiastočná platba + doplatok
+  const isPartialDeposit = canUseDeposit && orderTotal !== undefined && depositBalance! < orderTotal - 0.01;
+  const depositPayAmt = canUseDeposit ? Math.min(orderTotal ?? depositBalance!, depositBalance!) : 0;
+  const doplatokAmt = isPartialDeposit && orderTotal ? orderTotal - depositPayAmt : 0;
+
   const confirmPay = () => {
     if (payTab === "deposit" && canUseDeposit) {
-      const amt = Math.min(orderTotal ?? depositBalance!, depositBalance!);
-      onDepositPay!(amt);
+      onDepositPay!(depositPayAmt);
     } else {
       const amt = parseFloat(payInput.replace(",", "."));
       onChange("vyplatena", isNaN(amt) ? undefined : amt);
@@ -157,28 +162,39 @@ function OrderStatusBadge({ status, onChange, orderTotal, depositBalance, deposi
               </div>
             )}
 
+            {/* ⚠ Varovanie: záloha už bola odpočítaná pre túto objednávku */}
+            {payTab === "deposit" && existingDepositUsed !== undefined && existingDepositUsed > 0 && (
+              <div className="mb-3 p-3 rounded-md bg-red-50 border border-red-200 text-xs text-red-700 font-bold flex items-start gap-2">
+                <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/></svg>
+                <span>Záloha {existingDepositUsed.toLocaleString("sk-SK", {minimumFractionDigits:2,maximumFractionDigits:2})} € už bola odpočítaná. Záloha sa NEodpočíta znovu — iba sa zmení stav.</span>
+              </div>
+            )}
             {payTab === "deposit" && depositBalance !== undefined ? (
-              <div className="mb-4 p-3 rounded-md bg-amber-50 border border-amber-200">
-                <div className="text-xs font-bold text-amber-700 mb-1">Záloha klienta</div>
+              <div className={`mb-4 p-3 rounded-md border ${isPartialDeposit ? "bg-orange-50 border-orange-200" : "bg-amber-50 border-amber-200"}`}>
+                <div className={`text-xs font-bold mb-2 ${isPartialDeposit ? "text-orange-700" : "text-amber-700"}`}>
+                  {isPartialDeposit ? "⚠ Čiastočná platba zo zálohy" : "Záloha klienta"}
+                </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-amber-600">Zostatok pred:</span>
+                  <span className="text-xs text-gray-500">Zostatok zálohy:</span>
                   <span className="font-black text-amber-700 tabular-nums">{depositBalance.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
                 </div>
-                {orderTotal !== undefined && (
-                  <div className="flex justify-between items-center mt-1">
-                    <span className="text-xs text-amber-600">Odpočet za objednávku:</span>
-                    <span className="font-black text-red-500 tabular-nums">−{Math.min(orderTotal, depositBalance).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
-                  </div>
-                )}
-                {orderTotal !== undefined && depositBalance >= orderTotal && (
+                <div className="flex justify-between items-center mt-1">
+                  <span className="text-xs text-gray-500">Odpočet zo zálohy:</span>
+                  <span className="font-black text-red-500 tabular-nums">−{depositPayAmt.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+                </div>
+                {!isPartialDeposit && orderTotal !== undefined && (
                   <div className="flex justify-between items-center mt-1 pt-1 border-t border-amber-200">
-                    <span className="text-xs font-bold text-amber-700">Zostatok po:</span>
-                    <span className="font-black text-teal-600 tabular-nums">{(depositBalance - orderTotal).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+                    <span className="text-xs font-bold text-amber-700">Zostatok zálohy po:</span>
+                    <span className="font-black text-teal-600 tabular-nums">{(depositBalance - depositPayAmt).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
                   </div>
                 )}
-                {orderTotal !== undefined && depositBalance < orderTotal && (
-                  <div className="mt-1 pt-1 border-t border-amber-200 text-xs text-red-600 font-bold">
-                    ⚠ Záloha nestačí — nedoplatok {(orderTotal - depositBalance).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                {isPartialDeposit && (
+                  <div className="mt-2 pt-2 border-t border-orange-200 space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold text-orange-700">Doplatok (hotovosť/iné):</span>
+                      <span className="font-black text-orange-700 tabular-nums">{doplatokAmt.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+                    </div>
+                    <div className="text-[10px] text-gray-500 italic">Objednávka bude označená ako Vyplatená. Záloha: {depositPayAmt.toFixed(2)} € + doplatok: {doplatokAmt.toFixed(2)} €.</div>
                   </div>
                 )}
               </div>
@@ -242,8 +258,8 @@ function OrderStatusBadge({ status, onChange, orderTotal, depositBalance, deposi
                 Zrušiť
               </button>
               <button onClick={confirmPay}
-                className={`flex-1 px-3 py-2 text-xs font-black text-white rounded-md transition-colors cursor-pointer ${payTab === "deposit" ? "bg-amber-500 hover:bg-amber-600" : "bg-teal-600 hover:bg-teal-700"}`}>
-                {payTab === "deposit" ? "Odpočítať zo zálohy" : "Potvrdiť"}
+                className={`flex-1 px-3 py-2 text-xs font-black text-white rounded-md transition-colors cursor-pointer ${payTab === "deposit" ? (isPartialDeposit ? "bg-orange-500 hover:bg-orange-600" : "bg-amber-500 hover:bg-amber-600") : "bg-teal-600 hover:bg-teal-700"}`}>
+                {payTab === "deposit" ? (isPartialDeposit ? `💰 ${depositPayAmt.toFixed(2)} € + doplatok ${doplatokAmt.toFixed(2)} €` : "Odpočítať zo zálohy") : "Potvrdiť"}
               </button>
             </div>
           </div>
@@ -512,7 +528,7 @@ function exportOrderPDF(o: Order, format: "a4" | "a5" = "a4") {
     <div style="font-size:8pt;color:rgba(255,255,255,0.6)">${o.priceMode === "hotovost" ? "Spolu" : "Celkom s DPH"}</div>
     <div style="text-align:right">
       <div style="font-size:15pt;font-weight:bold;color:#EDC531;line-height:1">${fmtEurPdf(o.totalSDph)}</div>
-      ${o.status === "vyplatena" && o.paidAmount !== undefined ? `<div style="font-size:7.5pt;color:rgba(255,255,255,0.7);margin-top:1.5mm">Zaplatené ${fmtEurPdf(o.paidAmount)}${Math.abs(o.paidAmount - o.totalSDph) > 0.01 ? ` <span style="font-weight:bold;color:${o.paidAmount > o.totalSDph ? "#86efac" : "#ef4444"}">${o.paidAmount > o.totalSDph ? `+${(o.paidAmount - o.totalSDph).toFixed(2)} € tringelt` : `${(o.paidAmount - o.totalSDph).toFixed(2)} €`}</span>` : ""}</div>` : ""}
+      ${o.status === "vyplatena" && o.paidAmount !== undefined ? `<div style="font-size:7.5pt;color:rgba(255,255,255,0.7);margin-top:1.5mm">Zaplatené ${fmtEurPdf(o.paidAmount)}${Math.abs(o.paidAmount - o.totalSDph) > 0.01 ? ` <span style="font-weight:bold;color:${o.paidAmount > o.totalSDph ? "#86efac" : "#ef4444"}">${o.paidAmount > o.totalSDph ? `+${(o.paidAmount - o.totalSDph).toFixed(2)} € tringelt` : `${(o.paidAmount - o.totalSDph).toFixed(2)} €`}</span>` : ""}${o.depositUsed !== undefined && o.depositUsed > 0 ? `<span style="margin-left:5px;background:rgba(251,191,36,0.25);color:#fcd34d;border-radius:2px;padding:0 3px;font-weight:bold">💰 záloha ${fmtEurPdf(o.depositUsed)}${o.depositUsed < o.paidAmount - 0.01 ? ` + doplatok ${fmtEurPdf(o.paidAmount - o.depositUsed)}` : ""}</span>` : ""}</div>` : ""}
     </div>
   </div>
   <!-- Podpisy + Google QR — zmenšené, stále na A5 -->
@@ -627,6 +643,7 @@ function exportOrderPDF(o: Order, format: "a4" | "a5" = "a4") {
         <div style="font-size:8pt;color:rgba(255,255,255,0.6)">Zaplatené</div>
         <div style="font-size:11pt;font-weight:bold;color:#fff">${fmtEurPdf(o.paidAmount)}</div>
         ${Math.abs(o.paidAmount - o.totalSDph) > 0.01 ? `<div style="font-size:9pt;font-weight:bold;color:${o.paidAmount > o.totalSDph ? "#86efac" : "#ef4444"}">${o.paidAmount > o.totalSDph ? `+${(o.paidAmount - o.totalSDph).toFixed(2)} € tringelt` : `${(o.paidAmount - o.totalSDph).toFixed(2)} € rozdiel`}</div>` : ""}
+        ${o.depositUsed !== undefined && o.depositUsed > 0 ? `<div style="margin-top:3px;font-size:8pt;background:rgba(251,191,36,0.2);border-radius:3px;padding:2px 5px;color:#fcd34d;font-weight:bold">💰 Záloha: ${fmtEurPdf(o.depositUsed)}${o.depositUsed < o.paidAmount - 0.01 ? ` + doplatok: ${fmtEurPdf(o.paidAmount - o.depositUsed)}` : ""}</div>` : ""}
       </div>` : ""}
     </div>
   </div>
@@ -699,6 +716,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const [filterTab, setFilterTab] = useState<Order["tab"] | "vsetky">("vsetky");
   const [filterPriceMode, setFilterPriceMode] = useState<"vsetky" | "faktura" | "hotovost">("vsetky");
   const [filterChannel, setFilterChannel] = useState<"vsetky" | "sms" | "kosarik">("vsetky");
+  const [filterZaloha, setFilterZaloha] = useState<"vsetky" | "zaloha" | "doplatok">("vsetky");
   const [search, setSearch] = useState(initialSearch ?? "");
   const [clientIdActive, setClientIdActive] = useState<string | null>(initialClientId ?? null);
   const [dateFrom, setDateFrom] = useState("");
@@ -795,9 +813,18 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const save = (data: Order[]) => { if (readerBlocked()) return; setOrders(data); adminData.saveOrders(data); };
   const remove = (id: string) => { save(orders.filter(o => o.id !== id)); setDeleteConfirmId(null); };
 
-  const handleDepositPay = (orderId: string, amount: number, clientLoginId: string) => {
+  const handleDepositPay = (orderId: string, depositAmount: number, clientLoginId: string) => {
     if (readerBlocked()) return;
-    // Deduct from client deposit
+    const order = orders.find(o => o.id === orderId);
+    // GUARD: záloha už bola odpočítaná — neodpočítaj znovu, iba zmeň stav
+    if (order?.depositUsed !== undefined && order.depositUsed > 0) {
+      updateStatus(orderId, "vyplatena", order.paidAmount ?? order.totalSDph, order.depositUsed);
+      return;
+    }
+    // orderTotal = plná suma objednávky (paidAmount = vždy celá suma, depositUsed = koľko zo zálohy)
+    const orderTotal = order?.totalSDph ?? depositAmount;
+    const now = new Date().toISOString();
+    // Deduct from client deposit — zachovaj enabled flag!
     const clients = adminData.getClients();
     const updatedClients = clients.map(c => {
       if (c.loginId !== clientLoginId && c.id !== clientLoginId) return c;
@@ -805,18 +832,26 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
       const tx = {
         id: crypto.randomUUID(),
         type: "payment" as const,
-        amount: -amount,
+        amount: -depositAmount,
         orderId,
-        createdAt: new Date().toISOString(),
+        note: depositAmount < orderTotal - 0.01 ? `Čiastočná platba, doplatok: ${(orderTotal - depositAmount).toFixed(2)} €` : undefined,
+        createdAt: now,
         createdBy: getAdminDeviceLabel() || "admin",
       };
-      return { ...c, deposit: { balance: Math.max(0, cur.balance - amount), transactions: [...cur.transactions, tx] } };
+      return {
+        ...c,
+        deposit: {
+          enabled: c.deposit?.enabled,  // zachovaj enabled flag!
+          balance: Math.max(0, cur.balance - depositAmount),
+          transactions: [...cur.transactions, tx],
+        },
+      };
     });
     adminData.saveClients(updatedClients);
-    // Zmeniť stav objednávky
-    updateStatus(orderId, "vyplatena", amount);
+    // paidAmount = celá suma objednávky, depositUsed = koľko zo zálohy
+    updateStatus(orderId, "vyplatena", orderTotal, depositAmount);
   };
-  const updateStatus = (id: string, status: Order["status"], paidAmount?: number) => {
+  const updateStatus = (id: string, status: Order["status"], paidAmount?: number, depositUsed?: number) => {
     const now = new Date().toISOString();
     const entry: StatusHistoryEntry = {
       status,
@@ -829,7 +864,11 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
       const hist = o.statusHistory ?? [];
       const entryWithPrev: StatusHistoryEntry = { ...entry, prevStatus: o.status };
       // updatedAt je kritické — mergeSaveArray ho používa na určenie víťaza pri súbežných zmenách
-      return { ...o, status, statusHistory: [...hist, entryWithPrev], updatedAt: now, ...(paidAmount !== undefined ? { paidAmount } : {}) };
+      return {
+        ...o, status, statusHistory: [...hist, entryWithPrev], updatedAt: now,
+        ...(paidAmount !== undefined ? { paidAmount } : {}),
+        ...(depositUsed !== undefined ? { depositUsed } : {}),
+      };
     }));
   };
 
@@ -872,6 +911,10 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
     .filter(o => filterTab       === "vsetky" || o.tab       === filterTab)
     .filter(o => filterPriceMode === "vsetky" || o.priceMode === filterPriceMode)
     .filter(o => filterChannel   === "vsetky" || (filterChannel === "sms" ? !!o.viaSms : !o.viaSms))
+    .filter(o => filterZaloha    === "vsetky" || (
+      filterZaloha === "zaloha" ? (o.depositUsed !== undefined && o.depositUsed > 0) :
+      /* doplatok */ (o.depositUsed !== undefined && o.depositUsed > 0 && o.paidAmount !== undefined && o.paidAmount - o.depositUsed > 0.01)
+    ))
     .filter(o => !clientIdActive || o.clientId === clientIdActive)
     .filter(o => {
       if (!searchTerms.length) return true;
@@ -933,12 +976,12 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   };
   const fmtEur = (n: number) => n.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
   const tabLabel: Record<Order["tab"], string> = { pumpa: "Pumpa", mix: "Mix", vlastnadoprava: "Vl. doprava" };
-  const activeFilters = [filterStatus !== "vsetky", filterTab !== "vsetky", filterPriceMode !== "vsetky", filterChannel !== "vsetky", !!clientIdActive, !!search, !!(dateFrom || dateTo)].filter(Boolean).length;
+  const activeFilters = [filterStatus !== "vsetky", filterTab !== "vsetky", filterPriceMode !== "vsetky", filterChannel !== "vsetky", filterZaloha !== "vsetky", !!clientIdActive, !!search, !!(dateFrom || dateTo)].filter(Boolean).length;
   const sortedCount = sorted.length;
   const sortedCountLabel = sortedCount === 1 ? "objednávka" : sortedCount >= 2 && sortedCount <= 4 ? "objednávky" : "objednávok";
   const totalPages = Math.ceil(sortedCount / ORDERS_PAGE_SIZE);
   const pagedOrders = sorted.slice(ordersPage * ORDERS_PAGE_SIZE, (ordersPage + 1) * ORDERS_PAGE_SIZE);
-  useEffect(() => { setOrdersPage(0); }, [filterStatus, filterTab, filterPriceMode, filterChannel, clientIdActive, search, dateFrom, dateTo]);
+  useEffect(() => { setOrdersPage(0); }, [filterStatus, filterTab, filterPriceMode, filterChannel, filterZaloha, clientIdActive, search, dateFrom, dateTo]);
 
   // ── Presence polling — zisti kto iný prezerá objednávky (každých 30s) ──
   useEffect(() => {
@@ -1139,9 +1182,9 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
             <button type="button" onClick={() => setSecTypOpen(o => !o)}
               className="w-full bg-gray-50 border-b border-gray-100 px-4 py-1.5 flex items-center gap-2 hover:bg-gray-100 transition-colors cursor-pointer">
               <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">Typ / Platba / Zdroj</span>
-              {(filterTab !== "vsetky" || filterPriceMode !== "vsetky" || filterChannel !== "vsetky") && (
+              {(filterTab !== "vsetky" || filterPriceMode !== "vsetky" || filterChannel !== "vsetky" || filterZaloha !== "vsetky") && (
                 <span className="bg-secondary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
-                  {[filterTab !== "vsetky" && TAB_STYLES[filterTab]?.label, filterPriceMode !== "vsetky" && (filterPriceMode === "faktura" ? "FA" : "HOT"), filterChannel !== "vsetky" && (filterChannel === "sms" ? "SMS" : "Košík")].filter(Boolean).join(" · ")}
+                  {[filterTab !== "vsetky" && TAB_STYLES[filterTab]?.label, filterPriceMode !== "vsetky" && (filterPriceMode === "faktura" ? "FA" : "HOT"), filterChannel !== "vsetky" && (filterChannel === "sms" ? "SMS" : "Košík"), filterZaloha !== "vsetky" && (filterZaloha === "doplatok" ? "⚠ Doplatok" : "💰 Záloha")].filter(Boolean).join(" · ")}
                 </span>
               )}
               <ChevronDown className={`w-3.5 h-3.5 text-gray-400 ml-auto transition-transform duration-150 ${secTypOpen ? "rotate-180" : ""}`} />
@@ -1209,6 +1252,26 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                         {val !== "vsetky" && <span className="ml-0.5 text-[10px] opacity-60">{orders.filter(o => val === "sms" ? !!o.viaSms : !o.viaSms).length}</span>}
                       </button>
                     ))}
+                  </div>
+                </div>
+                {/* Záloha */}
+                <div className="flex items-center gap-0 px-4 py-2">
+                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em] w-14 shrink-0">Záloha</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button onClick={() => setFilterZaloha("vsetky")}
+                      className={`px-2.5 py-1 text-xs font-bold rounded-sm border transition-all ${filterZaloha === "vsetky" ? "bg-gray-700 text-white border-gray-700" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"}`}>
+                      Všetky
+                    </button>
+                    <button onClick={() => setFilterZaloha("zaloha")}
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-sm border transition-all ${filterZaloha === "zaloha" ? "bg-amber-500 text-white border-amber-500" : "bg-white text-gray-500 border-gray-200 hover:border-amber-300"}`}>
+                      💰 Zo zálohy
+                      <span className="text-[10px] opacity-70 ml-0.5">{orders.filter(o => o.depositUsed !== undefined && o.depositUsed > 0).length}</span>
+                    </button>
+                    <button onClick={() => setFilterZaloha("doplatok")}
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-sm border transition-all ${filterZaloha === "doplatok" ? "bg-orange-500 text-white border-orange-500" : "bg-white text-gray-500 border-gray-200 hover:border-orange-300"}`}>
+                      ⚠ Doplatok
+                      <span className="text-[10px] opacity-70 ml-0.5">{orders.filter(o => o.depositUsed !== undefined && o.depositUsed > 0 && o.paidAmount !== undefined && o.paidAmount - o.depositUsed > 0.01).length}</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1439,13 +1502,16 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                         </div>
                       )}
                       <div className="flex items-center gap-1 justify-end flex-wrap mt-0.5">
-                        {/* Záloha badge — len keď platená zo zálohy klienta */}
-                        {o.status === "vyplatena" && (() => {
-                          const ocBadge = o.clientId ? adminData.getClients().find(c => c.loginId === String(o.clientId) || c.id === String(o.clientId)) : undefined;
-                          const paidFromDep = ocBadge?.deposit?.transactions?.some(tx => tx.orderId === o.id && tx.type === "payment") ?? false;
-                          return paidFromDep ? (
-                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded-sm bg-amber-100 text-amber-700 border border-amber-200 leading-tight" title="Vyplatená zo zálohy klienta">💰 záloha</span>
-                          ) : null;
+                        {/* Záloha badge — len keď platená (čiastočne) zo zálohy klienta */}
+                        {o.status === "vyplatena" && o.depositUsed !== undefined && o.depositUsed > 0 && (() => {
+                          const isPartial = o.paidAmount !== undefined && o.depositUsed < o.paidAmount - 0.01;
+                          return (
+                            <span
+                              className={`text-[9px] font-black px-1.5 py-0.5 rounded-sm border leading-tight ${isPartial ? "bg-orange-100 text-orange-700 border-orange-200" : "bg-amber-100 text-amber-700 border-amber-200"}`}
+                              title={isPartial ? `Záloha: ${o.depositUsed.toFixed(2)} € + doplatok: ${(o.paidAmount! - o.depositUsed).toFixed(2)} €` : "Vyplatená zo zálohy klienta"}>
+                              💰 {isPartial ? `záloha+doplatok` : "záloha"}
+                            </span>
+                          );
                         })()}
                         <div className={cn("text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-sm inline-block",
                           o.priceMode === "hotovost" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
@@ -1479,6 +1545,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                 depositBalance={depEnabled && depBal && depBal > 0 ? depBal : undefined}
                                 depositEnabled={depEnabled}
                                 onDepositPay={oc && depEnabled ? (amt) => handleDepositPay(o.id, amt, oc.loginId) : undefined}
+                                existingDepositUsed={o.depositUsed}
                               />
                             );
                           })()}
@@ -1781,18 +1848,42 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                 const diff = o.paidAmount - o.totalSDph;
                                 const isNeg = Math.abs(diff) > 0.01 && diff < 0;
                                 const isPos = Math.abs(diff) > 0.01 && diff > 0;
+                                const depUsed = o.depositUsed !== undefined && o.depositUsed > 0 ? o.depositUsed : undefined;
+                                const isPartialDep = depUsed !== undefined && o.paidAmount - depUsed > 0.01;
                                 return (
-                                  <div className={`flex justify-between items-center rounded-sm px-3 py-2 mt-1.5 border ${isNeg ? "bg-red-50 border-red-200" : "bg-teal-50 border-teal-200"}`}>
-                                    <div>
-                                      <div className={`text-xs font-bold ${isNeg ? "text-red-700" : "text-teal-700"}`}>Vyplatená suma</div>
-                                      {Math.abs(diff) > 0.01 && (
-                                        <div className={`text-[10px] font-bold ${isNeg ? "text-red-600" : "text-teal-500"}`}>
-                                          {isPos ? `+${diff.toFixed(2)} € tringelt` : `${diff.toFixed(2)} € rozdiel`}
-                                        </div>
-                                      )}
+                                  <>
+                                    <div className={`flex justify-between items-center rounded-sm px-3 py-2 mt-1.5 border ${isNeg ? "bg-red-50 border-red-200" : "bg-teal-50 border-teal-200"}`}>
+                                      <div>
+                                        <div className={`text-xs font-bold ${isNeg ? "text-red-700" : "text-teal-700"}`}>Vyplatená suma</div>
+                                        {Math.abs(diff) > 0.01 && (
+                                          <div className={`text-[10px] font-bold ${isNeg ? "text-red-600" : "text-teal-500"}`}>
+                                            {isPos ? `+${diff.toFixed(2)} € tringelt` : `${diff.toFixed(2)} € rozdiel`}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <span className={`text-lg font-black ${isNeg ? "text-red-700" : "text-teal-700"}`}>{fmtEur(o.paidAmount)}</span>
                                     </div>
-                                    <span className={`text-lg font-black ${isNeg ? "text-red-700" : "text-teal-700"}`}>{fmtEur(o.paidAmount)}</span>
-                                  </div>
+                                    {depUsed !== undefined && (
+                                      <div className={`rounded-sm px-3 py-2 mt-1 border space-y-1 ${isPartialDep ? "bg-orange-50 border-orange-200" : "bg-amber-50 border-amber-200"}`}>
+                                        <div className="flex justify-between items-center">
+                                          <span className={`text-xs font-bold flex items-center gap-1 ${isPartialDep ? "text-orange-700" : "text-amber-700"}`}>💰 Záloha klienta</span>
+                                          <span className={`font-black tabular-nums text-sm ${isPartialDep ? "text-orange-700" : "text-amber-700"}`}>−{depUsed.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+                                        </div>
+                                        {isPartialDep && (
+                                          <>
+                                            <div className="flex justify-between items-center pt-1 border-t border-orange-200">
+                                              <span className="text-xs font-bold text-orange-700">Doplatok (hotovosť/iné)</span>
+                                              <span className="font-black text-orange-700 tabular-nums text-sm">{(o.paidAmount - depUsed).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+                                            </div>
+                                            <div className="mt-1 pt-1 border-t border-orange-200 flex items-start gap-1.5 text-[10px] text-orange-700 font-bold bg-orange-100 rounded px-2 py-1.5">
+                                              <svg className="w-3 h-3 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/></svg>
+                                              Klient musí doplatiť {(o.paidAmount - depUsed).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € na mieste alebo doplniť zálohu.
+                                            </div>
+                                          </>
+                                        )}
+                                      </div>
+                                    )}
+                                  </>
                                 );
                               })()}
                             </div>
@@ -1832,7 +1923,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                 | { kind: "status"; ts: string; h: typeof hist[0] }
                                 | { kind: "deposit"; ts: string; tx: typeof depTxForOrder[0] };
                               const entries: TLEntry[] = [
-                                { kind: "created", ts: o.createdAt },
+                                { kind: "created" as const, ts: o.createdAt },
                                 ...hist.map(h => ({ kind: "status" as const, ts: h.changedAt, h })),
                                 ...depTxForOrder.map(tx => ({ kind: "deposit" as const, ts: tx.createdAt, tx })),
                               ].sort((a, b) => a.ts.localeCompare(b.ts));
@@ -1850,12 +1941,18 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                     )}
                                   </div>
                                   {entries.map((entry, ei) => {
+                                    // KTO chip — pre lepšiu čitateľnosť "kto urobil akciu"
+                                    const KtoChip = ({ label, amber }: { label: string; amber?: boolean }) => (
+                                      <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded max-w-[110px] truncate ${amber ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-700"}`} title={label}>
+                                        {label}
+                                      </span>
+                                    );
                                     if (entry.kind === "created") return (
                                       <div key="created" className="flex items-center gap-2 text-xs py-1">
                                         <span className="text-gray-400 tabular-nums text-[10px] shrink-0 w-24">{fmtTs(entry.ts)}</span>
                                         <span className="w-1.5 h-1.5 rounded-full bg-gray-300 shrink-0" />
-                                        <span className="flex-1 text-gray-400 italic">Objednávka vytvorená</span>
-                                        {o.createdByDevice && <span className="text-[10px] text-gray-500 shrink-0 truncate max-w-[80px]" title={o.createdByDevice}>{o.createdByDevice}</span>}
+                                        <span className="flex-1 text-gray-400 italic">Vytvorená</span>
+                                        {o.createdByDevice && <KtoChip label={o.createdByDevice} />}
                                       </div>
                                     );
                                     if (entry.kind === "status") {
@@ -1864,14 +1961,14 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                         <div key={`s-${ei}`} className="flex items-center gap-2 text-xs py-1 border-t border-gray-50">
                                           <span className="text-gray-500 tabular-nums text-[10px] shrink-0 w-24">{fmtTs(entry.ts)}</span>
                                           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_DOT[h.status] ?? "bg-gray-300"}`} />
-                                          <span className="flex-1 text-gray-600">
+                                          <span className="flex-1 text-gray-600 min-w-0">
                                             {h.prevStatus && <span className="text-gray-400 text-[10px]">{STATUS_LABELS[h.prevStatus] ?? h.prevStatus} → </span>}
                                             <span className="font-semibold">{STATUS_LABELS[h.status] ?? h.status}</span>
                                             {h.paidAmount !== undefined && (
                                               <span className="ml-1.5 text-[10px] font-bold text-teal-600">{h.paidAmount.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
                                             )}
                                           </span>
-                                          <span className="text-[10px] text-gray-500 shrink-0 truncate max-w-[80px]" title={h.changedBy}>{h.changedBy}</span>
+                                          <KtoChip label={h.changedBy} />
                                         </div>
                                       );
                                     }
@@ -1881,7 +1978,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                         <div key={`d-${ei}`} className="flex items-center gap-2 text-xs py-1 border-t border-amber-50 bg-amber-50/60 -mx-1 px-1 rounded-sm">
                                           <span className="text-amber-500 tabular-nums text-[10px] shrink-0 w-24">{fmtTs(entry.ts)}</span>
                                           <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-amber-400" />
-                                          <span className="flex-1 text-amber-700 font-semibold text-[11px]">
+                                          <span className="flex-1 text-amber-700 font-semibold text-[11px] min-w-0">
                                             {tx.type === "payment" ? "💰 Odpočet zo zálohy" : "💰 Záloha"}
                                             <span className={`ml-1.5 font-black tabular-nums ${tx.amount < 0 ? "text-red-500" : "text-teal-600"}`}>
                                               {tx.amount > 0 ? "+" : ""}{tx.amount.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €

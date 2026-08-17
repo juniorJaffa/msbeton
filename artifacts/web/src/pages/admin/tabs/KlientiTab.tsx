@@ -2002,7 +2002,19 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                                       {tx.type === "topup" ? "+" : ""}{tx.amount.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                                     </span>
                                     <span className="text-amber-500 flex-1 truncate">{tx.note ?? (tx.type === "payment" ? "platba" : "záloha")}</span>
-                                    {tx.orderId && <span className="text-amber-300 shrink-0">#{tx.orderId.slice(-4)}</span>}
+                                    {tx.orderId && (
+                                      onGoToOrders ? (
+                                        <button
+                                          onClick={() => onGoToOrders(c.loginId, tx.orderId)}
+                                          className="text-amber-400 hover:text-amber-600 hover:underline shrink-0 font-bold cursor-pointer transition-colors"
+                                          title="Prejsť na objednávku"
+                                        >
+                                          #{tx.orderId.slice(-4)} ↗
+                                        </button>
+                                      ) : (
+                                        <span className="text-amber-300 shrink-0">#{tx.orderId.slice(-4)}</span>
+                                      )
+                                    )}
                                   </div>
                                 ))}
                                 {(c.deposit?.transactions?.length ?? 0) > 5 && (
