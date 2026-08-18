@@ -688,17 +688,21 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               </div>
                             );
                           })()}
-                          {/* R2: Betón info + kamenivo ikona + Celkom € */}
-                          <div className="flex items-center gap-2">
-                            <span className="text-gray-500 text-[10px] flex-1 truncate min-w-0 flex items-center gap-1">
-                              {(() => {
-                                const kg = o.concreteCategory ? getKamenivoGroup(o.concreteCategory) : null;
-                                return (<>
-                                  {kg === "drvene" && <Mountain className="w-3 h-3 shrink-0 text-stone-500" />}
-                                  {kg === "riecne" && <Waves className="w-3 h-3 shrink-0 text-blue-400" />}
-                                  {o.concreteCategory ? `${o.concreteCategory} · ` : ""}{o.concreteType} {o.totalQty ?? o.quantity} m³
-                                </>);
-                              })()}
+                          {/* R2: Kategória (ak je) — rovnaký layout ako v ObjednavkyTab */}
+                          {o.concreteCategory && (() => {
+                            const kg = getKamenivoGroup(o.concreteCategory);
+                            return (
+                              <div className="flex items-center gap-1 text-[10px] font-black tracking-wide text-gray-900">
+                                {kg === "drvene" && <Mountain className="w-3 h-3 shrink-0 text-stone-500" />}
+                                {kg === "riecne" && <Waves className="w-3 h-3 shrink-0 text-blue-400" />}
+                                {o.concreteCategory}
+                              </div>
+                            );
+                          })()}
+                          {/* R2b: Typ + qty + Celkom € */}
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-gray-500 text-[10px] flex-1 truncate min-w-0">
+                              {o.concreteType} {o.totalQty ?? o.quantity} m³
                             </span>
                             {o.totalBezDph != null && o.totalBezDph > 0 && (
                               <span className="font-black tabular-nums text-sm text-gray-900 shrink-0">{fmtEur(o.totalBezDph, 0)} €</span>
