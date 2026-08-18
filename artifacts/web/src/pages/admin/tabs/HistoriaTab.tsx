@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { adminData, Client, DepositTx, Order } from "@/lib/adminData";
-import { ChevronRight, TrendingUp, Minus, Smartphone, Monitor, Laptop } from "lucide-react";
+import { ChevronRight, TrendingUp, Minus, Smartphone, Monitor, Laptop, ChevronDown, Users } from "lucide-react";
 
 type Sub = "zalohy" | "cashflow";
 type DateFilter = "dnes" | "vcera" | "tyzden" | "mesiac" | "vsetko";
@@ -116,10 +116,22 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [depDateFilter,   setDepDateFilter]   = useState<DateFilter>("tyzden");
 
   // CASHFLOW filtre
-  const [cashDateFilter,   setCashDateFilter]   = useState<DateFilter>("tyzden");
-  const [cashClientFilter, setCashClientFilter] = useState<string>("vsetci");
-  const [cashKtoFilter,    setCashKtoFilter]    = useState<string>("vsetci");
-  const [onlyDeposit,      setOnlyDeposit]      = useState(false);
+  const [cashDateFilter,    setCashDateFilter]   = useState<DateFilter>("tyzden");
+  const [cashClientFilter,  setCashClientFilter] = useState<string>("vsetci");
+  const [cashKtoFilters,    setCashKtoFilters]   = useState<string[]>([]);
+  const [ktoDropOpen,       setKtoDropOpen]      = useState(false);
+  const [onlyDeposit,       setOnlyDeposit]      = useState(false);
+  const ktoRef = useRef<HTMLDivElement>(null);
+
+  // Zatvor KTO dropdown pri kliknutí mimo
+  useEffect(() => {
+    if (!ktoDropOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (ktoRef.current && !ktoRef.current.contains(e.target as Node)) setKtoDropOpen(false);
+    };
+    document.addEventListener("mousedown", handler, true);
+    return () => document.removeEventListener("mousedown", handler, true);
+  }, [ktoDropOpen]);
 
   useEffect(() => {
     if (!initialDate) return;
@@ -190,11 +202,11 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       .filter(o => {
         if (onlyDeposit && !(o.depositUsed && o.depositUsed > 0)) return false;
         if (cashClientFilter !== "vsetci" && o.clientId !== cashClientFilter) return false;
-        if (cashKtoFilter !== "vsetci" && (o.createdByDevice ?? "") !== cashKtoFilter) return false;
+        if (cashKtoFilters.length > 0 && !cashKtoFilters.includes(o.createdByDevice ?? "")) return false;
         return passesDate(toDateStr(o.createdAt), cashDateFilter);
       })
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-  [liveOrders, cashClientFilter, cashKtoFilter, cashDateFilter, onlyDeposit]);
+  [liveOrders, cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit]);
 
   const cashSummary = useMemo(() => {
     let dep = 0;
@@ -360,16 +372,77 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       {/* ─── CASHFLOW ────────────────────────────────────────────────── */}
       {sub === "cashflow" && (
         <div className="space-y-3">
-          {/* Filtre */}
+          {/* Filtre — jeden flex-wrap riadok: date + záloha + KTO dropdown (mobile-first) */}
           <div className="flex flex-wrap gap-1.5 items-center">
             {DATE_BTNS.map(f => (
               <button key={f.id} onClick={() => setCashDateFilter(f.id)} className={dateBtnCls(cashDateFilter === f.id)}>{f.label}</button>
             ))}
-            <label className="flex items-center gap-1.5 cursor-pointer ml-1 bg-white border border-gray-200 rounded-full px-2.5 py-1.5">
+            <label className="flex items-center gap-1.5 cursor-pointer bg-white border border-gray-200 rounded-full px-2.5 py-1.5">
               <input type="checkbox" checked={onlyDeposit} onChange={e => setOnlyDeposit(e.target.checked)} className="w-3.5 h-3.5 accent-amber-500" />
-              <span className="text-[10px] font-bold text-gray-500">Len so zálohou</span>
+              <span className="text-[10px] font-bold text-gray-500">Záloha</span>
             </label>
-          </div>
+            {/* KTO dropdown trigger — inline, šetrí priestor */}
+            {orderDevices.length > 1 && (
+            <div ref={ktoRef} className="relative inline-block">
+              {/* Trigger — rovnaká výška ako date pills, zmestí sa do riadku */}
+              <button
+                onClick={() => setKtoDropOpen(o => !o)}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold rounded-full transition-colors cursor-pointer border ${
+                  cashKtoFilters.length > 0
+                    ? "bg-secondary border-secondary text-white"
+                    : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
+                }`}>
+                <Users className="w-3 h-3 shrink-0" />
+                KTO
+                {cashKtoFilters.length > 0 && (
+                  <span className="bg-white/30 text-white text-[9px] font-black px-1 rounded-full leading-tight">
+                    {cashKtoFilters.length}
+                  </span>
+                )}
+                <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-150 ${ktoDropOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {/* Dropdown panel */}
+              {ktoDropOpen && (
+                <div className="absolute left-0 top-full mt-1.5 z-30 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden min-w-[200px] max-h-[60vh] overflow-y-auto">
+                  {/* Všetci — zrušiť filter */}
+                  <button
+                    onClick={() => { setCashKtoFilters([]); setKtoDropOpen(false); }}
+                    className="w-full flex items-center gap-2 px-4 py-3 text-[11px] font-bold text-gray-500 hover:bg-gray-50 border-b border-gray-100 cursor-pointer transition-colors text-left">
+                    Všetci (zrušiť filter)
+                  </button>
+                  {/* Zoznam zariadení */}
+                  {orderDevices.map(d => {
+                    const { person, deviceType } = parseDeviceLabel(d);
+                    const checked = cashKtoFilters.includes(d);
+                    return (
+                      <label key={d}
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors min-h-[44px]">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => setCashKtoFilters(prev =>
+                            prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]
+                          )}
+                          className="w-4 h-4 accent-secondary shrink-0"
+                        />
+                        <DeviceIconSmall label={d} className="w-4 h-4 text-gray-400 shrink-0" />
+                        <span className="flex-1 min-w-0">
+                          <span className="text-[12px] font-semibold text-gray-800">{person || deviceType || d}</span>
+                          {person && deviceType && (
+                            <span className="ml-1 text-[10px] text-gray-400">{deviceType}</span>
+                          )}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+          </div>{/* END date+filter row */}
+
+          {/* Klienti pills — len ak ≤12, separátny riadok */}
           {orderClients.length > 0 && orderClients.length <= 12 && (
             <div className="flex gap-1.5 flex-wrap">
               <button onClick={() => setCashClientFilter("vsetci")} className={clientPill(cashClientFilter === "vsetci")}>Všetci</button>
@@ -378,29 +451,6 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   {c.name}
                 </button>
               ))}
-            </div>
-          )}
-          {/* KTO / ZARIADENIE filter */}
-          {orderDevices.length > 1 && (
-            <div className="flex gap-1.5 flex-wrap items-center">
-              <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 mr-0.5">KTO</span>
-              <button
-                onClick={() => setCashKtoFilter("vsetci")}
-                className={`flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold rounded-full transition-colors cursor-pointer ${cashKtoFilter === "vsetci" ? "bg-secondary text-white" : "bg-white text-gray-500 border border-gray-200 hover:border-gray-300"}`}>
-                Všetci
-              </button>
-              {orderDevices.map(d => {
-                const { person, deviceType } = parseDeviceLabel(d);
-                return (
-                  <button key={d}
-                    onClick={() => setCashKtoFilter(cashKtoFilter === d ? "vsetci" : d)}
-                    className={`flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold rounded-full transition-colors cursor-pointer ${cashKtoFilter === d ? "bg-secondary text-white" : "bg-white text-gray-500 border border-gray-200 hover:border-gray-300"}`}>
-                    <DeviceIconSmall label={d} className="w-3 h-3" />
-                    {person || deviceType || d}
-                    {person && deviceType && <span className={`font-normal ${cashKtoFilter === d ? "text-white/60" : "text-gray-400"}`}>{deviceType}</span>}
-                  </button>
-                );
-              })}
             </div>
           )}
 
