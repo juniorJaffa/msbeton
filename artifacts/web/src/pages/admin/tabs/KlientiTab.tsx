@@ -2117,9 +2117,28 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                                 <div className="mt-2 pt-2 border-t border-amber-100 space-y-2">
                                   <div className="flex gap-2">
                                     <div className="relative w-1/2 min-w-0 shrink-0">
-                                      <input type="number" step="0.01" min="0" placeholder="0,00"
+                                      <input
+                                        type="text" inputMode="decimal" placeholder="0,00"
                                         value={depositTopupAmount}
-                                        onChange={e => setDepositTopupAmount(e.target.value)}
+                                        onChange={e => {
+                                          // Povolené: číslice, čiarka, bodka — ostatné zahodiť
+                                          setDepositTopupAmount(e.target.value.replace(/[^\d,\.]/g, ""));
+                                        }}
+                                        onBlur={e => {
+                                          // Blur: naformátuj s oddeľovačom tisícov
+                                          const raw = e.target.value.replace(/\s/g, "").replace(",", ".");
+                                          const num = parseFloat(raw);
+                                          if (!isNaN(num) && num > 0) {
+                                            setDepositTopupAmount(num.toLocaleString("sk-SK", { minimumFractionDigits: 0, maximumFractionDigits: 2 }));
+                                          }
+                                        }}
+                                        onFocus={e => {
+                                          // Focus: stripp späť na surové číslo pre ľahšie editovanie
+                                          const raw = e.target.value.replace(/\s/g, "").replace(",", ".");
+                                          const num = parseFloat(raw);
+                                          if (!isNaN(num) && num > 0) setDepositTopupAmount(String(num));
+                                          setTimeout(() => e.target.select(), 0);
+                                        }}
                                         className="w-full border-2 border-amber-300 rounded px-3 py-2.5 font-black text-right focus:outline-none focus:ring-2 focus:ring-amber-400 pr-8"
                                         style={{ fontSize: 22 }}
                                         autoFocus />
@@ -2132,7 +2151,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                                   </div>
                                   <button type="button"
                                     onClick={() => {
-                                      const amt = parseFloat(depositTopupAmount.replace(",", "."));
+                                      const amt = parseFloat(depositTopupAmount.replace(/\s/g, "").replace(",", "."));
                                       if (isNaN(amt) || amt <= 0) return;
                                       const tx: DepositTx = {
                                         id: crypto.randomUUID(),
