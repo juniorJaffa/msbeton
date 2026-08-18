@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { adminData, Client, DepositTx, Order } from "@/lib/adminData";
 import { ChevronRight, TrendingUp, Minus, Smartphone, Monitor, Laptop } from "lucide-react";
-import { AdminAccessPanel } from "./AdminAccessPanel";
 
 type Sub = "zalohy" | "cashflow";
 type DateFilter = "dnes" | "vcera" | "tyzden" | "mesiac" | "vsetko";
@@ -447,8 +446,6 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
           )}
         </div>
       )}
-      {/* ─── ZÁZNAM ZMIEN (Admin & multi-admin panel) ──────────────────── */}
-      <AdminAccessPanel />
     </div>
   );
 }
