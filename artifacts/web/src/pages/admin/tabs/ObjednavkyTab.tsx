@@ -706,7 +706,7 @@ function exportOrderPDF(o: Order, format: "a4" | "a5" = "a4") {
   if (!win) { const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.click(); }
 }
 
-export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClientId, focusOrderId }: { onGoToClient?: (loginId: string) => void; initialSearch?: string; initialClientId?: string; focusOrderId?: string }) {
+export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClientId, focusOrderId, onGoToHistoria }: { onGoToClient?: (loginId: string) => void; initialSearch?: string; initialClientId?: string; focusOrderId?: string; onGoToHistoria?: (filter: { sub: "zalohy" | "cashflow"; date?: string }) => void }) {
   const [orders, setOrders] = useState<Order[]>(() => adminData.getOrders());
   const [allCategories, setAllCategories] = useState(() => adminData.getCategories());
   useEffect(() => {
@@ -1586,8 +1586,9 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                           const isPartial = o.paidAmount !== undefined && depUsed < o.paidAmount - 0.01;
                           return (
                             <span
-                              className={`text-[9px] font-black px-1.5 py-0.5 rounded-sm border leading-tight ${isPartial ? "bg-orange-100 text-orange-700 border-orange-200" : "bg-amber-100 text-amber-700 border-amber-200"}`}
-                              title={isPartial ? `Záloha: ${depUsed.toFixed(2)} € + doplatok: ${(o.paidAmount! - depUsed).toFixed(2)} €` : "Vyplatená zo zálohy klienta"}>
+                              onClick={onGoToHistoria ? (e) => { e.stopPropagation(); onGoToHistoria({ sub: "cashflow", date: o.createdAt.slice(0, 10) }); } : undefined}
+                              className={`text-[9px] font-black px-1.5 py-0.5 rounded-sm border leading-tight ${isPartial ? "bg-orange-100 text-orange-700 border-orange-200" : "bg-amber-100 text-amber-700 border-amber-200"} ${onGoToHistoria ? "cursor-pointer hover:brightness-95" : ""}`}
+                              title={isPartial ? `Záloha: ${depUsed.toFixed(2)} € + doplatok: ${(o.paidAmount! - depUsed).toFixed(2)} €` : "Vyplatená zo zálohy — klik pre Históriu"}>
                               💰 {isPartial ? `záloha+doplatok` : "záloha"}
                             </span>
                           );

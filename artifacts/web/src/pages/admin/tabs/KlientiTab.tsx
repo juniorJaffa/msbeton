@@ -362,7 +362,7 @@ ${buildTable(dopravaHdr, dopravaRows)}
   if (!win) { const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.click(); }
 }
 
-export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, onGoToBiometria }: { expandClientId?: string | null; onExpanded?: () => void; onGoToOrders?: (loginId: string, focusOrderId?: string) => void; onGoToBiometria?: (loginId?: string) => void }) {
+export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, onGoToBiometria, onGoToHistoria }: { expandClientId?: string | null; onExpanded?: () => void; onGoToOrders?: (loginId: string, focusOrderId?: string) => void; onGoToBiometria?: (loginId?: string) => void; onGoToHistoria?: (filter: { sub: "zalohy" | "cashflow"; clientId?: string }) => void }) {
   const [clients, setClients] = useState<Client[]>(adminData.getClients());
   const [zones] = useState(() => adminData.getDelivery());
   const [pZones] = useState(() => adminData.getTransportZones());
@@ -2093,24 +2093,25 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                                 <div className="flex-1 min-w-0">
                                   <div className="text-sm text-gray-700">Záloha klienta</div>
                                   {(c.deposit?.enabled ?? false) ? (
-                                    <div className="text-xs font-black text-amber-600 tabular-nums">
+                                    <button type="button"
+                                      onClick={() => onGoToHistoria?.({ sub: "zalohy", clientId: c.loginId || c.id })}
+                                      className={`text-xs font-black text-amber-600 tabular-nums text-left ${onGoToHistoria ? "hover:underline cursor-pointer" : "cursor-default"}`}>
                                       Zostatok: {(c.deposit?.balance ?? 0).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-                                    </div>
+                                    </button>
                                   ) : (
                                     <div className="text-[11px] text-gray-400">Odpočet objednávok zo zálohy · neaktívna</div>
                                   )}
                                 </div>
-                                {/* Pridať tlačidlo — len keď enabled */}
-                                {(c.deposit?.enabled ?? false) && (
-                                  depositTopupFor !== c.id
-                                    ? <button type="button"
-                                        onClick={() => { setDepositTopupFor(c.id); setDepositTopupAmount(""); setDepositTopupNote(""); }}
-                                        className="shrink-0 text-xs font-bold text-amber-600 hover:text-amber-800 border border-amber-300 rounded px-3 py-1.5 hover:bg-amber-50 transition-colors cursor-pointer">
-                                        + Pridať
-                                      </button>
-                                    : <button type="button" onClick={() => setDepositTopupFor(null)}
-                                        className="shrink-0 text-xs font-semibold text-amber-400 hover:text-amber-600 px-2 py-1.5 cursor-pointer">Zrušiť</button>
-                                )}
+                                {/* Pridať tlačidlo — vždy viditeľné (toggle ovláda len odpočet, nie UI) */}
+                                {depositTopupFor !== c.id
+                                  ? <button type="button"
+                                      onClick={() => { setDepositTopupFor(c.id); setDepositTopupAmount(""); setDepositTopupNote(""); }}
+                                      className="shrink-0 text-xs font-bold text-amber-600 hover:text-amber-800 border border-amber-300 rounded px-3 py-1.5 hover:bg-amber-50 transition-colors cursor-pointer">
+                                      + Pridať
+                                    </button>
+                                  : <button type="button" onClick={() => setDepositTopupFor(null)}
+                                      className="shrink-0 text-xs font-semibold text-amber-400 hover:text-amber-600 px-2 py-1.5 cursor-pointer">Zrušiť</button>
+                                }
                               </div>
                               {/* Formulár pridania zálohy */}
                               {depositTopupFor === c.id && (
