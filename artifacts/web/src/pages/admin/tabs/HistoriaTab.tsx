@@ -189,16 +189,22 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
         <div className="h-0.5 flex-1 bg-gray-200 rounded" />
       </div>
 
-      {/* Sub-tab bar — pill štýl, viditeľný na betónovej textúre */}
+      {/* Sub-tab bar — obdĺžnikové tabuľky s nadpisom + podnadpisom */}
       <div className="flex gap-2">
-        <button onClick={() => setSub("zalohy")}
-          className={`px-5 py-2 text-xs font-black uppercase tracking-widest rounded-full transition-all ${sub === "zalohy" ? pillActive : pillIdle}`}>
-          Zálohy
-        </button>
-        <button onClick={() => setSub("cashflow")}
-          className={`px-5 py-2 text-xs font-black uppercase tracking-widest rounded-full transition-all ${sub === "cashflow" ? pillActive : pillIdle}`}>
-          Cashflow
-        </button>
+        {([
+          { id: "zalohy"   as Sub, title: "ZÁLOHY",      sub: "klient"   },
+          { id: "cashflow" as Sub, title: "OBJEDNÁVKY",  sub: "cashflow" },
+        ]).map(s => (
+          <button key={s.id} onClick={() => setSub(s.id)}
+            className={`flex flex-col items-start px-4 py-2 rounded-lg transition-all border cursor-pointer min-w-[110px] ${
+              sub === s.id
+                ? "bg-secondary border-secondary text-primary shadow-sm"
+                : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
+            }`}>
+            <span className="text-xs font-black uppercase tracking-widest leading-tight">{s.title}</span>
+            <span className={`text-[9px] font-semibold leading-tight mt-0.5 ${sub === s.id ? "text-primary/70" : "text-gray-400"}`}>[{s.sub}]</span>
+          </button>
+        ))}
       </div>
 
       {/* ─── ZÁLOHY ─────────────────────────────────────────────────── */}
