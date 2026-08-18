@@ -648,15 +648,17 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     const c = o.clientId ? clientByLoginId.get(o.clientId) : undefined;
                     const name = clientDisplayName(c, o.clientName || o.clientId);
                     const kto = o.createdByDevice ?? "";
+                    // Hoistnuté — zdieľané pre mobile aj desktop
+                    const hist = o.statusHistory ?? [];
+                    const lastChange = hist.length > 0 ? hist[hist.length - 1] : undefined;
+                    const prevStatus = lastChange?.prevStatus;
+                    const firstStatus = hist[0]?.prevStatus ?? "nova";
+                    const kg = o.concreteCategory ? getKamenivoGroup(o.concreteCategory) : null;
                     return (
                       <div key={o.id} onClick={() => onGoToOrder?.(o.id)}
                         className={`px-3 py-2.5 transition-colors ${onGoToOrder ? "cursor-pointer hover:bg-amber-50" : "hover:bg-gray-50"}`}>
-                        {/* Mobile layout — 3 riadky: klient+status / betón+celkom / záloha-nedoplatok / KTO+dátum */}
-                        {(() => {
-                          const hist = o.statusHistory ?? [];
-                          const lastChange = hist.length > 0 ? hist[hist.length - 1] : undefined;
-                          const prevStatus = lastChange?.prevStatus;
-                          return (
+
+                        {/* ── MOBILE ─────────────────────────────────────────── */}
                         <div className="sm:hidden space-y-1 py-0.5">
                           {/* R1: Klient + Status (s prevStatus→) + Arrow */}
                           <div className="flex items-center gap-2">
@@ -669,41 +671,34 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             </span>
                             {onGoToOrder && <ChevronRight className="w-3.5 h-3.5 text-gray-300 shrink-0" />}
                           </div>
-                          {/* Status timeline — kedy bola nova, kedy zmenená */}
-                          {hist.length > 0 && (() => {
-                            const firstStatus = hist[0].prevStatus ?? "nova";
-                            return (
-                              <div className="overflow-x-auto">
-                                <div className="flex items-center gap-1 text-[8px] whitespace-nowrap">
-                                  <span className="text-gray-600 tabular-nums font-semibold shrink-0">{fmtTimeShort(o.createdAt)}</span>
-                                  <span className={`font-bold px-1 py-0.5 rounded shrink-0 ${STATUS_COLOR[firstStatus] ?? "bg-gray-100 text-gray-500"}`}>
-                                    {STATUS_LABEL[firstStatus] ?? firstStatus}
-                                  </span>
-                                  {hist.map((h, i) => (
-                                    <span key={i} className="flex items-center gap-1 shrink-0">
-                                      <span className="text-gray-300">→</span>
-                                      <span className="text-gray-600 tabular-nums font-semibold">{fmtTimeShort(h.changedAt)}</span>
-                                      <span className={`font-bold px-1 py-0.5 rounded ${STATUS_COLOR[h.status] ?? "bg-gray-100 text-gray-500"}`}>
-                                        {STATUS_LABEL[h.status] ?? h.status}
-                                      </span>
+                          {/* Status timeline */}
+                          {hist.length > 0 && (
+                            <div className="overflow-x-auto">
+                              <div className="flex items-center gap-1 text-[8px] whitespace-nowrap">
+                                <span className="text-gray-600 tabular-nums font-semibold shrink-0">{fmtTimeShort(o.createdAt)}</span>
+                                <span className={`font-bold px-1 py-0.5 rounded shrink-0 ${STATUS_COLOR[firstStatus] ?? "bg-gray-100 text-gray-500"}`}>
+                                  {STATUS_LABEL[firstStatus] ?? firstStatus}
+                                </span>
+                                {hist.map((h, i) => (
+                                  <span key={i} className="flex items-center gap-1 shrink-0">
+                                    <span className="text-gray-300">→</span>
+                                    <span className="text-gray-600 tabular-nums font-semibold">{fmtTimeShort(h.changedAt)}</span>
+                                    <span className={`font-bold px-1 py-0.5 rounded ${STATUS_COLOR[h.status] ?? "bg-gray-100 text-gray-500"}`}>
+                                      {STATUS_LABEL[h.status] ?? h.status}
                                     </span>
-                                  ))}
-                                </div>
+                                  </span>
+                                ))}
                               </div>
-                            );
-                          })()}
-                          {/* R2: Kategória — ikona nahrádza text pre kamenivo */}
-                          {o.concreteCategory && (() => {
-                            const kg = getKamenivoGroup(o.concreteCategory);
-                            const shortCat = o.concreteCategory;
-                            return (
-                              <div className="flex items-center gap-1 text-[10px] font-black tracking-wide text-gray-900">
-                                {kg === "drvene" && <Mountain className="w-3 h-3 shrink-0 text-stone-500" />}
-                                {kg === "riecne" && <Waves className="w-3 h-3 shrink-0 text-blue-400" />}
-                                {shortCat}
-                              </div>
-                            );
-                          })()}
+                            </div>
+                          )}
+                          {/* R2: Kategória s ikonou */}
+                          {o.concreteCategory && (
+                            <div className="flex items-center gap-1 text-[10px] font-black tracking-wide text-gray-900">
+                              {kg === "drvene" && <Mountain className="w-3 h-3 shrink-0 text-stone-500" />}
+                              {kg === "riecne" && <Waves className="w-3 h-3 shrink-0 text-blue-400" />}
+                              {o.concreteCategory}
+                            </div>
+                          )}
                           {/* R2b: Typ + qty + Celkom € */}
                           <div className="flex items-baseline gap-2">
                             <span className="text-gray-500 text-[10px] flex-1 truncate min-w-0">
@@ -713,7 +708,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               <span className="font-black tabular-nums text-sm text-gray-900 shrink-0">{fmtEur(o.totalBezDph, 0)} €</span>
                             )}
                           </div>
-                          {/* R3: Záloha + Nedoplatok chips (len ak depositUsed > 0) */}
+                          {/* R3: Záloha + Nedoplatok */}
                           {o.depositUsed && o.depositUsed > 0 && (
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
@@ -730,7 +725,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               )}
                             </div>
                           )}
-                          {/* R4: KTO + DÁTUM kombinované */}
+                          {/* R4: KTO + DÁTUM */}
                           <div className="flex items-center gap-1 text-[10px]">
                             {kto
                               ? <DeviceLabel label={kto} className="shrink-0" />
@@ -740,25 +735,62 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             <span className="tabular-nums text-gray-700 font-semibold shrink-0">{fmtDate(o.createdAt)}</span>
                           </div>
                         </div>
-                          ); // koniec IIFE pre prevStatus
-                        })()}
-                        {/* Desktop layout */}
-                        <div className="hidden sm:grid grid-cols-[90px_1fr_1fr_70px_70px_90px_110px_20px] gap-2 items-center">
-                          <span className="text-gray-400 tabular-nums text-[10px]">{fmtDate(o.createdAt)}</span>
-                          <span className="font-semibold text-gray-700 text-xs truncate">{name}</span>
-                          <span className="text-gray-500 truncate text-[10px]">
-                            {o.concreteCategory ? `${o.concreteCategory} · ` : ""}{o.concreteType} {o.totalQty ?? o.quantity} m³
-                          </span>
-                          <span className="text-right font-black tabular-nums text-gray-700 text-xs">{fmtEur(o.totalBezDph ?? 0, 0)} €</span>
-                          <span className={`text-right font-black tabular-nums text-xs ${o.depositUsed && o.depositUsed > 0 ? "text-amber-600" : "text-gray-300"}`}>
-                            {o.depositUsed && o.depositUsed > 0 ? `${fmtEur(o.depositUsed, 0)} €` : "—"}
-                          </span>
-                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full text-center ${STATUS_COLOR[o.status] ?? "bg-gray-100 text-gray-500"}`}>
-                            {STATUS_LABEL[o.status] ?? o.status}
-                          </span>
-                          <DeviceLabel label={kto} className="text-[10px] truncate" />
-                          {onGoToOrder ? <ChevronRight className="w-3.5 h-3.5 text-gray-300" /> : <span />}
+
+                        {/* ── DESKTOP ────────────────────────────────────────── */}
+                        <div className="hidden sm:flex flex-col gap-0.5">
+                          {/* Hlavný riadok */}
+                          <div className="grid grid-cols-[90px_1fr_1fr_70px_70px_120px_110px_20px] gap-2 items-center">
+                            {/* DÁTUM */}
+                            <span className="text-gray-600 tabular-nums font-semibold text-[10px]">{fmtDate(o.createdAt)}</span>
+                            {/* KLIENT */}
+                            <span className="font-semibold text-gray-700 text-xs truncate">{name}</span>
+                            {/* BETÓN — s kamenivo ikonou */}
+                            <div className="flex items-center gap-1 min-w-0">
+                              {kg === "drvene" && <Mountain className="w-3 h-3 shrink-0 text-stone-500" />}
+                              {kg === "riecne" && <Waves className="w-3 h-3 shrink-0 text-blue-400" />}
+                              <span className="text-gray-500 truncate text-[10px]">
+                                {o.concreteCategory ? `${o.concreteCategory} · ` : ""}{o.concreteType} {o.totalQty ?? o.quantity} m³
+                              </span>
+                            </div>
+                            {/* CELKOM */}
+                            <span className="text-right font-black tabular-nums text-gray-700 text-xs">{fmtEur(o.totalBezDph ?? 0, 0)} €</span>
+                            {/* ZÁLOHA */}
+                            <span className={`text-right font-black tabular-nums text-xs ${o.depositUsed && o.depositUsed > 0 ? "text-amber-600" : "text-gray-300"}`}>
+                              {o.depositUsed && o.depositUsed > 0 ? `${fmtEur(o.depositUsed, 0)} €` : "—"}
+                            </span>
+                            {/* STAV — s prevStatus → */}
+                            <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${STATUS_COLOR[o.status] ?? "bg-gray-100 text-gray-500"}`}>
+                              {prevStatus && STATUS_LABEL[prevStatus] && (
+                                <span className="opacity-50 font-medium">{STATUS_LABEL[prevStatus]} →</span>
+                              )}
+                              {STATUS_LABEL[o.status] ?? o.status}
+                            </span>
+                            {/* KTO */}
+                            <DeviceLabel label={kto} className="text-[10px] truncate" />
+                            {onGoToOrder ? <ChevronRight className="w-3.5 h-3.5 text-gray-300" /> : <span />}
+                          </div>
+                          {/* Status timeline — pod hlavným riadkom */}
+                          {hist.length > 0 && (
+                            <div className="overflow-x-auto pl-[94px]">
+                              <div className="flex items-center gap-1 text-[8px] whitespace-nowrap">
+                                <span className="text-gray-600 tabular-nums font-semibold shrink-0">{fmtTimeShort(o.createdAt)}</span>
+                                <span className={`font-bold px-1 py-0.5 rounded shrink-0 ${STATUS_COLOR[firstStatus] ?? "bg-gray-100 text-gray-500"}`}>
+                                  {STATUS_LABEL[firstStatus] ?? firstStatus}
+                                </span>
+                                {hist.map((h, i) => (
+                                  <span key={i} className="flex items-center gap-1 shrink-0">
+                                    <span className="text-gray-300">→</span>
+                                    <span className="text-gray-600 tabular-nums font-semibold">{fmtTimeShort(h.changedAt)}</span>
+                                    <span className={`font-bold px-1 py-0.5 rounded ${STATUS_COLOR[h.status] ?? "bg-gray-100 text-gray-500"}`}>
+                                      {STATUS_LABEL[h.status] ?? h.status}
+                                    </span>
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
+
                       </div>
                     );
                   })}
