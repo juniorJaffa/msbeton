@@ -2116,18 +2116,19 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                               {depositTopupFor === c.id && (
                                 <div className="mt-2 pt-2 border-t border-amber-100 space-y-2">
                                   <div className="flex gap-2">
-                                    <div className="relative flex-1">
+                                    <div className="relative w-1/2 min-w-0 shrink-0">
                                       <input type="number" step="0.01" min="0" placeholder="0,00"
                                         value={depositTopupAmount}
                                         onChange={e => setDepositTopupAmount(e.target.value)}
-                                        className="w-full border border-amber-200 rounded px-3 py-2.5 text-xl font-black text-right focus:outline-none focus:ring-2 focus:ring-amber-400 pr-8"
+                                        className="w-full border-2 border-amber-300 rounded px-3 py-2.5 font-black text-right focus:outline-none focus:ring-2 focus:ring-amber-400 pr-8"
+                                        style={{ fontSize: 22 }}
                                         autoFocus />
-                                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-base font-semibold">€</span>
+                                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 font-semibold" style={{ fontSize: 16 }}>€</span>
                                     </div>
-                                    <input type="text" placeholder="Poznámka (nepovinné)"
+                                    <input type="text" placeholder="Poznámka"
                                       value={depositTopupNote}
                                       onChange={e => setDepositTopupNote(e.target.value)}
-                                      className="flex-1 border border-amber-200 rounded px-2 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-amber-400" />
+                                      className="w-1/2 min-w-0 shrink border border-amber-200 rounded px-2 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400" />
                                   </div>
                                   <button type="button"
                                     onClick={() => {
