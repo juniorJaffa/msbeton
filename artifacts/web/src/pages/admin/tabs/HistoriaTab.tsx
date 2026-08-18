@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { adminData, Client, DepositTx, Order } from "@/lib/adminData";
-import { ChevronRight, TrendingUp, Minus, Smartphone, Monitor, Laptop, ChevronDown, Users, ShoppingCart } from "lucide-react";
+import { adminData, Client, DepositTx, Order, getKamenivoGroup } from "@/lib/adminData";
+import { ChevronRight, TrendingUp, Minus, Smartphone, Monitor, Laptop, ChevronDown, Users, ShoppingCart, Mountain, Waves } from "lucide-react";
 
 type Sub = "zalohy" | "cashflow";
 type DateFilter = "dnes" | "vcera" | "tyzden" | "mesiac" | "vsetko";
@@ -36,6 +36,15 @@ function fmtDate(iso: string): string {
   const d = new Date(iso);
   const hh = String(d.getHours()).padStart(2, "0");
   const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${d.getDate()}.${d.getMonth() + 1}. ${hh}:${mm}`;
+}
+// Pre mini timeline — HH:MM ak dnes, inak d.M. HH:MM
+function fmtTimeShort(iso: string): string {
+  const d = new Date(iso);
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  const nowStr = new Date().toDateString();
+  if (d.toDateString() === nowStr) return `${hh}:${mm}`;
   return `${d.getDate()}.${d.getMonth() + 1}. ${hh}:${mm}`;
 }
 function fmtEur(v: number, decimals = 2) {
@@ -656,10 +665,40 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             </span>
                             {onGoToOrder && <ChevronRight className="w-3.5 h-3.5 text-gray-300 shrink-0" />}
                           </div>
-                          {/* R2: Betón info + Celkom € */}
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-gray-500 text-[10px] flex-1 truncate min-w-0">
-                              {o.concreteCategory ? `${o.concreteCategory} · ` : ""}{o.concreteType} {o.totalQty ?? o.quantity} m³
+                          {/* Status timeline — kedy bola nova, kedy zmenená */}
+                          {hist.length > 0 && (() => {
+                            const firstStatus = hist[0].prevStatus ?? "nova";
+                            return (
+                              <div className="overflow-x-auto">
+                                <div className="flex items-center gap-1 text-[8px] whitespace-nowrap">
+                                  <span className="text-gray-400 tabular-nums shrink-0">{fmtTimeShort(o.createdAt)}</span>
+                                  <span className={`font-bold px-1 py-0.5 rounded shrink-0 ${STATUS_COLOR[firstStatus] ?? "bg-gray-100 text-gray-500"}`}>
+                                    {STATUS_LABEL[firstStatus] ?? firstStatus}
+                                  </span>
+                                  {hist.map((h, i) => (
+                                    <span key={i} className="flex items-center gap-1 shrink-0">
+                                      <span className="text-gray-300">→</span>
+                                      <span className="text-gray-400 tabular-nums">{fmtTimeShort(h.changedAt)}</span>
+                                      <span className={`font-bold px-1 py-0.5 rounded ${STATUS_COLOR[h.status] ?? "bg-gray-100 text-gray-500"}`}>
+                                        {STATUS_LABEL[h.status] ?? h.status}
+                                      </span>
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
+                          {/* R2: Betón info + kamenivo ikona + Celkom € */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-500 text-[10px] flex-1 truncate min-w-0 flex items-center gap-1">
+                              {(() => {
+                                const kg = o.concreteCategory ? getKamenivoGroup(o.concreteCategory) : null;
+                                return (<>
+                                  {kg === "drvene" && <Mountain className="w-3 h-3 shrink-0 text-stone-500" />}
+                                  {kg === "riecne" && <Waves className="w-3 h-3 shrink-0 text-blue-400" />}
+                                  {o.concreteCategory ? `${o.concreteCategory} · ` : ""}{o.concreteType} {o.totalQty ?? o.quantity} m³
+                                </>);
+                              })()}
                             </span>
                             {o.totalBezDph != null && o.totalBezDph > 0 && (
                               <span className="font-black tabular-nums text-sm text-gray-900 shrink-0">{fmtEur(o.totalBezDph, 0)} €</span>
