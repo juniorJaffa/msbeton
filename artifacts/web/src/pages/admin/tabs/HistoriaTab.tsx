@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { adminData, Client, DepositTx, Order } from "@/lib/adminData";
-import { ChevronRight, TrendingUp, Minus, Smartphone, Monitor, Laptop, ChevronDown, Users } from "lucide-react";
+import { ChevronRight, TrendingUp, Minus, Smartphone, Monitor, Laptop, ChevronDown, Users, ShoppingCart } from "lucide-react";
 
 type Sub = "zalohy" | "cashflow";
 type DateFilter = "dnes" | "vcera" | "tyzden" | "mesiac" | "vsetko";
@@ -13,12 +13,10 @@ interface Props {
   onGoToOrder?:  (orderId: string) => void;
 }
 
-interface DepositRow {
-  clientId: string;
-  clientName: string;
-  loginId: string;
-  tx: DepositTx;
-}
+type DepositRow =
+  | { kind: "tx";    clientId: string; clientName: string; loginId: string; sortKey: string; tx: DepositTx }
+  | { kind: "order"; clientId: string; clientName: string; loginId: string; sortKey: string;
+      orderId: string; amount: number; orderLabel: string; orderDevice?: string; }
 
 const TODAY     = new Date().toISOString().slice(0, 10);
 const YESTERDAY = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
@@ -156,15 +154,36 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   // ── ZÁLOHY ──────────────────────────────────────────────────────────────
   const allDepositRows = useMemo((): DepositRow[] => {
     const rows: DepositRow[] = [];
+    // Záloha transakcie (dobíjanie + manuálne platby)
     for (const c of liveClients) {
       if (!c.deposit?.transactions?.length) continue;
       const name = clientDisplayName(c);
+      const cid = c.loginId || c.id;
       for (const tx of c.deposit.transactions) {
-        rows.push({ clientId: c.loginId || c.id, clientName: name, loginId: c.loginId, tx });
+        rows.push({ kind: "tx", clientId: cid, clientName: name, loginId: c.loginId, sortKey: tx.createdAt, tx });
       }
     }
-    return rows.sort((a, b) => b.tx.createdAt.localeCompare(a.tx.createdAt));
-  }, [liveClients]);
+    // Použitia zálohy z objednávok (depositUsed > 0)
+    const clientMap = new Map<string, Client>();
+    for (const c of liveClients) { if (c.loginId) clientMap.set(c.loginId, c); clientMap.set(c.id, c); }
+    for (const o of liveOrders) {
+      if (!o.depositUsed || o.depositUsed <= 0 || !o.clientId) continue;
+      const c = clientMap.get(o.clientId);
+      if (!c || !c.deposit) continue; // len klienti so zálohou
+      const name = clientDisplayName(c, o.clientId);
+      const cid = c.loginId || c.id;
+      const qtyStr = o.totalQty ?? o.quantity;
+      const orderLabel = [o.concreteCategory, o.concreteType, qtyStr ? `${qtyStr} m³` : ""].filter(Boolean).join(" ");
+      rows.push({
+        kind: "order", clientId: cid, clientName: name, loginId: c.loginId,
+        sortKey: o.createdAt, orderId: o.id,
+        amount: o.depositUsed,
+        orderLabel: orderLabel || (o.clientName ?? name),
+        orderDevice: o.createdByDevice,
+      });
+    }
+    return rows.sort((a, b) => b.sortKey.localeCompare(a.sortKey));
+  }, [liveClients, liveOrders]);
 
   const depositClients = useMemo(() => {
     const seen = new Set<string>(); const list: { id: string; name: string }[] = [];
@@ -177,15 +196,19 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const filteredDepRows = useMemo(() =>
     allDepositRows.filter(r => {
       if (depClientFilter !== "vsetci" && r.clientId !== depClientFilter) return false;
-      return passesDate(toDateStr(r.tx.createdAt), depDateFilter);
+      return passesDate(toDateStr(r.sortKey), depDateFilter);
     }),
   [allDepositRows, depClientFilter, depDateFilter]);
 
   const depSummary = useMemo(() => {
     let topup = 0, payment = 0;
     for (const r of filteredDepRows) {
-      if (r.tx.type === "topup") topup += r.tx.amount;
-      else payment += Math.abs(r.tx.amount);
+      if (r.kind === "tx") {
+        if (r.tx.type === "topup") topup += r.tx.amount;
+        else payment += Math.abs(r.tx.amount);
+      } else {
+        payment += r.amount; // order usage = odpočet zo zálohy
+      }
     }
     return { topup, payment, net: topup - payment };
   }, [filteredDepRows]);
@@ -209,9 +232,12 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   [liveOrders, cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit]);
 
   const cashSummary = useMemo(() => {
-    let dep = 0;
-    for (const o of filteredOrders) { if (o.depositUsed) dep += o.depositUsed; }
-    return { count: filteredOrders.length, dep };
+    let dep = 0, total = 0;
+    for (const o of filteredOrders) {
+      if (o.depositUsed) dep += o.depositUsed;
+      if (o.totalBezDph) total += o.totalBezDph;
+    }
+    return { count: filteredOrders.length, dep, total };
   }, [filteredOrders]);
 
   const orderClients = useMemo(() => {
@@ -259,6 +285,15 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       }
     }
 
+    // Unnamed zariadenia — zgrupovaé podľa display name (bez hashu)
+    // "iPhone Safari · #a3f2" + "iPhone Safari · #b7c1" → jedna skupina "iPhone Safari"
+    const byDisplayName = new Map<string, { fullLabels: string[] }>();
+    for (const { fullLabel } of unnamed) {
+      const displayKey = fullLabel.replace(/\s*·\s*#[a-f0-9]{1,8}/gi, "").trim() || fullLabel;
+      if (!byDisplayName.has(displayKey)) byDisplayName.set(displayKey, { fullLabels: [] });
+      byDisplayName.get(displayKey)!.fullLabels.push(fullLabel);
+    }
+
     const groups: DeviceGroup[] = [];
     for (const [person, { devices, types }] of byPerson) {
       groups.push({
@@ -266,8 +301,11 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
         subInfo: types.length > 0 ? types.join(" · ") : undefined,
       });
     }
-    for (const { fullLabel } of unnamed) {
-      groups.push({ key: fullLabel, label: fullLabel, devices: [fullLabel], isPerson: false });
+    for (const [displayKey, { fullLabels }] of byDisplayName) {
+      groups.push({
+        key: displayKey, label: displayKey, devices: fullLabels, isPerson: false,
+        subInfo: fullLabels.length > 1 ? `${fullLabels.length}× zariad.` : undefined,
+      });
     }
     return groups;
   }, [liveOrders]);
@@ -360,49 +398,60 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   <span>Dátum</span><span>Klient</span><span className="text-right">Suma</span><span>Typ</span><span>Poznámka</span><span>KTO</span>
                 </div>
                 <div className="divide-y divide-gray-50">
-                  {filteredDepRows.map((r) => (
-                    <div key={`${r.clientId}-${r.tx.id}`}
-                      className="px-3 py-2.5 hover:bg-gray-50 transition-colors">
-                      {/* Mobile layout */}
-                      <div className="sm:hidden">
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-400 tabular-nums text-[10px] shrink-0 w-16">{fmtDate(r.tx.createdAt)}</span>
-                          <button type="button" onClick={() => r.loginId && onGoToClient?.(r.loginId)}
-                            className={`font-semibold text-gray-700 text-xs flex-1 text-left truncate ${onGoToClient && r.loginId ? "hover:text-secondary cursor-pointer" : "cursor-default"}`}>
+                  {filteredDepRows.map((r) => {
+                    const rowKey = r.kind === "tx" ? `tx-${r.clientId}-${r.tx.id}` : `ord-${r.orderId}`;
+                    const ts = r.kind === "tx" ? r.tx.createdAt : r.sortKey;
+                    const isTopup = r.kind === "tx" && r.tx.type === "topup";
+                    const isOrderUse = r.kind === "order";
+                    const amountVal = r.kind === "tx" ? r.tx.amount : -r.amount;
+                    const amountStr = `${amountVal >= 0 ? "+" : "−"}${fmtEur(Math.abs(amountVal))} €`;
+                    const amountCls = isTopup ? "text-teal-600" : "text-red-500";
+                    const iconBg = isTopup ? "bg-teal-100 text-teal-600" : isOrderUse ? "bg-orange-100 text-orange-600" : "bg-red-100 text-red-500";
+                    const rowIcon = isTopup ? <TrendingUp className="w-3 h-3" /> : isOrderUse ? <ShoppingCart className="w-3 h-3" /> : <Minus className="w-3 h-3" />;
+                    const typLabel = isTopup ? "Dobíjanie" : isOrderUse ? "Objednávka" : "Platba";
+                    const typBg = isTopup ? "bg-teal-100 text-teal-700" : isOrderUse ? "bg-orange-100 text-orange-700" : "bg-red-100 text-red-600";
+                    const note = r.kind === "tx" ? (r.tx.note ?? "—") : r.orderLabel;
+                    const devLabel = r.kind === "tx" ? r.tx.createdBy : (r.orderDevice ?? "");
+                    const handleClick = isOrderUse && onGoToOrder ? () => onGoToOrder(r.orderId) : undefined;
+                    return (
+                      <div key={rowKey}
+                        onClick={handleClick}
+                        className={`px-3 py-2.5 transition-colors ${handleClick ? "cursor-pointer hover:bg-orange-50" : "hover:bg-gray-50"}`}>
+                        {/* Mobile layout */}
+                        <div className="sm:hidden">
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-400 tabular-nums text-[10px] shrink-0 w-16">{fmtDate(ts)}</span>
+                            <button type="button" onClick={e => { e.stopPropagation(); r.loginId && onGoToClient?.(r.loginId); }}
+                              className={`font-semibold text-gray-700 text-xs flex-1 text-left truncate ${onGoToClient && r.loginId ? "hover:text-secondary cursor-pointer" : "cursor-default"}`}>
+                              {r.clientName}
+                            </button>
+                            <span className={`font-black tabular-nums text-sm shrink-0 ${amountCls}`}>{amountStr}</span>
+                            <span className={`shrink-0 flex items-center justify-center w-6 h-6 rounded-full ${iconBg}`}>{rowIcon}</span>
+                          </div>
+                          {isOrderUse && <div className="pl-[72px] mt-0.5 text-[9px] text-orange-600 truncate">{r.orderLabel}</div>}
+                          {devLabel && (
+                            <div className="pl-[72px] mt-0.5 text-[10px] truncate">
+                              <DeviceLabel label={devLabel} />
+                            </div>
+                          )}
+                        </div>
+                        {/* Desktop layout */}
+                        <div className="hidden sm:grid grid-cols-[90px_1fr_100px_110px_1fr_1fr] gap-2 items-center">
+                          <span className="text-gray-400 tabular-nums text-[10px]">{fmtDate(ts)}</span>
+                          <button type="button" onClick={e => { e.stopPropagation(); r.loginId && onGoToClient?.(r.loginId); }}
+                            className={`text-left font-semibold text-gray-700 text-xs truncate ${onGoToClient && r.loginId ? "hover:text-secondary hover:underline cursor-pointer" : "cursor-default"}`}>
                             {r.clientName}
                           </button>
-                          <span className={`font-black tabular-nums text-sm shrink-0 ${r.tx.type === "topup" ? "text-teal-600" : "text-red-500"}`}>
-                            {r.tx.type === "topup" ? "+" : "−"}{fmtEur(Math.abs(r.tx.amount))} €
+                          <span className={`text-right font-black tabular-nums text-sm ${amountCls}`}>{amountStr}</span>
+                          <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${typBg}`}>
+                            {rowIcon}{typLabel}
                           </span>
-                          <span className={`shrink-0 flex items-center justify-center w-6 h-6 rounded-full ${r.tx.type === "topup" ? "bg-teal-100 text-teal-600" : "bg-red-100 text-red-500"}`}>
-                            {r.tx.type === "topup" ? <TrendingUp className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
-                          </span>
+                          <span className="text-gray-500 text-[10px] truncate">{note}</span>
+                          <DeviceLabel label={devLabel} className="text-[10px] truncate" />
                         </div>
-                        {r.tx.createdBy && (
-                          <div className="pl-[72px] mt-0.5 text-[10px] truncate">
-                            <DeviceLabel label={r.tx.createdBy} />
-                          </div>
-                        )}
                       </div>
-                      {/* Desktop layout */}
-                      <div className="hidden sm:grid grid-cols-[90px_1fr_100px_110px_1fr_1fr] gap-2 items-center">
-                        <span className="text-gray-400 tabular-nums text-[10px]">{fmtDate(r.tx.createdAt)}</span>
-                        <button type="button" onClick={() => r.loginId && onGoToClient?.(r.loginId)}
-                          className={`text-left font-semibold text-gray-700 text-xs truncate ${onGoToClient && r.loginId ? "hover:text-secondary hover:underline cursor-pointer" : "cursor-default"}`}>
-                          {r.clientName}
-                        </button>
-                        <span className={`text-right font-black tabular-nums text-sm ${r.tx.type === "topup" ? "text-teal-600" : "text-red-500"}`}>
-                          {r.tx.type === "topup" ? "+" : "−"}{fmtEur(Math.abs(r.tx.amount))} €
-                        </span>
-                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${r.tx.type === "topup" ? "bg-teal-100 text-teal-700" : "bg-red-100 text-red-600"}`}>
-                          {r.tx.type === "topup" ? <TrendingUp className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
-                          {r.tx.type === "topup" ? "Dobíjanie" : "Platba"}
-                        </span>
-                        <span className="text-gray-400 text-[10px] truncate">{r.tx.note ?? "—"}</span>
-                        <DeviceLabel label={r.tx.createdBy} className="text-[10px] truncate" />
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -445,7 +494,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
 
               {/* Dropdown panel */}
               {ktoDropOpen && (
-                <div className="absolute left-0 top-full mt-1.5 z-30 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden min-w-[200px] max-h-[60vh] overflow-y-auto">
+                <div className="absolute right-0 top-full mt-1.5 z-30 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden w-[220px] max-h-[60vh] overflow-y-auto">
                   {/* Všetci — zrušiť filter */}
                   <button
                     onClick={() => { setCashKtoFilters([]); setKtoDropOpen(false); }}
@@ -506,7 +555,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
           {/* Nadpis sekcie */}
           <div className="flex items-baseline gap-1.5">
             <span className="text-sm font-black text-secondary uppercase tracking-wide">Objednávky</span>
-            <span className="text-[10px] text-gray-400 font-semibold">(cashflow)</span>
+            <span className="text-[10px] text-gray-600 font-semibold">(cashflow)</span>
           </div>
 
           {/* Súhrn */}
@@ -515,10 +564,16 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
               <div className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-0.5">Spolu</div>
               <div className="font-black tabular-nums text-sm text-gray-700">{cashSummary.count}</div>
             </div>
+            {cashSummary.total > 0 && (
+              <div className="bg-white border border-gray-100 rounded-lg px-3 py-2 min-w-[100px]">
+                <div className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-0.5">Celkom</div>
+                <div className="font-black tabular-nums text-sm text-gray-900">{fmtEur(cashSummary.total, 0)} €</div>
+              </div>
+            )}
             {cashSummary.dep > 0 && (
-              <div className="bg-white border border-amber-100 rounded-lg px-3 py-2 min-w-[110px]">
+              <div className="bg-white border border-amber-100 rounded-lg px-3 py-2 min-w-[100px]">
                 <div className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-0.5">Záloha použitá</div>
-                <div className="text-amber-600 font-black tabular-nums text-sm">{fmtEur(cashSummary.dep)} €</div>
+                <div className="text-amber-600 font-black tabular-nums text-sm">{fmtEur(cashSummary.dep, 0)} €</div>
               </div>
             )}
           </div>
@@ -540,25 +595,51 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     return (
                       <div key={o.id} onClick={() => onGoToOrder?.(o.id)}
                         className={`px-3 py-2.5 transition-colors ${onGoToOrder ? "cursor-pointer hover:bg-amber-50" : "hover:bg-gray-50"}`}>
-                        {/* Mobile layout — dva riadky */}
-                        <div className="sm:hidden">
+                        {/* Mobile layout — 3 riadky: klient+status / betón+celkom / záloha-nedoplatok / KTO+dátum */}
+                        <div className="sm:hidden space-y-1 py-0.5">
+                          {/* R1: Klient + Status + Arrow */}
                           <div className="flex items-center gap-2">
-                            <span className="text-gray-400 tabular-nums text-[10px] shrink-0 w-16">{fmtDate(o.createdAt)}</span>
-                            <span className="font-semibold text-gray-700 text-xs flex-1 truncate">{name}</span>
-                            {o.depositUsed && o.depositUsed > 0
-                              ? <span className="font-black tabular-nums text-amber-600 text-sm shrink-0">{fmtEur(o.depositUsed, 0)} €</span>
-                              : <span className="text-gray-300 text-sm shrink-0">—</span>
-                            }
-                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${STATUS_COLOR[o.status] ?? "bg-gray-100 text-gray-500"}`}>
+                            <span className="font-semibold text-gray-800 text-[13px] flex-1 truncate min-w-0">{name}</span>
+                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 ${STATUS_COLOR[o.status] ?? "bg-gray-100 text-gray-500"}`}>
                               {STATUS_LABEL[o.status] ?? o.status}
                             </span>
                             {onGoToOrder && <ChevronRight className="w-3.5 h-3.5 text-gray-300 shrink-0" />}
                           </div>
-                          {kto && (
-                            <div className="pl-[72px] mt-0.5 text-[10px] truncate">
-                              <DeviceLabel label={kto} />
+                          {/* R2: Betón info + Celkom € */}
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-gray-500 text-[10px] flex-1 truncate min-w-0">
+                              {o.concreteCategory ? `${o.concreteCategory} · ` : ""}{o.concreteType} {o.totalQty ?? o.quantity} m³
+                            </span>
+                            {o.totalBezDph != null && o.totalBezDph > 0 && (
+                              <span className="font-black tabular-nums text-sm text-gray-900 shrink-0">{fmtEur(o.totalBezDph, 0)} €</span>
+                            )}
+                          </div>
+                          {/* R3: Záloha + Nedoplatok chips (len ak depositUsed > 0) */}
+                          {o.depositUsed && o.depositUsed > 0 && (
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                                záloha {fmtEur(o.depositUsed, 0)} €
+                              </span>
+                              {(o.totalBezDph ?? 0) - o.depositUsed > 0.5 ? (
+                                <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">
+                                  nedoplatok {fmtEur((o.totalBezDph ?? 0) - o.depositUsed, 0)} €
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700">
+                                  uhradená zálohou ✓
+                                </span>
+                              )}
                             </div>
                           )}
+                          {/* R4: KTO + DÁTUM kombinované */}
+                          <div className="flex items-center gap-1 text-[10px]">
+                            {kto
+                              ? <DeviceLabel label={kto} className="shrink-0" />
+                              : <span className="text-gray-400">—</span>
+                            }
+                            <span className="text-gray-300 mx-0.5">·</span>
+                            <span className="tabular-nums text-gray-500 shrink-0">{fmtDate(o.createdAt)}</span>
+                          </div>
                         </div>
                         {/* Desktop layout */}
                         <div className="hidden sm:grid grid-cols-[90px_1fr_1fr_70px_70px_90px_110px_20px] gap-2 items-center">

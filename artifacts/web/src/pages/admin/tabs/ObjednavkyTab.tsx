@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { SlidersHorizontal, ShoppingCart, MessageSquare, MapPin, Navigation, Copy, Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, AlertTriangle, FileText, Calculator, Users, Mountain, Waves, Phone, Mail, Truck, Fingerprint, Crown, Percent, ShieldCheck, Eye, Globe } from "lucide-react";
+import { SlidersHorizontal, ShoppingCart, MessageSquare, MapPin, Navigation, Copy, Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, AlertTriangle, FileText, Calculator, Users, Mountain, Waves, Phone, Mail, Truck, Fingerprint, Crown, Percent, ShieldCheck, Eye, Globe, Smartphone, Laptop, Monitor } from "lucide-react";
 
 // Kto objednávku vytvoril — vizuálna identita.
 // "anonym" = neprihlásený návštevník cez verejný košík (bežný web tok) → viditeľný "web" chip.
@@ -2051,12 +2051,26 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                     )}
                                   </div>
                                   {entries.map((entry, ei) => {
-                                    // KTO chip — pre lepšiu čitateľnosť "kto urobil akciu"
-                                    const KtoChip = ({ label, amber }: { label: string; amber?: boolean }) => (
-                                      <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded max-w-[110px] truncate ${amber ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-700"}`} title={label}>
-                                        {label}
-                                      </span>
-                                    );
+                                    // KTO chip — zariadenie ikona + meno + typ
+                                    const KtoChip = ({ label, amber }: { label: string; amber?: boolean }) => {
+                                      const l = label.toLowerCase();
+                                      const DevIcon = /iphone|ipad|android|mobil|phone|tablet/.test(l) ? Smartphone
+                                                    : /mac|macbook|laptop|notebook|ntb/.test(l) ? Laptop
+                                                    : Monitor;
+                                      const DEVICE_RE = /\b(iphone|ipad|android|mac|macbook|laptop|notebook|ntb|windows|linux|chrome|firefox|safari|edge|opera|monitor|pc|imac|zariadenie|tablet|phone)\b/gi;
+                                      const withoutHash = label.replace(/\s*·\s*#[a-f0-9]{1,8}/gi, "").trim();
+                                      const deviceWords = (withoutHash.match(DEVICE_RE) ?? []).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+                                      const person = withoutHash.replace(DEVICE_RE, "").replace(/\s+/g, " ").trim();
+                                      const deviceType = deviceWords.join(" ");
+                                      return (
+                                        <span className={`shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded ${amber ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-600"}`} title={label}>
+                                          <DevIcon className="w-3 h-3 shrink-0 opacity-60" />
+                                          {person && <span className="font-bold">{person}</span>}
+                                          {deviceType && <span className="opacity-60">{deviceType}</span>}
+                                          {!person && !deviceType && label}
+                                        </span>
+                                      );
+                                    };
                                     if (entry.kind === "created") return (
                                       <div key="created" className="flex items-center gap-2 text-xs py-1">
                                         <span className="text-gray-400 tabular-nums text-[10px] shrink-0 w-24">{fmtTs(entry.ts)}</span>
