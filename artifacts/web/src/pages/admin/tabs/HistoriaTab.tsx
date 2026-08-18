@@ -737,7 +737,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               : <span className="text-gray-400">—</span>
                             }
                             <span className="text-gray-300 mx-0.5">·</span>
-                            <span className="tabular-nums text-gray-500 shrink-0">{fmtDate(o.createdAt)}</span>
+                            <span className="tabular-nums text-gray-700 font-semibold shrink-0">{fmtDate(o.createdAt)}</span>
                           </div>
                         </div>
                           ); // koniec IIFE pre prevStatus
