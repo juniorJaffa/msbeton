@@ -110,26 +110,40 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [sub, setSub] = useState<Sub>(initialSub ?? "zalohy");
 
   // ZÁLOHY filtre
-  const [depClientFilter, setDepClientFilter] = useState<string>(initialClientId ?? "vsetci");
-  const [depDateFilter,   setDepDateFilter]   = useState<DateFilter>("tyzden");
+  const [depClientFilter,  setDepClientFilter]  = useState<string>(initialClientId ?? "vsetci");
+  const [depDateFilter,    setDepDateFilter]    = useState<DateFilter>("tyzden");
+  const [depClientDrop,    setDepClientDrop]    = useState(false);
+  const [depClientSearch,  setDepClientSearch]  = useState("");
+  const depClientRef = useRef<HTMLDivElement>(null);
 
   // CASHFLOW filtre
-  const [cashDateFilter,    setCashDateFilter]   = useState<DateFilter>("tyzden");
-  const [cashClientFilter,  setCashClientFilter] = useState<string>("vsetci");
-  const [cashKtoFilters,    setCashKtoFilters]   = useState<string[]>([]);
-  const [ktoDropOpen,       setKtoDropOpen]      = useState(false);
-  const [onlyDeposit,       setOnlyDeposit]      = useState(false);
-  const ktoRef = useRef<HTMLDivElement>(null);
+  const [cashDateFilter,   setCashDateFilter]   = useState<DateFilter>("tyzden");
+  const [cashClientFilter, setCashClientFilter] = useState<string>("vsetci");
+  const [cashClientDrop,   setCashClientDrop]   = useState(false);
+  const [cashClientSearch, setCashClientSearch] = useState("");
+  const [cashKtoFilters,   setCashKtoFilters]   = useState<string[]>([]);
+  const [ktoDropOpen,      setKtoDropOpen]      = useState(false);
+  const [onlyDeposit,      setOnlyDeposit]      = useState(false);
+  const cashClientRef = useRef<HTMLDivElement>(null);
+  const ktoRef        = useRef<HTMLDivElement>(null);
 
-  // Zatvor KTO dropdown pri kliknutí mimo
+  // Zatvor dropdowny pri kliknutí mimo
   useEffect(() => {
-    if (!ktoDropOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (ktoRef.current && !ktoRef.current.contains(e.target as Node)) setKtoDropOpen(false);
+    const makeHandler = (open: boolean, ref: React.RefObject<HTMLDivElement | null>, close: () => void) => {
+      if (!open) return undefined;
+      const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) close(); };
+      document.addEventListener("mousedown", h, true);
+      return h;
     };
-    document.addEventListener("mousedown", handler, true);
-    return () => document.removeEventListener("mousedown", handler, true);
-  }, [ktoDropOpen]);
+    const h1 = makeHandler(depClientDrop,  depClientRef,  () => { setDepClientDrop(false);  setDepClientSearch("");  });
+    const h2 = makeHandler(cashClientDrop, cashClientRef, () => { setCashClientDrop(false); setCashClientSearch(""); });
+    const h3 = makeHandler(ktoDropOpen,    ktoRef,        () => setKtoDropOpen(false));
+    return () => {
+      if (h1) document.removeEventListener("mousedown", h1, true);
+      if (h2) document.removeEventListener("mousedown", h2, true);
+      if (h3) document.removeEventListener("mousedown", h3, true);
+    };
+  }, [depClientDrop, cashClientDrop, ktoDropOpen]);
 
   useEffect(() => {
     if (!initialDate) return;
@@ -318,10 +332,57 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   }, [deviceGroups]);
 
   // ── CSS helpers ─────────────────────────────────────────────────────────
-  const pillActive  = "bg-secondary text-primary shadow-sm";
-  const pillIdle    = "bg-white text-gray-400 border border-gray-200 hover:text-gray-600 hover:border-gray-300";
   const dateBtnCls  = (a: boolean) => `px-2.5 py-1.5 text-[10px] font-bold rounded-full transition-colors cursor-pointer ${a ? "bg-secondary text-white" : "bg-white text-gray-500 border border-gray-200 hover:border-gray-300"}`;
-  const clientPill  = (a: boolean) => `px-2.5 py-1.5 text-[10px] font-bold rounded-full transition-colors cursor-pointer ${a ? "bg-amber-500 text-white" : "bg-white text-amber-700 border border-amber-200 hover:border-amber-400"}`;
+
+  // Kompaktný dropdown pre výber klienta — skaluje na 100+ klientov
+  function ClientDropdown({ clients, value, onChange, dropRef, open, setOpen, search, setSearch }:
+    { clients: {id: string; name: string}[]; value: string; onChange: (id: string) => void;
+      dropRef: React.RefObject<HTMLDivElement | null>; open: boolean; setOpen: (v: boolean) => void;
+      search: string; setSearch: (v: string) => void; }) {
+    const selected = clients.find(c => c.id === value);
+    const filtered = search ? clients.filter(c => c.name.toLowerCase().includes(search.toLowerCase())) : clients;
+    return (
+      <div ref={dropRef} className="relative inline-block shrink-0">
+        <button onClick={() => setOpen(!open)}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold rounded-full border cursor-pointer transition-colors ${
+            value !== "vsetci" ? "bg-amber-500 border-amber-500 text-white" : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
+          }`}>
+          <Users className="w-3 h-3 shrink-0" />
+          <span className="max-w-[100px] truncate">{selected ? selected.name : "Klient"}</span>
+          <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
+        </button>
+        {open && (
+          <div className="absolute left-0 top-full mt-1.5 z-30 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden w-[220px]">
+            {/* Search — len ak ≥8 klientov */}
+            {clients.length >= 8 && (
+              <div className="px-3 py-2 border-b border-gray-100">
+                <input autoFocus type="text" value={search} onChange={e => setSearch(e.target.value)}
+                  placeholder="Hľadaj klienta..."
+                  className="w-full text-[11px] px-2 py-1 border border-gray-200 rounded-lg outline-none focus:border-secondary" />
+              </div>
+            )}
+            <div className="max-h-[55vh] overflow-y-auto">
+              <button onClick={() => { onChange("vsetci"); setOpen(false); setSearch(""); }}
+                className={`w-full px-4 py-2.5 text-left text-[11px] font-bold border-b border-gray-50 cursor-pointer transition-colors hover:bg-gray-50 ${value === "vsetci" ? "text-amber-600 bg-amber-50" : "text-gray-500"}`}>
+                Všetci klienti
+              </button>
+              {filtered.map(c => (
+                <button key={c.id} onClick={() => { onChange(c.id); setOpen(false); setSearch(""); }}
+                  className={`w-full px-4 py-2.5 text-left text-[12px] cursor-pointer transition-colors hover:bg-gray-50 min-h-[44px] flex items-center ${
+                    value === c.id ? "font-bold text-amber-600 bg-amber-50" : "text-gray-700"
+                  }`}>
+                  {c.name}
+                </button>
+              ))}
+              {filtered.length === 0 && (
+                <div className="px-4 py-3 text-[11px] text-gray-400 text-center">Žiadny výsledok</div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -359,32 +420,20 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
             ))}
           </div>
           {depositClients.length > 0 && (
-            <div className="flex gap-1.5 flex-wrap">
-              <button onClick={() => setDepClientFilter("vsetci")} className={clientPill(depClientFilter === "vsetci")}>Všetci</button>
-              {depositClients.map(c => (
-                <button key={c.id} onClick={() => setDepClientFilter(depClientFilter === c.id ? "vsetci" : c.id)} className={clientPill(depClientFilter === c.id)}>
-                  {c.name}
-                </button>
-              ))}
-            </div>
+            <ClientDropdown clients={depositClients} value={depClientFilter} onChange={setDepClientFilter}
+              dropRef={depClientRef} open={depClientDrop} setOpen={setDepClientDrop}
+              search={depClientSearch} setSearch={setDepClientSearch} />
           )}
 
-          {/* Súhrn */}
-          <div className="flex gap-2 flex-wrap">
-            <div className="bg-white border border-teal-100 rounded-lg px-3 py-2 min-w-[100px]">
-              <div className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-0.5">Dobíjanie</div>
-              <div className="text-teal-600 font-black tabular-nums text-sm">+{fmtEur(depSummary.topup)} €</div>
-            </div>
-            <div className="bg-white border border-red-100 rounded-lg px-3 py-2 min-w-[100px]">
-              <div className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-0.5">Odpočty</div>
-              <div className="text-red-500 font-black tabular-nums text-sm">−{fmtEur(depSummary.payment)} €</div>
-            </div>
-            <div className={`bg-white border rounded-lg px-3 py-2 min-w-[100px] ${depSummary.net >= 0 ? "border-amber-100" : "border-red-100"}`}>
-              <div className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-0.5">Pohyb</div>
-              <div className={`font-black tabular-nums text-sm ${depSummary.net >= 0 ? "text-amber-600" : "text-red-500"}`}>
-                {depSummary.net >= 0 ? "+" : ""}{fmtEur(depSummary.net)} €
-              </div>
-            </div>
+          {/* Súhrn — kompaktný inline bar */}
+          <div className="flex items-center gap-2 flex-wrap bg-white/90 border border-gray-100 rounded-lg px-3 py-1.5 w-fit">
+            <span className="text-teal-600 font-black tabular-nums text-sm shrink-0">+{fmtEur(depSummary.topup, 0)} €</span>
+            <span className="text-gray-200 shrink-0">|</span>
+            <span className="text-red-500 font-black tabular-nums text-sm shrink-0">−{fmtEur(depSummary.payment, 0)} €</span>
+            <span className="text-gray-200 shrink-0">|</span>
+            <span className={`font-black tabular-nums text-sm shrink-0 ${depSummary.net >= 0 ? "text-amber-600" : "text-red-500"}`}>
+              {depSummary.net >= 0 ? "+" : ""}{fmtEur(depSummary.net, 0)} €
+            </span>
           </div>
 
           {/* Tabuľka — overflow-x-auto pre mobile */}
@@ -540,42 +589,36 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
           )}
           </div>{/* END date+filter row */}
 
-          {/* Klienti pills — len ak ≤12, separátny riadok */}
-          {orderClients.length > 0 && orderClients.length <= 12 && (
-            <div className="flex gap-1.5 flex-wrap">
-              <button onClick={() => setCashClientFilter("vsetci")} className={clientPill(cashClientFilter === "vsetci")}>Všetci</button>
-              {orderClients.map(c => (
-                <button key={c.id} onClick={() => setCashClientFilter(cashClientFilter === c.id ? "vsetci" : c.id)} className={clientPill(cashClientFilter === c.id)}>
-                  {c.name}
-                </button>
-              ))}
-            </div>
+          {/* Klient dropdown — škáluje na 100+ */}
+          {orderClients.length > 0 && (
+            <ClientDropdown clients={orderClients} value={cashClientFilter} onChange={setCashClientFilter}
+              dropRef={cashClientRef} open={cashClientDrop} setOpen={setCashClientDrop}
+              search={cashClientSearch} setSearch={setCashClientSearch} />
           )}
 
-          {/* Nadpis sekcie */}
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-sm font-black text-secondary uppercase tracking-wide">Objednávky</span>
-            <span className="text-[10px] text-gray-600 font-semibold">(cashflow)</span>
-          </div>
-
-          {/* Súhrn */}
-          <div className="flex gap-2 flex-wrap">
-            <div className="bg-white border border-gray-100 rounded-lg px-3 py-2 min-w-[80px]">
-              <div className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-0.5">Spolu</div>
-              <div className="font-black tabular-nums text-sm text-gray-700">{cashSummary.count}</div>
+          {/* Nadpis sekcie + kompaktný súhrn v jednom riadku */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-black text-secondary uppercase tracking-wide shrink-0">Objednávky</span>
+            <span className="text-[9px] font-bold bg-white/90 text-gray-600 px-1.5 py-0.5 rounded border border-gray-100 shrink-0">[cashflow]</span>
+            <div className="flex-1" />
+            {/* Súhrn — kompaktný inline bar, nie veľké karty */}
+            <div className="flex items-center gap-2 bg-white/90 border border-gray-100 rounded-lg px-3 py-1.5">
+              <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 shrink-0">Spolu</span>
+              <span className="font-black tabular-nums text-sm text-gray-800 shrink-0">{cashSummary.count}</span>
+              {cashSummary.total > 0 && (
+                <>
+                  <span className="text-gray-200 shrink-0">|</span>
+                  <span className="font-black tabular-nums text-sm text-gray-900 shrink-0">{fmtEur(cashSummary.total, 0)} €</span>
+                </>
+              )}
+              {cashSummary.dep > 0 && (
+                <>
+                  <span className="text-gray-200 shrink-0">|</span>
+                  <span className="text-[9px] font-black text-gray-400 shrink-0">záloha</span>
+                  <span className="font-black tabular-nums text-sm text-amber-600 shrink-0">{fmtEur(cashSummary.dep, 0)} €</span>
+                </>
+              )}
             </div>
-            {cashSummary.total > 0 && (
-              <div className="bg-white border border-gray-100 rounded-lg px-3 py-2 min-w-[100px]">
-                <div className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-0.5">Celkom</div>
-                <div className="font-black tabular-nums text-sm text-gray-900">{fmtEur(cashSummary.total, 0)} €</div>
-              </div>
-            )}
-            {cashSummary.dep > 0 && (
-              <div className="bg-white border border-amber-100 rounded-lg px-3 py-2 min-w-[100px]">
-                <div className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-0.5">Záloha použitá</div>
-                <div className="text-amber-600 font-black tabular-nums text-sm">{fmtEur(cashSummary.dep, 0)} €</div>
-              </div>
-            )}
           </div>
 
           {/* Tabuľka */}
@@ -596,11 +639,19 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                       <div key={o.id} onClick={() => onGoToOrder?.(o.id)}
                         className={`px-3 py-2.5 transition-colors ${onGoToOrder ? "cursor-pointer hover:bg-amber-50" : "hover:bg-gray-50"}`}>
                         {/* Mobile layout — 3 riadky: klient+status / betón+celkom / záloha-nedoplatok / KTO+dátum */}
+                        {(() => {
+                          const hist = o.statusHistory ?? [];
+                          const lastChange = hist.length > 0 ? hist[hist.length - 1] : undefined;
+                          const prevStatus = lastChange?.prevStatus;
+                          return (
                         <div className="sm:hidden space-y-1 py-0.5">
-                          {/* R1: Klient + Status + Arrow */}
+                          {/* R1: Klient + Status (s prevStatus→) + Arrow */}
                           <div className="flex items-center gap-2">
                             <span className="font-semibold text-gray-800 text-[13px] flex-1 truncate min-w-0">{name}</span>
-                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 ${STATUS_COLOR[o.status] ?? "bg-gray-100 text-gray-500"}`}>
+                            <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 ${STATUS_COLOR[o.status] ?? "bg-gray-100 text-gray-500"}`}>
+                              {prevStatus && STATUS_LABEL[prevStatus] && (
+                                <span className="opacity-50 font-medium">{STATUS_LABEL[prevStatus]} →</span>
+                              )}
                               {STATUS_LABEL[o.status] ?? o.status}
                             </span>
                             {onGoToOrder && <ChevronRight className="w-3.5 h-3.5 text-gray-300 shrink-0" />}
@@ -641,6 +692,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             <span className="tabular-nums text-gray-500 shrink-0">{fmtDate(o.createdAt)}</span>
                           </div>
                         </div>
+                          ); // koniec IIFE pre prevStatus
+                        })()}
                         {/* Desktop layout */}
                         <div className="hidden sm:grid grid-cols-[90px_1fr_1fr_70px_70px_90px_110px_20px] gap-2 items-center">
                           <span className="text-gray-400 tabular-nums text-[10px]">{fmtDate(o.createdAt)}</span>
