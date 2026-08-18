@@ -183,8 +183,8 @@ export default function AdminDashboard() {
     { id: "doprava",    label: "DOPRAVA",    short: "DOPRAVA",  icon: <Truck className="w-5 h-5" /> },
     { id: "sluzby",     label: "SLUŽBY",     short: "SLUŽBY",   icon: <Wrench className="w-5 h-5" /> },
     { id: "betony",     label: "BETÓNY",     short: "BETÓNY",   icon: <Layers className="w-5 h-5" /> },
-    { id: "statistiky", label: "ŠTATISTIKY", short: "ŠTAT.",    icon: <TrendingUp className="w-5 h-5" /> },
     { id: "historia",   label: "HISTÓRIA",   short: "HIST.",    icon: <Clock className="w-5 h-5" /> },
+    { id: "statistiky", label: "ŠTATISTIKY", short: "ŠTAT.",    icon: <TrendingUp className="w-5 h-5" /> },
     { id: "seo",        label: "SEO",        short: "SEO",      icon: <Search className="w-5 h-5" /> },
     { id: "server",     label: "SERVER",     short: "SERVER",   icon: <Server className="w-5 h-5" /> },
   ];

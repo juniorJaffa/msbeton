@@ -202,7 +202,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       .filter(o => {
         if (onlyDeposit && !(o.depositUsed && o.depositUsed > 0)) return false;
         if (cashClientFilter !== "vsetci" && o.clientId !== cashClientFilter) return false;
-        if (cashKtoFilters.length > 0 && !cashKtoFilters.includes(o.createdByDevice ?? "")) return false;
+        if (cashKtoFilters.length > 0 && !cashKtoFilters.includes(deviceToGroupKey.get(o.createdByDevice ?? "") ?? "")) return false;
         return passesDate(toDateStr(o.createdAt), cashDateFilter);
       })
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
@@ -226,17 +226,58 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     return list;
   }, [liveOrders, clientByLoginId]);
 
-  // Unikátne zariadenia (KTO) z posledných objednávok — pre KTO filter
-  const orderDevices = useMemo(() => {
-    const seen = new Set<string>(); const list: string[] = [];
+  // KTO skupiny — named osoby = group, unnamed auto-labels = individual s plným labelom
+  interface DeviceGroup {
+    key: string;          // group key pre filter (person name alebo full label)
+    label: string;        // zobrazovaný label
+    devices: string[];    // všetky device strings v tejto skupine
+    subInfo?: string;     // krátky popis sub-zariadení (napr. "iPhone · Mac · Ntb")
+    isPerson: boolean;    // true = má reálne meno osoby
+  }
+
+  const deviceGroups = useMemo((): DeviceGroup[] => {
+    const rawDevices: string[] = [];
+    const seen = new Set<string>();
     for (const o of liveOrders) {
       const d = o.createdByDevice ?? "";
       if (!d || seen.has(d)) continue;
-      seen.add(d);
-      list.push(d);
+      seen.add(d); rawDevices.push(d);
     }
-    return list;
+
+    const byPerson = new Map<string, { devices: string[]; types: string[] }>();
+    const unnamed: { fullLabel: string }[] = [];
+
+    for (const d of rawDevices) {
+      const { person, deviceType } = parseDeviceLabel(d);
+      if (person) {
+        if (!byPerson.has(person)) byPerson.set(person, { devices: [], types: [] });
+        byPerson.get(person)!.devices.push(d);
+        if (deviceType && !byPerson.get(person)!.types.includes(deviceType))
+          byPerson.get(person)!.types.push(deviceType);
+      } else {
+        unnamed.push({ fullLabel: d });
+      }
+    }
+
+    const groups: DeviceGroup[] = [];
+    for (const [person, { devices, types }] of byPerson) {
+      groups.push({
+        key: person, label: person, devices, isPerson: true,
+        subInfo: types.length > 0 ? types.join(" · ") : undefined,
+      });
+    }
+    for (const { fullLabel } of unnamed) {
+      groups.push({ key: fullLabel, label: fullLabel, devices: [fullLabel], isPerson: false });
+    }
+    return groups;
   }, [liveOrders]);
+
+  // Mapa device label → group key (pre filter)
+  const deviceToGroupKey = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const g of deviceGroups) for (const d of g.devices) map.set(d, g.key);
+    return map;
+  }, [deviceGroups]);
 
   // ── CSS helpers ─────────────────────────────────────────────────────────
   const pillActive  = "bg-secondary text-primary shadow-sm";
@@ -382,7 +423,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
               <span className="text-[10px] font-bold text-gray-500">Záloha</span>
             </label>
             {/* KTO dropdown trigger — inline, šetrí priestor */}
-            {orderDevices.length > 1 && (
+            {deviceGroups.length > 1 && (
             <div ref={ktoRef} className="relative inline-block">
               {/* Trigger — rovnaká výška ako date pills, zmestí sa do riadku */}
               <button
@@ -412,25 +453,33 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     Všetci (zrušiť filter)
                   </button>
                   {/* Zoznam zariadení */}
-                  {orderDevices.map(d => {
-                    const { person, deviceType } = parseDeviceLabel(d);
-                    const checked = cashKtoFilters.includes(d);
+                  {deviceGroups.map(g => {
+                    const checked = cashKtoFilters.includes(g.key);
                     return (
-                      <label key={d}
+                      <label key={g.key}
                         className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors min-h-[44px]">
                         <input
                           type="checkbox"
                           checked={checked}
                           onChange={() => setCashKtoFilters(prev =>
-                            prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]
+                            prev.includes(g.key) ? prev.filter(x => x !== g.key) : [...prev, g.key]
                           )}
                           className="w-4 h-4 accent-secondary shrink-0"
                         />
-                        <DeviceIconSmall label={d} className="w-4 h-4 text-gray-400 shrink-0" />
+                        <DeviceIconSmall label={g.devices[0]} className="w-4 h-4 text-gray-400 shrink-0" />
                         <span className="flex-1 min-w-0">
-                          <span className="text-[12px] font-semibold text-gray-800">{person || deviceType || d}</span>
-                          {person && deviceType && (
-                            <span className="ml-1 text-[10px] text-gray-400">{deviceType}</span>
+                          {g.isPerson ? (
+                            <>
+                              <span className="text-[12px] font-bold text-gray-800">{g.label}</span>
+                              {g.subInfo && <span className="ml-1.5 text-[10px] text-gray-400">{g.subInfo}</span>}
+                              {g.devices.length > 1 && (
+                                <span className="ml-1.5 text-[9px] font-black text-secondary bg-secondary/10 px-1 py-px rounded">
+                                  {g.devices.length}×
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-[11px] text-gray-600">{g.label}</span>
                           )}
                         </span>
                       </label>
