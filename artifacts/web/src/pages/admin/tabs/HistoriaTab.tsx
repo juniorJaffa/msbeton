@@ -279,6 +279,11 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     return list;
   }, [liveOrders, clientByLoginId]);
 
+  // Zariadenia — len tie aktívne v aktuálnom dátumovom rozsahu (nechceme staré nepoužívané)
+  const devicesSourceOrders = useMemo(() =>
+    liveOrders.filter(o => passesDate(toDateStr(o.createdAt), cashDateFilter)),
+  [liveOrders, cashDateFilter]);
+
   // KTO skupiny — named osoby = group, unnamed auto-labels = individual s plným labelom
   interface DeviceGroup {
     key: string;          // group key pre filter (person name alebo full label)
@@ -291,7 +296,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const deviceGroups = useMemo((): DeviceGroup[] => {
     const rawDevices: string[] = [];
     const seen = new Set<string>();
-    for (const o of liveOrders) {
+    for (const o of devicesSourceOrders) {
       const d = o.createdByDevice ?? "";
       if (!d || seen.has(d)) continue;
       seen.add(d); rawDevices.push(d);
@@ -335,7 +340,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       });
     }
     return groups;
-  }, [liveOrders]);
+  }, [devicesSourceOrders]);
 
   // Mapa device label → group key (pre filter)
   const deviceToGroupKey = useMemo(() => {
