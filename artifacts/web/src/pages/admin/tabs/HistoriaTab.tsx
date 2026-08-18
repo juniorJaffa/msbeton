@@ -317,10 +317,16 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
             </div>
           )}
 
+          {/* Nadpis sekcie */}
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-sm font-black text-secondary uppercase tracking-wide">Objednávky</span>
+            <span className="text-[10px] text-gray-400 font-semibold">(cashflow)</span>
+          </div>
+
           {/* Súhrn */}
           <div className="flex gap-2 flex-wrap">
             <div className="bg-white border border-gray-100 rounded-lg px-3 py-2 min-w-[80px]">
-              <div className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-0.5">Objednávok</div>
+              <div className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-0.5">Spolu</div>
               <div className="font-black tabular-nums text-sm text-gray-700">{cashSummary.count}</div>
             </div>
             {cashSummary.dep > 0 && (
@@ -337,31 +343,39 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
           ) : (
             <div className="bg-white border border-gray-100 rounded-lg overflow-hidden">
               <div className="overflow-x-auto">
-                <div className="hidden sm:grid grid-cols-[90px_1fr_1fr_80px_80px_100px_20px] gap-2 px-3 py-2 bg-gray-50 border-b border-gray-100 text-[9px] font-black uppercase tracking-widest text-gray-400">
-                  <span>Dátum</span><span>Klient</span><span>Betón</span><span className="text-right">Celkom</span><span className="text-right">Záloha</span><span>Stav</span><span />
+                <div className="hidden sm:grid grid-cols-[90px_1fr_1fr_70px_70px_90px_110px_20px] gap-2 px-3 py-2 bg-gray-50 border-b border-gray-100 text-[9px] font-black uppercase tracking-widest text-gray-400">
+                  <span>Dátum</span><span>Klient</span><span>Betón</span><span className="text-right">Celkom</span><span className="text-right">Záloha</span><span>Stav</span><span>KTO</span><span />
                 </div>
                 <div className="divide-y divide-gray-50">
                   {filteredOrders.map(o => {
                     const c = o.clientId ? clientByLoginId.get(o.clientId) : undefined;
                     const name = clientDisplayName(c, o.clientName || o.clientId);
+                    const kto = o.createdByDevice ?? "";
                     return (
                       <div key={o.id} onClick={() => onGoToOrder?.(o.id)}
                         className={`px-3 py-2.5 transition-colors ${onGoToOrder ? "cursor-pointer hover:bg-amber-50" : "hover:bg-gray-50"}`}>
-                        {/* Mobile layout */}
-                        <div className="sm:hidden flex items-center gap-2">
-                          <span className="text-gray-400 tabular-nums text-[10px] shrink-0 w-16">{fmtDate(o.createdAt)}</span>
-                          <span className="font-semibold text-gray-700 text-xs flex-1 truncate">{name}</span>
-                          {o.depositUsed && o.depositUsed > 0
-                            ? <span className="font-black tabular-nums text-amber-600 text-sm shrink-0">{fmtEur(o.depositUsed, 0)} €</span>
-                            : <span className="text-gray-300 text-sm shrink-0">—</span>
-                          }
-                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${STATUS_COLOR[o.status] ?? "bg-gray-100 text-gray-500"}`}>
-                            {STATUS_LABEL[o.status] ?? o.status}
-                          </span>
-                          {onGoToOrder && <ChevronRight className="w-3.5 h-3.5 text-gray-300 shrink-0" />}
+                        {/* Mobile layout — dva riadky */}
+                        <div className="sm:hidden">
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-400 tabular-nums text-[10px] shrink-0 w-16">{fmtDate(o.createdAt)}</span>
+                            <span className="font-semibold text-gray-700 text-xs flex-1 truncate">{name}</span>
+                            {o.depositUsed && o.depositUsed > 0
+                              ? <span className="font-black tabular-nums text-amber-600 text-sm shrink-0">{fmtEur(o.depositUsed, 0)} €</span>
+                              : <span className="text-gray-300 text-sm shrink-0">—</span>
+                            }
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${STATUS_COLOR[o.status] ?? "bg-gray-100 text-gray-500"}`}>
+                              {STATUS_LABEL[o.status] ?? o.status}
+                            </span>
+                            {onGoToOrder && <ChevronRight className="w-3.5 h-3.5 text-gray-300 shrink-0" />}
+                          </div>
+                          {kto && (
+                            <div className="text-[10px] text-gray-400 pl-[72px] mt-0.5 truncate">
+                              {kto}
+                            </div>
+                          )}
                         </div>
                         {/* Desktop layout */}
-                        <div className="hidden sm:grid grid-cols-[90px_1fr_1fr_80px_80px_100px_20px] gap-2 items-center">
+                        <div className="hidden sm:grid grid-cols-[90px_1fr_1fr_70px_70px_90px_110px_20px] gap-2 items-center">
                           <span className="text-gray-400 tabular-nums text-[10px]">{fmtDate(o.createdAt)}</span>
                           <span className="font-semibold text-gray-700 text-xs truncate">{name}</span>
                           <span className="text-gray-500 truncate text-[10px]">
@@ -374,6 +388,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                           <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full text-center ${STATUS_COLOR[o.status] ?? "bg-gray-100 text-gray-500"}`}>
                             {STATUS_LABEL[o.status] ?? o.status}
                           </span>
+                          <span className="text-[10px] text-gray-400 truncate">{kto || "—"}</span>
                           {onGoToOrder ? <ChevronRight className="w-3.5 h-3.5 text-gray-300" /> : <span />}
                         </div>
                       </div>
