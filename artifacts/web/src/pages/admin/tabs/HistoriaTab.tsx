@@ -259,7 +259,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
           { id: "cashflow" as Sub, title: "OBJEDNÁVKY",  sub: "cashflow" },
         ]).map(s => (
           <button key={s.id} onClick={() => setSub(s.id)}
-            className={`flex flex-col items-start px-4 py-2 rounded-lg transition-all border cursor-pointer min-w-[110px] ${
+            className={`flex flex-col items-start px-4 py-2 rounded-lg transition-all border cursor-pointer flex-1 ${
               sub === s.id
                 ? "bg-secondary border-secondary text-primary shadow-sm"
                 : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
