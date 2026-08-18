@@ -2105,11 +2105,11 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                                   depositTopupFor !== c.id
                                     ? <button type="button"
                                         onClick={() => { setDepositTopupFor(c.id); setDepositTopupAmount(""); setDepositTopupNote(""); }}
-                                        className="shrink-0 text-[10px] font-bold text-amber-600 hover:text-amber-800 border border-amber-300 rounded px-2 py-0.5 hover:bg-amber-50 transition-colors">
+                                        className="shrink-0 text-xs font-bold text-amber-600 hover:text-amber-800 border border-amber-300 rounded px-3 py-1.5 hover:bg-amber-50 transition-colors cursor-pointer">
                                         + Pridať
                                       </button>
                                     : <button type="button" onClick={() => setDepositTopupFor(null)}
-                                        className="shrink-0 text-[10px] text-amber-400 hover:text-amber-600">Zrušiť</button>
+                                        className="shrink-0 text-xs font-semibold text-amber-400 hover:text-amber-600 px-2 py-1.5 cursor-pointer">Zrušiť</button>
                                 )}
                               </div>
                               {/* Formulár pridania zálohy */}
@@ -2120,9 +2120,9 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                                       <input type="number" step="0.01" min="0" placeholder="0,00"
                                         value={depositTopupAmount}
                                         onChange={e => setDepositTopupAmount(e.target.value)}
-                                        className="w-full border border-amber-200 rounded px-2 py-2 text-base font-bold text-right focus:outline-none focus:ring-1 focus:ring-amber-400 pr-7"
+                                        className="w-full border border-amber-200 rounded px-3 py-2.5 text-xl font-black text-right focus:outline-none focus:ring-2 focus:ring-amber-400 pr-8"
                                         autoFocus />
-                                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">€</span>
+                                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-base font-semibold">€</span>
                                     </div>
                                     <input type="text" placeholder="Poznámka (nepovinné)"
                                       value={depositTopupNote}
@@ -2145,7 +2145,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                                       update(c.id, { deposit: { ...cur, balance: cur.balance + amt, transactions: [...cur.transactions, tx] } });
                                       setDepositTopupFor(null);
                                     }}
-                                    className="w-full py-1.5 text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 rounded transition-colors">
+                                    className="w-full py-3 text-sm font-black text-white bg-amber-500 hover:bg-amber-600 rounded transition-colors cursor-pointer tracking-wide">
                                     Pridať zálohu
                                   </button>
                                 </div>
