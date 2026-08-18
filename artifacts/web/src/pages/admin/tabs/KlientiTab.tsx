@@ -2120,14 +2120,14 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                                       <input type="number" step="0.01" min="0" placeholder="0,00"
                                         value={depositTopupAmount}
                                         onChange={e => setDepositTopupAmount(e.target.value)}
-                                        className="w-full border border-amber-200 rounded px-2 py-1.5 text-sm font-bold text-right focus:outline-none focus:ring-1 focus:ring-amber-400 pr-7"
+                                        className="w-full border border-amber-200 rounded px-2 py-2 text-base font-bold text-right focus:outline-none focus:ring-1 focus:ring-amber-400 pr-7"
                                         autoFocus />
-                                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">€</span>
+                                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">€</span>
                                     </div>
                                     <input type="text" placeholder="Poznámka (nepovinné)"
                                       value={depositTopupNote}
                                       onChange={e => setDepositTopupNote(e.target.value)}
-                                      className="flex-[2] border border-amber-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-amber-400" />
+                                      className="flex-1 border border-amber-200 rounded px-2 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-amber-400" />
                                   </div>
                                   <button type="button"
                                     onClick={() => {
