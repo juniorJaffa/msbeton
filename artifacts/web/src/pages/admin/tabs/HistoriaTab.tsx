@@ -281,18 +281,26 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     <div key={`${r.clientId}-${r.tx.id}`}
                       className="px-3 py-2.5 hover:bg-gray-50 transition-colors">
                       {/* Mobile layout */}
-                      <div className="sm:hidden flex items-center gap-2">
-                        <span className="text-gray-400 tabular-nums text-[10px] shrink-0 w-16">{fmtDate(r.tx.createdAt)}</span>
-                        <button type="button" onClick={() => r.loginId && onGoToClient?.(r.loginId)}
-                          className={`font-semibold text-gray-700 text-xs flex-1 text-left truncate ${onGoToClient && r.loginId ? "hover:text-secondary cursor-pointer" : "cursor-default"}`}>
-                          {r.clientName}
-                        </button>
-                        <span className={`font-black tabular-nums text-sm shrink-0 ${r.tx.type === "topup" ? "text-teal-600" : "text-red-500"}`}>
-                          {r.tx.type === "topup" ? "+" : "−"}{fmtEur(Math.abs(r.tx.amount))} €
-                        </span>
-                        <span className={`shrink-0 flex items-center justify-center w-6 h-6 rounded-full ${r.tx.type === "topup" ? "bg-teal-100 text-teal-600" : "bg-red-100 text-red-500"}`}>
-                          {r.tx.type === "topup" ? <TrendingUp className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
-                        </span>
+                      <div className="sm:hidden">
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-400 tabular-nums text-[10px] shrink-0 w-16">{fmtDate(r.tx.createdAt)}</span>
+                          <button type="button" onClick={() => r.loginId && onGoToClient?.(r.loginId)}
+                            className={`font-semibold text-gray-700 text-xs flex-1 text-left truncate ${onGoToClient && r.loginId ? "hover:text-secondary cursor-pointer" : "cursor-default"}`}>
+                            {r.clientName}
+                          </button>
+                          <span className={`font-black tabular-nums text-sm shrink-0 ${r.tx.type === "topup" ? "text-teal-600" : "text-red-500"}`}>
+                            {r.tx.type === "topup" ? "+" : "−"}{fmtEur(Math.abs(r.tx.amount))} €
+                          </span>
+                          <span className={`shrink-0 flex items-center justify-center w-6 h-6 rounded-full ${r.tx.type === "topup" ? "bg-teal-100 text-teal-600" : "bg-red-100 text-red-500"}`}>
+                            {r.tx.type === "topup" ? <TrendingUp className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+                          </span>
+                        </div>
+                        {r.tx.createdBy && (
+                          <div className="flex items-center gap-1 pl-[72px] mt-0.5 text-[10px] text-gray-400">
+                            <DeviceIconSmall label={r.tx.createdBy} className="w-3 h-3 shrink-0" />
+                            <span className="truncate">{r.tx.createdBy}</span>
+                          </div>
+                        )}
                       </div>
                       {/* Desktop layout */}
                       <div className="hidden sm:grid grid-cols-[90px_1fr_100px_110px_1fr_1fr] gap-2 items-center">
@@ -309,7 +317,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                           {r.tx.type === "topup" ? "Dobíjanie" : "Platba"}
                         </span>
                         <span className="text-gray-400 text-[10px] truncate">{r.tx.note ?? "—"}</span>
-                        <span className="text-gray-400 text-[10px] truncate">{r.tx.createdBy}</span>
+                        <span className="flex items-center gap-1 text-gray-400 text-[10px] truncate">
+                          {r.tx.createdBy && <DeviceIconSmall label={r.tx.createdBy} className="w-3 h-3 shrink-0" />}
+                          {r.tx.createdBy || "—"}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -415,8 +426,9 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             {onGoToOrder && <ChevronRight className="w-3.5 h-3.5 text-gray-300 shrink-0" />}
                           </div>
                           {kto && (
-                            <div className="text-[10px] text-gray-400 pl-[72px] mt-0.5 truncate">
-                              {kto}
+                            <div className="flex items-center gap-1 pl-[72px] mt-0.5 text-[10px] text-gray-400">
+                              <DeviceIconSmall label={kto} className="w-3 h-3 shrink-0" />
+                              <span className="truncate">{kto}</span>
                             </div>
                           )}
                         </div>
@@ -434,7 +446,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                           <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full text-center ${STATUS_COLOR[o.status] ?? "bg-gray-100 text-gray-500"}`}>
                             {STATUS_LABEL[o.status] ?? o.status}
                           </span>
-                          <span className="text-[10px] text-gray-400 truncate">{kto || "—"}</span>
+                          <span className="flex items-center gap-1 text-[10px] text-gray-400 truncate">
+                            {kto && <DeviceIconSmall label={kto} className="w-3 h-3 shrink-0" />}
+                            {kto || "—"}
+                          </span>
                           {onGoToOrder ? <ChevronRight className="w-3.5 h-3.5 text-gray-300" /> : <span />}
                         </div>
                       </div>
