@@ -1307,24 +1307,35 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                 ) : (
                   <span className="shrink-0 w-5 text-center text-[11px] font-bold text-gray-300 tabular-nums">{listIdx + 1}</span>
                 )}
-                {/* Avatar */}
-                <div className="relative shrink-0">
-                  <div className={cn("w-9 h-9 rounded-full flex items-center justify-center ring-2",
-                    c.isOwner ? "bg-primary/20 ring-primary/40"
-                      : clientRole(c) === "manager" ? "bg-secondary/10 ring-secondary/50"
-                      : clientRole(c) === "reader" ? "bg-blue-100 ring-blue-400"
-                      : !hasLogin ? "ring-gray-200"
-                      : c.active ? "ring-green-400/60" : "ring-red-300/60",
-                    !c.isOwner && !clientRole(c) && av.palette.bg)}>
-                    {c.isOwner ? <Crown className="w-4 h-4 text-primary" />
-                      : clientRole(c) === "manager" ? <ShieldCheck className="w-4 h-4 text-secondary" />
-                      : clientRole(c) === "reader" ? <Eye className="w-4 h-4 text-blue-600" />
-                      : av.kind === "template" ? <Percent className={cn("w-4 h-4", av.palette.fg)} />
-                      : av.kind === "phone" ? <Phone className={cn("w-4 h-4", av.palette.fg)} />
-                      : <span className={cn("font-black", av.palette.fg, av.mono.length > 1 ? "text-xs" : "text-sm")}>{av.mono || av.char}</span>
-                    }
-                  </div>
-                  {/* Biometria aktívna → fingerprint odznak na avatare (owner=admin bio, klient=server bio). Klik → Biometria v Serveri */}
+                {/* Unified avatar + foto slot — fixná šírka 36×36, nulový layout shift */}
+                <div className="relative shrink-0 w-9 h-9">
+                  {/* Avatár alebo prvá fotka */}
+                  {c.photos && c.photos.length > 0 ? (
+                    <button type="button"
+                      onClick={(e) => { e.stopPropagation(); setPhotoLightbox({ clientId: c.id, index: 0 }); }}
+                      className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-primary/50 hover:ring-primary hover:scale-105 transition-all block"
+                      title={`${c.photos.length} foto miesta — klik pre detail`}>
+                      <img src={c.photos[0]} alt="" className="w-full h-full object-cover" style={{ imageOrientation: "from-image" }} />
+                    </button>
+                  ) : (
+                    <div className={cn("w-9 h-9 rounded-full flex items-center justify-center ring-2",
+                      c.isOwner ? "bg-primary/20 ring-primary/40"
+                        : clientRole(c) === "manager" ? "bg-secondary/10 ring-secondary/50"
+                        : clientRole(c) === "reader" ? "bg-blue-100 ring-blue-400"
+                        : !hasLogin ? "ring-gray-200"
+                        : c.active ? "ring-green-400/60" : "ring-red-300/60",
+                      !c.isOwner && !clientRole(c) && av.palette.bg)}>
+                      {c.isOwner ? <Crown className="w-4 h-4 text-primary" />
+                        : clientRole(c) === "manager" ? <ShieldCheck className="w-4 h-4 text-secondary" />
+                        : clientRole(c) === "reader" ? <Eye className="w-4 h-4 text-blue-600" />
+                        : av.kind === "template" ? <Percent className={cn("w-4 h-4", av.palette.fg)} />
+                        : av.kind === "phone" ? <Phone className={cn("w-4 h-4", av.palette.fg)} />
+                        : <span className={cn("font-black", av.palette.fg, av.mono.length > 1 ? "text-xs" : "text-sm")}>{av.mono || av.char}</span>
+                      }
+                    </div>
+                  )}
+
+                  {/* Biometria badge — top-right */}
                   {(() => {
                     const ownerBio = c.isOwner && isAdminBioAvail() && hasAdminBio();
                     const clientBio = (c.webauthnCredentials?.length ?? 0) > 0;
@@ -1333,49 +1344,32 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                       <button type="button"
                         onClick={(e) => { e.stopPropagation(); onGoToBiometria?.(c.loginId); }}
                         className="absolute -top-1 -right-1 min-w-4 h-4 px-0.5 rounded-full bg-emerald-500 ring-2 ring-white flex items-center justify-center gap-px hover:bg-emerald-600 hover:scale-110 transition-all cursor-pointer"
-                        title={ownerBio ? "Admin biometria aktívna — otvoriť Biometriu" : `Biometria aktívna — ${c.webauthnCredentials!.length} zariadenie · otvoriť aktivitu`}>
+                        title={ownerBio ? "Admin biometria aktívna" : `Biometria aktívna — ${c.webauthnCredentials!.length} zariadenie`}>
                         <Fingerprint className="w-2.5 h-2.5 text-white" />
                         {clientBio && <span className="text-white text-[8px] font-black leading-none">{c.webauthnCredentials!.length}</span>}
                       </button>
                     );
                   })()}
-                </div>
 
-                {/* Fotky miesta — thumbnail strip + quick-add kamera v zozname */}
-                {!readOnly && (
-                  <div className="shrink-0 flex gap-1 items-center">
-                    {(c.photos ?? []).slice(0, 3).map((ph, i) => (
-                      <button key={i} type="button"
-                        onClick={(e) => { e.stopPropagation(); setPhotoLightbox({ clientId: c.id, index: i }); }}
-                        className="w-9 h-9 rounded overflow-hidden border-2 border-white shadow hover:border-primary hover:scale-110 transition-all"
-                        title="Foto miesta — klik pre detail">
-                        <img src={ph} alt="" className="w-full h-full object-cover" style={{ imageOrientation: "from-image" }} />
-                      </button>
-                    ))}
-                    {(!c.photos || c.photos.length < 3) && (
-                      <label
-                        onClick={(e) => e.stopPropagation()}
-                        className="w-9 h-9 rounded border-2 border-dashed border-gray-300 hover:border-primary hover:bg-primary/10 flex items-center justify-center cursor-pointer transition-colors shrink-0"
-                        title={c.photos && c.photos.length > 0 ? "Pridať ďalšiu fotku miesta" : "Pridať fotku miesta (brána, číslo domu…)"}>
-                        <Camera className="w-4 h-4 text-gray-400 hover:text-primary" />
-                        <input type="file" accept="image/*,image/heic,image/heif" capture="environment" className="hidden"
-                          onChange={(e) => handleAddPhoto(c.id, e)} />
-                      </label>
-                    )}
-                  </div>
-                )}
-                {readOnly && c.photos && c.photos.length > 0 && (
-                  <div className="shrink-0 flex gap-1">
-                    {c.photos.slice(0, 3).map((ph, i) => (
-                      <button key={i} type="button"
-                        onClick={(e) => { e.stopPropagation(); setPhotoLightbox({ clientId: c.id, index: i }); }}
-                        className="w-9 h-9 rounded overflow-hidden border-2 border-white shadow hover:border-primary hover:scale-110 transition-all"
-                        title="Foto miesta">
-                        <img src={ph} alt="" className="w-full h-full object-cover" style={{ imageOrientation: "from-image" }} />
-                      </button>
-                    ))}
-                  </div>
-                )}
+                  {/* Foto count badge — bottom-left (ak >1 fotka) */}
+                  {c.photos && c.photos.length > 1 && (
+                    <div className="absolute -bottom-1 -left-1 w-4 h-4 rounded-full bg-primary text-secondary text-[8px] font-black flex items-center justify-center leading-none pointer-events-none ring-1 ring-white">
+                      {c.photos.length}
+                    </div>
+                  )}
+
+                  {/* Camera quick-add badge — bottom-right (ak <3 fotky a nie readOnly) */}
+                  {!readOnly && (!c.photos || c.photos.length < 3) && (
+                    <label
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white border border-gray-300 hover:border-primary hover:bg-primary/20 flex items-center justify-center cursor-pointer transition-colors group ring-1 ring-white"
+                      title={c.photos && c.photos.length > 0 ? "Pridať ďalšiu fotku" : "Pridať fotku miesta (brána, číslo domu…)"}>
+                      <Camera className="w-2.5 h-2.5 text-gray-400 group-hover:text-primary transition-colors" />
+                      <input type="file" accept="image/*,image/heic,image/heif" capture="environment" className="hidden"
+                        onChange={(e) => handleAddPhoto(c.id, e)} />
+                    </label>
+                  )}
+                </div>
 
                 {/* Meno + mobile badges */}
                 <div className="flex-1 min-w-0">
@@ -1551,7 +1545,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                           title="Pridať foto (brána, číslo domu, príjazdová cesta…)">
                           <Camera className="w-5 h-5 text-gray-400" />
                           <span className="text-[9px] text-gray-400 mt-0.5 font-semibold">Pridať foto</span>
-                          <input type="file" accept="image/*,image/heic,image/heif" capture="environment" className="hidden"
+                          <input type="file" accept="image/*,image/heic,image/heif" className="hidden"
                             onChange={(e) => handleAddPhoto(c.id, e)} />
                         </label>
                       )}

@@ -1621,8 +1621,11 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                 orderTotal={o.totalSDph}
                                 onChange={(s, amt) => {
                                   // Keď order bol vyplatený zo zálohy a admin mení stav preč → ponúknuť reverziu
-                                  if (s !== "vyplatena" && o.depositUsed !== undefined && o.depositUsed > 0 && oc) {
-                                    setDepositReversal({ orderId: o.id, depositUsed: o.depositUsed, clientLoginId: oc.loginId, newStatus: s });
+                                  // oc môže byť undefined ak bol klient soft-deleted → preskočí reverziu, len zmení stav
+                                  // oc.loginId môže byť "" ak klient nemá loginId → tiež preskočí (nenašiel by správny účet)
+                                  const canReverse = s !== "vyplatena" && o.depositUsed !== undefined && o.depositUsed > 0 && oc && oc.loginId;
+                                  if (canReverse) {
+                                    setDepositReversal({ orderId: o.id, depositUsed: o.depositUsed!, clientLoginId: oc!.loginId!, newStatus: s });
                                   } else {
                                     updateStatus(o.id, s, amt);
                                   }
