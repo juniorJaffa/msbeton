@@ -688,14 +688,18 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               </div>
                             );
                           })()}
-                          {/* R2: Kategória (ak je) — rovnaký layout ako v ObjednavkyTab */}
+                          {/* R2: Kategória — ikona nahrádza text pre kamenivo */}
                           {o.concreteCategory && (() => {
                             const kg = getKamenivoGroup(o.concreteCategory);
+                            // Odstrání "RIEČNE KAMENIVO " / "DRVENÉ KAMENIVO " prefix — ikona to vyjadruje
+                            const shortCat = kg
+                              ? o.concreteCategory.replace(/^(RIEČNE|DRVENÉ)\s+KAMENIVO\s*/i, "").trim()
+                              : o.concreteCategory;
                             return (
                               <div className="flex items-center gap-1 text-[10px] font-black tracking-wide text-gray-900">
                                 {kg === "drvene" && <Mountain className="w-3 h-3 shrink-0 text-stone-500" />}
                                 {kg === "riecne" && <Waves className="w-3 h-3 shrink-0 text-blue-400" />}
-                                {o.concreteCategory}
+                                {shortCat}
                               </div>
                             );
                           })()}
