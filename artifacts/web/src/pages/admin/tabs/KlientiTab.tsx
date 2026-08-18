@@ -2204,6 +2204,14 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                                     + {(c.deposit!.transactions.length - 5)} ďalších pohybov
                                   </div>
                                 )}
+                                {onGoToHistoria && (
+                                  <button
+                                    type="button"
+                                    onClick={() => onGoToHistoria({ sub: "zalohy", clientId: c.loginId || c.id })}
+                                    className="flex items-center justify-center gap-1.5 w-full px-3 py-1.5 border-t border-amber-100 text-[10px] font-bold text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer">
+                                    Celá história zálohy →
+                                  </button>
+                                )}
                               </div>
                             )}
                           </>)}

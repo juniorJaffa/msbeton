@@ -1188,6 +1188,13 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
           )}
           <span className="ml-auto text-xs font-bold text-secondary shrink-0">{sortedCount} {sortedCountLabel}</span>
           {newBadge > 0 && <span className="relative bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">{newBadge} nových</span>}
+          {onGoToHistoria && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onGoToHistoria({ sub: "cashflow" }); }}
+              className="text-[10px] font-bold text-amber-600 hover:text-amber-800 border border-amber-200 hover:border-amber-400 rounded-full px-2 py-0.5 transition-colors cursor-pointer shrink-0">
+              História
+            </button>
+          )}
           <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${filterOpen ? "rotate-180" : ""}`} />
         </button>
         {filterOpen && (

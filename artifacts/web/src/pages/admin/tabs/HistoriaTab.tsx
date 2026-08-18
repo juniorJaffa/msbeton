@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { adminData, Client, DepositTx, Order } from "@/lib/adminData";
-import { ChevronRight, TrendingUp, Minus } from "lucide-react";
+import { ChevronRight, TrendingUp, Minus, Smartphone, Monitor, Laptop } from "lucide-react";
+import { AdminAccessPanel } from "./AdminAccessPanel";
 
 type Sub = "zalohy" | "cashflow";
 type DateFilter = "dnes" | "vcera" | "tyzden" | "mesiac" | "vsetko";
@@ -44,6 +45,13 @@ function fmtEur(v: number, decimals = 2) {
   return v.toLocaleString("sk-SK", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
+function DeviceIconSmall({ label, className }: { label: string; className?: string }) {
+  const l = label.toLowerCase();
+  if (/iphone|ipad|android|mobil|telefon|phone|tablet/.test(l)) return <Smartphone className={className} />;
+  if (/mac|macbook|laptop|notebook|\bnb\b/.test(l)) return <Laptop className={className} />;
+  return <Monitor className={className} />;
+}
+
 function clientDisplayName(c?: Client, fallback?: string): string {
   if (!c) return fallback ?? "—";
   return [c.firstName, c.lastName].filter(Boolean).join(" ") || c.company || c.loginId || fallback || "—";
@@ -81,6 +89,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   // CASHFLOW filtre
   const [cashDateFilter,   setCashDateFilter]   = useState<DateFilter>("tyzden");
   const [cashClientFilter, setCashClientFilter] = useState<string>("vsetci");
+  const [cashKtoFilter,    setCashKtoFilter]    = useState<string>("vsetci");
   const [onlyDeposit,      setOnlyDeposit]      = useState(false);
 
   useEffect(() => {
@@ -152,10 +161,11 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       .filter(o => {
         if (onlyDeposit && !(o.depositUsed && o.depositUsed > 0)) return false;
         if (cashClientFilter !== "vsetci" && o.clientId !== cashClientFilter) return false;
+        if (cashKtoFilter !== "vsetci" && (o.createdByDevice ?? "") !== cashKtoFilter) return false;
         return passesDate(toDateStr(o.createdAt), cashDateFilter);
       })
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-  [liveOrders, cashClientFilter, cashDateFilter, onlyDeposit]);
+  [liveOrders, cashClientFilter, cashKtoFilter, cashDateFilter, onlyDeposit]);
 
   const cashSummary = useMemo(() => {
     let dep = 0;
@@ -174,6 +184,18 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     }
     return list;
   }, [liveOrders, clientByLoginId]);
+
+  // Unikátne zariadenia (KTO) z posledných objednávok — pre KTO filter
+  const orderDevices = useMemo(() => {
+    const seen = new Set<string>(); const list: string[] = [];
+    for (const o of liveOrders) {
+      const d = o.createdByDevice ?? "";
+      if (!d || seen.has(d)) continue;
+      seen.add(d);
+      list.push(d);
+    }
+    return list;
+  }, [liveOrders]);
 
   // ── CSS helpers ─────────────────────────────────────────────────────────
   const pillActive  = "bg-secondary text-primary shadow-sm";
@@ -322,6 +344,25 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
               ))}
             </div>
           )}
+          {/* KTO / ZARIADENIE filter */}
+          {orderDevices.length > 1 && (
+            <div className="flex gap-1.5 flex-wrap items-center">
+              <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 mr-0.5">KTO</span>
+              <button
+                onClick={() => setCashKtoFilter("vsetci")}
+                className={`flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold rounded-full transition-colors cursor-pointer ${cashKtoFilter === "vsetci" ? "bg-secondary text-white" : "bg-white text-gray-500 border border-gray-200 hover:border-gray-300"}`}>
+                Všetci
+              </button>
+              {orderDevices.map(d => (
+                <button key={d}
+                  onClick={() => setCashKtoFilter(cashKtoFilter === d ? "vsetci" : d)}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold rounded-full transition-colors cursor-pointer ${cashKtoFilter === d ? "bg-secondary text-white" : "bg-white text-gray-500 border border-gray-200 hover:border-gray-300"}`}>
+                  <DeviceIconSmall label={d} className="w-3 h-3" />
+                  {d}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Nadpis sekcie */}
           <div className="flex items-baseline gap-1.5">
@@ -406,6 +447,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
           )}
         </div>
       )}
+      {/* ─── ZÁZNAM ZMIEN (Admin & multi-admin panel) ──────────────────── */}
+      <AdminAccessPanel />
     </div>
   );
 }
