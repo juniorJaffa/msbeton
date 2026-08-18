@@ -47,8 +47,38 @@ function fmtEur(v: number, decimals = 2) {
 function DeviceIconSmall({ label, className }: { label: string; className?: string }) {
   const l = label.toLowerCase();
   if (/iphone|ipad|android|mobil|telefon|phone|tablet/.test(l)) return <Smartphone className={className} />;
-  if (/mac|macbook|laptop|notebook|\bnb\b/.test(l)) return <Laptop className={className} />;
+  if (/mac|macbook|laptop|notebook|\bntb\b/.test(l)) return <Laptop className={className} />;
   return <Monitor className={className} />;
+}
+
+// Slová, ktoré patria k zariadeniu (nie k osobe)
+const DEVICE_WORDS_RE = /\b(iphone|ipad|android|mac|macbook|laptop|notebook|ntb|windows|linux|chrome|firefox|safari|edge|opera|monitor|pc|imac|zariadenie|tablet|phone)\b/gi;
+
+// Rozdelí "Klára iPhone" → { person: "Klára", deviceType: "iPhone" }
+// "Peter Ntb" → { person: "Peter", deviceType: "Ntb" }
+// "iPhone Safari · #a3f" → { person: "", deviceType: "iPhone Safari" }
+function parseDeviceLabel(label: string): { person: string; deviceType: string } {
+  const withoutHash = label.replace(/\s*·\s*#[a-f0-9]{1,8}/gi, "").trim();
+  const deviceWords = (withoutHash.match(DEVICE_WORDS_RE) ?? []).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+  const personPart = withoutHash.replace(DEVICE_WORDS_RE, "").replace(/\s+/g, " ").trim();
+  return {
+    person: personPart,
+    deviceType: deviceWords.join(" "),
+  };
+}
+
+// Zobrazí: [icon] PersonBold DeviceDimmed
+function DeviceLabel({ label, className }: { label: string; className?: string }) {
+  if (!label) return <span className={className}>—</span>;
+  const { person, deviceType } = parseDeviceLabel(label);
+  return (
+    <span className={`flex items-center gap-1 ${className ?? ""}`}>
+      <DeviceIconSmall label={label} className="w-3 h-3 shrink-0 text-gray-400" />
+      {person && <span className="font-semibold text-gray-700">{person}</span>}
+      {deviceType && <span className="text-gray-400">{deviceType}</span>}
+      {!person && !deviceType && <span className="text-gray-400">{label}</span>}
+    </span>
+  );
 }
 
 function clientDisplayName(c?: Client, fallback?: string): string {
@@ -296,9 +326,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                           </span>
                         </div>
                         {r.tx.createdBy && (
-                          <div className="flex items-center gap-1 pl-[72px] mt-0.5 text-[10px] text-gray-400">
-                            <DeviceIconSmall label={r.tx.createdBy} className="w-3 h-3 shrink-0" />
-                            <span className="truncate">{r.tx.createdBy}</span>
+                          <div className="pl-[72px] mt-0.5 text-[10px] truncate">
+                            <DeviceLabel label={r.tx.createdBy} />
                           </div>
                         )}
                       </div>
@@ -317,10 +346,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                           {r.tx.type === "topup" ? "Dobíjanie" : "Platba"}
                         </span>
                         <span className="text-gray-400 text-[10px] truncate">{r.tx.note ?? "—"}</span>
-                        <span className="flex items-center gap-1 text-gray-400 text-[10px] truncate">
-                          {r.tx.createdBy && <DeviceIconSmall label={r.tx.createdBy} className="w-3 h-3 shrink-0" />}
-                          {r.tx.createdBy || "—"}
-                        </span>
+                        <DeviceLabel label={r.tx.createdBy} className="text-[10px] truncate" />
                       </div>
                     </div>
                   ))}
@@ -363,14 +389,18 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                 className={`flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold rounded-full transition-colors cursor-pointer ${cashKtoFilter === "vsetci" ? "bg-secondary text-white" : "bg-white text-gray-500 border border-gray-200 hover:border-gray-300"}`}>
                 Všetci
               </button>
-              {orderDevices.map(d => (
-                <button key={d}
-                  onClick={() => setCashKtoFilter(cashKtoFilter === d ? "vsetci" : d)}
-                  className={`flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold rounded-full transition-colors cursor-pointer ${cashKtoFilter === d ? "bg-secondary text-white" : "bg-white text-gray-500 border border-gray-200 hover:border-gray-300"}`}>
-                  <DeviceIconSmall label={d} className="w-3 h-3" />
-                  {d}
-                </button>
-              ))}
+              {orderDevices.map(d => {
+                const { person, deviceType } = parseDeviceLabel(d);
+                return (
+                  <button key={d}
+                    onClick={() => setCashKtoFilter(cashKtoFilter === d ? "vsetci" : d)}
+                    className={`flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold rounded-full transition-colors cursor-pointer ${cashKtoFilter === d ? "bg-secondary text-white" : "bg-white text-gray-500 border border-gray-200 hover:border-gray-300"}`}>
+                    <DeviceIconSmall label={d} className="w-3 h-3" />
+                    {person || deviceType || d}
+                    {person && deviceType && <span className={`font-normal ${cashKtoFilter === d ? "text-white/60" : "text-gray-400"}`}>{deviceType}</span>}
+                  </button>
+                );
+              })}
             </div>
           )}
 
@@ -426,9 +456,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             {onGoToOrder && <ChevronRight className="w-3.5 h-3.5 text-gray-300 shrink-0" />}
                           </div>
                           {kto && (
-                            <div className="flex items-center gap-1 pl-[72px] mt-0.5 text-[10px] text-gray-400">
-                              <DeviceIconSmall label={kto} className="w-3 h-3 shrink-0" />
-                              <span className="truncate">{kto}</span>
+                            <div className="pl-[72px] mt-0.5 text-[10px] truncate">
+                              <DeviceLabel label={kto} />
                             </div>
                           )}
                         </div>
@@ -446,10 +475,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                           <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full text-center ${STATUS_COLOR[o.status] ?? "bg-gray-100 text-gray-500"}`}>
                             {STATUS_LABEL[o.status] ?? o.status}
                           </span>
-                          <span className="flex items-center gap-1 text-[10px] text-gray-400 truncate">
-                            {kto && <DeviceIconSmall label={kto} className="w-3 h-3 shrink-0" />}
-                            {kto || "—"}
-                          </span>
+                          <DeviceLabel label={kto} className="text-[10px] truncate" />
                           {onGoToOrder ? <ChevronRight className="w-3.5 h-3.5 text-gray-300" /> : <span />}
                         </div>
                       </div>
