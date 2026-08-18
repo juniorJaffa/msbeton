@@ -20,7 +20,10 @@ const SUBS: { id: Sub; label: string }[] = [
 ];
 
 export default function SeoTab() {
-  const [sub, setSub] = useState<Sub>("navstevnost");
+  const [sub, setSub] = useState<Sub>(() => {
+    const saved = localStorage.getItem("msbeton_seo_sub");
+    return (saved === "navstevnost" || saved === "vyhladavanie") ? saved as Sub : "navstevnost";
+  });
 
   return (
     <div>
@@ -30,7 +33,7 @@ export default function SeoTab() {
           { id: "navstevnost"  as Sub, title: "NÁVŠTEVNOSŤ",  sub: "GA4"    },
           { id: "vyhladavanie" as Sub, title: "VYHĽADÁVANIE", sub: "search" },
         ]).map(s => (
-          <button key={s.id} onClick={() => setSub(s.id)}
+          <button key={s.id} onClick={() => { setSub(s.id); localStorage.setItem("msbeton_seo_sub", s.id); }}
             className={`flex flex-col items-start px-4 py-2 rounded-lg transition-all border cursor-pointer flex-1 ${
               sub === s.id
                 ? "bg-secondary border-secondary text-primary shadow-sm"

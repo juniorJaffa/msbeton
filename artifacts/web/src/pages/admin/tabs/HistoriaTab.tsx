@@ -116,7 +116,11 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export default function HistoriaTab({ initialSub, initialClientId, initialDate, onGoToClient, onGoToOrder }: Props) {
-  const [sub, setSub] = useState<Sub>(initialSub ?? "zalohy");
+  const [sub, setSub] = useState<Sub>(() => {
+    if (initialSub) return initialSub;
+    const saved = localStorage.getItem("msbeton_historia_sub");
+    return (saved === "zalohy" || saved === "cashflow") ? saved as Sub : "zalohy";
+  });
 
   // ZÁLOHY filtre
   const [depClientFilter,  setDepClientFilter]  = useState<string>(initialClientId ?? "vsetci");
@@ -407,7 +411,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
           { id: "zalohy"   as Sub, title: "ZÁLOHY",      sub: "klient"   },
           { id: "cashflow" as Sub, title: "OBJEDNÁVKY",  sub: "cashflow" },
         ]).map(s => (
-          <button key={s.id} onClick={() => setSub(s.id)}
+          <button key={s.id} onClick={() => { setSub(s.id); localStorage.setItem("msbeton_historia_sub", s.id); }}
             className={`flex flex-col items-start px-4 py-2 rounded-lg transition-all border cursor-pointer flex-1 ${
               sub === s.id
                 ? "bg-secondary border-secondary text-primary shadow-sm"
@@ -671,14 +675,14 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             return (
                               <div className="overflow-x-auto">
                                 <div className="flex items-center gap-1 text-[8px] whitespace-nowrap">
-                                  <span className="text-gray-400 tabular-nums shrink-0">{fmtTimeShort(o.createdAt)}</span>
+                                  <span className="text-gray-600 tabular-nums font-semibold shrink-0">{fmtTimeShort(o.createdAt)}</span>
                                   <span className={`font-bold px-1 py-0.5 rounded shrink-0 ${STATUS_COLOR[firstStatus] ?? "bg-gray-100 text-gray-500"}`}>
                                     {STATUS_LABEL[firstStatus] ?? firstStatus}
                                   </span>
                                   {hist.map((h, i) => (
                                     <span key={i} className="flex items-center gap-1 shrink-0">
                                       <span className="text-gray-300">→</span>
-                                      <span className="text-gray-400 tabular-nums">{fmtTimeShort(h.changedAt)}</span>
+                                      <span className="text-gray-600 tabular-nums font-semibold">{fmtTimeShort(h.changedAt)}</span>
                                       <span className={`font-bold px-1 py-0.5 rounded ${STATUS_COLOR[h.status] ?? "bg-gray-100 text-gray-500"}`}>
                                         {STATUS_LABEL[h.status] ?? h.status}
                                       </span>
@@ -691,10 +695,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                           {/* R2: Kategória — ikona nahrádza text pre kamenivo */}
                           {o.concreteCategory && (() => {
                             const kg = getKamenivoGroup(o.concreteCategory);
-                            // Odstrání "RIEČNE KAMENIVO " / "DRVENÉ KAMENIVO " prefix — ikona to vyjadruje
-                            const shortCat = kg
-                              ? o.concreteCategory.replace(/^(RIEČNE|DRVENÉ)\s+KAMENIVO\s*/i, "").trim()
-                              : o.concreteCategory;
+                            const shortCat = o.concreteCategory;
                             return (
                               <div className="flex items-center gap-1 text-[10px] font-black tracking-wide text-gray-900">
                                 {kg === "drvene" && <Mountain className="w-3 h-3 shrink-0 text-stone-500" />}
