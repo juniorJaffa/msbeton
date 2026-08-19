@@ -852,6 +852,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
   const isAdminMode = clientOverride !== undefined || adminAuth.isLoggedIn();
 
+  // GPS klienta z fotky — viditeľné iba admin + clientOverride + klient má locationPhoto
+  const clientGPS = useMemo(() => {
+    if (!clientOverride) return null;
+    const full = allClients.find(c => c.loginId === clientOverride.clientId || c.id === clientOverride.clientId);
+    return full?.locationPhoto ?? null;
+  }, [clientOverride, allClients]);
+
   // Klientova zóna dopravy (podľa deliveryZoneId, fallback = prvá zóna)
   const clientDeliveryZone = useMemo(() => {
     if (loggedClient?.deliveryZoneId)
@@ -2449,6 +2456,22 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 </span>
               </label>
             </div>
+
+            {/* GPS pill — admin kalkuluje pre klienta s GPS z fotky */}
+            {clientGPS && (
+              <button type="button"
+                onClick={() => {
+                  pendingGeocodePlaceRef.current = { lat: clientGPS.lat, lng: clientGPS.lng };
+                  switchDeliveryMode("map");
+                }}
+                className="flex items-center gap-2 w-full px-3 py-2 rounded-lg bg-green-500/15 border border-green-400/30 hover:bg-green-500/25 transition-colors text-green-200 text-xs font-bold cursor-pointer">
+                <MapPin className="w-3.5 h-3.5 shrink-0" />
+                <span>Použiť GPS klienta z fotky</span>
+                <span className="ml-auto text-green-300/60 font-normal text-[10px] tabular-nums">
+                  {clientGPS.lat.toFixed(4)}, {clientGPS.lng.toFixed(4)}
+                </span>
+              </button>
+            )}
 
             {/* Distance input */}
             {deliveryMode === "distance" && (

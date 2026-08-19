@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, ChevronRight, Users, Truck, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, Mail, Phone, PenLine, Fingerprint, ShieldX, AlertTriangle, Info, Smartphone, Heart, GripVertical, ArrowDownUp, SlidersHorizontal, Percent, Building2, Server, Camera } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, ChevronRight, Users, Truck, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, Mail, Phone, PenLine, Fingerprint, ShieldX, AlertTriangle, Info, Smartphone, Heart, GripVertical, ArrowDownUp, SlidersHorizontal, Percent, Building2, Server, Camera, MapPin, Navigation } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
@@ -409,6 +409,48 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     } catch { /* tichý fail — necháme stav */ }
     setDelDeviceState(s => { const n = { ...s }; delete n[key]; return n; });
   };
+  // ── EXIF GPS parser — číta lat/lng z JPEG ArrayBuffer bez závislostí ─────────
+  const extractExifGPS = (buf: ArrayBuffer): { lat: number; lng: number } | null => {
+    try {
+      const v = new DataView(buf);
+      if (v.byteLength < 4 || v.getUint16(0) !== 0xFFD8) return null;
+      let off = 2;
+      while (off < v.byteLength - 4) {
+        const marker = v.getUint16(off);
+        const segLen = v.getUint16(off + 2);
+        if (marker === 0xFFE1 && v.getUint32(off + 4) === 0x45786966) { // "Exif"
+          const tiff = off + 10;
+          const le = v.getUint16(tiff) === 0x4949;
+          const r16 = (o: number) => v.getUint16(tiff + o, le);
+          const r32 = (o: number) => v.getUint32(tiff + o, le);
+          const ifd0 = r32(4); const n0 = r16(ifd0);
+          let gps = -1;
+          for (let i = 0; i < n0; i++) {
+            const entry = ifd0 + 2 + i * 12;
+            if (r16(entry) === 0x8825) { gps = r32(entry + 8); break; }
+          }
+          if (gps < 0) return null;
+          const ng = r16(gps);
+          let latS = 1, lngS = 1, lat = -1, lng = -1;
+          const sd = (n: number, d: number) => d ? n / d : 0;
+          for (let i = 0; i < ng; i++) {
+            const entry = gps + 2 + i * 12;
+            const tag = r16(entry); const val = r32(entry + 8);
+            if (tag === 0x01) latS = v.getUint8(tiff + entry + 8) === 83 ? -1 : 1;       // 'S'
+            else if (tag === 0x03) lngS = v.getUint8(tiff + entry + 8) === 87 ? -1 : 1; // 'W'
+            else if (tag === 0x02) lat = sd(r32(val), r32(val + 4)) + sd(r32(val + 8), r32(val + 12)) / 60 + sd(r32(val + 16), r32(val + 20)) / 3600;
+            else if (tag === 0x04) lng = sd(r32(val), r32(val + 4)) + sd(r32(val + 8), r32(val + 12)) / 60 + sd(r32(val + 16), r32(val + 20)) / 3600;
+          }
+          if (lat < 0 || lng < 0) return null;
+          return { lat: latS * lat, lng: lngS * lng };
+        }
+        if (marker === 0xFFDA) break;
+        off += 2 + segLen;
+      }
+    } catch { /* corrupt EXIF — ignore */ }
+    return null;
+  };
+
   // ── Foto klienta — kompresná utilita (Safari-safe) ──────────────────────────
   // createImageBitmap s { imageOrientation: "from-image" } = EXIF rotácia na iOS Safari 15+ / Chrome 68+ / FF 93+
   const compressClientPhoto = async (file: File): Promise<string> => {
@@ -455,11 +497,21 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     if (!file) return;
     e.target.value = ""; // reset → rovnaký súbor znova uploadovateľný
     try {
+      // Načítaj raw bytes pre EXIF parser (pred kompresiou ktorá EXIF stráca)
+      const buf = await file.arrayBuffer();
+      const gpsCoords = extractExifGPS(buf);
+
       const compressed = await compressClientPhoto(file);
       const client = clients.find(c => c.id === clientId);
       const existing = client?.photos ?? [];
       if (existing.length >= 3) return;
-      update(clientId, { photos: [...existing, compressed] });
+
+      const updates: Partial<Client> = { photos: [...existing, compressed] };
+      if (gpsCoords) {
+        // Najnovšia GPS z fotky vždy prepíše (používateľ môže pridať presnejšiu fotku)
+        updates.locationPhoto = { lat: gpsCoords.lat, lng: gpsCoords.lng, capturedAt: new Date().toISOString() };
+      }
+      update(clientId, updates);
     } catch (err) { console.error("Photo compress failed", err); }
   };
 
@@ -1555,6 +1607,32 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                         </p>
                       )}
                     </div>
+                    {/* GPS badge z EXIF */}
+                    {c.locationPhoto ? (
+                      <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100">
+                        <MapPin className="w-3 h-3 text-green-600 shrink-0" />
+                        <span className="text-[10px] text-green-700 font-semibold flex-1 tabular-nums">
+                          {c.locationPhoto.lat.toFixed(5)}, {c.locationPhoto.lng.toFixed(5)}
+                        </span>
+                        <a href={`https://maps.google.com/maps?q=${c.locationPhoto.lat},${c.locationPhoto.lng}`}
+                          target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-[10px] text-blue-600 font-bold hover:text-blue-800 transition-colors cursor-pointer">
+                          <Navigation className="w-3 h-3" /> Navigovať
+                        </a>
+                        {!readOnly && (
+                          <button type="button"
+                            onClick={() => update(c.id, { locationPhoto: undefined })}
+                            className="text-[9px] text-gray-400 hover:text-red-500 transition-colors ml-1 cursor-pointer"
+                            title="Vymazať GPS">
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    ) : (c.photos && c.photos.length > 0) && (
+                      <p className="text-[10px] text-gray-400 italic mt-1.5 flex items-center gap-1">
+                        <MapPin className="w-3 h-3" /> Fotky nemajú GPS metadata
+                      </p>
+                    )}
                   </div>
 
                   {/* Zľavy klienta */}
