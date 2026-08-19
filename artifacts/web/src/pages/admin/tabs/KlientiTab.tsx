@@ -53,6 +53,57 @@ function extractExifGPS(buf: ArrayBuffer): { lat: number; lng: number } | null {
   return null;
 }
 
+// Extrahuj DateTimeOriginal (0x9003) z EXIF — reálny čas keď bola fotka odfotená
+function extractExifDateTime(buf: ArrayBuffer): string | null {
+  try {
+    const v = new DataView(buf);
+    if (v.byteLength < 4 || v.getUint16(0) !== 0xFFD8) return null;
+    let off = 2;
+    while (off < v.byteLength - 4) {
+      const marker = v.getUint16(off);
+      const segLen = v.getUint16(off + 2);
+      if (segLen < 2) break;
+      if (marker === 0xFFE1 && v.getUint32(off + 4) === 0x45786966) {
+        const tiff = off + 10;
+        const le = v.getUint16(tiff) === 0x4949;
+        const r16 = (o: number) => v.getUint16(tiff + o, le);
+        const r32 = (o: number) => v.getUint32(tiff + o, le);
+        const readExifStr = (valOffset: number): string | null => {
+          let s = "";
+          for (let i = 0; i < 20; i++) {
+            const c = v.getUint8(tiff + valOffset + i);
+            if (c === 0) break;
+            s += String.fromCharCode(c);
+          }
+          return s.length > 0 ? s : null;
+        };
+        const ifd0 = r32(4); const n0 = r16(ifd0);
+        let dt: string | null = null; let exifPtr = -1;
+        for (let i = 0; i < n0; i++) {
+          const e = ifd0 + 2 + i * 12;
+          const tag = r16(e);
+          if (tag === 0x0132) dt = readExifStr(r32(e + 8));       // DateTime (IFD0 fallback)
+          else if (tag === 0x8769) exifPtr = r32(e + 8);          // ExifIFD pointer
+        }
+        if (exifPtr > 0) {
+          const ne = r16(exifPtr);
+          for (let i = 0; i < ne; i++) {
+            const e = exifPtr + 2 + i * 12;
+            if (r16(e) === 0x9003) { dt = readExifStr(r32(e + 8)); break; } // DateTimeOriginal
+          }
+        }
+        if (!dt) return null;
+        const m = dt.match(/^(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})$/);
+        if (!m) return null;
+        return `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}`;
+      }
+      if (marker === 0xFFDA) break;
+      off += 2 + segLen;
+    }
+  } catch { /* corrupt EXIF */ }
+  return null;
+}
+
 function genPassword() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
 }
@@ -543,6 +594,8 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     try {
       const buf = await file.arrayBuffer();
       const gpsCoords = extractExifGPS(buf);
+      const exifDate = extractExifDateTime(buf);            // reálny čas odfotenia z EXIF
+      const capturedAt = exifDate ?? new Date().toISOString(); // fallback na čas uploadu
       const [compressed] = await Promise.all([compressClientPhoto(file)]);
       const client = clients.find(c => c.id === clientId);
       const existing = client?.photos ?? [];
@@ -562,7 +615,16 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
           const regionPart = a.county || a.state_district || a.state;
           place = [placePart, regionPart].filter(Boolean).join(", ") || d.display_name?.split(",")[0] || undefined;
         } catch { /* Nominatim nedostupný — uložíme GPS bez place */ }
-        updates.locationPhoto = { lat: gpsCoords.lat, lng: gpsCoords.lng, capturedAt: new Date().toISOString(), place };
+        updates.locationPhoto = { lat: gpsCoords.lat, lng: gpsCoords.lng, capturedAt, place };
+      } else {
+        // Bez GPS — uložíme aspoň dátum fotky (pre "Bez GPS metadát" UI)
+        // Zachovaj existujúce GPS ak sú (iná fotka mohla mať GPS)
+        const prevLoc = client?.locationPhoto;
+        if (prevLoc?.lat !== undefined) {
+          updates.locationPhoto = { ...prevLoc, capturedAt };
+        } else {
+          updates.locationPhoto = { capturedAt };
+        }
       }
       update(clientId, updates);
       if (fromLightbox) setPhotoLightbox({ clientId, index: existing.length });
@@ -1688,26 +1750,41 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                         </p>
                       )}
                     </div>
-                    {/* GPS koordináty + clear (akcie sú v záhlaví) */}
-                    {c.locationPhoto ? (
-                      <div className="flex items-center gap-1.5 mt-1.5 pt-1.5 border-t border-gray-100">
-                        <span className="text-[9px] text-gray-400 tabular-nums flex-1">
-                          {c.locationPhoto.lat.toFixed(5)}, {c.locationPhoto.lng.toFixed(5)}
-                        </span>
-                        {!readOnly && (
-                          <button type="button"
-                            onClick={() => update(c.id, { locationPhoto: undefined })}
-                            className="text-gray-300 hover:text-red-500 transition-colors cursor-pointer"
-                            title="Vymazať GPS">
-                            <X className="w-3 h-3" />
-                          </button>
-                        )}
-                      </div>
-                    ) : (c.photos && c.photos.length > 0) && (
-                      <p className="text-[9px] text-gray-400 italic mt-1.5 flex items-center gap-1">
-                        <MapPin className="w-3 h-3" /> Bez GPS metadát
-                      </p>
-                    )}
+                    {/* GPS koordináty + dátum fotky + clear */}
+                    {(c.locationPhoto || (c.photos && c.photos.length > 0)) && (() => {
+                      const loc = c.locationPhoto;
+                      const hasGPS = loc?.lat !== undefined && loc?.lng !== undefined;
+                      const photoDateStr = loc?.capturedAt
+                        ? (() => {
+                            const d = new Date(loc.capturedAt);
+                            const hh = String(d.getHours()).padStart(2,"0");
+                            const mm = String(d.getMinutes()).padStart(2,"0");
+                            return `${d.getDate()}. ${d.getMonth()+1}. ${d.getFullYear()} ${hh}:${mm}`;
+                          })()
+                        : null;
+                      return (
+                        <div className="flex items-center gap-1.5 mt-1.5 pt-1.5 border-t border-gray-100 min-w-0">
+                          <MapPin className={`w-3 h-3 shrink-0 ${hasGPS ? "text-green-500" : "text-gray-300"}`} />
+                          <span className="text-[9px] text-gray-400 tabular-nums flex-1 min-w-0 truncate">
+                            {hasGPS
+                              ? `${loc!.lat!.toFixed(5)}, ${loc!.lng!.toFixed(5)}`
+                              : <span className="italic">Bez GPS metadát</span>
+                            }
+                            {photoDateStr && (
+                              <span className="ml-1.5 text-gray-300">· {photoDateStr}</span>
+                            )}
+                          </span>
+                          {loc && !readOnly && (
+                            <button type="button"
+                              onClick={() => update(c.id, { locationPhoto: undefined })}
+                              className="text-gray-300 hover:text-red-500 transition-colors cursor-pointer shrink-0"
+                              title="Vymazať GPS / dátum">
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Zľavy klienta */}
