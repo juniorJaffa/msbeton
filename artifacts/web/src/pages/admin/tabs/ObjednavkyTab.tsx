@@ -1739,12 +1739,17 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                 <Users className="w-4 h-4" /> Zobraziť v klientoch →
                               </button>
                             )}
-                            {onGoToHistoria && o.clientId && (
+                            {onGoToHistoria && (
                               <button
-                                onClick={e => { e.stopPropagation(); onGoToHistoria({ sub: "cashflow", clientId: o.clientId! }); }}
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  onGoToHistoria(o.clientId
+                                    ? { sub: "cashflow", clientId: o.clientId }
+                                    : { sub: "cashflow", date: o.createdAt.slice(0, 10) });
+                                }}
                                 className="text-[10px] font-bold text-secondary hover:text-primary underline underline-offset-2 transition-colors flex items-center gap-1"
                               >
-                                <BarChart2 className="w-4 h-4" /> História klienta →
+                                <BarChart2 className="w-4 h-4" /> {o.clientId ? "História klienta →" : "→ Zobraziť v Histórii"}
                               </button>
                             )}
                           </div>

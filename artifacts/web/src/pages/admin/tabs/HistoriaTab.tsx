@@ -730,8 +730,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     const kg = o.concreteCategory ? getKamenivoGroup(o.concreteCategory) : null;
                     const isDeleted = o.status === "zmazana";
                     return (
-                      <div key={o.id} onClick={() => onGoToOrder?.(o.id)}
-                        className={`px-3 py-2.5 transition-colors ${isDeleted ? "opacity-50 bg-red-50/40 hover:bg-red-50/60" : onGoToOrder ? "cursor-pointer hover:bg-amber-50" : "hover:bg-gray-50"}`}>
+                      <div key={o.id} onClick={() => !isDeleted && onGoToOrder?.(o.id)}
+                        className={`px-3 py-2.5 transition-colors ${isDeleted ? "opacity-50 bg-red-50/40" : onGoToOrder ? "cursor-pointer hover:bg-amber-50" : "hover:bg-gray-50"}`}>
 
                         {/* ── MOBILE ─────────────────────────────────────────── */}
                         <div className="sm:hidden space-y-1 py-0.5">
@@ -751,7 +751,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                 )}
                                 {STATUS_LABEL[o.status] ?? o.status}
                               </span>
-                              {onGoToOrder && <ChevronRight className="w-3.5 h-3.5 text-gray-300" />}
+                              {onGoToOrder && !isDeleted && <ChevronRight className="w-3.5 h-3.5 text-gray-300" />}
                             </div>
                           </div>
                           {/* Status timeline — newest first, každá zmena vlastný riadok */}
@@ -888,7 +888,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             </span>
                             {/* KTO */}
                             <DeviceLabel label={kto} className="text-[10px] truncate" />
-                            {onGoToOrder ? <ChevronRight className="w-3.5 h-3.5 text-gray-300" /> : <span />}
+                            {onGoToOrder && !isDeleted ? <ChevronRight className="w-3.5 h-3.5 text-gray-300" /> : <span />}
                           </div>
                           {/* Status timeline desktop — newest first, vertical */}
                           {hist.length > 0 && (
