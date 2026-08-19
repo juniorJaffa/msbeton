@@ -2093,14 +2093,14 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                     if (entry.kind === "status") {
                                       const h = entry.h;
                                       return (
-                                        <div key={`s-${ei}`} className="flex items-center gap-2 text-xs py-1 border-t border-gray-50">
-                                          <span className="text-gray-500 tabular-nums text-[10px] shrink-0 w-24">{fmtTs(entry.ts)}</span>
-                                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_DOT[h.status] ?? "bg-gray-300"}`} />
-                                          <span className="flex-1 text-gray-600 min-w-0">
-                                            {h.prevStatus && <span className="text-gray-400 text-[10px]">{STATUS_LABELS[h.prevStatus] ?? h.prevStatus} → </span>}
-                                            <span className="font-semibold">{STATUS_LABELS[h.status] ?? h.status}</span>
+                                        <div key={`s-${ei}`} className="flex items-start gap-2 text-xs py-1 border-t border-gray-50">
+                                          <span className="text-gray-500 tabular-nums text-[10px] shrink-0 w-24 mt-0.5">{fmtTs(entry.ts)}</span>
+                                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1 ${STATUS_DOT[h.status] ?? "bg-gray-300"}`} />
+                                          <span className="flex-1 text-gray-600 min-w-0 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+                                            {h.prevStatus && <span className="text-gray-400 text-[10px] whitespace-nowrap">{STATUS_LABELS[h.prevStatus] ?? h.prevStatus} →</span>}
+                                            <span className="font-semibold whitespace-nowrap">{STATUS_LABELS[h.status] ?? h.status}</span>
                                             {h.paidAmount !== undefined && (
-                                              <span className="ml-1.5 text-[10px] font-bold text-teal-600">{h.paidAmount.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+                                              <span className="text-[10px] font-bold text-teal-600 whitespace-nowrap">{h.paidAmount.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
                                             )}
                                           </span>
                                           <KtoChip label={h.changedBy} />

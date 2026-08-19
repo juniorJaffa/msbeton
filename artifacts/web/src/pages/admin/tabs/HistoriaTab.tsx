@@ -474,7 +474,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                 <div className="hidden sm:grid grid-cols-[90px_1fr_100px_110px_1fr_1fr] gap-2 px-3 py-2 bg-gray-50 border-b border-gray-100 text-[9px] font-black uppercase tracking-widest text-gray-400">
                   <span>Dátum</span><span>Klient</span><span className="text-right">Suma</span><span>Typ</span><span>Poznámka</span><span>KTO</span>
                 </div>
-                <div className="divide-y divide-gray-50">
+                <div className="divide-y divide-gray-100">
                   {filteredDepRows.map((r) => {
                     const rowKey = r.kind === "tx" ? `tx-${r.clientId}-${r.tx.id}` : `ord-${r.orderId}`;
                     const ts = r.kind === "tx" ? r.tx.createdAt : r.sortKey;
@@ -658,7 +658,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                 <div className="hidden sm:grid grid-cols-[90px_1fr_1fr_70px_70px_90px_110px_20px] gap-2 px-3 py-2 bg-gray-50 border-b border-gray-100 text-[9px] font-black uppercase tracking-widest text-gray-400">
                   <span>Dátum</span><span>Klient</span><span>Betón</span><span className="text-right">Celkom</span><span className="text-right">Záloha</span><span>Stav</span><span>KTO</span><span />
                 </div>
-                <div className="divide-y divide-gray-50">
+                <div className="divide-y divide-gray-100">
                   {filteredOrders.map(o => {
                     const c = o.clientId ? clientByLoginId.get(o.clientId) : undefined;
                     const name = clientDisplayName(c, o.clientName || o.clientId);
@@ -686,27 +686,26 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             </span>
                             {onGoToOrder && <ChevronRight className="w-3.5 h-3.5 text-gray-300 shrink-0" />}
                           </div>
-                          {/* Status timeline — každá zmena vlastný riadok */}
+                          {/* Status timeline — newest first, každá zmena vlastný riadok */}
                           {hist.length > 0 && (
-                            <div className="space-y-0.5">
-                              <div className="flex items-center gap-1 text-[8px]">
-                                <span className="text-gray-500 tabular-nums font-semibold w-[72px] shrink-0">{fmtTimeShort(o.createdAt)}</span>
-                                <span className={`font-bold px-1 py-0.5 rounded ${STATUS_COLOR[firstStatus] ?? "bg-gray-100 text-gray-500"}`}>
-                                  {STATUS_LABEL[firstStatus] ?? firstStatus}
-                                </span>
-                              </div>
-                              {hist.map((h, i) => (
-                                <div key={i} className="flex items-center gap-1 text-[8px] pl-2">
-                                  <span className="text-gray-300 shrink-0">↓</span>
-                                  <span className="text-gray-500 tabular-nums font-semibold w-[64px] shrink-0">{fmtTimeShort(h.changedAt)}</span>
-                                  <span className={`font-bold px-1 py-0.5 rounded ${STATUS_COLOR[h.status] ?? "bg-gray-100 text-gray-500"}`}>
+                            <div className="space-y-px pt-0.5">
+                              {[...hist].reverse().map((h, i) => (
+                                <div key={i} className="flex items-center gap-1.5 text-[8px]">
+                                  <span className="text-gray-500 tabular-nums font-semibold w-[66px] shrink-0">{fmtTimeShort(h.changedAt)}</span>
+                                  <span className={`font-bold px-1.5 py-0.5 rounded shrink-0 ${STATUS_COLOR[h.status] ?? "bg-gray-100 text-gray-500"}`}>
                                     {STATUS_LABEL[h.status] ?? h.status}
                                   </span>
                                   {h.paidAmount !== undefined && h.paidAmount > 0 && (
-                                    <span className="text-teal-600 tabular-nums font-semibold text-[8px]">{fmtEur(h.paidAmount, 0)} €</span>
+                                    <span className="text-teal-600 tabular-nums font-semibold whitespace-nowrap">{fmtEur(h.paidAmount, 0)} €</span>
                                   )}
                                 </div>
                               ))}
+                              <div className="flex items-center gap-1.5 text-[8px] opacity-35">
+                                <span className="tabular-nums font-semibold w-[66px] shrink-0">{fmtTimeShort(o.createdAt)}</span>
+                                <span className={`font-bold px-1.5 py-0.5 rounded ${STATUS_COLOR[firstStatus] ?? "bg-gray-100 text-gray-500"}`}>
+                                  {STATUS_LABEL[firstStatus] ?? firstStatus}
+                                </span>
+                              </div>
                             </div>
                           )}
                           {/* R2: Kategória s ikonou */}
@@ -787,23 +786,25 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             <DeviceLabel label={kto} className="text-[10px] truncate" />
                             {onGoToOrder ? <ChevronRight className="w-3.5 h-3.5 text-gray-300" /> : <span />}
                           </div>
-                          {/* Status timeline — pod hlavným riadkom */}
+                          {/* Status timeline desktop — newest first, vertical */}
                           {hist.length > 0 && (
-                            <div className="overflow-x-auto pl-[94px]">
-                              <div className="flex items-center gap-1 text-[8px] whitespace-nowrap">
-                                <span className="text-gray-600 tabular-nums font-semibold shrink-0">{fmtTimeShort(o.createdAt)}</span>
-                                <span className={`font-bold px-1 py-0.5 rounded shrink-0 ${STATUS_COLOR[firstStatus] ?? "bg-gray-100 text-gray-500"}`}>
+                            <div className="pl-[94px] space-y-px pt-0.5">
+                              {[...hist].reverse().map((h, i) => (
+                                <div key={i} className="flex items-center gap-1.5 text-[8px]">
+                                  <span className="text-gray-500 tabular-nums font-semibold w-[70px] shrink-0">{fmtTimeShort(h.changedAt)}</span>
+                                  <span className={`font-bold px-1.5 py-0.5 rounded shrink-0 ${STATUS_COLOR[h.status] ?? "bg-gray-100 text-gray-500"}`}>
+                                    {STATUS_LABEL[h.status] ?? h.status}
+                                  </span>
+                                  {h.paidAmount !== undefined && h.paidAmount > 0 && (
+                                    <span className="text-teal-600 tabular-nums font-semibold whitespace-nowrap">{fmtEur(h.paidAmount, 0)} €</span>
+                                  )}
+                                </div>
+                              ))}
+                              <div className="flex items-center gap-1.5 text-[8px] opacity-35">
+                                <span className="tabular-nums font-semibold w-[70px] shrink-0">{fmtTimeShort(o.createdAt)}</span>
+                                <span className={`font-bold px-1.5 py-0.5 rounded ${STATUS_COLOR[firstStatus] ?? "bg-gray-100 text-gray-500"}`}>
                                   {STATUS_LABEL[firstStatus] ?? firstStatus}
                                 </span>
-                                {hist.map((h, i) => (
-                                  <span key={i} className="flex items-center gap-1 shrink-0">
-                                    <span className="text-gray-300">→</span>
-                                    <span className="text-gray-600 tabular-nums font-semibold">{fmtTimeShort(h.changedAt)}</span>
-                                    <span className={`font-bold px-1 py-0.5 rounded ${STATUS_COLOR[h.status] ?? "bg-gray-100 text-gray-500"}`}>
-                                      {STATUS_LABEL[h.status] ?? h.status}
-                                    </span>
-                                  </span>
-                                ))}
                               </div>
                             </div>
                           )}
