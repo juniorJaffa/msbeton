@@ -171,6 +171,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [cashKtoFilters,   setCashKtoFilters]   = useState<string[]>([]);
   const [ktoDropOpen,      setKtoDropOpen]      = useState(false);
   const [onlyDeposit,      setOnlyDeposit]      = useState(false);
+  const [displayLimit,     setDisplayLimit]     = useState(100);
   const cashClientRef = useRef<HTMLDivElement>(null);
   const ktoRef        = useRef<HTMLDivElement>(null);
 
@@ -281,16 +282,20 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     return map;
   }, [liveClients]);
 
-  const filteredOrders = useMemo(() =>
-    liveOrders
+  const filteredOrders = useMemo(() => {
+    const result = liveOrders
       .filter(o => {
         if (onlyDeposit && !(o.depositUsed && o.depositUsed > 0)) return false;
         if (cashClientFilter !== "vsetci" && o.clientId !== cashClientFilter) return false;
         if (cashKtoFilters.length > 0 && !cashKtoFilters.includes(deviceToGroupKey.get(o.createdByDevice ?? "") ?? "")) return false;
         return passesDate(toDateStr(o.createdAt), cashDateFilter);
       })
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-  [liveOrders, cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit]);
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    return result;
+  }, [liveOrders, cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit]);
+
+  // Reset displayLimit pri každej zmene filtrov
+  useEffect(() => { setDisplayLimit(100); }, [cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit]);
 
   const cashSummary = useMemo(() => {
     let dep = 0, total = 0, deletedCount = 0;
@@ -712,7 +717,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   <span>Dátum</span><span>Klient</span><span>Betón</span><span className="text-right">Celkom</span><span className="text-right">Záloha</span><span>Stav</span><span>KTO</span><span />
                 </div>
                 <div className="divide-y divide-gray-100">
-                  {filteredOrders.map(o => {
+                  {filteredOrders.slice(0, displayLimit).map(o => {
                     const c = o.clientId ? clientByLoginId.get(o.clientId) : undefined;
                     // Primárne meno (bez telefónu) — ako ObjednavkyTab
                     const primaryName = c
@@ -731,7 +736,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     const isDeleted = o.status === "zmazana";
                     return (
                       <div key={o.id} onClick={() => !isDeleted && onGoToOrder?.(o.id)}
-                        className={`px-3 py-2.5 transition-colors ${isDeleted ? "opacity-50 bg-red-50/40" : onGoToOrder ? "cursor-pointer hover:bg-amber-50" : "hover:bg-gray-50"}`}>
+                        title={isDeleted ? "Zmazaná objednávka — nedostupná v zozname" : undefined}
+                        className={`px-3 py-2.5 transition-colors ${isDeleted ? "opacity-50 bg-red-50/40 cursor-not-allowed" : onGoToOrder ? "cursor-pointer hover:bg-amber-50" : "hover:bg-gray-50"}`}>
 
                         {/* ── MOBILE ─────────────────────────────────────────── */}
                         <div className="sm:hidden space-y-1 py-0.5">
@@ -927,6 +933,20 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     );
                   })}
                 </div>
+                {/* Load-more — ak je viac ako displayLimit */}
+                {filteredOrders.length > displayLimit && (
+                  <div className="border-t border-gray-100 px-4 py-3 flex items-center justify-between gap-3 bg-gray-50/60">
+                    <span className="text-[10px] text-gray-400 font-medium">
+                      Zobrazených {displayLimit} z {filteredOrders.length} objednávok
+                    </span>
+                    <button
+                      onClick={() => setDisplayLimit(l => l + 100)}
+                      className="text-[10px] font-bold text-secondary hover:text-primary border border-gray-200 hover:border-secondary px-3 py-1.5 rounded-full transition-colors cursor-pointer"
+                    >
+                      Načítať ďalších 100
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
