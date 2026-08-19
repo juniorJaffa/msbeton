@@ -571,7 +571,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
 
               {/* Dropdown panel */}
               {ktoDropOpen && (
-                <div className="absolute right-0 top-full mt-1.5 z-30 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden w-[220px] max-h-[60vh] overflow-y-auto">
+                <div className="absolute left-0 top-full mt-1.5 z-50 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden w-[220px] max-h-[60vh] overflow-y-auto">
                   {/* Všetci — zrušiť filter */}
                   <button
                     onClick={() => { setCashKtoFilters([]); setKtoDropOpen(false); }}
@@ -705,7 +705,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             <div className="space-y-px pt-0.5">
                               {[...hist].reverse().map((h, i) => (
                                 <div key={i} className="flex items-center gap-1.5 text-[8px]">
-                                  <span className="text-gray-500 tabular-nums font-semibold w-[66px] shrink-0">{fmtTimeShort(h.changedAt)}</span>
+                                  <span className="text-gray-700 tabular-nums font-bold w-[66px] shrink-0">{fmtTimeShort(h.changedAt)}</span>
                                   <span className={`font-bold px-1.5 py-0.5 rounded shrink-0 ${STATUS_COLOR[h.status] ?? "bg-gray-100 text-gray-500"}`}>
                                     {STATUS_LABEL[h.status] ?? h.status}
                                   </span>
@@ -822,7 +822,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             <div className="pl-[94px] space-y-px pt-0.5">
                               {[...hist].reverse().map((h, i) => (
                                 <div key={i} className="flex items-center gap-1.5 text-[8px]">
-                                  <span className="text-gray-500 tabular-nums font-semibold w-[70px] shrink-0">{fmtTimeShort(h.changedAt)}</span>
+                                  <span className="text-gray-700 tabular-nums font-bold w-[70px] shrink-0">{fmtTimeShort(h.changedAt)}</span>
                                   <span className={`font-bold px-1.5 py-0.5 rounded shrink-0 ${STATUS_COLOR[h.status] ?? "bg-gray-100 text-gray-500"}`}>
                                     {STATUS_LABEL[h.status] ?? h.status}
                                   </span>
