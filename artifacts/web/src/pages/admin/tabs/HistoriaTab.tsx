@@ -677,7 +677,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                         <div className="sm:hidden space-y-1 py-0.5">
                           {/* R1: Klient + Status (s prevStatus→) + Arrow */}
                           <div className="flex items-start gap-2">
-                            <span className="font-semibold text-gray-800 text-[13px] flex-1 min-w-0 leading-snug" style={{display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{name}</span>
+                            <span className="font-semibold text-gray-800 text-[13px] flex-1 min-w-0 leading-snug line-clamp-2">{name}</span>
                             <div className="flex items-center gap-1 shrink-0 mt-0.5">
                               <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-2 py-0.5 rounded-full ${STATUS_COLOR[o.status] ?? "bg-gray-100 text-gray-500"}`}>
                                 {prevStatus && STATUS_LABEL[prevStatus] && (
