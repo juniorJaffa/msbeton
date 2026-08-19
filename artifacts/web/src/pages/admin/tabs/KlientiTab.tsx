@@ -589,42 +589,54 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     });
   };
 
-  // Zdieľaná logika pre handleAddPhoto aj lightbox "Pridať" (EXIF + compress + Nominatim + save)
+  // Spoločná Nominatim reverse geocoding helper
+  const nominatimReverse = async (lat: number, lng: number): Promise<string | undefined> => {
+    try {
+      const r = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`,
+        { headers: { "Accept-Language": "sk,cs;q=0.8" } }
+      );
+      const d = await r.json() as { address?: Record<string, string>; display_name?: string };
+      const a = d.address ?? {};
+      const placePart = a.village || a.town || a.city || a.hamlet || a.municipality || a.suburb;
+      const regionPart = a.county || a.state_district || a.state;
+      return [placePart, regionPart].filter(Boolean).join(", ") || d.display_name?.split(",")[0] || undefined;
+    } catch { return undefined; }
+  };
+
+  // Zdieľaná logika pre handleAddPhoto aj lightbox "Pridať" (EXIF + compress + Geolocation + Nominatim + save)
   const processPhotoFile = async (clientId: string, file: File, fromLightbox?: boolean) => {
     try {
       const buf = await file.arrayBuffer();
-      const gpsCoords = extractExifGPS(buf);
-      const exifDate = extractExifDateTime(buf);            // reálny čas odfotenia z EXIF
-      const capturedAt = exifDate ?? new Date().toISOString(); // fallback na čas uploadu
+      let gpsCoords = extractExifGPS(buf);
+      const exifDate = extractExifDateTime(buf);
+      const capturedAt = exifDate ?? new Date().toISOString();
       const [compressed] = await Promise.all([compressClientPhoto(file)]);
       const client = clients.find(c => c.id === clientId);
       const existing = client?.photos ?? [];
       if (existing.length >= 3) return;
+
+      // Ak EXIF nemá GPS → spýtaj sa prehliadač na aktuálnu polohu (browser zobrazí permission popup)
+      if (!gpsCoords && navigator.geolocation) {
+        gpsCoords = await new Promise<{ lat: number; lng: number } | null>(resolve => {
+          navigator.geolocation.getCurrentPosition(
+            pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+            () => resolve(null),   // denied / timeout → null
+            { timeout: 8000, maximumAge: 30000, enableHighAccuracy: false }
+          );
+        });
+      }
+
       const updates: Partial<Client> = { photos: [...existing, compressed] };
       if (gpsCoords) {
-        // Nominatim reverse geocoding — uložíme place priamo do locationPhoto (raz, nie každý render)
-        let place: string | undefined;
-        try {
-          const r = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${gpsCoords.lat}&lon=${gpsCoords.lng}&format=json&addressdetails=1`,
-            { headers: { "Accept-Language": "sk,cs;q=0.8" } }
-          );
-          const d = await r.json() as { address?: Record<string, string>; display_name?: string };
-          const a = d.address ?? {};
-          const placePart = a.village || a.town || a.city || a.hamlet || a.municipality || a.suburb;
-          const regionPart = a.county || a.state_district || a.state;
-          place = [placePart, regionPart].filter(Boolean).join(", ") || d.display_name?.split(",")[0] || undefined;
-        } catch { /* Nominatim nedostupný — uložíme GPS bez place */ }
+        const place = await nominatimReverse(gpsCoords.lat, gpsCoords.lng);
         updates.locationPhoto = { lat: gpsCoords.lat, lng: gpsCoords.lng, capturedAt, place };
       } else {
-        // Bez GPS — uložíme aspoň dátum fotky (pre "Bez GPS metadát" UI)
-        // Zachovaj existujúce GPS ak sú (iná fotka mohla mať GPS)
+        // Bez GPS — uložíme aspoň dátum fotky; zachovaj existujúce GPS ak sú
         const prevLoc = client?.locationPhoto;
-        if (prevLoc?.lat !== undefined) {
-          updates.locationPhoto = { ...prevLoc, capturedAt };
-        } else {
-          updates.locationPhoto = { capturedAt };
-        }
+        updates.locationPhoto = prevLoc?.lat !== undefined
+          ? { ...prevLoc, capturedAt }
+          : { capturedAt };
       }
       update(clientId, updates);
       if (fromLightbox) setPhotoLightbox({ clientId, index: existing.length });
