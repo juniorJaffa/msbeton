@@ -53,7 +53,8 @@ function OrderStatusBadge({ status, onChange, orderTotal, depositBalance, deposi
   existingDepositUsed?: number;    // > 0 = záloha už bola odpočítaná — chrániť pred dvojitým odpočtom
 }) {
   const [open, setOpen] = useState(false);
-  const [dropPos, setDropPos] = useState<{ top?: number; bottom?: number; left: number }>({ left: 0 });
+  // right = vzdialenosť od pravého okraja viewportu; zarovná pravý okraj dropdownu k pravému okraju buttona
+  const [dropPos, setDropPos] = useState<{ top?: number; bottom?: number; right: number }>({ right: 0 });
   const [payModal, setPayModal] = useState(false);
   const [payInput, setPayInput] = useState("");
   const [payTab, setPayTab] = useState<"cash" | "deposit">("cash");
@@ -70,11 +71,13 @@ function OrderStatusBadge({ status, onChange, orderTotal, depositBalance, deposi
     if (btnRef.current) {
       const r = btnRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - r.bottom;
+      // right = zarovnaj pravý okraj dropdownu na pravý okraj buttona (nič nepretečie cez okraj displeja)
+      const cssRight = window.innerWidth - r.right;
       if (spaceBelow < DROP_H + 8) {
         // otvoriť nahor
-        setDropPos({ bottom: window.innerHeight - r.top + 2, left: r.left });
+        setDropPos({ bottom: window.innerHeight - r.top + 2, right: cssRight });
       } else {
-        setDropPos({ top: r.bottom + 2, left: r.left });
+        setDropPos({ top: r.bottom + 2, right: cssRight });
       }
     }
     setOpen(o => !o);
@@ -121,7 +124,7 @@ function OrderStatusBadge({ status, onChange, orderTotal, depositBalance, deposi
       <div className="relative">
         <button ref={btnRef} onClick={e => { e.stopPropagation(); openDrop(); }} className={`px-2 py-1 text-xs font-bold rounded-sm cursor-pointer ${cur.color}`}>{cur.label} ▾</button>
         {open && createPortal(
-          <div ref={dropRef} className="fixed z-[500] bg-white border border-gray-200 shadow-lg rounded-sm min-w-[110px]" style={{ top: dropPos.top, bottom: dropPos.bottom, left: dropPos.left }} onClick={e => e.stopPropagation()}>
+          <div ref={dropRef} className="fixed z-[500] bg-white border border-gray-200 shadow-lg rounded-sm min-w-[110px]" style={{ top: dropPos.top, bottom: dropPos.bottom, right: dropPos.right }} onClick={e => e.stopPropagation()}>
             {ORDER_STATUSES.map(s => (
               <button key={s.key} onClick={() => {
                 if (s.key === "vyplatena") { openPayModal(); }
@@ -723,7 +726,13 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const [orders, setOrders] = useState<Order[]>(() => adminData.getOrders());
   const [allCategories, setAllCategories] = useState(() => adminData.getCategories());
   useEffect(() => {
-    const handler = () => setAllCategories(adminData.getCategories());
+    const handler = () => {
+      setAllCategories(adminData.getCategories());
+      // Refresh orders — nové objednávky (SMS/Košík) sa ukladajú cez API, nie cez lokálny save()
+      // Poll (AdminDashboard) ich cacheuje do localStorage + dispatchuje admin-data-synced
+      // → tu načítame čerstvý zoznam aby sa ihneď objavili vrátane discount badges
+      setOrders(adminData.getOrders());
+    };
     window.addEventListener("admin-data-synced", handler);
     return () => window.removeEventListener("admin-data-synced", handler);
   }, []);
