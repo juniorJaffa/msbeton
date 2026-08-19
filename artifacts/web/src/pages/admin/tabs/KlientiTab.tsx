@@ -440,13 +440,16 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     return () => window.removeEventListener("keydown", handler);
   }, [photoLightbox, clients]);
 
-  // GPS label — Nominatim reverse geocoding (raz per klient, nie per foto)
+  // GPS label — použije uložené place (z uploadového Nominatim) alebo fetchuje live
   useEffect(() => {
     setLbGpsLabel(null);
     if (!photoLightbox) return;
     const lbC = clients.find(c => c.id === photoLightbox.clientId);
     const gps = lbC?.locationPhoto;
     if (!gps) return;
+    // Cached place z processPhotoFile → žiadny fetch
+    if (gps.place) { setLbGpsLabel(gps.place); return; }
+    // Staré GPS záznamy bez place → fetch live
     setLbGpsLoading(true);
     const ctrl = new AbortController();
     fetch(`https://nominatim.openstreetmap.org/reverse?lat=${gps.lat}&lon=${gps.lng}&format=json&addressdetails=1`, {
@@ -535,18 +538,31 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     });
   };
 
-  // Zdieľaná logika pre handleAddPhoto aj lightbox "Pridať" (EXIF + compress + save)
+  // Zdieľaná logika pre handleAddPhoto aj lightbox "Pridať" (EXIF + compress + Nominatim + save)
   const processPhotoFile = async (clientId: string, file: File, fromLightbox?: boolean) => {
     try {
       const buf = await file.arrayBuffer();
       const gpsCoords = extractExifGPS(buf);
-      const compressed = await compressClientPhoto(file);
+      const [compressed] = await Promise.all([compressClientPhoto(file)]);
       const client = clients.find(c => c.id === clientId);
       const existing = client?.photos ?? [];
       if (existing.length >= 3) return;
       const updates: Partial<Client> = { photos: [...existing, compressed] };
       if (gpsCoords) {
-        updates.locationPhoto = { lat: gpsCoords.lat, lng: gpsCoords.lng, capturedAt: new Date().toISOString() };
+        // Nominatim reverse geocoding — uložíme place priamo do locationPhoto (raz, nie každý render)
+        let place: string | undefined;
+        try {
+          const r = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${gpsCoords.lat}&lon=${gpsCoords.lng}&format=json&addressdetails=1`,
+            { headers: { "Accept-Language": "sk,cs;q=0.8" } }
+          );
+          const d = await r.json() as { address?: Record<string, string>; display_name?: string };
+          const a = d.address ?? {};
+          const placePart = a.village || a.town || a.city || a.hamlet || a.municipality || a.suburb;
+          const regionPart = a.county || a.state_district || a.state;
+          place = [placePart, regionPart].filter(Boolean).join(", ") || d.display_name?.split(",")[0] || undefined;
+        } catch { /* Nominatim nedostupný — uložíme GPS bez place */ }
+        updates.locationPhoto = { lat: gpsCoords.lat, lng: gpsCoords.lng, capturedAt: new Date().toISOString(), place };
       }
       update(clientId, updates);
       if (fromLightbox) setPhotoLightbox({ clientId, index: existing.length });
@@ -1410,8 +1426,8 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                   {c.photos && c.photos.length > 0 ? (
                     <button type="button"
                       onClick={(e) => { e.stopPropagation(); setPhotoLightbox({ clientId: c.id, index: 0 }); }}
-                      className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-primary/50 hover:ring-primary hover:scale-105 transition-all block"
-                      title={`${c.photos.length} foto miesta — klik pre detail`}>
+                      className={`w-9 h-9 rounded-full overflow-hidden ring-2 hover:scale-105 transition-all block ${c.locationPhoto ? "ring-green-400 hover:ring-green-500" : "ring-primary/50 hover:ring-primary"}`}
+                      title={`${c.photos.length} foto miesta${c.locationPhoto ? " · GPS" : ""} — klik pre detail`}>
                       <img src={c.photos[0]} alt="" className="w-full h-full object-cover" style={{ imageOrientation: "from-image" }} />
                     </button>
                   ) : (
@@ -1617,12 +1633,32 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                   {/* ── Fotky miesta (balikobox princíp) ── */}
                   <div className="px-4 py-3 bg-white border-b border-gray-100">
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                        <Camera className="w-3 h-3" /> Fotky miesta
-                      </p>
-                      {c.photos && c.photos.length > 0 && (
-                        <span className="text-[9px] text-gray-400">{c.photos.length}/3</span>
-                      )}
+                      <div className="flex items-center gap-1.5">
+                        {c.locationPhoto ? <MapPin className="w-3 h-3 text-green-600" /> : <Camera className="w-3 h-3 text-gray-400" />}
+                        <span className={`text-[10px] font-bold uppercase tracking-widest ${c.locationPhoto ? "text-green-600" : "text-gray-400"}`}>
+                          {c.locationPhoto?.place ?? "Fotky miesta"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {c.locationPhoto && (
+                          <>
+                            <a href={`https://maps.google.com/maps?q=${c.locationPhoto.lat},${c.locationPhoto.lng}`}
+                              target="_blank" rel="noopener noreferrer"
+                              className="flex items-center gap-0.5 text-[9px] text-blue-600 font-bold hover:text-blue-800 transition-colors cursor-pointer">
+                              <Navigation className="w-2.5 h-2.5" /> Navigovať
+                            </a>
+                            {c.phone && (
+                              <a href={`tel:${c.phone.replace(/\s/g, "")}`}
+                                className="flex items-center gap-0.5 text-[9px] text-green-600 font-bold hover:text-green-800 transition-colors cursor-pointer">
+                                <Phone className="w-2.5 h-2.5" /> Zavolať
+                              </a>
+                            )}
+                          </>
+                        )}
+                        {c.photos && c.photos.length > 0 && (
+                          <span className="text-[9px] text-gray-400">{c.photos.length}/3</span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex gap-2 flex-wrap items-start">
                       {(c.photos ?? []).map((ph, i) => (
@@ -1652,30 +1688,24 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                         </p>
                       )}
                     </div>
-                    {/* GPS badge z EXIF */}
+                    {/* GPS koordináty + clear (akcie sú v záhlaví) */}
                     {c.locationPhoto ? (
-                      <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100">
-                        <MapPin className="w-3 h-3 text-green-600 shrink-0" />
-                        <span className="text-[10px] text-green-700 font-semibold flex-1 tabular-nums">
+                      <div className="flex items-center gap-1.5 mt-1.5 pt-1.5 border-t border-gray-100">
+                        <span className="text-[9px] text-gray-400 tabular-nums flex-1">
                           {c.locationPhoto.lat.toFixed(5)}, {c.locationPhoto.lng.toFixed(5)}
                         </span>
-                        <a href={`https://maps.google.com/maps?q=${c.locationPhoto.lat},${c.locationPhoto.lng}`}
-                          target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-[10px] text-blue-600 font-bold hover:text-blue-800 transition-colors cursor-pointer">
-                          <Navigation className="w-3 h-3" /> Navigovať
-                        </a>
                         {!readOnly && (
                           <button type="button"
                             onClick={() => update(c.id, { locationPhoto: undefined })}
-                            className="text-[9px] text-gray-400 hover:text-red-500 transition-colors ml-1 cursor-pointer"
+                            className="text-gray-300 hover:text-red-500 transition-colors cursor-pointer"
                             title="Vymazať GPS">
                             <X className="w-3 h-3" />
                           </button>
                         )}
                       </div>
                     ) : (c.photos && c.photos.length > 0) && (
-                      <p className="text-[10px] text-gray-400 italic mt-1.5 flex items-center gap-1">
-                        <MapPin className="w-3 h-3" /> Fotky nemajú GPS metadata
+                      <p className="text-[9px] text-gray-400 italic mt-1.5 flex items-center gap-1">
+                        <MapPin className="w-3 h-3" /> Bez GPS metadát
                       </p>
                     )}
                   </div>

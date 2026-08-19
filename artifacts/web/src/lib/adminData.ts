@@ -136,7 +136,7 @@ export interface Client {
     transactions: DepositTx[]; // história pohybov — append-only
   };
   photos?: string[];           // lokalizačné fotky (base64 JPEG, max 3, každá ~6-8KB po kompresii)
-  locationPhoto?: { lat: number; lng: number; capturedAt: string }; // GPS extrahovaná z fotky (EXIF)
+  locationPhoto?: { lat: number; lng: number; capturedAt: string; place?: string }; // GPS extrahovaná z fotky (EXIF), place = reverzná geocódia (Nominatim)
 }
 
 export interface DepositTx {
