@@ -103,6 +103,7 @@ export default function AdminDashboard() {
   // baseline = videné objednávky z localStorage (prežijú re-mount/reload) ∪ aktuálny localStorage
   const knownOrderIds = useRef<Set<string>>(new Set([...loadSeenOrderIds(), ...adminData.getOrders().map(o => o.id)]));
   const baselineDone = useRef(false); // prvý fetch = baseline, neupozorňovať na existujúci backlog
+  const prevOrdersHash = useRef<string>(""); // hash pre detekciu zmien (nové aj statusové)
   const [toastOrders, setToastOrders] = useState<Order[]>([]);
 
   const MAX_TOASTS = 5;             // nikdy nespamuj viac ako 5 toastov v rade
@@ -132,6 +133,14 @@ export default function AdminDashboard() {
           baselineDone.current = true;
           saveSeenOrderIds(knownOrderIds.current);
           return;
+        }
+
+        // Detekuj zmeny (nové objednávky AJ statusové zmeny)
+        const ordersHash = orders.map(o => `${o.id}:${o.status}:${o.updatedAt ?? ""}`).join("|");
+        if (ordersHash !== prevOrdersHash.current) {
+          prevOrdersHash.current = ordersHash;
+          adminData.cacheOrders(orders); // aktualizuj localStorage bez PUT na server
+          window.dispatchEvent(new Event("admin-data-synced")); // HistoriaTab + ostatné taby reagujú
         }
 
         const newOnes = orders.filter(o => !knownOrderIds.current.has(o.id));
