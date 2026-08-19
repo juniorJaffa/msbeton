@@ -59,6 +59,8 @@ function OrderStatusBadge({ status, onChange, orderTotal, depositBalance, deposi
   const [payTab, setPayTab] = useState<"cash" | "deposit">("cash");
   // Auto-select deposit tab keď je záloha zapnutá a má balance
   const canUseDeposit = depositEnabled === true && depositBalance !== undefined && depositBalance > 0 && !!onDepositPay;
+  // Záloha má zostatok ale je vypnutá (enabled=false) → zobraziť info banner
+  const depositOffButHasBalance = depositEnabled === false && depositBalance !== undefined && depositBalance > 0;
   const btnRef = useRef<HTMLButtonElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
   const cur = ORDER_STATUSES.find(s => s.key === status) ?? ORDER_STATUSES.find(s => s.key === "odoslana")!;
@@ -147,6 +149,17 @@ function OrderStatusBadge({ status, onChange, orderTotal, depositBalance, deposi
                 <div className="text-xs text-gray-400">{payTab === "deposit" ? "Odpočíta zo zálohy klienta" : "Uprav ak klient dal viac (tringelt)"}</div>
               </div>
             </div>
+
+            {/* Info: záloha má zostatok ale je OFF — treba aktivovať */}
+            {depositOffButHasBalance && (
+              <div className="mb-3 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-md flex items-start gap-2.5">
+                <span className="text-base shrink-0 leading-none mt-0.5">🏦</span>
+                <div>
+                  <div className="text-xs font-black text-amber-700">ZÁLOHA OFF — zostatok {depositBalance!.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</div>
+                  <div className="text-[10px] text-amber-600 mt-0.5">Aktivuj zálohu v karte klienta (Klienti → Záloha ON)</div>
+                </div>
+              </div>
+            )}
 
             {/* Tab prepínač: Hotovosť / Záloha — len keď záloha zapnutá */}
             {canUseDeposit && (
@@ -1639,8 +1652,9 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                     updateStatus(o.id, s, amt);
                                   }
                                 }}
-                                // depBal/onDepositPay len keď enabled — dvojitá ochrana (canUseDeposit v Badge je tretia)
-                                depositBalance={depEnabled && depBal && depBal > 0 ? depBal : undefined}
+                                // depositBalance posielame vždy (aj keď enabled=false) — Badge zobrazí info banner ak OFF
+                                // onDepositPay len keď enabled — canUseDeposit v Badge je ďalšia ochrana
+                                depositBalance={depBal && depBal > 0 ? depBal : undefined}
                                 depositEnabled={depEnabled}
                                 onDepositPay={oc && depEnabled ? (amt) => handleDepositPay(o.id, amt, oc.loginId) : undefined}
                                 existingDepositUsed={o.depositUsed}
