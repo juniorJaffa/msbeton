@@ -2461,8 +2461,16 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             {clientGPS && (
               <button type="button"
                 onClick={() => {
-                  pendingGeocodePlaceRef.current = { lat: clientGPS.lat, lng: clientGPS.lng };
+                  const alreadyMap = deliveryMode === "map";
+                  // switchDeliveryMode PRED nastavením ref — z address→map mode ho inak prepíše adresou
                   switchDeliveryMode("map");
+                  // Nastav ref PO switchDeliveryMode (wins over address geocoding)
+                  pendingGeocodePlaceRef.current = { lat: clientGPS.lat, lng: clientGPS.lng };
+                  // Ak už sme v map mode, switchDeliveryMode vráti early → musíme pin umiestniť priamo
+                  if (alreadyMap && mapSetPinAtRef.current) {
+                    mapSetPinAtRef.current(clientGPS.lat, clientGPS.lng);
+                    pendingGeocodePlaceRef.current = null; // consumed
+                  }
                 }}
                 className="flex items-center gap-2 w-full px-3 py-2 rounded-lg bg-green-500/15 border border-green-400/30 hover:bg-green-500/25 transition-colors text-green-200 text-xs font-bold cursor-pointer">
                 <MapPin className="w-3.5 h-3.5 shrink-0" />

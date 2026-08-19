@@ -10,6 +10,49 @@ import { clientAvatar } from "@/lib/clientAvatar";
 import { isBiometricAvailable as isAdminBioAvail, hasStoredCredential as hasAdminBio, isReader, isSuper, getAdminDeviceLabel } from "@/lib/adminAuth";
 import { EditableField, authFetch } from "./_shared";
 
+// ── EXIF GPS parser — module-level (žiadne deps na state) ────────────────────
+function extractExifGPS(buf: ArrayBuffer): { lat: number; lng: number } | null {
+  try {
+    const v = new DataView(buf);
+    if (v.byteLength < 4 || v.getUint16(0) !== 0xFFD8) return null;
+    let off = 2;
+    while (off < v.byteLength - 4) {
+      const marker = v.getUint16(off);
+      const segLen = v.getUint16(off + 2);
+      if (segLen < 2) break; // corrupt JPEG — zabrání infinite loop
+      if (marker === 0xFFE1 && v.getUint32(off + 4) === 0x45786966) { // "Exif"
+        const tiff = off + 10;
+        const le = v.getUint16(tiff) === 0x4949;
+        const r16 = (o: number) => v.getUint16(tiff + o, le);
+        const r32 = (o: number) => v.getUint32(tiff + o, le);
+        const ifd0 = r32(4); const n0 = r16(ifd0);
+        let gps = -1;
+        for (let i = 0; i < n0; i++) {
+          const entry = ifd0 + 2 + i * 12;
+          if (r16(entry) === 0x8825) { gps = r32(entry + 8); break; }
+        }
+        if (gps < 0) return null;
+        const ng = r16(gps);
+        let latS = 1, lngS = 1, lat = -1, lng = -1;
+        const sd = (n: number, d: number) => d ? n / d : 0;
+        for (let i = 0; i < ng; i++) {
+          const entry = gps + 2 + i * 12;
+          const tag = r16(entry); const val = r32(entry + 8);
+          if (tag === 0x01) latS = v.getUint8(tiff + entry + 8) === 83 ? -1 : 1;       // 'S'
+          else if (tag === 0x03) lngS = v.getUint8(tiff + entry + 8) === 87 ? -1 : 1; // 'W'
+          else if (tag === 0x02) lat = sd(r32(val), r32(val + 4)) + sd(r32(val + 8), r32(val + 12)) / 60 + sd(r32(val + 16), r32(val + 20)) / 3600;
+          else if (tag === 0x04) lng = sd(r32(val), r32(val + 4)) + sd(r32(val + 8), r32(val + 12)) / 60 + sd(r32(val + 16), r32(val + 20)) / 3600;
+        }
+        if (lat < 0 || lng < 0) return null;
+        return { lat: latS * lat, lng: lngS * lng };
+      }
+      if (marker === 0xFFDA) break;
+      off += 2 + segLen;
+    }
+  } catch { /* corrupt EXIF — ignore */ }
+  return null;
+}
+
 function genPassword() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
 }
@@ -409,48 +452,6 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     } catch { /* tichý fail — necháme stav */ }
     setDelDeviceState(s => { const n = { ...s }; delete n[key]; return n; });
   };
-  // ── EXIF GPS parser — číta lat/lng z JPEG ArrayBuffer bez závislostí ─────────
-  const extractExifGPS = (buf: ArrayBuffer): { lat: number; lng: number } | null => {
-    try {
-      const v = new DataView(buf);
-      if (v.byteLength < 4 || v.getUint16(0) !== 0xFFD8) return null;
-      let off = 2;
-      while (off < v.byteLength - 4) {
-        const marker = v.getUint16(off);
-        const segLen = v.getUint16(off + 2);
-        if (marker === 0xFFE1 && v.getUint32(off + 4) === 0x45786966) { // "Exif"
-          const tiff = off + 10;
-          const le = v.getUint16(tiff) === 0x4949;
-          const r16 = (o: number) => v.getUint16(tiff + o, le);
-          const r32 = (o: number) => v.getUint32(tiff + o, le);
-          const ifd0 = r32(4); const n0 = r16(ifd0);
-          let gps = -1;
-          for (let i = 0; i < n0; i++) {
-            const entry = ifd0 + 2 + i * 12;
-            if (r16(entry) === 0x8825) { gps = r32(entry + 8); break; }
-          }
-          if (gps < 0) return null;
-          const ng = r16(gps);
-          let latS = 1, lngS = 1, lat = -1, lng = -1;
-          const sd = (n: number, d: number) => d ? n / d : 0;
-          for (let i = 0; i < ng; i++) {
-            const entry = gps + 2 + i * 12;
-            const tag = r16(entry); const val = r32(entry + 8);
-            if (tag === 0x01) latS = v.getUint8(tiff + entry + 8) === 83 ? -1 : 1;       // 'S'
-            else if (tag === 0x03) lngS = v.getUint8(tiff + entry + 8) === 87 ? -1 : 1; // 'W'
-            else if (tag === 0x02) lat = sd(r32(val), r32(val + 4)) + sd(r32(val + 8), r32(val + 12)) / 60 + sd(r32(val + 16), r32(val + 20)) / 3600;
-            else if (tag === 0x04) lng = sd(r32(val), r32(val + 4)) + sd(r32(val + 8), r32(val + 12)) / 60 + sd(r32(val + 16), r32(val + 20)) / 3600;
-          }
-          if (lat < 0 || lng < 0) return null;
-          return { lat: latS * lat, lng: lngS * lng };
-        }
-        if (marker === 0xFFDA) break;
-        off += 2 + segLen;
-      }
-    } catch { /* corrupt EXIF — ignore */ }
-    return null;
-  };
-
   // ── Foto klienta — kompresná utilita (Safari-safe) ──────────────────────────
   // createImageBitmap s { imageOrientation: "from-image" } = EXIF rotácia na iOS Safari 15+ / Chrome 68+ / FF 93+
   const compressClientPhoto = async (file: File): Promise<string> => {
