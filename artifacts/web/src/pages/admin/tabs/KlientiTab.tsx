@@ -422,6 +422,48 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   const [deleteModal, setDeleteModal] = useState<Client | null>(null);
   const [deleteInput, setDeleteInput] = useState("");
   const [photoLightbox, setPhotoLightbox] = useState<{ clientId: string; index: number } | null>(null);
+  const [lbGpsLabel, setLbGpsLabel] = useState<string | null>(null);
+  const [lbGpsLoading, setLbGpsLoading] = useState(false);
+  const lbTouchStartX = useRef<number | null>(null);
+
+  // Lightbox keyboard — Escape zatvára, šípky navigujú
+  useEffect(() => {
+    if (!photoLightbox) return;
+    const handler = (e: KeyboardEvent) => {
+      const lbC = clients.find(c => c.id === photoLightbox.clientId);
+      const cnt = lbC?.photos?.length ?? 0;
+      if (e.key === "Escape") { setPhotoLightbox(null); return; }
+      if (e.key === "ArrowLeft"  && photoLightbox.index > 0)       setPhotoLightbox(p => p ? { ...p, index: p.index - 1 } : null);
+      if (e.key === "ArrowRight" && photoLightbox.index < cnt - 1) setPhotoLightbox(p => p ? { ...p, index: p.index + 1 } : null);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [photoLightbox, clients]);
+
+  // GPS label — Nominatim reverse geocoding (raz per klient, nie per foto)
+  useEffect(() => {
+    setLbGpsLabel(null);
+    if (!photoLightbox) return;
+    const lbC = clients.find(c => c.id === photoLightbox.clientId);
+    const gps = lbC?.locationPhoto;
+    if (!gps) return;
+    setLbGpsLoading(true);
+    const ctrl = new AbortController();
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${gps.lat}&lon=${gps.lng}&format=json&addressdetails=1`, {
+      headers: { "Accept-Language": "sk,cs;q=0.8" },
+      signal: ctrl.signal,
+    })
+      .then(r => r.json())
+      .then((d: { address?: Record<string, string>; display_name?: string }) => {
+        const a = d.address ?? {};
+        const place = a.village || a.town || a.city || a.hamlet || a.suburb || a.municipality;
+        const region = a.county || a.state_district || a.state;
+        setLbGpsLabel([place, region].filter(Boolean).join(", ") || d.display_name?.split(",")[0] || null);
+      })
+      .catch(() => {})
+      .finally(() => setLbGpsLoading(false));
+    return () => ctrl.abort();
+  }, [photoLightbox?.clientId, clients]); // re-fetch iba pri zmene klienta, nie indexu
 
   useEffect(() => {
     if (!tablePdfModal) return;
@@ -455,7 +497,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   // ── Foto klienta — kompresná utilita (Safari-safe) ──────────────────────────
   // createImageBitmap s { imageOrientation: "from-image" } = EXIF rotácia na iOS Safari 15+ / Chrome 68+ / FF 93+
   const compressClientPhoto = async (file: File): Promise<string> => {
-    const MAX_W = 480, MAX_H = 360, QUALITY = 0.65;
+    const MAX_W = 1280, MAX_H = 960, QUALITY = 0.85; // hetzner 40GB — vyššia kvalita OK
     // pokus createImageBitmap — EXIF-aware (hlavne iOS Safari)
     let bitmap: ImageBitmap | null = null;
     try {
@@ -493,27 +535,29 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     });
   };
 
-  const handleAddPhoto = async (clientId: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    e.target.value = ""; // reset → rovnaký súbor znova uploadovateľný
+  // Zdieľaná logika pre handleAddPhoto aj lightbox "Pridať" (EXIF + compress + save)
+  const processPhotoFile = async (clientId: string, file: File, fromLightbox?: boolean) => {
     try {
-      // Načítaj raw bytes pre EXIF parser (pred kompresiou ktorá EXIF stráca)
       const buf = await file.arrayBuffer();
       const gpsCoords = extractExifGPS(buf);
-
       const compressed = await compressClientPhoto(file);
       const client = clients.find(c => c.id === clientId);
       const existing = client?.photos ?? [];
       if (existing.length >= 3) return;
-
       const updates: Partial<Client> = { photos: [...existing, compressed] };
       if (gpsCoords) {
-        // Najnovšia GPS z fotky vždy prepíše (používateľ môže pridať presnejšiu fotku)
         updates.locationPhoto = { lat: gpsCoords.lat, lng: gpsCoords.lng, capturedAt: new Date().toISOString() };
       }
       update(clientId, updates);
+      if (fromLightbox) setPhotoLightbox({ clientId, index: existing.length });
     } catch (err) { console.error("Photo compress failed", err); }
+  };
+
+  const handleAddPhoto = async (clientId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    await processPhotoFile(clientId, file);
   };
 
   const handleDeletePhoto = (clientId: string, index: number) => {
@@ -2615,36 +2659,89 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
         const canPrev = idx > 0;
         const canNext = idx < photos.length - 1;
         const lbName = [lbClient?.firstName, lbClient?.lastName].filter(Boolean).join(" ") || lbClient?.company || "Klient";
+        const gps = lbClient?.locationPhoto;
+        const mapsUrl = gps ? `https://maps.google.com/maps?q=${gps.lat},${gps.lng}` : null;
+        const phone = lbClient?.phone;
         return (
-          <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/90" onClick={() => setPhotoLightbox(null)}>
+          <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/92 select-none"
+            onClick={() => setPhotoLightbox(null)}
+            onTouchStart={e => { lbTouchStartX.current = e.touches[0].clientX; }}
+            onTouchEnd={e => {
+              if (lbTouchStartX.current === null) return;
+              const dx = e.changedTouches[0].clientX - lbTouchStartX.current;
+              lbTouchStartX.current = null;
+              if (Math.abs(dx) < 50) return;
+              if (dx < 0 && canNext) setPhotoLightbox({ clientId: photoLightbox.clientId, index: idx + 1 });
+              if (dx > 0 && canPrev) setPhotoLightbox({ clientId: photoLightbox.clientId, index: idx - 1 });
+            }}>
+
             {/* Nav prev */}
             {canPrev && (
               <button type="button"
                 onClick={e => { e.stopPropagation(); setPhotoLightbox({ clientId: photoLightbox.clientId, index: idx - 1 }); }}
-                className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors cursor-pointer">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors cursor-pointer">
+                <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
               </button>
             )}
             {/* Nav next */}
             {canNext && (
               <button type="button"
                 onClick={e => { e.stopPropagation(); setPhotoLightbox({ clientId: photoLightbox.clientId, index: idx + 1 }); }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors cursor-pointer">
-                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+                className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors cursor-pointer">
+                <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
               </button>
             )}
-            {/* Image */}
-            <div className="relative max-w-[90vw] max-h-[80vh] flex flex-col items-center gap-3" onClick={e => e.stopPropagation()}>
+
+            {/* Content — stopPropagation zabraňuje zatváraniu pri kliku na obsah */}
+            <div className="flex flex-col items-center gap-2.5 max-w-[88vw]" onClick={e => e.stopPropagation()}>
+              {/* Image */}
               <img src={photos[idx]} alt={`Foto ${idx + 1} — ${lbName}`}
-                className="max-w-full max-h-[70vh] rounded-lg shadow-2xl object-contain"
+                className="max-w-full max-h-[62vh] rounded-xl shadow-2xl object-contain"
                 style={{ imageOrientation: "from-image" }} />
+
+              {/* Dot indicators */}
+              {photos.length > 1 && (
+                <div className="flex gap-1.5 justify-center">
+                  {photos.map((_, i) => (
+                    <button key={i} type="button"
+                      onClick={() => setPhotoLightbox({ clientId: photoLightbox.clientId, index: i })}
+                      className={`rounded-full transition-all cursor-pointer ${i === idx ? "w-4 h-2 bg-primary" : "w-2 h-2 bg-white/30 hover:bg-white/60"}`} />
+                  ))}
+                </div>
+              )}
+
+              {/* GPS info bar — poloha + navigácia + zavolanie */}
+              {gps && (
+                <div className="flex items-center gap-2 w-full px-1">
+                  <MapPin className="w-3.5 h-3.5 text-green-400 shrink-0" />
+                  {lbGpsLoading ? (
+                    <span className="text-white/40 text-xs flex-1">Načítavam polohu…</span>
+                  ) : lbGpsLabel ? (
+                    <span className="text-green-300 text-xs font-semibold flex-1 truncate">{lbGpsLabel}</span>
+                  ) : (
+                    <span className="text-white/40 text-xs tabular-nums flex-1">{gps.lat.toFixed(5)}, {gps.lng.toFixed(5)}</span>
+                  )}
+                  {mapsUrl && (
+                    <a href={mapsUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                      className="flex items-center gap-1 px-2.5 py-1.5 bg-blue-500/80 hover:bg-blue-500 rounded-lg text-white text-[11px] font-bold transition-colors cursor-pointer shrink-0">
+                      <Navigation className="w-3 h-3" /> Navigovať
+                    </a>
+                  )}
+                  {phone && (
+                    <a href={`tel:${phone.replace(/\s/g, "")}`} onClick={e => e.stopPropagation()}
+                      className="flex items-center gap-1 px-2.5 py-1.5 bg-green-600/80 hover:bg-green-600 rounded-lg text-white text-[11px] font-bold transition-colors cursor-pointer shrink-0">
+                      <Phone className="w-3 h-3" /> Zavolať
+                    </a>
+                  )}
+                </div>
+              )}
+
               {/* Caption + actions */}
-              <div className="flex items-center justify-between w-full gap-3 px-1">
-                <div className="text-white/80 text-sm font-semibold">
+              <div className="flex items-center justify-between w-full gap-2 px-1">
+                <div className="text-white/70 text-sm font-semibold truncate">
                   {lbName} — foto {idx + 1}/{photos.length}
                 </div>
-                <div className="flex gap-2">
-                  {/* Add more */}
+                <div className="flex gap-1.5 shrink-0">
                   {photos.length < 3 && !readOnly && (
                     <label className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-white text-xs font-bold cursor-pointer transition-colors">
                       <Camera className="w-3.5 h-3.5" /> Pridať
@@ -2653,18 +2750,10 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                           const file = e.target.files?.[0];
                           if (!file) return;
                           e.target.value = "";
-                          try {
-                            const compressed = await compressClientPhoto(file);
-                            const client = clients.find(c => c.id === photoLightbox.clientId);
-                            const existing = client?.photos ?? [];
-                            if (existing.length >= 3) return;
-                            update(photoLightbox.clientId, { photos: [...existing, compressed] });
-                            setPhotoLightbox({ clientId: photoLightbox.clientId, index: existing.length });
-                          } catch (err) { console.error("Photo compress failed", err); }
+                          await processPhotoFile(photoLightbox.clientId, file, true);
                         }} />
                     </label>
                   )}
-                  {/* Delete */}
                   {!readOnly && (
                     <button type="button"
                       onClick={() => handleDeletePhoto(photoLightbox.clientId, idx)}
@@ -2672,7 +2761,6 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                       <Trash2 className="w-3.5 h-3.5" /> Zmazať
                     </button>
                   )}
-                  {/* Close */}
                   <button type="button" onClick={() => setPhotoLightbox(null)}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-white text-xs font-bold transition-colors cursor-pointer">
                     Zavrieť
