@@ -1430,7 +1430,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
           <span className="font-bold text-white truncate">{floatingOrder.clientName}</span>
           {floatingOrder.company && <span className="text-white/50 truncate hidden sm:block">{floatingOrder.company}</span>}
           <span className="text-white/50 shrink-0">{floatingOrder.tab === "pumpa" ? "Pumpa" : floatingOrder.tab === "mix" ? "Mix" : "Vl."} · {floatingOrder.totalQty} m³</span>
-          <span className="text-white/70 font-bold shrink-0 tabular-nums hidden sm:block">{floatingOrder.totalSDph?.toLocaleString("sk", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+          <span className="text-white/70 font-bold shrink-0 tabular-nums hidden sm:block">{floatingOrder.totalSDph?.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
           <div className="ml-auto flex items-center gap-1.5 shrink-0">
             {/* Záloha badge v floating bare */}
             {floatingOrder.status === "vyplatena" && (floatingOrder.depositUsed !== undefined && floatingOrder.depositUsed > 0) && (() => {
