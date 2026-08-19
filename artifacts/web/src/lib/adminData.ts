@@ -155,6 +155,8 @@ export interface StatusHistoryEntry {
   changedAt: string;        // ISO timestamp
   changedBy: string;        // getAdminDeviceLabel() alebo "systém" / meno klienta
   paidAmount?: number;      // len pri vyplatena
+  type?: "status" | "note"; // "note" = zmena poznámky (nie zmena statusu)
+  note?: string;            // text poznámky (len ak type === "note")
 }
 
 export interface Order {

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { adminData, Client, DepositTx, Order, getKamenivoGroup } from "@/lib/adminData";
-import { ChevronRight, TrendingUp, Minus, Smartphone, Monitor, Laptop, ChevronDown, Users, ShoppingCart, Mountain, Waves, X } from "lucide-react";
+import { ChevronRight, TrendingUp, Minus, Smartphone, Monitor, Laptop, ChevronDown, Users, ShoppingCart, Mountain, Waves, X, MessageSquare } from "lucide-react";
 
 type Sub = "zalohy" | "cashflow";
 type DateFilter = "dnes" | "vcera" | "tyzden" | "mesiac" | "vsetko";
@@ -760,11 +760,20 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               {[...hist].reverse().map((h, i) => (
                                 <div key={i} className="flex items-center gap-1.5 text-[8px]">
                                   <span className="text-gray-700 tabular-nums font-bold w-[66px] shrink-0">{fmtTimeShort(h.changedAt)}</span>
-                                  <span className={`font-bold px-1.5 py-0.5 rounded shrink-0 ${STATUS_COLOR[h.status] ?? "bg-gray-100 text-gray-500"}`}>
-                                    {STATUS_LABEL[h.status] ?? h.status}
-                                  </span>
-                                  {h.paidAmount !== undefined && h.paidAmount > 0 && (
-                                    <span className="text-teal-600 tabular-nums font-semibold whitespace-nowrap">{fmtEur(h.paidAmount, 0)} €</span>
+                                  {h.type === "note" ? (
+                                    <span className="flex items-center gap-0.5 text-gray-400 font-medium min-w-0">
+                                      <MessageSquare className="w-2 h-2 shrink-0" />
+                                      <span className="truncate max-w-[110px] italic">{h.note || "—"}</span>
+                                    </span>
+                                  ) : (
+                                    <>
+                                      <span className={`font-bold px-1.5 py-0.5 rounded shrink-0 ${STATUS_COLOR[h.status] ?? "bg-gray-100 text-gray-500"}`}>
+                                        {STATUS_LABEL[h.status] ?? h.status}
+                                      </span>
+                                      {h.paidAmount !== undefined && h.paidAmount > 0 && (
+                                        <span className="text-teal-600 tabular-nums font-semibold whitespace-nowrap">{fmtEur(h.paidAmount, 0)} €</span>
+                                      )}
+                                    </>
                                   )}
                                 </div>
                               ))}
@@ -887,11 +896,20 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               {[...hist].reverse().map((h, i) => (
                                 <div key={i} className="flex items-center gap-1.5 text-[8px]">
                                   <span className="text-gray-700 tabular-nums font-bold w-[70px] shrink-0">{fmtTimeShort(h.changedAt)}</span>
-                                  <span className={`font-bold px-1.5 py-0.5 rounded shrink-0 ${STATUS_COLOR[h.status] ?? "bg-gray-100 text-gray-500"}`}>
-                                    {STATUS_LABEL[h.status] ?? h.status}
-                                  </span>
-                                  {h.paidAmount !== undefined && h.paidAmount > 0 && (
-                                    <span className="text-teal-600 tabular-nums font-semibold whitespace-nowrap">{fmtEur(h.paidAmount, 0)} €</span>
+                                  {h.type === "note" ? (
+                                    <span className="flex items-center gap-0.5 text-gray-400 font-medium min-w-0">
+                                      <MessageSquare className="w-2 h-2 shrink-0" />
+                                      <span className="truncate max-w-[140px] italic">{h.note || "—"}</span>
+                                    </span>
+                                  ) : (
+                                    <>
+                                      <span className={`font-bold px-1.5 py-0.5 rounded shrink-0 ${STATUS_COLOR[h.status] ?? "bg-gray-100 text-gray-500"}`}>
+                                        {STATUS_LABEL[h.status] ?? h.status}
+                                      </span>
+                                      {h.paidAmount !== undefined && h.paidAmount > 0 && (
+                                        <span className="text-teal-600 tabular-nums font-semibold whitespace-nowrap">{fmtEur(h.paidAmount, 0)} €</span>
+                                      )}
+                                    </>
                                   )}
                                 </div>
                               ))}

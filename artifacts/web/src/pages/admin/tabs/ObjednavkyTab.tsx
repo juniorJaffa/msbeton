@@ -796,6 +796,8 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const ORDERS_PAGE_SIZE = 30;
   const [scaleAlertDismissed, setScaleAlertDismissed] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [noteEditId, setNoteEditId] = useState<string | null>(null);
+  const [noteEditVal, setNoteEditVal] = useState("");
   // Deposit reversal — keď admin zmení stav preč z vyplatena a order mal depositUsed > 0
   const [depositReversal, setDepositReversal] = useState<{ orderId: string; depositUsed: number; clientLoginId: string; newStatus: Order["status"] } | null>(null);
   // Presence: kto iný práve prezerá danú objednávku (soft lock indicator)
@@ -953,6 +955,22 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
         ...(paidAmount !== undefined ? { paidAmount } : {}),
         ...(depositUsed !== undefined ? { depositUsed } : {}),
       };
+    }));
+  };
+
+  // Pridaj poznámku do statusHistory (type:"note") a aktualizuj o.note
+  const addNoteHistory = (id: string, newNote: string) => {
+    const now = new Date().toISOString();
+    save(orders.map(o => {
+      if (o.id !== id) return o;
+      const entry: StatusHistoryEntry = {
+        type: "note",
+        note: newNote,
+        status: o.status,   // status sa nemení, ale pole je required
+        changedAt: now,
+        changedBy: getAdminDeviceLabel() || "admin",
+      };
+      return { ...o, note: newNote, statusHistory: [...(o.statusHistory ?? []), entry], updatedAt: now };
     }));
   };
 
@@ -1873,7 +1891,39 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                             {o.priceMode === "hotovost" ? "Hotovosť" : "Faktúra"}
                           </span>
                         </div>
-                        {o.note && <div className="flex gap-2 pt-1"><span className="text-gray-400 w-24 shrink-0">Poznámka</span><span className="text-gray-600 italic">{o.note}</span></div>}
+                        {/* Editovateľná poznámka — klik = textarea, blur/Enter = uloží + história */}
+                        <div className="flex gap-2 pt-1 items-start" onClick={e => e.stopPropagation()}>
+                          <span className="text-gray-400 w-24 shrink-0 pt-1 text-xs">Poznámka</span>
+                          {noteEditId === o.id ? (
+                            <textarea
+                              autoFocus
+                              rows={2}
+                              value={noteEditVal}
+                              onChange={e => setNoteEditVal(e.target.value)}
+                              onBlur={() => {
+                                const trimmed = noteEditVal.trim();
+                                if (trimmed !== (o.note ?? "")) addNoteHistory(o.id, trimmed);
+                                setNoteEditId(null);
+                              }}
+                              onKeyDown={e => {
+                                if (e.key === "Escape") { setNoteEditId(null); e.stopPropagation(); }
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                  const trimmed = noteEditVal.trim();
+                                  if (trimmed !== (o.note ?? "")) addNoteHistory(o.id, trimmed);
+                                  setNoteEditId(null);
+                                  e.preventDefault();
+                                }
+                              }}
+                              className="flex-1 text-xs text-gray-700 border border-secondary/30 rounded px-2 py-1 resize-none focus:outline-none focus:border-secondary bg-white"
+                            />
+                          ) : (
+                            <button
+                              onClick={() => { setNoteEditId(o.id); setNoteEditVal(o.note ?? ""); }}
+                              className="flex-1 text-left text-xs text-gray-600 italic hover:bg-gray-50 rounded px-1 -mx-1 py-1 transition-colors cursor-text min-h-[24px]">
+                              {o.note || <span className="text-gray-300 not-italic">+ Pridať poznámku…</span>}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                     {/* Kalkulácia */}
@@ -2117,6 +2167,15 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                     );
                                     if (entry.kind === "status") {
                                       const h = entry.h;
+                                      // Poznámka (type:"note") — iný vizuál ako status zmena
+                                      if (h.type === "note") return (
+                                        <div key={`s-${ei}`} className="flex items-start gap-2 text-xs py-1 border-t border-gray-50 bg-gray-50/60">
+                                          <span className="text-gray-400 tabular-nums text-[10px] shrink-0 w-24 mt-0.5">{fmtTs(entry.ts)}</span>
+                                          <MessageSquare className="w-2.5 h-2.5 text-gray-400 shrink-0 mt-1" />
+                                          <span className="flex-1 text-gray-500 italic text-[11px] min-w-0 break-words">{h.note || "—"}</span>
+                                          <KtoChip label={h.changedBy} />
+                                        </div>
+                                      );
                                       return (
                                         <div key={`s-${ei}`} className="flex items-start gap-2 text-xs py-1 border-t border-gray-50">
                                           <span className="text-gray-500 tabular-nums text-[10px] shrink-0 w-24 mt-0.5">{fmtTs(entry.ts)}</span>
