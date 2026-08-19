@@ -1504,6 +1504,12 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
             const linkedClient = adminData.getClients().find(cl => cl.loginId === String(o.clientId) || cl.id === String(o.clientId));
             const av = linkedClient ? clientAvatar(linkedClient) : nameAvatar(o.clientName, o.company ?? "", o.clientId ?? o.id);
             const clientBio = (linkedClient?.webauthnCredentials?.length ?? 0) > 0;
+            // Effective discounts — order-stored value (čo reálne platilo) ALEBO live client fallback
+            // (objednávky bez clientOverride nemajú uložené discount polia → fallback zobrazí aktuálnu zľavu klienta)
+            const effDiscBeton   = o.discountBeton   ?? linkedClient?.discountBeton   ?? 0;
+            const effDiscDoprava = o.discountDoprava ?? linkedClient?.discountDoprava ?? 0;
+            const effDiscSluzby  = o.discountSluzby  ?? linkedClient?.discountSluzby  ?? 0;
+            const effDiscCelkovo = o.discountCelkovo ?? linkedClient?.discountCelkovo ?? 0;
             const oZoneType = o.deliveryZoneType ?? (() => {
               const all = adminData.getDelivery();
               const z = linkedClient?.deliveryZoneId ? (all.find(zz => zz.id === linkedClient.deliveryZoneId) ?? all[0]) : all[0];
@@ -1603,13 +1609,13 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                           {o.podmienky.pumpa > 0 ? `1×P+${o.podmienky.mix}×M` : `${o.podmienky.trucks}×Mix`}
                         </span>
                       ); })() : null}
-                      {(o.discountBeton || o.discountDoprava || o.discountSluzby || o.discountCelkovo) ? (
-                        o.discountCelkovo ? (
-                          <span className="bg-primary text-secondary text-[9px] font-black px-1.5 py-0.5 rounded-sm">−{o.discountCelkovo}%</span>
+                      {(effDiscBeton || effDiscDoprava || effDiscSluzby || effDiscCelkovo) ? (
+                        effDiscCelkovo ? (
+                          <span className="bg-primary text-secondary text-[9px] font-black px-1.5 py-0.5 rounded-sm">−{effDiscCelkovo}%</span>
                         ) : (<>
-                          {o.discountBeton   ? <span className="bg-primary/20 text-secondary text-[9px] font-black px-1 py-0.5 rounded-sm">B−{o.discountBeton}%</span>   : null}
-                          {o.discountDoprava ? <span className="bg-primary/20 text-secondary text-[9px] font-black px-1 py-0.5 rounded-sm">D−{o.discountDoprava}%</span> : null}
-                          {o.discountSluzby  ? <span className="bg-primary/20 text-secondary text-[9px] font-black px-1 py-0.5 rounded-sm">S−{o.discountSluzby}%</span>  : null}
+                          {effDiscBeton   ? <span className="bg-primary/20 text-secondary text-[9px] font-black px-1 py-0.5 rounded-sm">B−{effDiscBeton}%</span>   : null}
+                          {effDiscDoprava ? <span className="bg-primary/20 text-secondary text-[9px] font-black px-1 py-0.5 rounded-sm">D−{effDiscDoprava}%</span> : null}
+                          {effDiscSluzby  ? <span className="bg-primary/20 text-secondary text-[9px] font-black px-1 py-0.5 rounded-sm">S−{effDiscSluzby}%</span>  : null}
                         </>)
                       ) : null}
                     </div>
@@ -1743,26 +1749,26 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                             )}
                           </div>
                         )}
-                        {(o.discountBeton || o.discountDoprava || o.discountSluzby || o.discountCelkovo) ? (
+                        {(effDiscBeton || effDiscDoprava || effDiscSluzby || effDiscCelkovo) ? (
                           <div className="flex gap-2 items-start pt-0.5">
                             <span className="text-gray-400 w-20 shrink-0 mt-0.5">Zľavy</span>
                             <div className="space-y-1.5 flex-1">
                               {/* Individuálne skupina */}
-                              {(o.discountBeton || o.discountDoprava || o.discountSluzby) ? (
+                              {(effDiscBeton || effDiscDoprava || effDiscSluzby) ? (
                                 <div className="border border-gray-200 rounded-sm px-2 py-1 bg-gray-50/60">
                                   <div className="text-[8px] font-black uppercase tracking-widest text-gray-300 mb-1">Individuálne</div>
                                   <div className="flex flex-wrap gap-1">
-                                    {o.discountBeton   ? <span className="bg-primary/15 text-secondary text-[10px] font-black px-1.5 py-0.5 rounded-sm">Betón −{o.discountBeton}%</span>   : null}
-                                    {o.discountDoprava ? <span className="bg-primary/15 text-secondary text-[10px] font-black px-1.5 py-0.5 rounded-sm">Doprava −{o.discountDoprava}%</span> : null}
-                                    {o.discountSluzby  ? <span className="bg-primary/15 text-secondary text-[10px] font-black px-1.5 py-0.5 rounded-sm">Služby −{o.discountSluzby}%</span>  : null}
+                                    {effDiscBeton   ? <span className="bg-primary/15 text-secondary text-[10px] font-black px-1.5 py-0.5 rounded-sm">Betón −{effDiscBeton}%</span>   : null}
+                                    {effDiscDoprava ? <span className="bg-primary/15 text-secondary text-[10px] font-black px-1.5 py-0.5 rounded-sm">Doprava −{effDiscDoprava}%</span> : null}
+                                    {effDiscSluzby  ? <span className="bg-primary/15 text-secondary text-[10px] font-black px-1.5 py-0.5 rounded-sm">Služby −{effDiscSluzby}%</span>  : null}
                                   </div>
                                 </div>
                               ) : null}
                               {/* Celkovo skupina */}
-                              {o.discountCelkovo ? (
+                              {effDiscCelkovo ? (
                                 <div className="border border-primary/30 rounded-sm px-2 py-1 bg-primary/5">
                                   <div className="text-[8px] font-black uppercase tracking-widest text-primary/50 mb-1">Celkovo</div>
-                                  <span className="bg-primary text-secondary text-[10px] font-black px-2 py-0.5 rounded-sm">−{o.discountCelkovo}%</span>
+                                  <span className="bg-primary text-secondary text-[10px] font-black px-2 py-0.5 rounded-sm">−{effDiscCelkovo}%</span>
                                 </div>
                               ) : null}
                             </div>
