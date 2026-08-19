@@ -93,6 +93,38 @@ function clientDisplayName(c?: Client, fallback?: string): string {
   return [c.firstName, c.lastName].filter(Boolean).join(" ") || c.company || c.loginId || fallback || "—";
 }
 
+// ── Rovnaké štýly ako ObjednavkyTab ─────────────────────────────────────────
+const TAB_STYLES: Record<Order["tab"], { badge: string; label: string }> = {
+  pumpa:          { badge: "bg-amber-100 text-amber-700 border-amber-200",  label: "Pumpa" },
+  mix:            { badge: "bg-blue-100 text-blue-700 border-blue-200",     label: "Mix" },
+  vlastnadoprava: { badge: "bg-green-100 text-green-700 border-green-200",  label: "Vl. doprava" },
+};
+
+function TabBadge({ tab }: { tab: Order["tab"] }) {
+  const s = TAB_STYLES[tab];
+  if (!s) return null;
+  const icon = tab === "pumpa"
+    ? <svg width="13" height="8" viewBox="0 0 38 22" fill="currentColor"><rect x="1" y="12" width="24" height="6" rx="1"/><rect x="22" y="9" width="9" height="9" rx="1"/><rect x="8" y="8" width="3" height="4" rx="0.5"/><line x1="9.5" y1="8" x2="3" y2="2" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/><line x1="3" y1="2" x2="22" y2="2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><circle cx="6" cy="19" r="3"/><circle cx="14" cy="19" r="3"/><circle cx="27" cy="19" r="3"/></svg>
+    : tab === "mix"
+    ? <svg width="13" height="8" viewBox="0 0 38 22" fill="currentColor"><rect x="1" y="12" width="24" height="6" rx="1"/><rect x="22" y="9" width="9" height="9" rx="1"/><ellipse cx="12" cy="9" rx="9" ry="6"/><circle cx="6" cy="19" r="3"/><circle cx="20" cy="19" r="3"/><circle cx="27" cy="19" r="3"/></svg>
+    : <svg width="13" height="8" viewBox="0 0 38 22" fill="currentColor"><rect x="1" y="10" width="30" height="8" rx="1"/><path d="M4 10 L9 4 L24 4 L28 10"/><circle cx="8" cy="19" r="3"/><circle cx="24" cy="19" r="3"/></svg>;
+  return (
+    <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest border px-1.5 py-0.5 rounded-sm shrink-0 ${s.badge}`}>
+      {icon}{s.label}
+    </span>
+  );
+}
+
+function PayBadge({ priceMode }: { priceMode: Order["priceMode"] }) {
+  return (
+    <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-sm inline-block border shrink-0 ${
+      priceMode === "hotovost" ? "bg-amber-100 text-amber-700 border-amber-200" : "bg-blue-100 text-blue-700 border-blue-200"
+    }`}>
+      {priceMode === "hotovost" ? "HOT." : "FA"}
+    </span>
+  );
+}
+
 const DATE_BTNS: { id: DateFilter; label: string }[] = [
   { id: "dnes",   label: "Dnes"   },
   { id: "vcera",  label: "Včera"  },
@@ -722,14 +754,18 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               </div>
                             </div>
                           )}
-                          {/* R2: Kategória s ikonou */}
-                          {o.concreteCategory && (
-                            <div className="flex items-center gap-1 text-[10px] font-black tracking-wide text-gray-900">
-                              {kg === "drvene" && <Mountain className="w-3 h-3 shrink-0 text-stone-500" />}
-                              {kg === "riecne" && <Waves className="w-3 h-3 shrink-0 text-blue-400" />}
-                              {o.concreteCategory}
-                            </div>
-                          )}
+                          {/* R2: Typ vozidla + FA/HOT + Kategória */}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {o.tab && <TabBadge tab={o.tab} />}
+                            {o.priceMode && <PayBadge priceMode={o.priceMode} />}
+                            {o.concreteCategory && (
+                              <span className="flex items-center gap-0.5 text-[9px] font-black tracking-wide text-gray-700">
+                                {kg === "drvene" && <Mountain className="w-3 h-3 shrink-0 text-stone-500" />}
+                                {kg === "riecne" && <Waves className="w-3 h-3 shrink-0 text-blue-400" />}
+                                {o.concreteCategory}
+                              </span>
+                            )}
+                          </div>
                           {/* R2b: Typ + qty + Celkom € */}
                           <div className="flex items-baseline gap-2">
                             <span className="text-gray-500 text-[10px] flex-1 truncate min-w-0">
@@ -792,13 +828,19 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                 <div className="text-[9px] text-gray-400 tabular-nums truncate">{o.clientId}</div>
                               )}
                             </div>
-                            {/* BETÓN — s kamenivo ikonou */}
-                            <div className="flex items-center gap-1 min-w-0">
-                              {kg === "drvene" && <Mountain className="w-3 h-3 shrink-0 text-stone-500" />}
-                              {kg === "riecne" && <Waves className="w-3 h-3 shrink-0 text-blue-400" />}
-                              <span className="text-gray-500 truncate text-[10px]">
-                                {o.concreteCategory ? `${o.concreteCategory} · ` : ""}{o.concreteType} {o.totalQty ?? o.quantity} m³
-                              </span>
+                            {/* BETÓN — kamenivo + tab/pay badges */}
+                            <div className="flex flex-col gap-0.5 min-w-0">
+                              <div className="flex items-center gap-1 flex-wrap">
+                                {o.tab && <TabBadge tab={o.tab} />}
+                                {o.priceMode && <PayBadge priceMode={o.priceMode} />}
+                              </div>
+                              <div className="flex items-center gap-1 min-w-0">
+                                {kg === "drvene" && <Mountain className="w-3 h-3 shrink-0 text-stone-500" />}
+                                {kg === "riecne" && <Waves className="w-3 h-3 shrink-0 text-blue-400" />}
+                                <span className="text-gray-500 truncate text-[10px]">
+                                  {o.concreteCategory ? `${o.concreteCategory} · ` : ""}{o.concreteType} {o.totalQty ?? o.quantity} m³
+                                </span>
+                              </div>
                             </div>
                             {/* CELKOM */}
                             <span className="text-right font-black tabular-nums text-gray-700 text-xs">{fmtEur(o.totalSDph ?? o.totalBezDph ?? 0, 0)} €</span>
