@@ -166,6 +166,16 @@
   .ms-logo-shimmer { animation: none; }
 }
 
+/* Historia — flash pri kliknutí na zmazanú objednávku */
+@keyframes flash-deleted {
+  0%   { background-color: rgb(254 202 202 / 0); }
+  25%  { background-color: rgb(254 202 202 / 0.8); }
+  100% { background-color: rgb(254 202 202 / 0); }
+}
+.flash-deleted {
+  animation: flash-deleted 0.55s ease-out forwards;
+}
+
 /* iOS: zabráň auto-zoomu pri kliku na input (font-size < 16px ho spúšťa).
    Zoom ostáva povolený pre používateľa (žiaden maximum-scale) = a11y aj bez otravného zoomu. */
 @media (max-width: 767px) {

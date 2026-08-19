@@ -21,6 +21,17 @@ type DepositRow =
 const TODAY     = new Date().toISOString().slice(0, 10);
 const YESTERDAY = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
 
+const SK_MONTHS = ["januára","februára","marca","apríla","mája","júna","júla","augusta","septembra","októbra","novembra","decembra"];
+function fmtGroupDate(dateStr: string): string {
+  if (dateStr === TODAY)     return "Dnes";
+  if (dateStr === YESTERDAY) return "Včera";
+  const d = new Date(dateStr + "T00:00:00");
+  const sameYear = d.getFullYear() === new Date().getFullYear();
+  return sameYear
+    ? `${d.getDate()}. ${SK_MONTHS[d.getMonth()]}`
+    : `${d.getDate()}. ${SK_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+}
+
 function toDateStr(iso: string) { return iso.slice(0, 10); }
 
 function passesDate(dateStr: string, filter: DateFilter): boolean {
@@ -172,6 +183,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [ktoDropOpen,      setKtoDropOpen]      = useState(false);
   const [onlyDeposit,      setOnlyDeposit]      = useState(false);
   const [displayLimit,     setDisplayLimit]     = useState(100);
+  const [flashDeletedId,   setFlashDeletedId]   = useState<string | null>(null);
   const cashClientRef = useRef<HTMLDivElement>(null);
   const ktoRef        = useRef<HTMLDivElement>(null);
 
@@ -716,8 +728,14 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                 <div className="hidden sm:grid grid-cols-[90px_1fr_1fr_70px_70px_90px_110px_20px] gap-2 px-3 py-2 bg-gray-50 border-b border-gray-100 text-[9px] font-black uppercase tracking-widest text-gray-400">
                   <span>Dátum</span><span>Klient</span><span>Betón</span><span className="text-right">Celkom</span><span className="text-right">Záloha</span><span>Stav</span><span>KTO</span><span />
                 </div>
-                <div className="divide-y divide-gray-100">
-                  {filteredOrders.slice(0, displayLimit).map(o => {
+                <div className="">
+                  {(() => {
+                    const display = filteredOrders.slice(0, displayLimit);
+                    let lastDate = "";
+                    return display.map(o => {
+                    const dateKey = o.createdAt.slice(0, 10);
+                    const showHeader = dateKey !== lastDate;
+                    lastDate = dateKey;
                     const c = o.clientId ? clientByLoginId.get(o.clientId) : undefined;
                     // Primárne meno (bez telefónu) — ako ObjednavkyTab
                     const primaryName = c
@@ -734,10 +752,22 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     const firstStatus = hist[0]?.prevStatus ?? "nova";
                     const kg = o.concreteCategory ? getKamenivoGroup(o.concreteCategory) : null;
                     const isDeleted = o.status === "zmazana";
+                    const isFlashing = flashDeletedId === o.id;
                     return (
-                      <div key={o.id} onClick={() => !isDeleted && onGoToOrder?.(o.id)}
+                      <div key={o.id}>
+                        {/* Date group header */}
+                        {showHeader && (
+                          <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border-t border-b border-gray-150 sticky top-0 z-10">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 shrink-0">{fmtGroupDate(dateKey)}</span>
+                            <div className="flex-1 h-px bg-gray-200" />
+                          </div>
+                        )}
+                      <div onClick={() => {
+                          if (isDeleted) { setFlashDeletedId(o.id); setTimeout(() => setFlashDeletedId(null), 600); return; }
+                          onGoToOrder?.(o.id);
+                        }}
                         title={isDeleted ? "Zmazaná objednávka — nedostupná v zozname" : undefined}
-                        className={`px-3 py-2.5 transition-colors ${isDeleted ? "opacity-50 bg-red-50/40 cursor-not-allowed" : onGoToOrder ? "cursor-pointer hover:bg-amber-50" : "hover:bg-gray-50"}`}>
+                        className={`px-3 py-2.5 border-b border-gray-100 last:border-b-0 transition-colors ${isFlashing ? "flash-deleted" : ""} ${isDeleted ? "opacity-50 bg-red-50/40 cursor-not-allowed" : onGoToOrder ? "cursor-pointer hover:bg-amber-50" : "hover:bg-gray-50"}`}>
 
                         {/* ── MOBILE ─────────────────────────────────────────── */}
                         <div className="sm:hidden space-y-1 py-0.5">
@@ -930,8 +960,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                         </div>
 
                       </div>
+                      </div>
                     );
-                  })}
+                  });
+                })()}
                 </div>
                 {/* Load-more — ak je viac ako displayLimit */}
                 {filteredOrders.length > displayLimit && (
