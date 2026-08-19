@@ -136,6 +136,7 @@ const DATE_BTNS: { id: DateFilter; label: string }[] = [
 const STATUS_LABEL: Record<string, string> = {
   nova: "Nová", potvrdena: "Potvrdená", odoslana: "Odoslaná",
   vyuctovana: "Vyúčtov.", vyplatena: "Vyplatená", zrusena: "Zrušená", vybavena: "Vybavená",
+  zmazana: "Zmazaná",
 };
 const STATUS_COLOR: Record<string, string> = {
   nova:       "bg-blue-100 text-blue-700",
@@ -145,6 +146,7 @@ const STATUS_COLOR: Record<string, string> = {
   vyplatena:  "bg-teal-100 text-teal-700",
   zrusena:    "bg-red-100 text-red-600",
   vybavena:   "bg-gray-100 text-gray-500",
+  zmazana:    "bg-red-900 text-red-100",
 };
 
 export default function HistoriaTab({ initialSub, initialClientId, initialDate, onGoToClient, onGoToOrder }: Props) {
@@ -291,15 +293,17 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   [liveOrders, cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit]);
 
   const cashSummary = useMemo(() => {
-    let dep = 0, total = 0;
+    let dep = 0, total = 0, deletedCount = 0;
     for (const o of filteredOrders) {
+      if (o.status === "zmazana") { deletedCount++; continue; } // zmazané nepočítaj do súhrnu
       if (o.depositUsed) dep += o.depositUsed;
       // totalSDph = čo klient reálne zaplatil (hotovosť = vč. DPH na betón; faktúra = s DPH)
       // fallback na totalBezDph pre staré objednávky bez totalSDph
       const paid = o.totalSDph ?? o.totalBezDph ?? 0;
       if (paid) total += paid;
     }
-    return { count: filteredOrders.length, dep, total };
+    const activeCount = filteredOrders.length - deletedCount;
+    return { count: activeCount, deletedCount, dep, total };
   }, [filteredOrders]);
 
   const orderClients = useMemo(() => {
@@ -689,6 +693,12 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   <span className="font-black tabular-nums text-sm text-amber-600 shrink-0">{fmtEur(cashSummary.dep, 0)} €</span>
                 </>
               )}
+              {cashSummary.deletedCount > 0 && (
+                <>
+                  <span className="text-gray-200 shrink-0">|</span>
+                  <span className="text-[9px] font-bold text-red-400 shrink-0">🗑 {cashSummary.deletedCount}</span>
+                </>
+              )}
             </div>
           </div>
 
@@ -718,9 +728,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     const prevStatus = lastChange?.prevStatus;
                     const firstStatus = hist[0]?.prevStatus ?? "nova";
                     const kg = o.concreteCategory ? getKamenivoGroup(o.concreteCategory) : null;
+                    const isDeleted = o.status === "zmazana";
                     return (
                       <div key={o.id} onClick={() => onGoToOrder?.(o.id)}
-                        className={`px-3 py-2.5 transition-colors ${onGoToOrder ? "cursor-pointer hover:bg-amber-50" : "hover:bg-gray-50"}`}>
+                        className={`px-3 py-2.5 transition-colors ${isDeleted ? "opacity-50 bg-red-50/40 hover:bg-red-50/60" : onGoToOrder ? "cursor-pointer hover:bg-amber-50" : "hover:bg-gray-50"}`}>
 
                         {/* ── MOBILE ─────────────────────────────────────────── */}
                         <div className="sm:hidden space-y-1 py-0.5">

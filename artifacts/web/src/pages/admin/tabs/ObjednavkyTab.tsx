@@ -845,7 +845,8 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
 
   const readOnly = isReader(); // admin-čitateľ — žiadne zmeny objednávok
   const save = (data: Order[]) => { if (readerBlocked()) return; setOrders(data); adminData.saveOrders(data); };
-  const remove = (id: string) => { save(orders.filter(o => o.id !== id)); setDeleteConfirmId(null); };
+  // Soft delete — zachová objednávku v DB pre História, len zmení status + history entry
+  const remove = (id: string) => { updateStatus(id, "zmazana"); setDeleteConfirmId(null); };
 
   const handleDepositPay = (orderId: string, depositAmount: number, clientLoginId: string) => {
     if (readerBlocked()) return;
@@ -981,6 +982,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const searchTerms = search.trim().split(/\s+/).filter(Boolean);
   const filtered = orders
+    .filter(o => o.status !== "zmazana")   // zmazané sú len v História, nie tu
     .filter(o => filterStatus    === "vsetky" || o.status    === filterStatus)
     .filter(o => filterTab       === "vsetky" || o.tab       === filterTab)
     .filter(o => filterPriceMode === "vsetky" || o.priceMode === filterPriceMode)

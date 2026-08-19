@@ -150,7 +150,7 @@ export interface DepositTx {
 }
 
 export interface StatusHistoryEntry {
-  status: "nova" | "potvrdena" | "odoslana" | "vyuctovana" | "vyplatena" | "zrusena" | "vybavena";
+  status: "nova" | "potvrdena" | "odoslana" | "vyuctovana" | "vyplatena" | "zrusena" | "vybavena" | "zmazana";
   prevStatus?: string;
   changedAt: string;        // ISO timestamp
   changedBy: string;        // getAdminDeviceLabel() alebo "systém" / meno klienta
@@ -160,7 +160,7 @@ export interface StatusHistoryEntry {
 export interface Order {
   id: string;
   createdAt: string;
-  status: "nova" | "potvrdena" | "odoslana" | "vyuctovana" | "vyplatena" | "zrusena" | "vybavena";
+  status: "nova" | "potvrdena" | "odoslana" | "vyuctovana" | "vyplatena" | "zrusena" | "vybavena" | "zmazana";
   clientName: string;
   clientId?: string;
   company?: string;
