@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { SlidersHorizontal, ShoppingCart, MessageSquare, MapPin, Navigation, Copy, Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, AlertTriangle, FileText, Calculator, Users, Mountain, Waves, Phone, Mail, Truck, Fingerprint, Crown, Percent, ShieldCheck, Eye, Globe, Smartphone, Laptop, Monitor } from "lucide-react";
+import { SlidersHorizontal, ShoppingCart, MessageSquare, MapPin, Navigation, Copy, Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, AlertTriangle, FileText, Calculator, Users, Mountain, Waves, Phone, Mail, Truck, Fingerprint, Crown, Percent, ShieldCheck, Eye, Globe, Smartphone, Laptop, Monitor, BarChart2 } from "lucide-react";
 
 // Kto objednávku vytvoril — vizuálna identita.
 // "anonym" = neprihlásený návštevník cez verejný košík (bežný web tok) → viditeľný "web" chip.
@@ -706,7 +706,7 @@ function exportOrderPDF(o: Order, format: "a4" | "a5" = "a4") {
   if (!win) { const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.click(); }
 }
 
-export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClientId, focusOrderId, onGoToHistoria }: { onGoToClient?: (loginId: string) => void; initialSearch?: string; initialClientId?: string; focusOrderId?: string; onGoToHistoria?: (filter: { sub: "zalohy" | "cashflow"; date?: string }) => void }) {
+export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClientId, focusOrderId, onGoToHistoria }: { onGoToClient?: (loginId: string) => void; initialSearch?: string; initialClientId?: string; focusOrderId?: string; onGoToHistoria?: (filter: { sub: "zalohy" | "cashflow"; clientId?: string; date?: string }) => void }) {
   const [orders, setOrders] = useState<Order[]>(() => adminData.getOrders());
   const [allCategories, setAllCategories] = useState(() => adminData.getCategories());
   useEffect(() => {
@@ -1203,6 +1203,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
           <div className="border-b border-gray-200 px-4 py-2 flex items-center gap-1.5">
             <input
               type="text" value={search} onChange={e => setSearch(e.target.value)}
+              onKeyDown={e => { if (e.key === "Escape") setSearch(""); }}
               placeholder="Meno, firma, telefón, ID, adresa..."
               className="flex-1 border border-gray-200 px-3 py-1.5 text-xs focus:outline-none focus:border-secondary rounded-sm"
               autoComplete="off"
@@ -1678,15 +1679,25 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                           </div>
                         )}
                         {o.clientId && <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">ID klienta</span><span className="text-gray-500">{o.clientId}</span></div>}
-                        {o.clientId && onGoToClient && (
-                          <div className="flex gap-2 items-center pt-1">
+                        {o.clientId && (onGoToClient || onGoToHistoria) && (
+                          <div className="flex gap-2 items-center pt-1 flex-wrap">
                             <span className="text-gray-400 w-20 shrink-0" />
-                            <button
-                              onClick={e => { e.stopPropagation(); onGoToClient(o.clientId!); }}
-                              className="text-[10px] font-bold text-secondary hover:text-primary underline underline-offset-2 transition-colors flex items-center gap-1"
-                            >
-                              <Users className="w-4 h-4" /> Zobraziť v klientoch →
-                            </button>
+                            {onGoToClient && (
+                              <button
+                                onClick={e => { e.stopPropagation(); onGoToClient(o.clientId!); }}
+                                className="text-[10px] font-bold text-secondary hover:text-primary underline underline-offset-2 transition-colors flex items-center gap-1"
+                              >
+                                <Users className="w-4 h-4" /> Zobraziť v klientoch →
+                              </button>
+                            )}
+                            {onGoToHistoria && o.clientId && (
+                              <button
+                                onClick={e => { e.stopPropagation(); onGoToHistoria({ sub: "cashflow", clientId: o.clientId! }); }}
+                                className="text-[10px] font-bold text-secondary hover:text-primary underline underline-offset-2 transition-colors flex items-center gap-1"
+                              >
+                                <BarChart2 className="w-4 h-4" /> História klienta →
+                              </button>
+                            )}
                           </div>
                         )}
                         {(o.discountBeton || o.discountDoprava || o.discountSluzby || o.discountCelkovo) ? (

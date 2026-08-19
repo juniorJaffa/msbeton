@@ -271,15 +271,18 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   }, [filteredOrders]);
 
   const orderClients = useMemo(() => {
-    const seen = new Set<string>(); const list: { id: string; name: string }[] = [];
+    // Pre každý clientId ulož najlepšie meno (registrovaný klient > clientName > clientId)
+    const bestName = new Map<string, string>();
     for (const o of liveOrders) {
-      if (!o.clientId || seen.has(o.clientId)) continue;
-      seen.add(o.clientId);
+      if (!o.clientId) continue;
       const c = clientByLoginId.get(o.clientId);
-      list.push({ id: o.clientId, name: clientDisplayName(c, o.clientId) });
-      if (list.length >= 20) break;
+      const name = c ? clientDisplayName(c, o.clientId) : (o.clientName || o.clientId);
+      // Prepiš iba ak nové meno je dlhšie (viac informácií)
+      if (!bestName.has(o.clientId) || (name.length > (bestName.get(o.clientId)?.length ?? 0))) {
+        bestName.set(o.clientId, name);
+      }
     }
-    return list;
+    return Array.from(bestName.entries()).map(([id, name]) => ({ id, name }));
   }, [liveOrders, clientByLoginId]);
 
   // Zariadenia — len tie aktívne v aktuálnom dátumovom rozsahu (nechceme staré nepoužívané)
@@ -361,7 +364,12 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       dropRef: React.RefObject<HTMLDivElement | null>; open: boolean; setOpen: (v: boolean) => void;
       search: string; setSearch: (v: string) => void; }) {
     const selected = clients.find(c => c.id === value);
-    const filtered = search ? clients.filter(c => c.name.toLowerCase().includes(search.toLowerCase())) : clients;
+    // Multi-word search: každé slovo musí byť v mene alebo clientId (telefóne)
+    const filtered = search ? clients.filter(c => {
+      const words = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
+      const haystack = `${c.name} ${c.id}`.toLowerCase();
+      return words.every(w => haystack.includes(w));
+    }) : clients;
     return (
       <div ref={dropRef} className="relative inline-block shrink-0">
         <button onClick={() => setOpen(!open)}
@@ -374,14 +382,13 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
         </button>
         {open && (
           <div className="absolute left-0 top-full mt-1.5 z-30 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden w-[220px]">
-            {/* Search — len ak ≥8 klientov */}
-            {clients.length >= 8 && (
-              <div className="px-3 py-2 border-b border-gray-100">
-                <input autoFocus type="text" value={search} onChange={e => setSearch(e.target.value)}
-                  placeholder="Hľadaj klienta..."
-                  className="w-full text-[11px] px-2 py-1 border border-gray-200 rounded-lg outline-none focus:border-secondary" />
-              </div>
-            )}
+            {/* Search — vždy viditeľný */}
+            <div className="px-3 py-2 border-b border-gray-100">
+              <input autoFocus type="text" value={search} onChange={e => setSearch(e.target.value)}
+                onKeyDown={e => { if (e.key === "Escape") { setSearch(""); setOpen(false); } }}
+                placeholder="Meno, telefón, ID…"
+                className="w-full text-[11px] px-2 py-1 border border-gray-200 rounded-lg outline-none focus:border-secondary" />
+            </div>
             <div className="max-h-[55vh] overflow-y-auto">
               <button onClick={() => { onChange("vsetci"); setOpen(false); setSearch(""); }}
                 className={`w-full px-4 py-2.5 text-left text-[11px] font-bold border-b border-gray-50 cursor-pointer transition-colors hover:bg-gray-50 ${value === "vsetci" ? "text-amber-600 bg-amber-50" : "text-gray-500"}`}>
@@ -679,24 +686,27 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             </span>
                             {onGoToOrder && <ChevronRight className="w-3.5 h-3.5 text-gray-300 shrink-0" />}
                           </div>
-                          {/* Status timeline */}
+                          {/* Status timeline — každá zmena vlastný riadok */}
                           {hist.length > 0 && (
-                            <div className="overflow-x-auto">
-                              <div className="flex items-center gap-1 text-[8px] whitespace-nowrap">
-                                <span className="text-gray-600 tabular-nums font-semibold shrink-0">{fmtTimeShort(o.createdAt)}</span>
-                                <span className={`font-bold px-1 py-0.5 rounded shrink-0 ${STATUS_COLOR[firstStatus] ?? "bg-gray-100 text-gray-500"}`}>
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-1 text-[8px]">
+                                <span className="text-gray-500 tabular-nums font-semibold w-[72px] shrink-0">{fmtTimeShort(o.createdAt)}</span>
+                                <span className={`font-bold px-1 py-0.5 rounded ${STATUS_COLOR[firstStatus] ?? "bg-gray-100 text-gray-500"}`}>
                                   {STATUS_LABEL[firstStatus] ?? firstStatus}
                                 </span>
-                                {hist.map((h, i) => (
-                                  <span key={i} className="flex items-center gap-1 shrink-0">
-                                    <span className="text-gray-300">→</span>
-                                    <span className="text-gray-600 tabular-nums font-semibold">{fmtTimeShort(h.changedAt)}</span>
-                                    <span className={`font-bold px-1 py-0.5 rounded ${STATUS_COLOR[h.status] ?? "bg-gray-100 text-gray-500"}`}>
-                                      {STATUS_LABEL[h.status] ?? h.status}
-                                    </span>
-                                  </span>
-                                ))}
                               </div>
+                              {hist.map((h, i) => (
+                                <div key={i} className="flex items-center gap-1 text-[8px] pl-2">
+                                  <span className="text-gray-300 shrink-0">↓</span>
+                                  <span className="text-gray-500 tabular-nums font-semibold w-[64px] shrink-0">{fmtTimeShort(h.changedAt)}</span>
+                                  <span className={`font-bold px-1 py-0.5 rounded ${STATUS_COLOR[h.status] ?? "bg-gray-100 text-gray-500"}`}>
+                                    {STATUS_LABEL[h.status] ?? h.status}
+                                  </span>
+                                  {h.paidAmount !== undefined && h.paidAmount > 0 && (
+                                    <span className="text-teal-600 tabular-nums font-semibold text-[8px]">{fmtEur(h.paidAmount, 0)} €</span>
+                                  )}
+                                </div>
+                              ))}
                             </div>
                           )}
                           {/* R2: Kategória s ikonou */}
