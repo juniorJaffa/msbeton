@@ -262,7 +262,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     let dep = 0, total = 0;
     for (const o of filteredOrders) {
       if (o.depositUsed) dep += o.depositUsed;
-      if (o.totalBezDph) total += o.totalBezDph;
+      // totalSDph = čo klient reálne zaplatil (hotovosť = vč. DPH na betón; faktúra = s DPH)
+      // fallback na totalBezDph pre staré objednávky bez totalSDph
+      const paid = o.totalSDph ?? o.totalBezDph ?? 0;
+      if (paid) total += paid;
     }
     return { count: filteredOrders.length, dep, total };
   }, [filteredOrders]);
@@ -709,9 +712,9 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             <span className="text-gray-500 text-[10px] flex-1 truncate min-w-0">
                               {o.concreteType} {o.totalQty ?? o.quantity} m³
                             </span>
-                            {o.totalBezDph != null && o.totalBezDph > 0 && (
-                              <span className="font-black tabular-nums text-sm text-gray-900 shrink-0">{fmtEur(o.totalBezDph, 0)} €</span>
-                            )}
+                            {(() => { const paid = o.totalSDph ?? o.totalBezDph; return paid != null && paid > 0 ? (
+                              <span className="font-black tabular-nums text-sm text-gray-900 shrink-0">{fmtEur(paid, 0)} €</span>
+                            ) : null; })()}
                           </div>
                           {/* R3: Záloha + Nedoplatok */}
                           {o.depositUsed && o.depositUsed > 0 && (
@@ -719,15 +722,15 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
                                 záloha {fmtEur(o.depositUsed, 0)} €
                               </span>
-                              {(o.totalBezDph ?? 0) - o.depositUsed > 0.5 ? (
+                              {(() => { const paid = o.totalSDph ?? o.totalBezDph ?? 0; return paid - o.depositUsed > 0.5 ? (
                                 <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">
-                                  nedoplatok {fmtEur((o.totalBezDph ?? 0) - o.depositUsed, 0)} €
+                                  nedoplatok {fmtEur(paid - o.depositUsed, 0)} €
                                 </span>
                               ) : (
                                 <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700">
                                   uhradená zálohou ✓
                                 </span>
-                              )}
+                              ); })()}
                             </div>
                           )}
                           {/* R4: KTO + DÁTUM */}
@@ -758,7 +761,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               </span>
                             </div>
                             {/* CELKOM */}
-                            <span className="text-right font-black tabular-nums text-gray-700 text-xs">{fmtEur(o.totalBezDph ?? 0, 0)} €</span>
+                            <span className="text-right font-black tabular-nums text-gray-700 text-xs">{fmtEur(o.totalSDph ?? o.totalBezDph ?? 0, 0)} €</span>
                             {/* ZÁLOHA */}
                             <span className={`text-right font-black tabular-nums text-xs ${o.depositUsed && o.depositUsed > 0 ? "text-amber-600" : "text-gray-300"}`}>
                               {o.depositUsed && o.depositUsed > 0 ? `${fmtEur(o.depositUsed, 0)} €` : "—"}

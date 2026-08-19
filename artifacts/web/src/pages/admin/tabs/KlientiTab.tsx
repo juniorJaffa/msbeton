@@ -2741,6 +2741,12 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
               )}
 
               {/* GPS info bar — poloha + navigácia + zavolanie */}
+              {!gps && photos.length > 0 && (
+                <div className="flex items-center gap-1.5 w-full px-1">
+                  <MapPin className="w-3 h-3 text-white/30 shrink-0" />
+                  <span className="text-white/30 text-[11px] italic">Fotka nemá GPS metadáta</span>
+                </div>
+              )}
               {gps && (
                 <div className="flex items-center gap-2 w-full px-1">
                   <MapPin className="w-3.5 h-3.5 text-green-400 shrink-0" />
