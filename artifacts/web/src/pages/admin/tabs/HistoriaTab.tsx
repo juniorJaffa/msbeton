@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { adminData, Client, DepositTx, Order, getKamenivoGroup } from "@/lib/adminData";
-import { ChevronRight, TrendingUp, Minus, Smartphone, Monitor, Laptop, ChevronDown, Users, ShoppingCart, Mountain, Waves } from "lucide-react";
+import { ChevronRight, TrendingUp, Minus, Smartphone, Monitor, Laptop, ChevronDown, Users, ShoppingCart, Mountain, Waves, X } from "lucide-react";
 
 type Sub = "zalohy" | "cashflow";
 type DateFilter = "dnes" | "vcera" | "tyzden" | "mesiac" | "vsetko";
@@ -403,16 +403,17 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       return words.every(w => haystack.includes(w));
     }) : clients;
     return (
-      <div ref={dropRef} className="relative inline-block shrink-0">
-        <button onClick={() => setOpen(!open)}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold rounded-full border cursor-pointer transition-colors ${
-            value !== "vsetci" ? "bg-amber-500 border-amber-500 text-white" : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
-          }`}>
-          <Users className="w-3 h-3 shrink-0" />
-          <span className="max-w-[100px] truncate">{selected ? selected.name : "Klient"}</span>
-          <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
-        </button>
-        {open && (
+      <div className="flex items-center gap-1">
+        <div ref={dropRef} className="relative inline-block shrink-0">
+          <button onClick={() => setOpen(!open)}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold rounded-full border cursor-pointer transition-colors ${
+              value !== "vsetci" ? "bg-amber-500 border-amber-500 text-white" : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
+            }`}>
+            <Users className="w-3 h-3 shrink-0" />
+            <span className="max-w-[100px] truncate">{selected ? selected.name : "Klient"}</span>
+            <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
+          </button>
+          {open && (
           <div className="absolute left-0 top-full mt-1.5 z-30 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden w-[220px]">
             {/* Search — vždy viditeľný */}
             <div className="px-3 py-2 border-b border-gray-100">
@@ -439,6 +440,16 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
               )}
             </div>
           </div>
+        )}
+        </div>
+        {/* X — zrušiť filter klienta, vždy viditeľné keď filter aktívny */}
+        {value !== "vsetci" && (
+          <button
+            onClick={() => { onChange("vsetci"); setSearch(""); setOpen(false); }}
+            title="Zrušiť filter klienta"
+            className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 text-amber-600 hover:bg-red-100 hover:text-red-500 border border-amber-300 hover:border-red-300 transition-colors cursor-pointer shrink-0">
+            <X className="w-2.5 h-2.5" />
+          </button>
         )}
       </div>
     );
