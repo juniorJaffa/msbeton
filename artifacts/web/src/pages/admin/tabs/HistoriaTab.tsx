@@ -661,7 +661,13 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                 <div className="divide-y divide-gray-100">
                   {filteredOrders.map(o => {
                     const c = o.clientId ? clientByLoginId.get(o.clientId) : undefined;
-                    const name = clientDisplayName(c, o.clientName || o.clientId);
+                    // Primárne meno (bez telefónu) — ako ObjednavkyTab
+                    const primaryName = c
+                      ? clientDisplayName(c)
+                      : (o.clientName || "");
+                    const isPhoneId = o.clientId && /^\+?[0-9 ]{7,}$/.test(o.clientId.replace(/\s/g,""));
+                    // fallback ak nemá clientName
+                    const name = primaryName || o.clientId || "—";
                     const kto = o.createdByDevice ?? "";
                     // Hoistnuté — zdieľané pre mobile aj desktop
                     const hist = o.statusHistory ?? [];
@@ -675,9 +681,15 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
 
                         {/* ── MOBILE ─────────────────────────────────────────── */}
                         <div className="sm:hidden space-y-1 py-0.5">
-                          {/* R1: Klient + Status (s prevStatus→) + Arrow */}
+                          {/* R1: Klient + Status (s prevStatus→) + Arrow — inšp. ObjednavkyTab */}
                           <div className="flex items-start gap-2">
-                            <span className="font-semibold text-gray-800 text-[13px] flex-1 min-w-0 leading-snug line-clamp-2">{name}</span>
+                            <div className="flex-1 min-w-0">
+                              <span className="font-bold text-secondary text-[13px] leading-snug break-words">{name}</span>
+                              {/* Phone sub-label — keď clientId je telefón a líši sa od mena */}
+                              {isPhoneId && o.clientId && o.clientId !== name && (
+                                <div className="text-[10px] text-gray-400 font-medium leading-tight mt-0.5 tabular-nums">{o.clientId}</div>
+                              )}
+                            </div>
                             <div className="flex items-center gap-1 shrink-0 mt-0.5">
                               <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-2 py-0.5 rounded-full ${STATUS_COLOR[o.status] ?? "bg-gray-100 text-gray-500"}`}>
                                 {prevStatus && STATUS_LABEL[prevStatus] && (
@@ -773,8 +785,13 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                           <div className="grid grid-cols-[90px_1fr_1fr_70px_70px_120px_110px_20px] gap-2 items-center">
                             {/* DÁTUM */}
                             <span className="text-gray-600 tabular-nums font-semibold text-[10px]">{fmtDate(o.createdAt)}</span>
-                            {/* KLIENT */}
-                            <span className="font-semibold text-gray-700 text-xs truncate">{name}</span>
+                            {/* KLIENT — navy bold, phone subline ak telefón */}
+                            <div className="min-w-0">
+                              <div className="font-bold text-secondary text-xs truncate">{name}</div>
+                              {isPhoneId && o.clientId && o.clientId !== name && (
+                                <div className="text-[9px] text-gray-400 tabular-nums truncate">{o.clientId}</div>
+                              )}
+                            </div>
                             {/* BETÓN — s kamenivo ikonou */}
                             <div className="flex items-center gap-1 min-w-0">
                               {kg === "drvene" && <Mountain className="w-3 h-3 shrink-0 text-stone-500" />}
