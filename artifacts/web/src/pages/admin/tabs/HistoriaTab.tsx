@@ -22,14 +22,13 @@ const TODAY     = new Date().toISOString().slice(0, 10);
 const YESTERDAY = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
 
 const SK_MONTHS = ["januára","februára","marca","apríla","mája","júna","júla","augusta","septembra","októbra","novembra","decembra"];
-function fmtGroupDate(dateStr: string): string {
-  if (dateStr === TODAY)     return "Dnes";
-  if (dateStr === YESTERDAY) return "Včera";
+function fmtGroupDate(dateStr: string): { label: string; sub: string | null } {
   const d = new Date(dateStr + "T00:00:00");
-  const sameYear = d.getFullYear() === new Date().getFullYear();
-  return sameYear
-    ? `${d.getDate()}. ${SK_MONTHS[d.getMonth()]}`
-    : `${d.getDate()}. ${SK_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  const day = `${d.getDate()}. ${SK_MONTHS[d.getMonth()]}`;
+  const full = d.getFullYear() === new Date().getFullYear() ? day : `${day} ${d.getFullYear()}`;
+  if (dateStr === TODAY)     return { label: "Dnes",  sub: day };
+  if (dateStr === YESTERDAY) return { label: "Včera", sub: day };
+  return { label: full, sub: null };
 }
 
 function toDateStr(iso: string) { return iso.slice(0, 10); }
@@ -756,12 +755,18 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     return (
                       <div key={o.id}>
                         {/* Date group header */}
-                        {showHeader && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border-t border-b border-gray-150 sticky top-0 z-10">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 shrink-0">{fmtGroupDate(dateKey)}</span>
-                            <div className="flex-1 h-px bg-gray-200" />
-                          </div>
-                        )}
+                        {showHeader && (() => {
+                          const gd = fmtGroupDate(dateKey);
+                          return (
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border-t border-b border-gray-200 sticky top-0 z-10">
+                              <span className="text-[10px] font-black uppercase tracking-widest text-secondary shrink-0">{gd.label}</span>
+                              {gd.sub && (
+                                <span className="text-[9px] font-bold text-gray-400 shrink-0">{gd.sub}</span>
+                              )}
+                              <div className="flex-1 h-px bg-gray-200" />
+                            </div>
+                          );
+                        })()}
                       <div onClick={() => {
                           if (isDeleted) { setFlashDeletedId(o.id); setTimeout(() => setFlashDeletedId(null), 600); return; }
                           onGoToOrder?.(o.id);
