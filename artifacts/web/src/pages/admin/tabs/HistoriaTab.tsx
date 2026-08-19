@@ -676,15 +676,17 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                         {/* ── MOBILE ─────────────────────────────────────────── */}
                         <div className="sm:hidden space-y-1 py-0.5">
                           {/* R1: Klient + Status (s prevStatus→) + Arrow */}
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-gray-800 text-[13px] flex-1 truncate min-w-0">{name}</span>
-                            <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 ${STATUS_COLOR[o.status] ?? "bg-gray-100 text-gray-500"}`}>
-                              {prevStatus && STATUS_LABEL[prevStatus] && (
-                                <span className="opacity-50 font-medium">{STATUS_LABEL[prevStatus]} →</span>
-                              )}
-                              {STATUS_LABEL[o.status] ?? o.status}
-                            </span>
-                            {onGoToOrder && <ChevronRight className="w-3.5 h-3.5 text-gray-300 shrink-0" />}
+                          <div className="flex items-start gap-2">
+                            <span className="font-semibold text-gray-800 text-[13px] flex-1 min-w-0 leading-snug" style={{display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{name}</span>
+                            <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                              <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-2 py-0.5 rounded-full ${STATUS_COLOR[o.status] ?? "bg-gray-100 text-gray-500"}`}>
+                                {prevStatus && STATUS_LABEL[prevStatus] && (
+                                  <span className="opacity-50 font-medium">{STATUS_LABEL[prevStatus]} →</span>
+                                )}
+                                {STATUS_LABEL[o.status] ?? o.status}
+                              </span>
+                              {onGoToOrder && <ChevronRight className="w-3.5 h-3.5 text-gray-300" />}
+                            </div>
                           </div>
                           {/* Status timeline — newest first, každá zmena vlastný riadok */}
                           {hist.length > 0 && (
@@ -721,10 +723,22 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             <span className="text-gray-500 text-[10px] flex-1 truncate min-w-0">
                               {o.concreteType} {o.totalQty ?? o.quantity} m³
                             </span>
-                            {(() => { const paid = o.totalSDph ?? o.totalBezDph; return paid != null && paid > 0 ? (
-                              <span className="font-black tabular-nums text-sm text-gray-900 shrink-0">{fmtEur(paid, 0)} €</span>
+                            {(() => { const invoice = o.totalSDph ?? o.totalBezDph; return invoice != null && invoice > 0 ? (
+                              <span className="font-black tabular-nums text-sm text-gray-900 shrink-0">{fmtEur(invoice, 0)} €</span>
                             ) : null; })()}
                           </div>
+                          {/* R2c: Reálne zaplatené (paidAmount) — keď vyplatená */}
+                          {o.status === "vyplatena" && o.paidAmount !== undefined && o.paidAmount > 0 && (
+                            <div className="flex items-center justify-end gap-1.5">
+                              <span className="text-[9px] text-gray-400 font-medium">zaplatené</span>
+                              <span className="text-teal-600 font-black tabular-nums text-[13px]">{fmtEur(o.paidAmount, 0)} €</span>
+                              {Math.abs(o.paidAmount - (o.totalSDph ?? 0)) > 0.5 && (
+                                <span className={`text-[9px] font-bold tabular-nums px-1 py-0.5 rounded ${o.paidAmount > (o.totalSDph ?? 0) ? "bg-teal-50 text-teal-600" : "bg-red-50 text-red-500"}`}>
+                                  {o.paidAmount > (o.totalSDph ?? 0) ? "+" : ""}{fmtEur(o.paidAmount - (o.totalSDph ?? 0), 0)}
+                                </span>
+                              )}
+                            </div>
+                          )}
                           {/* R3: Záloha + Nedoplatok */}
                           {o.depositUsed && o.depositUsed > 0 && (
                             <div className="flex items-center gap-1.5 flex-wrap">
