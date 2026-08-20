@@ -672,97 +672,94 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       {/* ─── CASHFLOW ────────────────────────────────────────────────── */}
       {sub === "cashflow" && (
         <div className="space-y-3">
-          {/* Filtre — jeden flex-wrap riadok: date + záloha + KTO dropdown (mobile-first) */}
+          {/* R1: Dátumové filtre — čistý riadok */}
           <div className="flex flex-wrap gap-1.5 items-center">
             {DATE_BTNS.map(f => (
               <button key={f.id} onClick={() => setCashDateFilter(f.id)} className={dateBtnCls(cashDateFilter === f.id)}>{f.label}</button>
             ))}
-            {/* KTO dropdown trigger — inline, šetrí priestor */}
-            {deviceGroups.length > 1 && (
-            <div ref={ktoRef} className="relative inline-flex items-center gap-1">
-              {/* Trigger — rovnaká výška ako date pills, zmestí sa do riadku */}
-              <button
-                onClick={() => setKtoDropOpen(o => !o)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold rounded-full transition-colors cursor-pointer border ${
-                  cashKtoFilters.length > 0
-                    ? "bg-secondary border-secondary text-white"
-                    : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
-                }`}>
-                <Users className="w-3 h-3 shrink-0" />
-                KTO
-                {cashKtoFilters.length > 0 && (
-                  <span className="bg-white/30 text-white text-[9px] font-black px-1 rounded-full leading-tight">
-                    {cashKtoFilters.length}
-                  </span>
-                )}
-                <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-150 ${ktoDropOpen ? "rotate-180" : ""}`} />
-              </button>
-              {/* X — zrušiť KTO filter (viditeľné len keď je aktívny) */}
-              {cashKtoFilters.length > 0 && (
-                <button
-                  onClick={() => setCashKtoFilters([])}
-                  className="w-5 h-5 rounded-full bg-primary flex items-center justify-center cursor-pointer hover:bg-primary/80 transition-colors shrink-0"
-                  title="Zrušiť KTO filter">
-                  <X className="w-3 h-3 text-white" />
-                </button>
-              )}
+          </div>
 
-              {/* Dropdown panel */}
-              {ktoDropOpen && (
-                <div className="absolute left-0 top-full mt-1.5 z-50 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden w-[220px] max-h-[60vh] overflow-y-auto">
-                  {/* Všetci — zrušiť filter */}
-                  <button
-                    onClick={() => { setCashKtoFilters([]); setKtoDropOpen(false); }}
-                    className="w-full flex items-center gap-2 px-4 py-3 text-[11px] font-bold text-gray-500 hover:bg-gray-50 border-b border-gray-100 cursor-pointer transition-colors text-left">
-                    Všetci (zrušiť filter)
-                  </button>
-                  {/* Zoznam zariadení */}
-                  {deviceGroups.map(g => {
-                    const checked = cashKtoFilters.includes(g.key);
-                    return (
-                      <label key={g.key}
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors min-h-[44px]">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => setCashKtoFilters(prev =>
-                            prev.includes(g.key) ? prev.filter(x => x !== g.key) : [...prev, g.key]
-                          )}
-                          className="w-4 h-4 accent-secondary shrink-0"
-                        />
-                        <DeviceIconSmall label={g.devices[0]} className="w-4 h-4 text-gray-400 shrink-0" />
-                        <span className="flex-1 min-w-0">
-                          {g.isPerson ? (
-                            <>
-                              <span className="text-[12px] font-bold text-gray-800">{g.label}</span>
-                              {g.subInfo && <span className="ml-1.5 text-[10px] text-gray-400">{g.subInfo}</span>}
-                              {g.devices.length > 1 && (
-                                <span className="ml-1.5 text-[9px] font-black text-secondary bg-secondary/10 px-1 py-px rounded">
-                                  {g.devices.length}×
-                                </span>
-                              )}
-                            </>
-                          ) : (
-                            <span className="text-[11px] text-gray-600">{g.label}</span>
-                          )}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-          </div>{/* END date+filter row */}
-
-          {/* Klient dropdown + Záloha checkbox — rovnaký riadok, záloha vpravo */}
+          {/* R2: KTO vľavo ··· Klient + Záloha vpravo */}
           <div className="flex items-center gap-2">
+            {/* KTO dropdown */}
+            {deviceGroups.length > 1 && (
+              <div ref={ktoRef} className="relative inline-flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => setKtoDropOpen(o => !o)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold rounded-full transition-colors cursor-pointer border ${
+                    cashKtoFilters.length > 0
+                      ? "bg-secondary border-secondary text-white"
+                      : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
+                  }`}>
+                  <Users className="w-3 h-3 shrink-0" />
+                  KTO
+                  {cashKtoFilters.length > 0 && (
+                    <span className="bg-white/30 text-white text-[9px] font-black px-1 rounded-full leading-tight">
+                      {cashKtoFilters.length}
+                    </span>
+                  )}
+                  <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-150 ${ktoDropOpen ? "rotate-180" : ""}`} />
+                </button>
+                {cashKtoFilters.length > 0 && (
+                  <button
+                    onClick={() => setCashKtoFilters([])}
+                    className="w-5 h-5 rounded-full bg-primary flex items-center justify-center cursor-pointer hover:bg-primary/80 transition-colors shrink-0"
+                    title="Zrušiť KTO filter">
+                    <X className="w-3 h-3 text-white" />
+                  </button>
+                )}
+                {ktoDropOpen && (
+                  <div className="absolute left-0 top-full mt-1.5 z-50 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden w-[220px] max-h-[60vh] overflow-y-auto">
+                    <button
+                      onClick={() => { setCashKtoFilters([]); setKtoDropOpen(false); }}
+                      className="w-full flex items-center gap-2 px-4 py-3 text-[11px] font-bold text-gray-500 hover:bg-gray-50 border-b border-gray-100 cursor-pointer transition-colors text-left">
+                      Všetci (zrušiť filter)
+                    </button>
+                    {deviceGroups.map(g => {
+                      const checked = cashKtoFilters.includes(g.key);
+                      return (
+                        <label key={g.key}
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors min-h-[44px]">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => setCashKtoFilters(prev =>
+                              prev.includes(g.key) ? prev.filter(x => x !== g.key) : [...prev, g.key]
+                            )}
+                            className="w-4 h-4 accent-secondary shrink-0"
+                          />
+                          <DeviceIconSmall label={g.devices[0]} className="w-4 h-4 text-gray-400 shrink-0" />
+                          <span className="flex-1 min-w-0">
+                            {g.isPerson ? (
+                              <>
+                                <span className="text-[12px] font-bold text-gray-800">{g.label}</span>
+                                {g.subInfo && <span className="ml-1.5 text-[10px] text-gray-400">{g.subInfo}</span>}
+                                {g.devices.length > 1 && (
+                                  <span className="ml-1.5 text-[9px] font-black text-secondary bg-secondary/10 px-1 py-px rounded">
+                                    {g.devices.length}×
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-[11px] text-gray-600">{g.label}</span>
+                            )}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+            {/* Spacer */}
+            <div className="flex-1" />
+            {/* Klient dropdown */}
             {orderClients.length > 0 && (
               <ClientDropdown clients={orderClients} value={cashClientFilter} onChange={setCashClientFilter}
                 dropRef={cashClientRef} open={cashClientDrop} setOpen={setCashClientDrop}
                 search={cashClientSearch} setSearch={setCashClientSearch} />
             )}
-            <div className="flex-1" />
+            {/* Záloha checkbox */}
             <label className="flex items-center gap-1.5 cursor-pointer bg-white border border-gray-200 rounded-full px-2.5 py-1.5 shrink-0">
               <input type="checkbox" checked={onlyDeposit} onChange={e => setOnlyDeposit(e.target.checked)} className="w-3.5 h-3.5 accent-amber-500" />
               <span className="text-[10px] font-bold text-gray-500">Záloha</span>
