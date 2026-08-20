@@ -355,15 +355,21 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     return map;
   }, [deviceGroups]);
 
+  // Pomocná funkcia: posledná zmena objednávky (statusHistory alebo createdAt)
+  // Toto je sort/group kľúč — ZASADNÉ PRAVIDLO: posledná zmena VŽDY TOP
+  const orderLastChanged = (o: Order): string =>
+    o.statusHistory?.at(-1)?.changedAt ?? o.createdAt;
+
   const filteredOrders = useMemo(() => {
     const result = liveOrders
       .filter(o => {
         if (onlyDeposit && !(o.depositUsed && o.depositUsed > 0)) return false;
         if (cashClientFilter !== "vsetci" && o.clientId !== cashClientFilter) return false;
         if (cashKtoFilters.length > 0 && !cashKtoFilters.includes(deviceToGroupKey.get(o.createdByDevice ?? "") ?? "")) return false;
-        return passesDate(toDateStr(o.createdAt), cashDateFilter);
+        // Dátumový filter — posledná zmena (nie createdAt) určuje, do ktorého dňa patrí
+        return passesDate(toDateStr(orderLastChanged(o)), cashDateFilter);
       })
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      .sort((a, b) => orderLastChanged(b).localeCompare(orderLastChanged(a)));
     return result;
   }, [liveOrders, cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit, deviceToGroupKey]);
 
@@ -371,11 +377,12 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   useEffect(() => { setDisplayLimit(100); }, [cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit]);
 
   // Pre-computed date groups — eliminuje mutable lastDate v JSX renderi (crash risk)
+  // Skupinuje podľa poslednej zmeny (nie createdAt) — konzistentné so sort kľúčom
   const groupedOrders = useMemo(() => {
     const display = filteredOrders.slice(0, displayLimit);
     const groups: { date: string; orders: typeof display }[] = [];
     for (const o of display) {
-      const d = o.createdAt.slice(0, 10);
+      const d = orderLastChanged(o).slice(0, 10);
       const last = groups[groups.length - 1];
       if (last && last.date === d) last.orders.push(o);
       else groups.push({ date: d, orders: [o] });
