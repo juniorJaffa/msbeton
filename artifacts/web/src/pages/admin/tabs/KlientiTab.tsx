@@ -104,6 +104,57 @@ function extractExifDateTime(buf: ArrayBuffer): string | null {
   return null;
 }
 
+// EXIF Orientation tag (0x0112) — vracia 1–8, default 1 (žiadna rotácia)
+function extractExifOrientation(buf: ArrayBuffer): number {
+  try {
+    const v = new DataView(buf);
+    if (v.byteLength < 4 || v.getUint16(0) !== 0xFFD8) return 1;
+    let off = 2;
+    while (off < v.byteLength - 4) {
+      const marker = v.getUint16(off);
+      const segLen = v.getUint16(off + 2);
+      if (segLen < 2) break;
+      if (marker === 0xFFE1 && v.getUint32(off + 4) === 0x45786966) {
+        const tiff = off + 10;
+        const le = v.getUint16(tiff) === 0x4949;
+        const r16 = (o: number) => v.getUint16(tiff + o, le);
+        const r32 = (o: number) => v.getUint32(tiff + o, le);
+        const ifd0 = r32(4); const n0 = r16(ifd0);
+        for (let i = 0; i < n0; i++) {
+          const e = ifd0 + 2 + i * 12;
+          if (r16(e) === 0x0112) return r16(e + 8); // Orientation tag
+        }
+      }
+      if (marker === 0xFFDA) break;
+      off += 2 + segLen;
+    }
+  } catch { /* corrupt EXIF */ }
+  return 1;
+}
+
+// Aplikuje EXIF orientáciu na canvas ctx pred drawImage
+function applyExifOrientationToCanvas(canvas: HTMLCanvasElement, img: HTMLImageElement, orientation: number, w: number, h: number): void {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  // Orientácie 5–8 = transponované (šírka ↔ výška)
+  const transposed = orientation >= 5;
+  canvas.width  = transposed ? h : w;
+  canvas.height = transposed ? w : h;
+  ctx.save();
+  switch (orientation) {
+    case 2: ctx.transform(-1, 0, 0,  1, w, 0); break;              // flip H
+    case 3: ctx.transform(-1, 0, 0, -1, w, h); break;              // 180°
+    case 4: ctx.transform( 1, 0, 0, -1, 0, h); break;              // flip V
+    case 5: ctx.transform( 0, 1, 1,  0, 0, 0); break;              // transpose
+    case 6: ctx.transform( 0, 1,-1,  0, h, 0); break;              // 90° CW
+    case 7: ctx.transform( 0,-1,-1,  0, h, w); break;              // transverse
+    case 8: ctx.transform( 0,-1, 1,  0, 0, w); break;              // 90° CCW
+    default: break;                                                  // 1 = normal
+  }
+  ctx.drawImage(img, 0, 0, w, h);
+  ctx.restore();
+}
+
 function genPassword() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
 }
@@ -548,17 +599,24 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     } catch { /* tichý fail — necháme stav */ }
     setDelDeviceState(s => { const n = { ...s }; delete n[key]; return n; });
   };
-  // ── Foto klienta — kompresná utilita (Safari-safe) ──────────────────────────
+  // ── Foto klienta — kompresná utilita (Safari-safe, EXIF-aware) ────────────
   // createImageBitmap s { imageOrientation: "from-image" } = EXIF rotácia na iOS Safari 15+ / Chrome 68+ / FF 93+
-  const compressClientPhoto = async (file: File): Promise<string> => {
-    const MAX_W = 1280, MAX_H = 960, QUALITY = 0.85; // hetzner 40GB — vyššia kvalita OK
-    // pokus createImageBitmap — EXIF-aware (hlavne iOS Safari)
+  // Fallback: manuálna EXIF orientácia cez extractExifOrientation + applyExifOrientationToCanvas
+  const compressClientPhoto = async (file: File, existingBuf?: ArrayBuffer): Promise<string> => {
+    const MAX_W = 1280, MAX_H = 960, QUALITY = 0.85;
+    // Použij existujúci buf ak dostupný (processPhotoFile ho číta pre GPS/date — nečítaj znova)
+    const buf = existingBuf ?? await file.arrayBuffer();
+    const orientation = extractExifOrientation(buf);
+    const transposed = orientation >= 5; // 5–8: šírka ↔ výška sú prehodené
+
+    // Pokus createImageBitmap — EXIF-aware (iOS Safari 15+, Chrome 68+, FF 93+)
     let bitmap: ImageBitmap | null = null;
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       bitmap = await createImageBitmap(file, { imageOrientation: "from-image" } as any);
     } catch { /* fallback nižšie */ }
     if (bitmap) {
+      // bitmap.width/height sú už po EXIF rotácii → MAX_W/MAX_H platia priamo
       const ratio = Math.min(MAX_W / bitmap.width, MAX_H / bitmap.height, 1);
       const w = Math.max(1, Math.round(bitmap.width * ratio));
       const h = Math.max(1, Math.round(bitmap.height * ratio));
@@ -568,20 +626,21 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
       if (ctx) { ctx.drawImage(bitmap, 0, 0, w, h); bitmap.close(); return canvas.toDataURL("image/jpeg", QUALITY); }
       bitmap.close();
     }
-    // Fallback: Image element (starší Safari)
+    // Fallback: Image element + manuálna EXIF orientácia
     return new Promise((resolve, reject) => {
       const img = new Image();
       const url = URL.createObjectURL(file);
       img.onload = () => {
         URL.revokeObjectURL(url);
-        const ratio = Math.min(MAX_W / img.naturalWidth, MAX_H / img.naturalHeight, 1);
-        const w = Math.max(1, Math.round(img.naturalWidth * ratio));
-        const h = Math.max(1, Math.round(img.naturalHeight * ratio));
+        // naturalWidth/Height = pred EXIF rotáciou; pre transponované orientácie prehodíme
+        const rawW = img.naturalWidth, rawH = img.naturalHeight;
+        const dispW = transposed ? rawH : rawW;  // zobrazená šírka po EXIF rotácii
+        const dispH = transposed ? rawW : rawH;
+        const ratio = Math.min(MAX_W / dispW, MAX_H / dispH, 1);
+        const w = Math.max(1, Math.round(rawW * ratio));
+        const h = Math.max(1, Math.round(rawH * ratio));
         const canvas = document.createElement("canvas");
-        canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) { reject(new Error("no 2d ctx")); return; }
-        ctx.drawImage(img, 0, 0, w, h);
+        applyExifOrientationToCanvas(canvas, img, orientation, w, h);
         resolve(canvas.toDataURL("image/jpeg", QUALITY));
       };
       img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("load failed")); };
@@ -611,7 +670,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
       let gpsCoords = extractExifGPS(buf);
       const exifDate = extractExifDateTime(buf);
       const capturedAt = exifDate ?? new Date().toISOString();
-      const [compressed] = await Promise.all([compressClientPhoto(file)]);
+      const [compressed] = await Promise.all([compressClientPhoto(file, buf)]);
       const client = clients.find(c => c.id === clientId);
       const existing = client?.photos ?? [];
       if (existing.length >= 3) return;
