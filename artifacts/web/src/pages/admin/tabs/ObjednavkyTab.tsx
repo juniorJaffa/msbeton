@@ -793,6 +793,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const [mapModalOrder, setMapModalOrder] = useState<Order | null>(null);
   const [clientPhotoModal, setClientPhotoModal] = useState<string | null>(null); // client.id
   const plusCodeBackfilledRef = useRef<Set<string>>(new Set());
+  const [mapsReady, setMapsReady] = useState(() => !!(window as unknown as { google?: { maps?: { Geocoder?: unknown } } }).google?.maps?.Geocoder);
   const [ordersPage, setOrdersPage] = useState(0);
   const ORDERS_PAGE_SIZE = 30;
   const [scaleAlertDismissed, setScaleAlertDismissed] = useState(false);
@@ -826,9 +827,19 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
     return () => clearInterval(interval);
   }, []);
 
+  // Poll kým Google Maps API neloadzuje — potom spustí backfill
   useEffect(() => {
-    const w = window as unknown as { google?: { maps?: { Geocoder?: unknown } } };
-    if (!w.google?.maps?.Geocoder) return;
+    if (mapsReady) return;
+    const interval = setInterval(() => {
+      const w = window as unknown as { google?: { maps?: { Geocoder?: unknown } } };
+      if (w.google?.maps?.Geocoder) { setMapsReady(true); clearInterval(interval); }
+    }, 600);
+    return () => clearInterval(interval);
+  }, [mapsReady]);
+
+  // Backfill mapLocality pre objednávky s plusCode ale bez locality
+  useEffect(() => {
+    if (!mapsReady) return;
     const toFill = orders.filter(o => o.mapPlusCode && !o.mapLocality && !plusCodeBackfilledRef.current.has(o.id));
     if (toFill.length === 0) return;
     toFill.forEach(o => {
@@ -853,7 +864,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
         });
       });
     });
-  }, [orders]);
+  }, [orders, mapsReady]);
 
   const readOnly = isReader(); // admin-čitateľ — žiadne zmeny objednávok
   const save = (data: Order[]) => { if (readerBlocked()) return; setOrders(data); adminData.saveOrders(data); };
