@@ -1621,7 +1621,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                     </div>
                   </div>
                   {/* Right */}
-                  <div className="flex flex-col items-end justify-between shrink-0 gap-1.5" onClick={e => e.stopPropagation()}>
+                  <div className="flex flex-col items-end justify-between shrink-0 gap-1.5">
                     <div className="text-right">
                       <div className="font-black text-secondary text-base tabular-nums leading-tight">{fmtEur(o.totalSDph)}</div>
                       {o.status === "vyplatena" && o.paidAmount !== undefined && Math.abs(o.paidAmount - o.totalSDph) > 0.01 && (
