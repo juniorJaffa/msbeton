@@ -722,7 +722,7 @@ function exportOrderPDF(o: Order, format: "a4" | "a5" = "a4") {
   if (!win) { const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.click(); }
 }
 
-export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClientId, focusOrderId, onGoToHistoria }: { onGoToClient?: (loginId: string) => void; initialSearch?: string; initialClientId?: string; focusOrderId?: string; onGoToHistoria?: (filter: { sub: "zalohy" | "cashflow"; clientId?: string; date?: string }) => void }) {
+export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClientId, focusOrderId, onGoToHistoria }: { onGoToClient?: (loginId: string) => void; initialSearch?: string; initialClientId?: string; focusOrderId?: string; onGoToHistoria?: (filter: { sub: "zalohy" | "cashflow"; clientId?: string; date?: string; orderId?: string; dateFilter?: string }) => void }) {
   const [orders, setOrders] = useState<Order[]>(() => adminData.getOrders());
   const [allCategories, setAllCategories] = useState(() => adminData.getCategories());
   useEffect(() => {
@@ -2137,8 +2137,8 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                         onClick={e => {
                                           e.stopPropagation();
                                           onGoToHistoria(o.clientId
-                                            ? { sub: "cashflow", clientId: o.clientId, dateFilter: "vsetko" }
-                                            : { sub: "cashflow", date: o.createdAt.slice(0, 10), dateFilter: "vsetko" });
+                                            ? { sub: "cashflow", clientId: o.clientId, dateFilter: "vsetko", orderId: o.id }
+                                            : { sub: "cashflow", date: o.createdAt.slice(0, 10), dateFilter: "vsetko", orderId: o.id });
                                         }}
                                         className="text-[9px] font-bold text-secondary hover:text-primary underline underline-offset-2 transition-colors flex items-center gap-0.5 shrink-0"
                                       >

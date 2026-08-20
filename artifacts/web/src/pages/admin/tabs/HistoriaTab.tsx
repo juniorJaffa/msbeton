@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { adminData, Client, DepositTx, Order, getKamenivoGroup } from "@/lib/adminData";
 import { ChevronRight, TrendingUp, Minus, Smartphone, Monitor, Laptop, ChevronDown, Users, ShoppingCart, Mountain, Waves, X, MessageSquare } from "lucide-react";
 
@@ -10,6 +10,7 @@ interface Props {
   initialClientId?: string;
   initialDate?: string;
   initialDateFilter?: DateFilter;   // explicitný override pre cashDateFilter (napr. "vsetko" z navigácie)
+  initialOrderId?: string;          // zvýrazni + scrolluj na konkrétnu objednávku
   onGoToClient?: (loginId: string) => void;
   onGoToOrder?:  (orderId: string) => void;
 }
@@ -164,7 +165,7 @@ const STATUS_COLOR: Record<string, string> = {
   zmazana:    "bg-red-900 text-red-100",
 };
 
-export default function HistoriaTab({ initialSub, initialClientId, initialDate, initialDateFilter, onGoToClient, onGoToOrder }: Props) {
+export default function HistoriaTab({ initialSub, initialClientId, initialDate, initialDateFilter, initialOrderId, onGoToClient, onGoToOrder }: Props) {
   const [sub, setSub] = useState<Sub>(() => {
     if (initialSub) return initialSub;
     const saved = localStorage.getItem("msbeton_historia_sub");
@@ -192,6 +193,19 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [flashDeletedId,   setFlashDeletedId]   = useState<string | null>(null);
   const cashClientRef = useRef<HTMLDivElement>(null);
   const ktoRef        = useRef<HTMLDivElement>(null);
+
+  // Focus + scroll na konkrétnu objednávku (navigácia z ObjednavkyTab)
+  const [focusOrderId, setFocusOrderId] = useState<string | undefined>(initialOrderId);
+  const scrollToFocused = useCallback((node: HTMLDivElement | null) => {
+    if (node) {
+      setTimeout(() => node.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
+    }
+  }, []);
+  useEffect(() => {
+    if (!focusOrderId) return;
+    const t = setTimeout(() => setFocusOrderId(undefined), 3200);
+    return () => clearTimeout(t);
+  }, [focusOrderId]);
 
   // Zatvor dropdowny pri kliknutí mimo
   useEffect(() => {
@@ -493,6 +507,18 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
 
   return (
     <div className="space-y-4">
+      <style>{`
+        @keyframes historia-order-focus {
+          0%   { outline-color: #EDC531; background-color: rgba(237,197,49,0.18); }
+          60%  { outline-color: #EDC531; background-color: rgba(237,197,49,0.10); }
+          100% { outline-color: transparent; background-color: transparent; }
+        }
+        .historia-focus-order {
+          animation: historia-order-focus 3.2s ease-out forwards;
+          outline: 2.5px solid #EDC531;
+          outline-offset: -2px;
+        }
+      `}</style>
       {/* Nadpis stránky */}
       <div className="flex items-center gap-3">
         <h2 className="text-lg font-black text-secondary uppercase tracking-widest">História</h2>
@@ -785,12 +811,14 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     const isDeleted = o.status === "zmazana";
                     const isFlashing = flashDeletedId === o.id;
                     return (
-                      <div key={o.id} onClick={() => {
+                      <div key={o.id}
+                        ref={o.id === focusOrderId ? scrollToFocused : undefined}
+                        onClick={() => {
                           if (isDeleted) { setFlashDeletedId(o.id); setTimeout(() => setFlashDeletedId(null), 600); return; }
                           onGoToOrder?.(o.id);
                         }}
                         title={isDeleted ? "Zmazaná objednávka — nedostupná v zozname" : undefined}
-                        className={`px-3 py-2.5 border-b-2 border-gray-200 last:border-b-0 transition-colors ${isFlashing ? "flash-deleted" : ""} ${isDeleted ? "opacity-50 bg-red-50/40 cursor-not-allowed" : onGoToOrder ? "cursor-pointer hover:bg-amber-50" : "hover:bg-gray-50"}`}>
+                        className={`px-3 py-2.5 border-b-2 border-gray-200 last:border-b-0 transition-colors ${o.id === focusOrderId ? "historia-focus-order" : ""} ${isFlashing ? "flash-deleted" : ""} ${isDeleted ? "opacity-50 bg-red-50/40 cursor-not-allowed" : onGoToOrder ? "cursor-pointer hover:bg-amber-50" : "hover:bg-gray-50"}`}>
 
                         {/* ── MOBILE ─────────────────────────────────────────── */}
                         <div className="sm:hidden space-y-1 py-0.5">
