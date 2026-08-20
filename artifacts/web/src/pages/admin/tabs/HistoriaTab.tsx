@@ -361,8 +361,21 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     for (const [person, { devices, types }] of byPerson) {
       groups.push({ key: person, label: person, devices, isPerson: true, subInfo: types.length > 0 ? types.join(" · ") : undefined });
     }
+    // Všetky nepomenované zariadenia → jeden bucket "Ostatné"
+    const allUnnamed: string[] = [];
+    const unnamedLabels: string[] = [];
     for (const [displayKey, { fullLabels }] of byDisplayName) {
-      groups.push({ key: displayKey, label: displayKey, devices: fullLabels, isPerson: false, subInfo: fullLabels.length > 1 ? `${fullLabels.length}× zariad.` : undefined });
+      allUnnamed.push(...fullLabels);
+      unnamedLabels.push(displayKey);
+    }
+    if (allUnnamed.length > 0) {
+      groups.push({
+        key: "ostatne",
+        label: "Ostatné",
+        devices: allUnnamed,
+        isPerson: false,
+        subInfo: unnamedLabels.slice(0, 3).join(" · ") + (unnamedLabels.length > 3 ? ` +${unnamedLabels.length - 3}` : ""),
+      });
     }
     return groups;
   }, [devicesSourceOrders]);
