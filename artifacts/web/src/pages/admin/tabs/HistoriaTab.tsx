@@ -296,6 +296,65 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     return map;
   }, [liveClients]);
 
+  // Zariadenia — len tie aktívne v aktuálnom dátumovom rozsahu (nechceme staré nepoužívané)
+  // MUSÍ byť pred filteredOrders — deviceToGroupKey je TDZ ak je deklarovaná neskôr
+  const devicesSourceOrders = useMemo(() =>
+    liveOrders.filter(o => passesDate(toDateStr(o.createdAt), cashDateFilter)),
+  [liveOrders, cashDateFilter]);
+
+  // KTO skupiny — named osoby = group, unnamed auto-labels = individual s plným labelom
+  interface DeviceGroup {
+    key: string;          // group key pre filter (person name alebo full label)
+    label: string;        // zobrazovaný label
+    devices: string[];    // všetky device strings v tejto skupine
+    subInfo?: string;     // krátky popis sub-zariadení (napr. "iPhone · Mac · Ntb")
+    isPerson: boolean;    // true = má reálne meno osoby
+  }
+
+  const deviceGroups = useMemo((): DeviceGroup[] => {
+    const rawDevices: string[] = [];
+    const seen = new Set<string>();
+    for (const o of devicesSourceOrders) {
+      const d = o.createdByDevice ?? "";
+      if (!d || seen.has(d)) continue;
+      seen.add(d); rawDevices.push(d);
+    }
+    const byPerson = new Map<string, { devices: string[]; types: string[] }>();
+    const unnamed: { fullLabel: string }[] = [];
+    for (const d of rawDevices) {
+      const { person, deviceType } = parseDeviceLabel(d);
+      if (person) {
+        if (!byPerson.has(person)) byPerson.set(person, { devices: [], types: [] });
+        byPerson.get(person)!.devices.push(d);
+        if (deviceType && !byPerson.get(person)!.types.includes(deviceType))
+          byPerson.get(person)!.types.push(deviceType);
+      } else {
+        unnamed.push({ fullLabel: d });
+      }
+    }
+    const byDisplayName = new Map<string, { fullLabels: string[] }>();
+    for (const { fullLabel } of unnamed) {
+      const displayKey = fullLabel.replace(/\s*·\s*#[a-f0-9]{1,8}/gi, "").trim() || fullLabel;
+      if (!byDisplayName.has(displayKey)) byDisplayName.set(displayKey, { fullLabels: [] });
+      byDisplayName.get(displayKey)!.fullLabels.push(fullLabel);
+    }
+    const groups: DeviceGroup[] = [];
+    for (const [person, { devices, types }] of byPerson) {
+      groups.push({ key: person, label: person, devices, isPerson: true, subInfo: types.length > 0 ? types.join(" · ") : undefined });
+    }
+    for (const [displayKey, { fullLabels }] of byDisplayName) {
+      groups.push({ key: displayKey, label: displayKey, devices: fullLabels, isPerson: false, subInfo: fullLabels.length > 1 ? `${fullLabels.length}× zariad.` : undefined });
+    }
+    return groups;
+  }, [devicesSourceOrders]);
+
+  // Mapa device label → group key (pre filter)
+  const deviceToGroupKey = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const g of deviceGroups) for (const d of g.devices) map.set(d, g.key);
+    return map;
+  }, [deviceGroups]);
+
   const filteredOrders = useMemo(() => {
     const result = liveOrders
       .filter(o => {
@@ -352,76 +411,6 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     }
     return Array.from(bestName.entries()).map(([id, name]) => ({ id, name }));
   }, [liveOrders, clientByLoginId]);
-
-  // Zariadenia — len tie aktívne v aktuálnom dátumovom rozsahu (nechceme staré nepoužívané)
-  const devicesSourceOrders = useMemo(() =>
-    liveOrders.filter(o => passesDate(toDateStr(o.createdAt), cashDateFilter)),
-  [liveOrders, cashDateFilter]);
-
-  // KTO skupiny — named osoby = group, unnamed auto-labels = individual s plným labelom
-  interface DeviceGroup {
-    key: string;          // group key pre filter (person name alebo full label)
-    label: string;        // zobrazovaný label
-    devices: string[];    // všetky device strings v tejto skupine
-    subInfo?: string;     // krátky popis sub-zariadení (napr. "iPhone · Mac · Ntb")
-    isPerson: boolean;    // true = má reálne meno osoby
-  }
-
-  const deviceGroups = useMemo((): DeviceGroup[] => {
-    const rawDevices: string[] = [];
-    const seen = new Set<string>();
-    for (const o of devicesSourceOrders) {
-      const d = o.createdByDevice ?? "";
-      if (!d || seen.has(d)) continue;
-      seen.add(d); rawDevices.push(d);
-    }
-
-    const byPerson = new Map<string, { devices: string[]; types: string[] }>();
-    const unnamed: { fullLabel: string }[] = [];
-
-    for (const d of rawDevices) {
-      const { person, deviceType } = parseDeviceLabel(d);
-      if (person) {
-        if (!byPerson.has(person)) byPerson.set(person, { devices: [], types: [] });
-        byPerson.get(person)!.devices.push(d);
-        if (deviceType && !byPerson.get(person)!.types.includes(deviceType))
-          byPerson.get(person)!.types.push(deviceType);
-      } else {
-        unnamed.push({ fullLabel: d });
-      }
-    }
-
-    // Unnamed zariadenia — zgrupovaé podľa display name (bez hashu)
-    // "iPhone Safari · #a3f2" + "iPhone Safari · #b7c1" → jedna skupina "iPhone Safari"
-    const byDisplayName = new Map<string, { fullLabels: string[] }>();
-    for (const { fullLabel } of unnamed) {
-      const displayKey = fullLabel.replace(/\s*·\s*#[a-f0-9]{1,8}/gi, "").trim() || fullLabel;
-      if (!byDisplayName.has(displayKey)) byDisplayName.set(displayKey, { fullLabels: [] });
-      byDisplayName.get(displayKey)!.fullLabels.push(fullLabel);
-    }
-
-    const groups: DeviceGroup[] = [];
-    for (const [person, { devices, types }] of byPerson) {
-      groups.push({
-        key: person, label: person, devices, isPerson: true,
-        subInfo: types.length > 0 ? types.join(" · ") : undefined,
-      });
-    }
-    for (const [displayKey, { fullLabels }] of byDisplayName) {
-      groups.push({
-        key: displayKey, label: displayKey, devices: fullLabels, isPerson: false,
-        subInfo: fullLabels.length > 1 ? `${fullLabels.length}× zariad.` : undefined,
-      });
-    }
-    return groups;
-  }, [devicesSourceOrders]);
-
-  // Mapa device label → group key (pre filter)
-  const deviceToGroupKey = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const g of deviceGroups) for (const d of g.devices) map.set(d, g.key);
-    return map;
-  }, [deviceGroups]);
 
   // ── CSS helpers ─────────────────────────────────────────────────────────
   const dateBtnCls  = (a: boolean) => `px-2.5 py-1.5 text-[10px] font-bold rounded-full transition-colors cursor-pointer ${a ? "bg-secondary text-white" : "bg-white text-gray-500 border border-gray-200 hover:border-gray-300"}`;
