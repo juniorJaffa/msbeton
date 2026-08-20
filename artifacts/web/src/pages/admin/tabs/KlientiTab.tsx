@@ -2852,6 +2852,12 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
               if (dx < 0 && canNext) setPhotoLightbox({ clientId: photoLightbox.clientId, index: idx + 1 });
               if (dx > 0 && canPrev) setPhotoLightbox({ clientId: photoLightbox.clientId, index: idx - 1 });
             }}>
+            {/* X — zatvoriť (top-right corner) */}
+            <button type="button"
+              onClick={() => setPhotoLightbox(null)}
+              className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors cursor-pointer">
+              <X className="w-5 h-5 text-white" />
+            </button>
 
             {/* Nav prev */}
             {canPrev && (
@@ -2921,7 +2927,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
               )}
 
               {/* Caption + actions */}
-              <div className="flex items-start justify-between w-full gap-2 px-1">
+              <div className="flex items-center justify-between w-full gap-2 px-1">
                 <div className="text-white/80 text-sm font-semibold break-words min-w-0 leading-snug">
                   {lbName}
                   <span className="text-white/40 font-normal text-xs ml-1">foto {idx + 1}/{photos.length}</span>
@@ -2946,10 +2952,6 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                       <Trash2 className="w-3.5 h-3.5" /> Zmazať
                     </button>
                   )}
-                  <button type="button" onClick={() => setPhotoLightbox(null)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-white text-xs font-bold transition-colors cursor-pointer">
-                    Zavrieť
-                  </button>
                 </div>
               </div>
             </div>
