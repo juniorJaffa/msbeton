@@ -1067,8 +1067,10 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
     return () => container.removeEventListener("scroll", onScroll);
   }, []);
 
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const yesterdayStr = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().slice(0, 10); })();
+  // Lokálny dátum (SK čas, nie UTC) — correct po polnoci
+  const localDay = (off = 0) => { const d = new Date(); d.setDate(d.getDate() + off); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
+  const todayStr = localDay(0);
+  const yesterdayStr = localDay(-1);
   const fmtDate = (iso: string) => {
     const d = new Date(iso);
     const time = d.toLocaleTimeString("sk-SK", { hour: "2-digit", minute: "2-digit" });
@@ -2093,13 +2095,11 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                               };
                               const fmtTs = (iso: string) => {
                                 const d = new Date(iso);
-                                const now = new Date();
-                                const todayStr2 = now.toISOString().slice(0,10);
-                                const dStr = d.toISOString().slice(0,10);
+                                const lDay = (off=0) => { const x=new Date(); x.setDate(x.getDate()+off); return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}-${String(x.getDate()).padStart(2,"0")}`; };
+                                const dStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
                                 const t = d.toLocaleTimeString("sk-SK", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Bratislava" });
-                                if (dStr === todayStr2) return `Dnes ${t}`;
-                                const y = new Date(now); y.setDate(y.getDate()-1);
-                                if (dStr === y.toISOString().slice(0,10)) return `Včera ${t}`;
+                                if (dStr === lDay(0))  return `Dnes ${t}`;
+                                if (dStr === lDay(-1)) return `Včera ${t}`;
                                 return `${d.toLocaleDateString("sk-SK", { day:"numeric", month:"numeric", timeZone:"Europe/Bratislava" })} ${t}`;
                               };
 

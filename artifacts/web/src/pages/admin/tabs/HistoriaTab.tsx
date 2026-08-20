@@ -19,16 +19,20 @@ type DepositRow =
   | { kind: "order"; clientId: string; clientName: string; loginId: string; sortKey: string;
       orderId: string; amount: number; orderLabel: string; orderDevice?: string; }
 
-const TODAY     = new Date().toISOString().slice(0, 10);
-const YESTERDAY = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+// Lokálny dátum YYYY-MM-DD (SK čas, nie UTC) — vždy čerstvý pri každom volaní
+function localDateStr(offsetDays = 0): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 const SK_MONTHS = ["januára","februára","marca","apríla","mája","júna","júla","augusta","septembra","októbra","novembra","decembra"];
 function fmtGroupDate(dateStr: string): { label: string; sub: string | null } {
   const d = new Date(dateStr + "T00:00:00");
   const day = `${d.getDate()}. ${SK_MONTHS[d.getMonth()]}`;
   const full = d.getFullYear() === new Date().getFullYear() ? day : `${day} ${d.getFullYear()}`;
-  if (dateStr === TODAY)     return { label: "Dnes",  sub: day };
-  if (dateStr === YESTERDAY) return { label: "Včera", sub: day };
+  if (dateStr === localDateStr(0))  return { label: "Dnes",  sub: day };
+  if (dateStr === localDateStr(-1)) return { label: "Včera", sub: day };
   return { label: full, sub: null };
 }
 
@@ -36,10 +40,10 @@ function toDateStr(iso: string) { return iso.slice(0, 10); }
 
 function passesDate(dateStr: string, filter: DateFilter): boolean {
   if (filter === "vsetko") return true;
-  if (filter === "dnes")   return dateStr === TODAY;
-  if (filter === "vcera")  return dateStr === YESTERDAY;
-  if (filter === "tyzden") return dateStr >= new Date(Date.now() - 7  * 86_400_000).toISOString().slice(0, 10);
-  if (filter === "mesiac") return dateStr >= new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
+  if (filter === "dnes")   return dateStr === localDateStr(0);
+  if (filter === "vcera")  return dateStr === localDateStr(-1);
+  if (filter === "tyzden") return dateStr >= localDateStr(-7);
+  if (filter === "mesiac") return dateStr >= localDateStr(-30);
   return true;
 }
 
@@ -210,8 +214,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   useEffect(() => {
     if (!initialDate || initialDateFilter) return; // initialDateFilter má prednosť
     const d = initialDate.slice(0, 10);
-    if (d === TODAY)       setCashDateFilter("dnes");
-    else if (d === YESTERDAY) setCashDateFilter("vcera");
+    if (d === localDateStr(0))  setCashDateFilter("dnes");
+    else if (d === localDateStr(-1)) setCashDateFilter("vcera");
     else                   setCashDateFilter("vsetko"); // staré dátumy → "vsetko" aby bola objednávka viditeľná
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
