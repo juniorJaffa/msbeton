@@ -196,6 +196,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
 
   // Focus + scroll na konkrétnu objednávku (navigácia z ObjednavkyTab)
   const [focusOrderId, setFocusOrderId] = useState<string | undefined>(initialOrderId);
+  const [markedOrderId, setMarkedOrderId] = useState<string | undefined>(initialOrderId); // perzistentná zlatá bodka
   const scrollToFocused = useCallback((node: HTMLDivElement | null) => {
     if (node) {
       setTimeout(() => node.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
@@ -815,10 +816,19 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                         ref={o.id === focusOrderId ? scrollToFocused : undefined}
                         onClick={() => {
                           if (isDeleted) { setFlashDeletedId(o.id); setTimeout(() => setFlashDeletedId(null), 600); return; }
+                          if (o.id === markedOrderId) setMarkedOrderId(undefined);
                           onGoToOrder?.(o.id);
                         }}
                         title={isDeleted ? "Zmazaná objednávka — nedostupná v zozname" : undefined}
-                        className={`px-3 py-2.5 border-b-2 border-gray-200 last:border-b-0 transition-colors ${o.id === focusOrderId ? "historia-focus-order" : ""} ${isFlashing ? "flash-deleted" : ""} ${isDeleted ? "opacity-50 bg-red-50/40 cursor-not-allowed" : onGoToOrder ? "cursor-pointer hover:bg-amber-50" : "hover:bg-gray-50"}`}>
+                        className={`relative px-3 py-2.5 border-b-2 border-gray-200 last:border-b-0 transition-colors ${o.id === focusOrderId ? "historia-focus-order" : ""} ${isFlashing ? "flash-deleted" : ""} ${isDeleted ? "opacity-50 bg-red-50/40 cursor-not-allowed" : onGoToOrder ? "cursor-pointer hover:bg-amber-50" : "hover:bg-gray-50"}`}>
+                        {o.id === markedOrderId && (
+                          <span className="absolute left-0 inset-y-0 pointer-events-none z-10 flex items-center justify-center overflow-visible" style={{width:"4px"}}>
+                            <span className="relative flex" style={{height:"12px",width:"12px"}}>
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60" style={{animationDuration:"1.4s"}} />
+                              <span className="relative inline-flex rounded-full h-full w-full bg-primary" />
+                            </span>
+                          </span>
+                        )}
 
                         {/* ── MOBILE ─────────────────────────────────────────── */}
                         <div className="sm:hidden space-y-1 py-0.5">
