@@ -9,6 +9,7 @@ interface Props {
   initialSub?: Sub;
   initialClientId?: string;
   initialDate?: string;
+  initialDateFilter?: DateFilter;   // explicitný override pre cashDateFilter (napr. "vsetko" z navigácie)
   onGoToClient?: (loginId: string) => void;
   onGoToOrder?:  (orderId: string) => void;
 }
@@ -159,7 +160,7 @@ const STATUS_COLOR: Record<string, string> = {
   zmazana:    "bg-red-900 text-red-100",
 };
 
-export default function HistoriaTab({ initialSub, initialClientId, initialDate, onGoToClient, onGoToOrder }: Props) {
+export default function HistoriaTab({ initialSub, initialClientId, initialDate, initialDateFilter, onGoToClient, onGoToOrder }: Props) {
   const [sub, setSub] = useState<Sub>(() => {
     if (initialSub) return initialSub;
     const saved = localStorage.getItem("msbeton_historia_sub");
@@ -173,8 +174,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [depClientSearch,  setDepClientSearch]  = useState("");
   const depClientRef = useRef<HTMLDivElement>(null);
 
-  // CASHFLOW filtre
-  const [cashDateFilter,   setCashDateFilter]   = useState<DateFilter>("tyzden");
+  // CASHFLOW filtre — ak príde navigácia s clientId/dateFilter, použi "vsetko" aby sa ukázali aj staré objednávky
+  const [cashDateFilter,   setCashDateFilter]   = useState<DateFilter>(
+    initialDateFilter ?? (initialClientId ? "vsetko" : "tyzden")
+  );
   const [cashClientFilter, setCashClientFilter] = useState<string>("vsetci");
   const [cashClientDrop,   setCashClientDrop]   = useState(false);
   const [cashClientSearch, setCashClientSearch] = useState("");
@@ -205,11 +208,11 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   }, [depClientDrop, cashClientDrop, ktoDropOpen]);
 
   useEffect(() => {
-    if (!initialDate) return;
+    if (!initialDate || initialDateFilter) return; // initialDateFilter má prednosť
     const d = initialDate.slice(0, 10);
     if (d === TODAY)       setCashDateFilter("dnes");
     else if (d === YESTERDAY) setCashDateFilter("vcera");
-    else                   setCashDateFilter("tyzden");
+    else                   setCashDateFilter("vsetko"); // staré dátumy → "vsetko" aby bola objednávka viditeľná
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -303,10 +306,23 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       })
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     return result;
-  }, [liveOrders, cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit]);
+  }, [liveOrders, cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit, deviceToGroupKey]);
 
   // Reset displayLimit pri každej zmene filtrov
   useEffect(() => { setDisplayLimit(100); }, [cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit]);
+
+  // Pre-computed date groups — eliminuje mutable lastDate v JSX renderi (crash risk)
+  const groupedOrders = useMemo(() => {
+    const display = filteredOrders.slice(0, displayLimit);
+    const groups: { date: string; orders: typeof display }[] = [];
+    for (const o of display) {
+      const d = o.createdAt.slice(0, 10);
+      const last = groups[groups.length - 1];
+      if (last && last.date === d) last.orders.push(o);
+      else groups.push({ date: d, orders: [o] });
+    }
+    return groups;
+  }, [filteredOrders, displayLimit]);
 
   const cashSummary = useMemo(() => {
     let dep = 0, total = 0, deletedCount = 0;
@@ -728,13 +744,20 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   <span>Dátum</span><span>Klient</span><span>Betón</span><span className="text-right">Celkom</span><span className="text-right">Záloha</span><span>Stav</span><span>KTO</span><span />
                 </div>
                 <div className="">
-                  {(() => {
-                    const display = filteredOrders.slice(0, displayLimit);
-                    let lastDate = "";
-                    return display.map(o => {
-                    const dateKey = o.createdAt.slice(0, 10);
-                    const showHeader = dateKey !== lastDate;
-                    lastDate = dateKey;
+                  {groupedOrders.map(({ date: dateKey, orders: dayOrders }) => (
+                    <div key={dateKey}>
+                      {/* Date group header */}
+                      {(() => {
+                        const gd = fmtGroupDate(dateKey);
+                        return (
+                          <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border-t border-b border-gray-200 sticky top-0 z-10">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-secondary shrink-0">{gd.label}</span>
+                            {gd.sub && <span className="text-[9px] font-bold text-gray-400 shrink-0">{gd.sub}</span>}
+                            <div className="flex-1 h-px bg-gray-200" />
+                          </div>
+                        );
+                      })()}
+                      {dayOrders.map(o => {
                     const c = o.clientId ? clientByLoginId.get(o.clientId) : undefined;
                     // Primárne meno (bez telefónu) — ako ObjednavkyTab
                     const primaryName = c
@@ -967,8 +990,9 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                       </div>
                       </div>
                     );
-                  });
-                })()}
+                  })}
+                    </div>
+                  ))}
                 </div>
                 {/* Load-more — ak je viac ako displayLimit */}
                 {filteredOrders.length > displayLimit && (

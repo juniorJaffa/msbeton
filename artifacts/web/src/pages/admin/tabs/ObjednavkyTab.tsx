@@ -1728,30 +1728,15 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                           </div>
                         )}
                         {o.clientId && <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">ID klienta</span><span className="text-gray-500">{o.clientId}</span></div>}
-                        {o.clientId && (onGoToClient || onGoToHistoria) && (
+                        {o.clientId && onGoToClient && (
                           <div className="flex gap-2 items-center pt-1 flex-wrap">
                             <span className="text-gray-400 w-20 shrink-0" />
-                            {onGoToClient && (
-                              <button
-                                onClick={e => { e.stopPropagation(); onGoToClient(o.clientId!); }}
-                                className="text-[10px] font-bold text-secondary hover:text-primary underline underline-offset-2 transition-colors flex items-center gap-1"
-                              >
-                                <Users className="w-4 h-4" /> Zobraziť v klientoch →
-                              </button>
-                            )}
-                            {onGoToHistoria && (
-                              <button
-                                onClick={e => {
-                                  e.stopPropagation();
-                                  onGoToHistoria(o.clientId
-                                    ? { sub: "cashflow", clientId: o.clientId }
-                                    : { sub: "cashflow", date: o.createdAt.slice(0, 10) });
-                                }}
-                                className="text-[10px] font-bold text-secondary hover:text-primary underline underline-offset-2 transition-colors flex items-center gap-1"
-                              >
-                                <BarChart2 className="w-4 h-4" /> {o.clientId ? "História klienta →" : "→ Zobraziť v Histórii"}
-                              </button>
-                            )}
+                            <button
+                              onClick={e => { e.stopPropagation(); onGoToClient(o.clientId!); }}
+                              className="text-[10px] font-bold text-secondary hover:text-primary underline underline-offset-2 transition-colors flex items-center gap-1"
+                            >
+                              <Users className="w-4 h-4" /> Zobraziť v klientoch →
+                            </button>
                           </div>
                         )}
                         {(effDiscBeton || effDiscDoprava || effDiscSluzby || effDiscCelkovo) ? (
@@ -2145,6 +2130,20 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                       <span className="inline-flex items-center gap-0.5 text-[9px] font-black bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-sm uppercase tracking-wide">
                                         💰 záloha
                                       </span>
+                                    )}
+                                    <div className="flex-1" />
+                                    {onGoToHistoria && (
+                                      <button
+                                        onClick={e => {
+                                          e.stopPropagation();
+                                          onGoToHistoria(o.clientId
+                                            ? { sub: "cashflow", clientId: o.clientId, dateFilter: "vsetko" }
+                                            : { sub: "cashflow", date: o.createdAt.slice(0, 10), dateFilter: "vsetko" });
+                                        }}
+                                        className="text-[9px] font-bold text-secondary hover:text-primary underline underline-offset-2 transition-colors flex items-center gap-0.5 shrink-0"
+                                      >
+                                        <BarChart2 className="w-3 h-3" /> → História objednávky
+                                      </button>
                                     )}
                                   </div>
                                   {entries.map((entry, ei) => {
