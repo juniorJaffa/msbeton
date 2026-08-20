@@ -770,7 +770,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                           onGoToOrder?.(o.id);
                         }}
                         title={isDeleted ? "Zmazaná objednávka — nedostupná v zozname" : undefined}
-                        className={`px-3 py-2.5 border-b border-gray-100 last:border-b-0 transition-colors ${isFlashing ? "flash-deleted" : ""} ${isDeleted ? "opacity-50 bg-red-50/40 cursor-not-allowed" : onGoToOrder ? "cursor-pointer hover:bg-amber-50" : "hover:bg-gray-50"}`}>
+                        className={`px-3 py-2.5 border-b-2 border-gray-200 last:border-b-0 transition-colors ${isFlashing ? "flash-deleted" : ""} ${isDeleted ? "opacity-50 bg-red-50/40 cursor-not-allowed" : onGoToOrder ? "cursor-pointer hover:bg-amber-50" : "hover:bg-gray-50"}`}>
 
                         {/* ── MOBILE ─────────────────────────────────────────── */}
                         <div className="sm:hidden space-y-1 py-0.5">
