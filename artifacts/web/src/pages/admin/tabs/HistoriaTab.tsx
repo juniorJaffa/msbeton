@@ -625,7 +625,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
             </label>
             {/* KTO dropdown trigger — inline, šetrí priestor */}
             {deviceGroups.length > 1 && (
-            <div ref={ktoRef} className="relative inline-block">
+            <div ref={ktoRef} className="relative inline-flex items-center gap-1">
               {/* Trigger — rovnaká výška ako date pills, zmestí sa do riadku */}
               <button
                 onClick={() => setKtoDropOpen(o => !o)}
@@ -643,6 +643,15 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                 )}
                 <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-150 ${ktoDropOpen ? "rotate-180" : ""}`} />
               </button>
+              {/* X — zrušiť KTO filter (viditeľné len keď je aktívny) */}
+              {cashKtoFilters.length > 0 && (
+                <button
+                  onClick={() => setCashKtoFilters([])}
+                  className="w-5 h-5 rounded-full bg-primary flex items-center justify-center cursor-pointer hover:bg-primary/80 transition-colors shrink-0"
+                  title="Zrušiť KTO filter">
+                  <X className="w-3 h-3 text-white" />
+                </button>
+              )}
 
               {/* Dropdown panel */}
               {ktoDropOpen && (
