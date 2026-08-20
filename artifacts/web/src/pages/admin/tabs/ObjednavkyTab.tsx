@@ -793,7 +793,6 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const [mapModalOrder, setMapModalOrder] = useState<Order | null>(null);
   const [clientPhotoModal, setClientPhotoModal] = useState<string | null>(null); // client.id
   const plusCodeBackfilledRef = useRef<Set<string>>(new Set());
-  const [mapsReady, setMapsReady] = useState(() => !!(window as unknown as { google?: { maps?: { Geocoder?: unknown } } }).google?.maps?.Geocoder);
   const [ordersPage, setOrdersPage] = useState(0);
   const ORDERS_PAGE_SIZE = 30;
   const [scaleAlertDismissed, setScaleAlertDismissed] = useState(false);
@@ -827,44 +826,46 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
     return () => clearInterval(interval);
   }, []);
 
-  // Poll kým Google Maps API neloadzuje — potom spustí backfill
+  // Backfill mapLocality via Nominatim (OpenStreetMap) — bez Google Geocoding API
   useEffect(() => {
-    if (mapsReady) return;
-    const interval = setInterval(() => {
-      const w = window as unknown as { google?: { maps?: { Geocoder?: unknown } } };
-      if (w.google?.maps?.Geocoder) { setMapsReady(true); clearInterval(interval); }
-    }, 600);
-    return () => clearInterval(interval);
-  }, [mapsReady]);
-
-  // Backfill mapLocality pre objednávky s plusCode ale bez locality
-  useEffect(() => {
-    if (!mapsReady) return;
     const toFill = orders.filter(o => o.mapPlusCode && !o.mapLocality && !plusCodeBackfilledRef.current.has(o.id));
     if (toFill.length === 0) return;
-    toFill.forEach(o => {
+    // Inline OLC (Plus Code) decoder
+    const decodePlusCode = (code: string): { lat: number; lng: number } => {
+      const AL = "23456789CFGHJMPQRVWX";
+      const s = code.toUpperCase().replace("+", "");
+      let lat = 0, lng = 0, lR = 400, lnR = 400;
+      for (let i = 0; i < s.length - 1; i += 2) {
+        lR /= 20; lnR /= 20;
+        lat += AL.indexOf(s[i]) * lR;
+        lng += AL.indexOf(s[i + 1]) * lnR;
+      }
+      return { lat: lat - 90 + lR / 2, lng: lng - 180 + lnR / 2 };
+    };
+    toFill.forEach((o, idx) => {
       plusCodeBackfilledRef.current.add(o.id);
-      new google.maps.Geocoder().geocode({ address: o.mapPlusCode!, region: "SK" }, (results, status) => {
-        if (status !== "OK" || !results?.[0]) return;
-        const comps = results[0].address_components ?? [];
-        const loc = comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("locality"))?.long_name
-          ?? comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("postal_town"))?.long_name
-          ?? comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("administrative_area_level_3"))?.long_name
-          ?? comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("administrative_area_level_4"))?.long_name
-          ?? comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("sublocality_level_1"))?.long_name
-          ?? comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("neighborhood"))?.long_name
-          ?? "";
-        const district = comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("administrative_area_level_2"))?.long_name ?? "";
-        const mapLocality = [loc, district].filter(Boolean).join(", ");
-        if (!mapLocality) return;
-        setOrders(prev => {
-          const updated = prev.map(p => p.id === o.id ? { ...p, mapLocality } : p);
-          adminData.saveOrders(updated);
-          return updated;
-        });
-      });
+      setTimeout(async () => {
+        try {
+          const { lat, lng } = decodePlusCode(o.mapPlusCode!);
+          const r = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=sk`,
+            { headers: { "User-Agent": "msbeton-admin/1.0" } }
+          );
+          const d = await r.json();
+          const a = d.address ?? {};
+          const loc = (a.village ?? a.town ?? a.city ?? a.municipality ?? "") as string;
+          const dist = (a.county ?? "") as string;
+          const mapLocality = [loc, dist].filter(Boolean).join(", ");
+          if (!mapLocality) return;
+          setOrders(prev => {
+            const updated = prev.map(p => p.id === o.id ? { ...p, mapLocality } : p);
+            adminData.saveOrders(updated);
+            return updated;
+          });
+        } catch { /* silent */ }
+      }, idx * 1100); // Nominatim rate limit: 1 req/s
     });
-  }, [orders, mapsReady]);
+  }, [orders]);
 
   const readOnly = isReader(); // admin-čitateľ — žiadne zmeny objednávok
   const save = (data: Order[]) => { if (readerBlocked()) return; setOrders(data); adminData.saveOrders(data); };

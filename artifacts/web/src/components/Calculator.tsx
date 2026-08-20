@@ -687,43 +687,35 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       // Uloží setPinAt do refu — prístupný aj z early-return path pri re-vstupe
       mapSetPinAtRef.current = setPinAt;
 
-      const reverseGeocode = (lat: number, lng: number) => {
-        new google.maps.Geocoder().geocode({ location: { lat, lng } }, (results, gStatus) => {
-          if (gStatus !== "OK" || !results || !results[0]) {
-            setMapLocality("");
-            setMapGeocodedAddress("");
-            return;
-          }
-          const country = results[0].address_components?.find(
-            (c: google.maps.GeocoderAddressComponent) => c.types.includes("country")
+      // Reverse geocode via Nominatim (OpenStreetMap) — Google Geocoding API nie je aktivovaná
+      const reverseGeocode = async (lat: number, lng: number) => {
+        try {
+          const r = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=sk`,
+            { headers: { "User-Agent": "msbeton-app/1.0" } }
           );
-          if (country && country.short_name !== "SK") {
+          if (!r.ok) { setMapLocality(""); setMapGeocodedAddress(""); return; }
+          const d = await r.json();
+          const a = d.address ?? {};
+          // SK validácia
+          if (a.country_code && a.country_code !== "sk") {
             setMapError("Dodávky betónu sú dostupné iba na území Slovenska.");
             if (marker) { marker.setMap(null); marker = null; mapMarkerRef.current = null; }
             setMapPin(null); setMapPlusCode(""); setMapLocality(""); setMapGeocodedAddress(""); setDistance("");
-          } else {
-            const comps = results[0].address_components ?? [];
-            const loc = comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("locality"))?.long_name
-              ?? comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("postal_town"))?.long_name
-              ?? comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("administrative_area_level_3"))?.long_name
-              ?? comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("administrative_area_level_4"))?.long_name
-              ?? comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("sublocality_level_1"))?.long_name
-              ?? comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("neighborhood"))?.long_name
-              ?? "";
-            const district = comps.find((c: google.maps.GeocoderAddressComponent) => c.types.includes("administrative_area_level_2"))?.long_name ?? "";
-            setMapLocality([loc, district].filter(Boolean).join(", "));
-            const rawAddr = results[0].formatted_address.replace(/, Slovensko$/, "").replace(/, Slovakia$/, "");
-            // Ak formatted_address je len PlusCode (žiadna ulica) → použi locality fallback alebo koordináty
-            const localityStr = [loc, district].filter(Boolean).join(", ");
-            const hasPlusCodePrefix = /^[A-Z0-9+]{6,}/i.test(rawAddr) && rawAddr.includes("+");
-            const addr = hasPlusCodePrefix
-              ? (localityStr || `${lat.toFixed(5)}, ${lng.toFixed(5)}`)
-              : rawAddr;
-            setMapGeocodedAddress(addr);
-            setAddress(addr);
-            if (addressInputRef.current) addressInputRef.current.value = addr;
+            return;
           }
-        });
+          const loc = a.village ?? a.town ?? a.city ?? a.municipality ?? "";
+          const dist = a.county ?? "";
+          const localityStr = [loc, dist].filter(Boolean).join(", ");
+          setMapLocality(localityStr);
+          // Adresa: locality ako čistý fallback (display_name je príliš dlhý)
+          const addr = localityStr || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+          setMapGeocodedAddress(addr);
+          setAddress(addr);
+          if (addressInputRef.current) addressInputRef.current.value = addr;
+        } catch {
+          setMapLocality(""); setMapGeocodedAddress("");
+        }
       };
 
       mapLocateFnRef.current = () => {
