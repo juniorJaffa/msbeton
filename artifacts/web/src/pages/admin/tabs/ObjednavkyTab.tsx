@@ -337,7 +337,7 @@ function exportOrderPDF(o: Order, format: "a4" | "a5" = "a4") {
   } else {
     const orderDiscD = Math.max(o.discountDoprava ?? 0, o.discountCelkovo ?? 0);
     if (orderDiscD > 0) {
-      const client = adminData.getClients().find(c => c.loginId === String(o.clientId) || c.id === String(o.clientId));
+      const client = clientMap.get(String(o.clientId));
       const mp = client?.manualPrices ?? {};
       const allZones = adminData.getDelivery();
       isManualTransport = Object.keys(mp).some(k =>
@@ -350,7 +350,7 @@ function exportOrderPDF(o: Order, format: "a4" | "a5" = "a4") {
   // Effective zone: stored on order (Košík) OR lookup z klientovej zóny (SMS bez poľa).
   // Fallback reťazec: objednávka → klientova priradená zóna → prvá zóna (default) → "standard".
   const zoneFromClient = (() => {
-    const cl = adminData.getClients().find(c => c.loginId === String(o.clientId) || c.id === String(o.clientId));
+    const cl = clientMap.get(String(o.clientId));
     const all = adminData.getDelivery();
     if (cl?.deliveryZoneId) return all.find(z => z.id === cl.deliveryZoneId) ?? all[0];
     return all[0]; // klient bez explicitnej zóny používa prvú (default) zónu
@@ -725,6 +725,13 @@ function exportOrderPDF(o: Order, format: "a4" | "a5" = "a4") {
 export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClientId, focusOrderId, onGoToHistoria }: { onGoToClient?: (loginId: string) => void; initialSearch?: string; initialClientId?: string; focusOrderId?: string; onGoToHistoria?: (filter: { sub: "zalohy" | "cashflow"; clientId?: string; date?: string; orderId?: string; dateFilter?: string }) => void }) {
   const [orders, setOrders] = useState<Order[]>(() => adminData.getOrders());
   const [allCategories, setAllCategories] = useState(() => adminData.getCategories());
+  const [allClients, setAllClients] = useState(() => adminData.getClients());
+  // Rýchle vyhľadávanie klienta podľa loginId alebo id — reaktívne (fotky, zľavy)
+  const clientMap = useMemo(() => {
+    const m = new Map<string, ReturnType<typeof adminData.getClients>[number]>();
+    for (const c of allClients) { if (c.loginId) m.set(c.loginId, c); m.set(c.id, c); }
+    return m;
+  }, [allClients]);
   useEffect(() => {
     const handler = () => {
       setAllCategories(adminData.getCategories());
@@ -732,6 +739,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
       // Poll (AdminDashboard) ich cacheuje do localStorage + dispatchuje admin-data-synced
       // → tu načítame čerstvý zoznam aby sa ihneď objavili vrátane discount badges
       setOrders(adminData.getOrders());
+      setAllClients(adminData.getClients()); // foto/zľavy klientov sa menia v KlientiTab
     };
     window.addEventListener("admin-data-synced", handler);
     return () => window.removeEventListener("admin-data-synced", handler);
@@ -1102,13 +1110,13 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   // Klienti s fotkou z aktuálnych filtrovaných objednávok — pre navigáciu v photo lightboxe
   const clientsWithPhoto = useMemo(() => {
     const seen = new Set<string>();
-    const result: { client: ReturnType<typeof adminData.getClients>[number]; }[] = [];
+    const result: { client: (typeof allClients)[number]; }[] = [];
     for (const o of sorted) {
-      const c = adminData.getClients().find(cl => cl.loginId === String(o.clientId) || cl.id === String(o.clientId));
+      const c = clientMap.get(String(o.clientId));
       if (c?.photo && !seen.has(c.id)) { seen.add(c.id); result.push({ client: c }); }
     }
     return result;
-  }, [sorted]);
+  }, [sorted, clientMap]);
   useEffect(() => { setOrdersPage(0); }, [filterStatus, filterTab, filterPriceMode, filterChannel, filterZaloha, clientIdActive, search, dateFrom, dateTo]);
 
   // ── Presence polling — zisti kto iný prezerá objednávky (každých 30s) ──
@@ -1526,7 +1534,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
           {pagedOrders.map(o => {
             const isExp = expanded === o.id;
             // Napojený klient (pre avatar + biometriu) + zónový typ dopravy
-            const linkedClient = adminData.getClients().find(cl => cl.loginId === String(o.clientId) || cl.id === String(o.clientId));
+            const linkedClient = clientMap.get(String(o.clientId));
             const av = linkedClient ? clientAvatar(linkedClient) : nameAvatar(o.clientName, o.company ?? "", o.clientId ?? o.id);
             const clientBio = (linkedClient?.webauthnCredentials?.length ?? 0) > 0;
             // Effective discounts — order-stored value (čo reálne platilo) ALEBO live client fallback
@@ -1700,7 +1708,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                       {readOnly
                         ? <span className={cn("text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-sm", ORDER_STATUSES.find(s => s.key === o.status)?.color ?? "bg-gray-100 text-gray-600")}>{ORDER_STATUSES.find(s => s.key === o.status)?.label ?? o.status}</span>
                         : (() => {
-                            const oc = o.clientId ? adminData.getClients().find(c => c.loginId === String(o.clientId) || c.id === String(o.clientId)) : undefined;
+                            const oc = o.clientId ? clientMap.get(String(o.clientId)) : undefined;
                             const depBal = oc?.deposit?.balance;
                             // enabled musí byť explicitne true — undefined/false = záloha vypnutá
                             const depEnabled = oc?.deposit?.enabled === true;
@@ -1822,7 +1830,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                         {(() => {
                           // Fallback reťazec — Typ dopravy MUSÍ byť vždy viditeľný:
                           // objednávka → klientova zóna → prvá (default) zóna → label podľa typu
-                          const cl = adminData.getClients().find(c => c.loginId === String(o.clientId) || c.id === String(o.clientId));
+                          const cl = clientMap.get(String(o.clientId));
                           const all = adminData.getDelivery();
                           const zone = cl?.deliveryZoneId ? (all.find(z => z.id === cl.deliveryZoneId) ?? all[0]) : all[0];
                           const dType = o.deliveryZoneType ?? zone?.pricingType ?? "standard";
@@ -2136,7 +2144,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
 
                               // Záloha transakcie viazané na túto objednávku
                               const ocForTimeline = o.clientId
-                                ? adminData.getClients().find(c => c.loginId === String(o.clientId) || c.id === String(o.clientId))
+                                ? clientMap.get(String(o.clientId))
                                 : undefined;
                               const depTxForOrder = (ocForTimeline?.deposit?.transactions ?? []).filter(tx => tx.orderId === o.id);
 
