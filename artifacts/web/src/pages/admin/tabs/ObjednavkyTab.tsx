@@ -488,7 +488,7 @@ function exportOrderPDF(o: Order, format: "a4" | "a5" = "a4") {
     `<tr><td style="color:#999;padding:0.5mm 4mm 0.5mm 0;white-space:nowrap">Typ</td><td style="font-weight:bold">${tabLabels[o.tab] ?? o.tab}</td></tr>`,
     `<tr><td style="color:#999;padding:0.5mm 4mm 0.5mm 0">Množstvo</td><td style="font-weight:bold">${o.totalQty} m³${(o.fillupM3 ?? 0) > 0 ? ` <span style="color:#92400e;font-weight:normal">+${fM3(o.fillupM3)} doťaž.</span>` : ""}</td></tr>`,
     o.km ? `<tr><td style="color:#999;padding:0.5mm 4mm 0.5mm 0">Vzdialenosť</td><td>${o.km} km</td></tr>` : "",
-    (o.address || o.mapPlusCode) ? `<tr><td style="color:#999;padding:0.5mm 4mm 0.5mm 0;vertical-align:top">Adresa</td><td>${o.address ?? ""}${o.mapPlusCode ? `${o.address ? "<br>" : ""}<span style="font-family:monospace;font-size:6.5pt;color:#aaa">${o.mapPlusCode}</span>` : ""}</td></tr>` : "",
+    (o.address || o.mapPlusCode || o.mapLocality) ? `<tr><td style="color:#999;padding:0.5mm 4mm 0.5mm 0;vertical-align:top">Adresa</td><td>${o.mapLocality ? `<strong>${o.mapLocality}</strong>${o.address ? "<br>" : ""}` : ""}${o.address ?? ""}${o.mapPlusCode ? `<br><span style="font-family:monospace;font-size:6.5pt;color:#aaa">${o.mapPlusCode}</span>` : ""}</td></tr>` : "",
     effectiveZoneName ? `<tr><td style="color:#999;padding:0.5mm 4mm 0.5mm 0">Doprava</td><td>${effectiveZoneName}${effectiveZoneType !== "standard" ? ` <span style="color:#b58c00;font-weight:700">${effectiveZoneType === "km" ? "(€/km)" : "(€/auto)"}</span>` : ""}</td></tr>` : "",
     `<tr><td style="color:#999;padding:0.5mm 4mm 0.5mm 0">Platba</td><td style="font-weight:bold">${platbaLbl}</td></tr>`,
     o.viaSms ? `<tr><td style="color:#999;padding:0.5mm 4mm 0.5mm 0">Zdroj</td><td>SMS</td></tr>` : "",
@@ -631,7 +631,7 @@ function exportOrderPDF(o: Order, format: "a4" | "a5" = "a4") {
         ${(o.fillupM3 ?? 0) > 0 ? `<tr><td style="color:#888;padding:1px 6px 1px 0;vertical-align:top">Doťaženie</td><td style="color:#92400e;font-size:8.5pt">${o.totalQty}&nbsp;m³ → +${fM3(o.fillupM3)}&nbsp;m³ → <strong>${fTgt(o.fillupTarget, o.fillupM3)}&nbsp;m³/auto</strong></td></tr>` : ""}
         ${o.podmienky ? `<tr><td style="color:#888;padding:1px 6px 1px 0;vertical-align:top">Podmienky</td><td style="${o.podmienky.isRisk ? "color:#991b1b" : "color:#92400e"};font-size:8pt;font-weight:600">${o.podmienky.isRisk ? "⚠ Minusové pretaženie" : "★ Pretaženie"}: ${o.podmienky.pumpa > 0 ? `1× Pumpa + ${o.podmienky.mix}× Mix` : `${o.podmienky.trucks}× Mix`} · ∅ ${o.podmienky.m3PerTruck?.toFixed(1) ?? "—"} m³/vozidlo</td></tr>` : ""}
         ${o.km ? `<tr><td style="color:#888;padding:1px 6px 1px 0">Vzdialenosť</td><td>${o.km} km</td></tr>` : ""}
-        ${(o.address || o.mapPlusCode) ? `<tr><td style="color:#888;padding:1px 6px 1px 0;vertical-align:top">Adresa</td><td>${o.address ? o.address : ""}${o.mapPlusCode ? `<br><span style="font-family:monospace;font-size:7.5pt;color:#aaa">${o.mapPlusCode}${o.mapLocality ? " · " + o.mapLocality : ""}</span>` : ""}</td></tr>` : ""}
+        ${(o.address || o.mapPlusCode || o.mapLocality) ? `<tr><td style="color:#888;padding:1px 6px 1px 0;vertical-align:top">Adresa</td><td>${o.mapLocality ? `<strong>${o.mapLocality}</strong>${o.address ? "<br>" : ""}` : ""}${o.address ?? ""}${o.mapPlusCode ? `<br><span style="font-family:monospace;font-size:7.5pt;color:#aaa">${o.mapPlusCode}</span>` : ""}</td></tr>` : ""}
         ${effectiveZoneName ? `<tr><td style="color:#888;padding:1px 6px 1px 0">Typ dopravy</td><td>${effectiveZoneName}${effectiveZoneType !== "standard" ? ` <span style="font-size:7.5pt;color:#b58c00;font-weight:700">${effectiveZoneType === "km" ? "(€/km)" : "(€/auto)"}</span>` : ""}</td></tr>` : ""}
         <tr><td style="color:#888;padding:1px 6px 1px 0">Platba</td><td style="font-weight:bold">${o.priceMode === "hotovost" ? "Hotovosť" : "Faktúra"}</td></tr>
         ${o.viaSms ? `<tr><td style="color:#888;padding:1px 6px 1px 0">Zdroj</td><td>SMS</td></tr>` : ""}
@@ -1578,12 +1578,14 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                       <span className="font-medium text-gray-600">{o.concreteType.replace(/ – [\d.,]+ €.*/, "")}</span>
                       <span className="font-bold text-secondary">{o.totalQty} m³</span>
                       {o.km ? <span className="text-gray-400">{o.km} km</span> : null}
-                      {(o.address || o.mapPlusCode) ? (
+                      {(o.address || o.mapPlusCode || o.mapLocality) ? (
                         <button onClick={e => { e.stopPropagation(); setMapModalOrder(o); }}
                           className="inline-flex items-center gap-1 text-primary/50 hover:text-primary transition-colors" title="Zobraziť na mape">
                           <MapPin className="w-3 h-3 shrink-0" />
-                          {o.address && <span className="text-gray-600">{o.address}</span>}
-                          {!o.address && o.mapLocality && <span className="text-gray-600">{o.mapLocality.split(",")[0]}</span>}
+                          {o.mapLocality
+                            ? <span className="font-semibold text-secondary">{o.mapLocality.split(",")[0]}</span>
+                            : o.address && <span className="text-gray-600">{o.address}</span>
+                          }
                           {o.mapPlusCode && <span className="text-gray-400 font-mono text-[10px]">{o.mapPlusCode}</span>}
                         </button>
                       ) : null}
@@ -1861,14 +1863,15 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                           </div>
                         ); })()}
                         {o.km && <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Vzdialenosť</span><span className="font-medium text-gray-700">{o.km} km</span></div>}
-                        {(o.address || o.mapPlusCode) && (
+                        {(o.address || o.mapPlusCode || o.mapLocality) && (
                           <div className="flex gap-2 items-start">
                             <span className="text-gray-400 w-24 shrink-0">Adresa</span>
                             <span className="text-gray-600 break-words flex-1">
-                              {o.address && <span>{o.address}</span>}
+                              {o.mapLocality && <span className="font-semibold text-secondary block">{o.mapLocality}</span>}
+                              {o.address && <span className="block">{o.address}</span>}
                               {o.mapPlusCode && (
                                 <span className="flex items-center gap-1 mt-0.5">
-                                  <span className="text-gray-400 text-[10px] font-mono">{o.mapPlusCode}{o.mapLocality ? ` · ${o.mapLocality}` : ""}</span>
+                                  <span className="text-gray-400 text-[10px] font-mono">{o.mapPlusCode}</span>
                                   <button onClick={e => { e.stopPropagation(); const txt = `${o.mapPlusCode}${o.mapLocality ? " " + o.mapLocality : ""}`; navigator.clipboard?.writeText(txt); setCopiedPlusCode(o.id); setTimeout(() => setCopiedPlusCode(null), 1500); }}
                                     className="text-gray-300 hover:text-blue-500 transition-colors" title="Kopírovať Plus Code">
                                     {copiedPlusCode === o.id ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
@@ -1876,7 +1879,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                 </span>
                               )}
                             </span>
-                            {(o.mapPlusCode || o.address) && (
+                            {(o.mapPlusCode || o.address || o.mapLocality) && (
                               <button onClick={e => { e.stopPropagation(); setMapModalOrder(o); }}
                                 className="shrink-0 text-blue-400 hover:text-blue-600 transition-colors" title="Zobraziť na mape">
                                 <MapPin className="w-4 h-4" />
