@@ -663,10 +663,6 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
             {DATE_BTNS.map(f => (
               <button key={f.id} onClick={() => setCashDateFilter(f.id)} className={dateBtnCls(cashDateFilter === f.id)}>{f.label}</button>
             ))}
-            <label className="flex items-center gap-1.5 cursor-pointer bg-white border border-gray-200 rounded-full px-2.5 py-1.5">
-              <input type="checkbox" checked={onlyDeposit} onChange={e => setOnlyDeposit(e.target.checked)} className="w-3.5 h-3.5 accent-amber-500" />
-              <span className="text-[10px] font-bold text-gray-500">Záloha</span>
-            </label>
             {/* KTO dropdown trigger — inline, šetrí priestor */}
             {deviceGroups.length > 1 && (
             <div ref={ktoRef} className="relative inline-flex items-center gap-1">
@@ -745,12 +741,19 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
           )}
           </div>{/* END date+filter row */}
 
-          {/* Klient dropdown — škáluje na 100+ */}
-          {orderClients.length > 0 && (
-            <ClientDropdown clients={orderClients} value={cashClientFilter} onChange={setCashClientFilter}
-              dropRef={cashClientRef} open={cashClientDrop} setOpen={setCashClientDrop}
-              search={cashClientSearch} setSearch={setCashClientSearch} />
-          )}
+          {/* Klient dropdown + Záloha checkbox — rovnaký riadok, záloha vpravo */}
+          <div className="flex items-center gap-2">
+            {orderClients.length > 0 && (
+              <ClientDropdown clients={orderClients} value={cashClientFilter} onChange={setCashClientFilter}
+                dropRef={cashClientRef} open={cashClientDrop} setOpen={setCashClientDrop}
+                search={cashClientSearch} setSearch={setCashClientSearch} />
+            )}
+            <div className="flex-1" />
+            <label className="flex items-center gap-1.5 cursor-pointer bg-white border border-gray-200 rounded-full px-2.5 py-1.5 shrink-0">
+              <input type="checkbox" checked={onlyDeposit} onChange={e => setOnlyDeposit(e.target.checked)} className="w-3.5 h-3.5 accent-amber-500" />
+              <span className="text-[10px] font-bold text-gray-500">Záloha</span>
+            </label>
+          </div>
 
           {/* Nadpis sekcie + kompaktný súhrn v jednom riadku */}
           <div className="flex items-center gap-2 flex-wrap">
