@@ -1497,7 +1497,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
           Žiadne objednávky
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {pagedOrders.map(o => {
             const isExp = expanded === o.id;
             // Napojený klient (pre avatar + biometriu) + zónový typ dopravy
@@ -1516,7 +1516,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
               return z?.pricingType ?? "standard";
             })();
             return (
-              <div key={o.id} id={`order-card-${o.id}`} className={`border shadow-sm transition-all duration-700 ${highlightedOrder === o.id ? "ring-2 ring-primary shadow-primary/30 shadow-md" : ""} ${o.createdAt.slice(0,10) === todayStr ? "bg-gray-50 border-gray-300" : "bg-white border-gray-200"}`}>
+              <div key={o.id} id={`order-card-${o.id}`} className={`border rounded-sm shadow-md transition-all duration-700 ${highlightedOrder === o.id ? "ring-2 ring-primary shadow-primary/30 shadow-lg" : ""} ${o.createdAt.slice(0,10) === todayStr ? "bg-amber-50 border-amber-200" : "bg-white border-gray-200"}`}>
                 <div className={`flex gap-3 py-3.5 cursor-pointer transition-colors ${o.createdAt.slice(0,10) === todayStr ? "hover:bg-gray-100" : "hover:bg-gray-50"} ${o.status === "nova" ? "pl-3 pr-4" : "px-4"}`}
                   style={o.status === "nova" ? { borderLeft: "4px solid #3b82f6" } : undefined}
                   onClick={() => {

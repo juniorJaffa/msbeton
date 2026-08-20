@@ -2921,9 +2921,10 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
               )}
 
               {/* Caption + actions */}
-              <div className="flex items-center justify-between w-full gap-2 px-1">
-                <div className="text-white/70 text-sm font-semibold truncate">
-                  {lbName} — foto {idx + 1}/{photos.length}
+              <div className="flex items-start justify-between w-full gap-2 px-1">
+                <div className="text-white/80 text-sm font-semibold break-words min-w-0 leading-snug">
+                  {lbName}
+                  <span className="text-white/40 font-normal text-xs ml-1">foto {idx + 1}/{photos.length}</span>
                 </div>
                 <div className="flex gap-1.5 shrink-0">
                   {photos.length < 3 && !readOnly && (
