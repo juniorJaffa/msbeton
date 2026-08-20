@@ -1834,15 +1834,15 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                           })()
                         : null;
                       return (
-                        <div className="flex items-center gap-1.5 mt-1.5 pt-1.5 border-t border-gray-100 min-w-0">
-                          <MapPin className={`w-3 h-3 shrink-0 ${hasGPS ? "text-green-500" : "text-gray-300"}`} />
-                          <span className="text-[9px] text-gray-400 tabular-nums flex-1 min-w-0 truncate">
+                        <div className="flex items-center gap-1.5 mt-1.5 pt-1.5 border-t border-gray-200 min-w-0">
+                          <MapPin className={`w-3 h-3 shrink-0 ${hasGPS ? "text-green-500" : "text-gray-400"}`} />
+                          <span className="text-[9px] text-gray-500 tabular-nums flex-1 min-w-0 truncate">
                             {hasGPS
                               ? `${loc!.lat!.toFixed(5)}, ${loc!.lng!.toFixed(5)}`
                               : <span className="italic">Bez GPS metadát</span>
                             }
                             {photoDateStr && (
-                              <span className="ml-1.5 text-gray-300">· {photoDateStr}</span>
+                              <span className="ml-1.5 text-gray-400">· {photoDateStr}</span>
                             )}
                           </span>
                           {loc && !readOnly && (
