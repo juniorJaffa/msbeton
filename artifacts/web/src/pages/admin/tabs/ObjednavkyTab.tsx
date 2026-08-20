@@ -791,6 +791,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const [ts, setTs] = useState<TransportSettings>(adminData.getTransportSettings());
   const saveTs = (data: TransportSettings) => { setTs(data); adminData.saveTransportSettings(data); };
   const [mapModalOrder, setMapModalOrder] = useState<Order | null>(null);
+  const [clientPhotoModal, setClientPhotoModal] = useState<string | null>(null); // client.id
   const plusCodeBackfilledRef = useRef<Set<string>>(new Set());
   const [ordersPage, setOrdersPage] = useState(0);
   const ORDERS_PAGE_SIZE = 30;
@@ -1086,6 +1087,16 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const sortedCountLabel = sortedCount === 1 ? "objednávka" : sortedCount >= 2 && sortedCount <= 4 ? "objednávky" : "objednávok";
   const totalPages = Math.ceil(sortedCount / ORDERS_PAGE_SIZE);
   const pagedOrders = sorted.slice(ordersPage * ORDERS_PAGE_SIZE, (ordersPage + 1) * ORDERS_PAGE_SIZE);
+  // Klienti s fotkou z aktuálnych filtrovaných objednávok — pre navigáciu v photo lightboxe
+  const clientsWithPhoto = useMemo(() => {
+    const seen = new Set<string>();
+    const result: { client: ReturnType<typeof adminData.getClients>[number]; }[] = [];
+    for (const o of sorted) {
+      const c = adminData.getClients().find(cl => cl.loginId === String(o.clientId) || cl.id === String(o.clientId));
+      if (c?.photo && !seen.has(c.id)) { seen.add(c.id); result.push({ client: c }); }
+    }
+    return result;
+  }, [sorted]);
   useEffect(() => { setOrdersPage(0); }, [filterStatus, filterTab, filterPriceMode, filterChannel, filterZaloha, clientIdActive, search, dateFrom, dateTo]);
 
   // ── Presence polling — zisti kto iný prezerá objednávky (každých 30s) ──
@@ -1548,14 +1559,19 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <TabBadge tab={o.tab} />
-                      {/* Avatar klienta (smart) + biometria — konzistentné s Klienti listom */}
-                      <span className="relative shrink-0">
-                        <span className={cn("w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black", av.palette.bg, av.palette.fg)}>
-                          {av.kind === "owner" ? <Crown className="w-3 h-3" />
-                            : av.kind === "template" ? <Percent className="w-3 h-3" />
-                            : av.kind === "phone" ? <Phone className="w-3 h-3" />
-                            : (av.mono || av.char)}
-                        </span>
+                      {/* Avatar klienta (smart) + biometria — foto ak existuje */}
+                      <span className="relative shrink-0"
+                        onClick={linkedClient?.photo ? e => { e.stopPropagation(); setClientPhotoModal(linkedClient.id); } : undefined}
+                        style={linkedClient?.photo ? { cursor: "pointer" } : undefined}>
+                        {linkedClient?.photo
+                          ? <img src={linkedClient.photo} className="w-6 h-6 rounded-full object-cover object-top ring-1 ring-primary/30" alt="" />
+                          : <span className={cn("w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black", av.palette.bg, av.palette.fg)}>
+                              {av.kind === "owner" ? <Crown className="w-3 h-3" />
+                                : av.kind === "template" ? <Percent className="w-3 h-3" />
+                                : av.kind === "phone" ? <Phone className="w-3 h-3" />
+                                : (av.mono || av.char)}
+                            </span>
+                        }
                         {clientBio && (
                           <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-500 ring-1 ring-white flex items-center justify-center" title={`Biometria — ${linkedClient!.webauthnCredentials!.length} zariadenie`}>
                             <Fingerprint className="w-2 h-2 text-white" />
@@ -2387,6 +2403,52 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
           </div>
         </div>
       )}
+      {/* ── Client photo lightbox ── */}
+      {clientPhotoModal && (() => {
+        const idx = clientsWithPhoto.findIndex(x => x.client.id === clientPhotoModal);
+        const cur = idx >= 0 ? clientsWithPhoto[idx] : null;
+        if (!cur) return null;
+        const c = cur.client;
+        const name = [c.firstName, c.lastName].filter(Boolean).join(" ") || c.company || c.loginId || "Klient";
+        const hasPrev = idx > 0;
+        const hasNext = idx < clientsWithPhoto.length - 1;
+        return (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/85 p-4"
+            onClick={() => setClientPhotoModal(null)}>
+            <div className="relative flex flex-col items-center gap-3 max-w-sm w-full"
+              onClick={e => e.stopPropagation()}>
+              {/* X */}
+              <button onClick={() => setClientPhotoModal(null)}
+                className="absolute top-0 right-0 w-9 h-9 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors cursor-pointer z-10">
+                <X className="w-5 h-5 text-white" />
+              </button>
+              {/* Photo */}
+              <img src={c.photo!} className="w-56 h-56 rounded-full object-cover object-top shadow-2xl ring-4 ring-primary/60" alt={name} />
+              {/* Name + login */}
+              <div className="text-center">
+                <div className="font-black text-white text-lg leading-snug">{name}</div>
+                {c.loginId && <div className="text-white/50 text-xs font-mono mt-0.5">#{c.loginId}</div>}
+              </div>
+              {/* Prev / Next */}
+              {clientsWithPhoto.length > 1 && (
+                <div className="flex items-center gap-4 mt-1">
+                  <button onClick={() => setClientPhotoModal(clientsWithPhoto[idx - 1].client.id)}
+                    disabled={!hasPrev}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors cursor-pointer ${hasPrev ? "bg-white/20 hover:bg-white/40 text-white" : "bg-white/5 text-white/20 cursor-not-allowed"}`}>
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <span className="text-white/40 text-xs tabular-nums">{idx + 1} / {clientsWithPhoto.length}</span>
+                  <button onClick={() => setClientPhotoModal(clientsWithPhoto[idx + 1].client.id)}
+                    disabled={!hasNext}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors cursor-pointer ${hasNext ? "bg-white/20 hover:bg-white/40 text-white" : "bg-white/5 text-white/20 cursor-not-allowed"}`}>
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

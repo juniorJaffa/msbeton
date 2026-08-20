@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { adminData, Client, DepositTx, Order, getKamenivoGroup } from "@/lib/adminData";
-import { ChevronRight, TrendingUp, Minus, Smartphone, Monitor, Laptop, ChevronDown, Users, ShoppingCart, Mountain, Waves, X, MessageSquare } from "lucide-react";
+import { ChevronRight, ChevronLeft, TrendingUp, Minus, Smartphone, Monitor, Laptop, ChevronDown, Users, ShoppingCart, Mountain, Waves, X, MessageSquare } from "lucide-react";
 
 type Sub = "zalohy" | "cashflow";
 type DateFilter = "dnes" | "vcera" | "tyzden" | "mesiac" | "vsetko";
@@ -193,6 +193,9 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [flashDeletedId,   setFlashDeletedId]   = useState<string | null>(null);
   const cashClientRef = useRef<HTMLDivElement>(null);
   const ktoRef        = useRef<HTMLDivElement>(null);
+
+  // Photo lightbox — foto klienta z objednávky
+  const [clientPhotoModal, setClientPhotoModal] = useState<string | null>(null); // client.id
 
   // Focus + scroll na konkrétnu objednávku (navigácia z ObjednavkyTab)
   const [focusOrderId, setFocusOrderId] = useState<string | undefined>(initialOrderId);
@@ -407,6 +410,17 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
 
   // Reset displayLimit pri každej zmene filtrov
   useEffect(() => { setDisplayLimit(100); }, [cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit]);
+
+  // Klienti s fotkou z filtrovaných objednávok — pre photo lightbox navigáciu
+  const clientsWithPhoto = useMemo(() => {
+    const seen = new Set<string>();
+    const result: Client[] = [];
+    for (const o of filteredOrders) {
+      const c = o.clientId ? clientByLoginId.get(o.clientId) : undefined;
+      if (c?.photo && !seen.has(c.id)) { seen.add(c.id); result.push(c); }
+    }
+    return result;
+  }, [filteredOrders, clientByLoginId]);
 
   // Pre-computed date groups — eliminuje mutable lastDate v JSX renderi (crash risk)
   // Skupinuje podľa poslednej zmeny (nie createdAt) — konzistentné so sort kľúčom
@@ -850,6 +864,12 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                         <div className="sm:hidden space-y-1 py-0.5">
                           {/* R1: Klient + Status (s prevStatus→) + Arrow — inšp. ObjednavkyTab */}
                           <div className="flex items-start gap-2">
+                            {c?.photo && (
+                              <button type="button" onClick={e => { e.stopPropagation(); setClientPhotoModal(c.id); }}
+                                className="shrink-0 mt-0.5 cursor-pointer">
+                                <img src={c.photo} className="w-6 h-6 rounded-full object-cover object-top ring-1 ring-primary/30" alt="" />
+                              </button>
+                            )}
                             <div className="flex-1 min-w-0">
                               <span className="font-bold text-secondary text-[13px] leading-snug break-words">{name}</span>
                               {/* Phone sub-label — keď clientId je telefón a líši sa od mena */}
@@ -966,11 +986,19 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             {/* DÁTUM */}
                             <span className="text-gray-600 tabular-nums font-semibold text-[10px]">{fmtDate(o.createdAt)}</span>
                             {/* KLIENT — navy bold, phone subline ak telefón */}
-                            <div className="min-w-0">
-                              <div className="font-bold text-secondary text-xs truncate">{name}</div>
-                              {isPhoneId && o.clientId && o.clientId !== name && (
-                                <div className="text-[9px] text-gray-400 tabular-nums truncate">{o.clientId}</div>
+                            <div className="min-w-0 flex items-center gap-1.5">
+                              {c?.photo && (
+                                <button type="button" onClick={e => { e.stopPropagation(); setClientPhotoModal(c.id); }}
+                                  className="shrink-0 cursor-pointer">
+                                  <img src={c.photo} className="w-5 h-5 rounded-full object-cover object-top ring-1 ring-primary/30" alt="" />
+                                </button>
                               )}
+                              <div className="min-w-0">
+                                <div className="font-bold text-secondary text-xs truncate">{name}</div>
+                                {isPhoneId && o.clientId && o.clientId !== name && (
+                                  <div className="text-[9px] text-gray-400 tabular-nums truncate">{o.clientId}</div>
+                                )}
+                              </div>
                             </div>
                             {/* BETÓN — kamenivo + tab/pay badges */}
                             <div className="flex flex-col gap-0.5 min-w-0">
@@ -1061,6 +1089,48 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
           )}
         </div>
       )}
+
+      {/* ── Client photo lightbox ── */}
+      {clientPhotoModal && (() => {
+        const idx = clientsWithPhoto.findIndex(c => c.id === clientPhotoModal);
+        const c = idx >= 0 ? clientsWithPhoto[idx] : null;
+        if (!c) return null;
+        const name = [c.firstName, c.lastName].filter(Boolean).join(" ") || c.company || c.loginId || "Klient";
+        const hasPrev = idx > 0;
+        const hasNext = idx < clientsWithPhoto.length - 1;
+        return (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/85 p-4"
+            onClick={() => setClientPhotoModal(null)}>
+            <div className="relative flex flex-col items-center gap-3 max-w-sm w-full"
+              onClick={e => e.stopPropagation()}>
+              <button onClick={() => setClientPhotoModal(null)}
+                className="absolute top-0 right-0 w-9 h-9 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors cursor-pointer z-10">
+                <X className="w-5 h-5 text-white" />
+              </button>
+              <img src={c.photo!} className="w-56 h-56 rounded-full object-cover object-top shadow-2xl ring-4 ring-primary/60" alt={name} />
+              <div className="text-center">
+                <div className="font-black text-white text-lg leading-snug">{name}</div>
+                {c.loginId && <div className="text-white/50 text-xs font-mono mt-0.5">#{c.loginId}</div>}
+              </div>
+              {clientsWithPhoto.length > 1 && (
+                <div className="flex items-center gap-4 mt-1">
+                  <button onClick={() => setClientPhotoModal(clientsWithPhoto[idx - 1].id)}
+                    disabled={!hasPrev}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors cursor-pointer ${hasPrev ? "bg-white/20 hover:bg-white/40 text-white" : "bg-white/5 text-white/20 cursor-not-allowed"}`}>
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <span className="text-white/40 text-xs tabular-nums">{idx + 1} / {clientsWithPhoto.length}</span>
+                  <button onClick={() => setClientPhotoModal(clientsWithPhoto[idx + 1].id)}
+                    disabled={!hasNext}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors cursor-pointer ${hasNext ? "bg-white/20 hover:bg-white/40 text-white" : "bg-white/5 text-white/20 cursor-not-allowed"}`}>
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
