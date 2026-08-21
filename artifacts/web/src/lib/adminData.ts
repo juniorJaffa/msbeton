@@ -14,7 +14,11 @@ function emitSaveState(key: string, state: SaveState): void {
 }
 function trackSave(key: string, p: Promise<unknown> | null | undefined): void {
   emitSaveState(key, "saving");
+  // Ak API call visí > 15s, považujeme to za chybu (sieť/server)
+  let settled = false;
+  const timeout = setTimeout(() => { if (!settled) emitSaveState(key, "error"); }, 15000);
   Promise.resolve(p).then(r => {
+    settled = true; clearTimeout(timeout);
     const res = r as { ok?: boolean; mergedFromOthers?: number } | null;
     if (!res || res.ok === false) { emitSaveState(key, "error"); return; }
     if ((res.mergedFromOthers ?? 0) > 0) {
@@ -23,7 +27,7 @@ function trackSave(key: string, p: Promise<unknown> | null | undefined): void {
     } else {
       emitSaveState(key, "saved");
     }
-  }).catch(() => emitSaveState(key, "error"));
+  }).catch(() => { settled = true; clearTimeout(timeout); emitSaveState(key, "error"); });
 }
 
 // Admin-čitateľ: pokus o zmenu → toast + zablokuj. Throttle (1 toast / 2s) proti spamu.
