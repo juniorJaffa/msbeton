@@ -159,9 +159,9 @@ const STATUS_COLOR: Record<string, string> = {
   nova:       "bg-blue-100 text-blue-700",
   potvrdena:  "bg-yellow-100 text-yellow-700",
   odoslana:   "bg-green-100 text-green-700",
-  vyuctovana: "bg-orange-100 text-orange-700",
+  vyuctovana: "bg-purple-100 text-purple-700",
   vyplatena:  "bg-teal-100 text-teal-700",
-  zrusena:    "bg-red-100 text-red-600",
+  zrusena:    "bg-red-100 text-red-500",
   vybavena:   "bg-gray-100 text-gray-500",
   zmazana:    "bg-red-900 text-red-100",
 };
