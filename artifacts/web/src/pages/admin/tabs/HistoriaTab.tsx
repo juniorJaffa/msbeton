@@ -695,8 +695,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       {sub === "cashflow" && (
         <div className="space-y-3">
           {/* R0: Status filter — horizontal scroll na mobile, wrap na desktop */}
-          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-            <div className="flex gap-1 items-center sm:flex-wrap min-w-max sm:min-w-0">
+          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-0.5">
+            <div className="flex gap-1 items-center sm:flex-wrap sm:min-w-0" style={{minWidth:'max-content'}}>
               <button
                 onClick={() => setCashStatusFilter("vsetky")}
                 className={`px-2.5 py-1.5 text-[10px] font-bold rounded border transition-all cursor-pointer whitespace-nowrap shrink-0 ${cashStatusFilter === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"}`}>
@@ -719,8 +719,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
           </div>
 
           {/* R1: Dátumové filtre — horizontal scroll na mobile */}
-          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-            <div className="flex gap-1.5 items-center min-w-max sm:min-w-0 sm:flex-wrap">
+          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-0.5">
+            <div className="flex gap-1.5 items-center sm:min-w-0 sm:flex-wrap" style={{minWidth:'max-content'}}>
               {DATE_BTNS.map(f => (
                 <button key={f.id} onClick={() => setCashDateFilter(f.id)} className={`${dateBtnCls(cashDateFilter === f.id)} shrink-0 whitespace-nowrap`}>{f.label}</button>
               ))}
@@ -860,11 +860,12 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                       {/* Date group header */}
                       {(() => {
                         const gd = fmtGroupDate(dateKey);
+                        const isToday = dateKey === localDateStr(0);
                         return (
-                          <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border-t border-b border-gray-200 sticky top-0 z-10">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-secondary shrink-0">{gd.label}</span>
-                            <div className="flex-1 h-px bg-gray-200" />
-                            {gd.sub && <span className="text-[9px] font-bold text-gray-400 shrink-0">{gd.sub}</span>}
+                          <div className={`flex items-center gap-2 px-3 py-1.5 border-t border-b sticky top-0 z-10 ${isToday ? "bg-amber-50 border-amber-200" : "bg-gray-50 border-gray-200"}`}>
+                            <span className={`text-[10px] font-black uppercase tracking-widest shrink-0 ${isToday ? "text-primary" : "text-secondary"}`}>{gd.label}</span>
+                            <div className={`flex-1 h-px ${isToday ? "bg-amber-200" : "bg-gray-200"}`} />
+                            {gd.sub && <span className={`text-[9px] font-bold shrink-0 ${isToday ? "text-amber-600" : "text-gray-400"}`}>{gd.sub}</span>}
                           </div>
                         );
                       })()}
@@ -886,6 +887,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     const kg = o.concreteCategory ? getKamenivoGroup(o.concreteCategory) : null;
                     const isDeleted = o.status === "zmazana";
                     const isFlashing = flashDeletedId === o.id;
+                    const isOrderToday = dateKey === localDateStr(0);
                     return (
                       <div key={o.id}
                         ref={o.id === focusOrderId ? scrollToFocused : undefined}
@@ -895,7 +897,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                           onGoToOrder?.(o.id);
                         }}
                         title={isDeleted ? "Zmazaná objednávka — nedostupná v zozname" : undefined}
-                        className={`relative px-3 py-2.5 border-b-2 border-gray-200 last:border-b-0 transition-colors ${o.id === focusOrderId ? "historia-focus-order" : ""} ${isFlashing ? "flash-deleted" : ""} ${isDeleted ? "opacity-50 bg-red-50/40 cursor-not-allowed" : onGoToOrder ? "cursor-pointer hover:bg-amber-50" : "hover:bg-gray-50"}`}>
+                        className={`relative px-3 py-2.5 border-b-2 last:border-b-0 transition-colors ${isOrderToday && !isDeleted ? "border-amber-100 bg-amber-50" : "border-gray-200"} ${o.id === focusOrderId ? "historia-focus-order" : ""} ${isFlashing ? "flash-deleted" : ""} ${isDeleted ? "opacity-50 bg-red-50/40 cursor-not-allowed" : onGoToOrder ? "cursor-pointer hover:bg-amber-100/70" : "hover:bg-amber-50/60"}`}>
                         {o.id === markedOrderId && (
                           <span className="absolute left-0 inset-y-0 pointer-events-none z-10 flex items-center justify-center overflow-visible" style={{width:"4px"}}>
                             <span className="relative flex" style={{height:"12px",width:"12px"}}>
