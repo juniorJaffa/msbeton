@@ -8,6 +8,16 @@ import { SlidersHorizontal, ShoppingCart, MessageSquare, MapPin, Navigation, Cop
 // Zaokrúhli m³ na 1 desatinné — staré objednávky majú v JSON floating point rozvoj (napr. 0.9000000000000004).
 const fM3 = (n?: number) => Math.round((n ?? 0) * 10) / 10;
 
+// Extrahuje lokalitu z textovej adresy (adresový vstup bez GPS).
+// "013 04 Dolná Tižina, Slovensko" → "Dolná Tižina"
+// "Hlavná 123, 010 01 Žilina, Slovensko" → "Žilina"
+const extractAddrLocality = (address: string): string => {
+  const parts = address.split(",").map(p => p.trim()).filter(p => p && !/^(Slovensko|Slovakia|Česko|Czech Republic)$/i.test(p));
+  if (!parts.length) return address;
+  const last = parts[parts.length - 1];
+  return last.replace(/^\d{3}\s?\d{2}\s+/, ""); // strip ZIP prefix
+};
+
 // Doťaženie cieľ — dodatočná oprava starých objednávok. Bug (chýbal addToMainQty) ukladal target < minimum
 // (napr. „do 4 m³" miesto „do 5"). Doťaženie NIKDY nemôže byť pod minimum (fillupMin) → ak je, oprav naň.
 // Číta aktuálny minimumLoadM3 (admin Doprava). Staré objednávky bez historickej hodnoty → aktuálne minimum.
@@ -1620,7 +1630,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                           <MapPin className="w-3 h-3 shrink-0" />
                           {o.mapLocality
                             ? <span className="font-semibold text-secondary">{o.mapLocality.split(",")[0]}</span>
-                            : o.address && <span className="text-gray-600">{o.address}</span>
+                            : o.address && <span className="font-semibold text-secondary">{extractAddrLocality(o.address)}</span>
                           }
                           {o.mapPlusCode && <span className="text-gray-400 font-mono text-[10px]">{o.mapPlusCode}</span>}
                         </button>
@@ -1903,8 +1913,12 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                           <div className="flex gap-2 items-start">
                             <span className="text-gray-400 w-24 shrink-0">Adresa</span>
                             <span className="text-gray-600 break-words flex-1">
-                              {o.mapLocality && <span className="font-semibold text-secondary block">{o.mapLocality}</span>}
-                              {o.address && <span className="block">{o.address}</span>}
+                              {(o.mapLocality || o.address) && (
+                                <span className="font-semibold text-secondary block">
+                                  {o.mapLocality ?? extractAddrLocality(o.address!)}
+                                </span>
+                              )}
+                              {o.address && <span className="block text-gray-500 text-xs">{o.address}</span>}
                               {o.mapPlusCode && (
                                 <span className="flex items-center gap-1 mt-0.5">
                                   <span className="text-gray-400 text-[10px] font-mono">{o.mapPlusCode}</span>
