@@ -694,9 +694,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       {/* ─── CASHFLOW ────────────────────────────────────────────────── */}
       {sub === "cashflow" && (
         <div className="space-y-3">
-          {/* R0: Status filter — horizontal scroll na mobile, wrap na desktop */}
-          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-0.5">
-            <div className="flex gap-1 items-center sm:flex-wrap sm:min-w-0" style={{minWidth:'max-content'}}>
+          {/* R0: Status filter — horizontal scroll na mobile */}
+          {/* iOS fix: plné inline styles, overflow-x:scroll (nie auto), width:max-content na inner */}
+          <div style={{overflowX:'scroll',WebkitOverflowScrolling:'touch',marginLeft:'-16px',marginRight:'-16px',paddingBottom:'2px'}}>
+            <div style={{display:'flex',gap:'4px',alignItems:'center',paddingLeft:'16px',paddingRight:'16px',width:'max-content',minWidth:'100%'}}>
               <button
                 onClick={() => setCashStatusFilter("vsetky")}
                 className={`px-2.5 py-1.5 text-[10px] font-bold rounded border transition-all cursor-pointer whitespace-nowrap shrink-0 ${cashStatusFilter === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"}`}>
@@ -719,8 +720,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
           </div>
 
           {/* R1: Dátumové filtre — horizontal scroll na mobile */}
-          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-0.5">
-            <div className="flex gap-1.5 items-center sm:min-w-0 sm:flex-wrap" style={{minWidth:'max-content'}}>
+          <div style={{overflowX:'scroll',WebkitOverflowScrolling:'touch',marginLeft:'-16px',marginRight:'-16px',paddingBottom:'2px'}}>
+            <div style={{display:'flex',gap:'6px',alignItems:'center',paddingLeft:'16px',paddingRight:'16px',width:'max-content',minWidth:'100%'}}>
               {DATE_BTNS.map(f => (
                 <button key={f.id} onClick={() => setCashDateFilter(f.id)} className={`${dateBtnCls(cashDateFilter === f.id)} shrink-0 whitespace-nowrap`}>{f.label}</button>
               ))}

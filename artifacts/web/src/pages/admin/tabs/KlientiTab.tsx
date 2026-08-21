@@ -873,7 +873,8 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
       scrollToClientCard(c.id, true);
     }
     onExpanded?.();
-  }, [expandClientId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expandClientId, clients]);
 
   // Auto-cleanup: clients with both celkovo AND individual discounts → celkovo wins, clear individual
   useEffect(() => {
