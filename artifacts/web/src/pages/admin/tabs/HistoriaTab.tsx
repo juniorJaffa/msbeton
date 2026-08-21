@@ -198,18 +198,12 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   // Photo lightbox — foto klienta z objednávky
   const [clientPhotoModal, setClientPhotoModal] = useState<string | null>(null); // client.id
 
-  // Excel confirm — lokálny per-zariadenie stav (localStorage)
-  const [excelConfirmed, setExcelConfirmed] = useState<Set<string>>(() =>
-    new Set(JSON.parse(localStorage.getItem("msbeton_excel_confirmed") ?? "[]") as string[])
-  );
+  // Excel confirm — uložené na objednávke v DB (viditeľné všetkým adminom)
   const toggleExcelConfirmed = (e: React.MouseEvent, orderId: string) => {
     e.stopPropagation();
-    setExcelConfirmed(prev => {
-      const next = new Set(prev);
-      if (next.has(orderId)) next.delete(orderId); else next.add(orderId);
-      localStorage.setItem("msbeton_excel_confirmed", JSON.stringify([...next]));
-      return next;
-    });
+    const all = adminData.getOrders();
+    const updated = all.map(o => o.id === orderId ? { ...o, excelConfirmed: !o.excelConfirmed } : o);
+    adminData.saveOrders(updated);
   };
 
   // Focus + scroll na konkrétnu objednávku (navigácia z ObjednavkyTab)
@@ -992,12 +986,12 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             <button
                               onClick={e => toggleExcelConfirmed(e, o.id)}
                               className={`inline-flex items-center gap-0.5 text-[8px] font-black px-1.5 py-0.5 rounded border transition-colors cursor-pointer ${
-                                excelConfirmed.has(o.id)
+                                o.excelConfirmed
                                   ? "bg-green-100 text-green-700 border-green-300"
                                   : "bg-white text-gray-300 border-gray-200 hover:border-green-400 hover:text-green-600"
                               }`}>
                               <Check className="w-2.5 h-2.5 shrink-0" />
-                              {excelConfirmed.has(o.id) ? "EXCEL OK" : "EXCEL?"}
+                              {o.excelConfirmed ? "EXCEL OK" : "EXCEL?"}
                             </button>
                           </div>
                         </div>
@@ -1059,12 +1053,12 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             <button
                               onClick={e => toggleExcelConfirmed(e, o.id)}
                               className={`inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded border transition-colors cursor-pointer ${
-                                excelConfirmed.has(o.id)
+                                o.excelConfirmed
                                   ? "bg-green-100 text-green-700 border-green-300"
                                   : "bg-white text-gray-300 border-gray-200 hover:border-green-400 hover:text-green-600"
                               }`}>
                               <Check className="w-2.5 h-2.5 shrink-0" />
-                              {excelConfirmed.has(o.id) ? "EXCEL OK" : "EXCEL?"}
+                              {o.excelConfirmed ? "EXCEL OK" : "EXCEL?"}
                             </button>
                           </div>
                           {/* Status timeline desktop — newest first, vertical */}

@@ -201,6 +201,7 @@ export interface Order {
   createdByRole?: string;
   createdByDevice?: string;   // názov zariadenia (admin) alebo meno klienta
   createdBySession?: string;  // admin session id (na previazanie s presence/audit)
+  excelConfirmed?: boolean;   // Klára: zaznam bol prenesený do Excelu (viditeľné všetkým adminom)
 }
 
 export interface ClientAccount {
