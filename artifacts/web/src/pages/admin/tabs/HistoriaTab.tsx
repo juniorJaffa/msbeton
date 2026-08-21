@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { adminData, Client, DepositTx, Order, getKamenivoGroup } from "@/lib/adminData";
-import { ChevronRight, ChevronLeft, TrendingUp, Minus, Smartphone, Monitor, Laptop, ChevronDown, Users, ShoppingCart, Mountain, Waves, X, MessageSquare } from "lucide-react";
+import { ChevronRight, ChevronLeft, TrendingUp, Minus, Smartphone, Monitor, Laptop, ChevronDown, Users, ShoppingCart, Mountain, Waves, X, MessageSquare, Check } from "lucide-react";
 
 type Sub = "zalohy" | "cashflow";
 type DateFilter = "dnes" | "vcera" | "tyzden" | "mesiac" | "vsetko";
@@ -197,6 +197,20 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
 
   // Photo lightbox — foto klienta z objednávky
   const [clientPhotoModal, setClientPhotoModal] = useState<string | null>(null); // client.id
+
+  // Excel confirm — lokálny per-zariadenie stav (localStorage)
+  const [excelConfirmed, setExcelConfirmed] = useState<Set<string>>(() =>
+    new Set(JSON.parse(localStorage.getItem("msbeton_excel_confirmed") ?? "[]") as string[])
+  );
+  const toggleExcelConfirmed = (e: React.MouseEvent, orderId: string) => {
+    e.stopPropagation();
+    setExcelConfirmed(prev => {
+      const next = new Set(prev);
+      if (next.has(orderId)) next.delete(orderId); else next.add(orderId);
+      localStorage.setItem("msbeton_excel_confirmed", JSON.stringify([...next]));
+      return next;
+    });
+  };
 
   // Focus + scroll na konkrétnu objednávku (navigácia z ObjednavkyTab)
   const [focusOrderId, setFocusOrderId] = useState<string | undefined>(initialOrderId);
@@ -966,7 +980,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               ); })()}
                             </div>
                           )}
-                          {/* R4: KTO + DÁTUM */}
+                          {/* R4: KTO + DÁTUM + Excel confirm */}
                           <div className="flex items-center gap-1 text-[10px]">
                             {kto
                               ? <DeviceLabel label={kto} className="shrink-0" />
@@ -974,6 +988,17 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             }
                             <span className="text-gray-300 mx-0.5">·</span>
                             <span className="tabular-nums text-gray-700 font-semibold shrink-0">{fmtDate(o.createdAt)}</span>
+                            <span className="flex-1" />
+                            <button
+                              onClick={e => toggleExcelConfirmed(e, o.id)}
+                              className={`inline-flex items-center gap-0.5 text-[8px] font-black px-1.5 py-0.5 rounded border transition-colors cursor-pointer ${
+                                excelConfirmed.has(o.id)
+                                  ? "bg-green-100 text-green-700 border-green-300"
+                                  : "bg-white text-gray-300 border-gray-200 hover:border-green-400 hover:text-green-600"
+                              }`}>
+                              <Check className="w-2.5 h-2.5 shrink-0" />
+                              {excelConfirmed.has(o.id) ? "EXCEL OK" : "EXCEL?"}
+                            </button>
                           </div>
                         </div>
 
@@ -1028,6 +1053,19 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             {/* KTO */}
                             <DeviceLabel label={kto} className="text-[10px] truncate" />
                             {onGoToOrder && !isDeleted ? <ChevronRight className="w-3.5 h-3.5 text-gray-300" /> : <span />}
+                          </div>
+                          {/* Excel confirm — desktop */}
+                          <div className="flex justify-end">
+                            <button
+                              onClick={e => toggleExcelConfirmed(e, o.id)}
+                              className={`inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded border transition-colors cursor-pointer ${
+                                excelConfirmed.has(o.id)
+                                  ? "bg-green-100 text-green-700 border-green-300"
+                                  : "bg-white text-gray-300 border-gray-200 hover:border-green-400 hover:text-green-600"
+                              }`}>
+                              <Check className="w-2.5 h-2.5 shrink-0" />
+                              {excelConfirmed.has(o.id) ? "EXCEL OK" : "EXCEL?"}
+                            </button>
                           </div>
                           {/* Status timeline desktop — newest first, vertical */}
                           {hist.length > 0 && (
