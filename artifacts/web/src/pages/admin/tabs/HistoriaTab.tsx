@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { adminData, Client, DepositTx, Order, getKamenivoGroup } from "@/lib/adminData";
+import { adminData, Client, DepositTx, Order, getKamenivoGroup, readerBlocked } from "@/lib/adminData";
 import { ChevronRight, ChevronLeft, TrendingUp, Minus, Smartphone, Monitor, Laptop, ChevronDown, Users, ShoppingCart, Mountain, Waves, X, MessageSquare, Check } from "lucide-react";
 
 type Sub = "zalohy" | "cashflow";
@@ -201,6 +201,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   // Excel confirm — uložené na objednávke v DB (viditeľné všetkým adminom)
   const toggleExcelConfirmed = (e: React.MouseEvent, orderId: string) => {
     e.stopPropagation();
+    if (readerBlocked()) return;
     const all = adminData.getOrders();
     const updated = all.map(o => o.id === orderId ? { ...o, excelConfirmed: !o.excelConfirmed } : o);
     adminData.saveOrders(updated);

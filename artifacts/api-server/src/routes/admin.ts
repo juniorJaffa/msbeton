@@ -194,7 +194,7 @@ function unionAppendOnly(a: unknown[], b: unknown[], dedupKey: (x: unknown) => s
 // preserveUnstamped: položky bez updatedAt chýbajúce v incoming → zachovať (clients: out-of-band insert
 // ochrana, napr. Ľubica). Pre orders=false: legacy bez updatedAt sa dá zmazať (inak by sa vracali).
 function mergeItems(incoming: Item[], current: Item[], baseSyncMs: number, preserveUnstamped = true,
-  appendOnlyFields: string[] = []
+  appendOnlyFields: string[] = [], stickyTrueFields: string[] = []
 ): Item[] {
   const curById = new Map(current.filter(c => c.id != null).map(c => [String(c.id), c] as const));
   const incIds = new Set(incoming.filter(i => i.id != null).map(i => String(i.id)));
@@ -209,7 +209,16 @@ function mergeItems(incoming: Item[], current: Item[], baseSyncMs: number, prese
     let merged: Item = winner;
     // Vnorené types merge (ak existujú v oboch)
     if (Array.isArray(inc.types) && Array.isArray(cur.types)) {
-      merged = { ...merged, types: mergeItems(inc.types as Item[], cur.types as Item[], baseSyncMs, preserveUnstamped, appendOnlyFields) };
+      merged = { ...merged, types: mergeItems(inc.types as Item[], cur.types as Item[], baseSyncMs, preserveUnstamped, appendOnlyFields, stickyTrueFields) };
+    }
+    // stickyTrueFields: boolean polia ktoré raz nastavené na true nikdy stratia pri concurrent edite
+    // Ak loser mal true a winner nemá → zachovaj true (excelConfirmed, etc.)
+    if (stickyTrueFields.length > 0) {
+      const overrides: Record<string, unknown> = {};
+      for (const field of stickyTrueFields) {
+        if (loser[field] === true && merged[field] !== true) overrides[field] = true;
+      }
+      if (Object.keys(overrides).length > 0) merged = { ...merged, ...overrides };
     }
     // Append-only polia — vždy union z oboch (winner + loser), aby sa nestratili záznamy
     // Podporuje dot-notation: "deposit.transactions" naviguje do vnoreného objektu
@@ -319,7 +328,7 @@ async function appendAudit(entry: AuditEntry): Promise<void> {
 // SELECT FOR UPDATE zamkne riadok — paralelné requesty čakajú, nie race condition.
 // Zároveň zaznamená audit (kto čo pridal/zmenil/zmazal) a vráti mergedFromOthers
 // (počet položiek iného admina ktoré sa zlúčili → frontend re-sync + toast).
-async function mergeSaveArray(key: string, body: unknown, baseSyncHeader: unknown, actor: Actor | null, transform?: (incoming: Item[], current: Item[]) => Item[], preserveUnstamped = true, appendOnlyFields: string[] = []): Promise<{ kept: number; preserved: number; mergedFromOthers: number }> {
+async function mergeSaveArray(key: string, body: unknown, baseSyncHeader: unknown, actor: Actor | null, transform?: (incoming: Item[], current: Item[]) => Item[], preserveUnstamped = true, appendOnlyFields: string[] = [], stickyTrueFields: string[] = []): Promise<{ kept: number; preserved: number; mergedFromOthers: number }> {
   const incomingRaw = Array.isArray(body) ? body as Item[] : [];
   const baseSyncMs = baseSyncHeader != null ? ts(baseSyncHeader) : -1;
 
@@ -329,7 +338,7 @@ async function mergeSaveArray(key: string, body: unknown, baseSyncHeader: unknow
     const cur = (rows[0]?.data as Item[] | null) ?? [];
     // transform (napr. manager sanitizácia) beží vnútri zámku s čerstvým `cur`
     const inc = transform ? transform(incomingRaw, cur) : incomingRaw;
-    const m = mergeItems(inc, cur, baseSyncMs, preserveUnstamped, appendOnlyFields);
+    const m = mergeItems(inc, cur, baseSyncMs, preserveUnstamped, appendOnlyFields, stickyTrueFields);
     const d = computeDiff(inc, cur, baseSyncMs);
     await tx.insert(adminConfig)
       .values({ key, data: m })
@@ -564,7 +573,8 @@ router.put("/orders", async (req, res) => {
   // Atomický item-level merge (rovnako ako klienti) — zabráni strate zmien (paid→nová, delete→návrat)
   // pri súbežných adminoch a stale polloch. preserveUnstamped=false → legacy objednávky sa dajú zmazať.
   // appendOnlyFields: statusHistory sa union-uje z oboch verziií — nikdy nestratí záznamy pri súbežných zmenách
-  try { const r = await mergeSaveArray(KEYS.orders, req.body, req.get("X-Base-Sync"), null, undefined, false, ["statusHistory"]); res.json({ ok: true, ...r }); }
+  // stickyTrueFields: excelConfirmed — raz potvrdené nikdy nestratí pri concurrent edite
+  try { const r = await mergeSaveArray(KEYS.orders, req.body, req.get("X-Base-Sync"), null, undefined, false, ["statusHistory"], ["excelConfirmed"]); res.json({ ok: true, ...r }); }
   catch (err) { req.log.error({ err }, "Failed to save orders"); res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -623,7 +633,9 @@ router.post("/send-registration-email", async (req, res) => {
     res.status(400).json({ ok: false, error: "Missing required fields" });
     return;
   }
-  const result = await sendRegistrationEmail({ toEmail, clientName, clientId, password });
+  // Sanitize mien — SMTP header injection ochrana (newline v mene)
+  const safeName = String(clientName).replace(/[\r\n]/g, " ").trim();
+  const result = await sendRegistrationEmail({ toEmail, clientName: safeName, clientId, password });
   res.json(result);
 });
 
@@ -883,7 +895,8 @@ router.post("/clients/:id/send-credentials", async (req, res) => {
     await db.insert(adminConfig).values({ key: "password_reset_tokens", data: tokens })
       .onConflictDoUpdate({ target: adminConfig.key, set: { data: tokens, updatedAt: new Date() } });
 
-    const name = [client.firstName, client.lastName].filter(Boolean).join(" ") || (client.name as string) || "Klient";
+    const rawName = [client.firstName, client.lastName].filter(Boolean).join(" ") || (client.name as string) || "Klient";
+    const name = rawName.replace(/[\r\n]/g, " ").trim(); // SMTP header injection ochrana
     const resetUrl = `${process.env["APP_URL"] ?? "https://msbeton.sk"}/klient-reset?token=${token}`;
     const result = await sendCredentialsEmail({ toEmail: email, clientName: name, loginId, resetUrl });
     if (!result.ok) return res.status(502).json({ ok: false, error: result.error ?? "Chyba odoslania emailu" });

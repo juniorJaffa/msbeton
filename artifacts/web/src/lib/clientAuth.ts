@@ -280,7 +280,7 @@ export async function forgetClientBiometric(): Promise<void> {
           await fetch(`/api/client/webauthn/credential/${encodeURIComponent(stored.credId)}`, {
             method: "DELETE",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ clientInternalId: client.id }),
+            body: JSON.stringify({ clientInternalId: client.id, sessionId: client.id }),
           }).catch(() => {});
         }
       }

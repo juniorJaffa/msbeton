@@ -741,6 +741,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const [orders, setOrders] = useState<Order[]>(() => adminData.getOrders());
   const [allCategories, setAllCategories] = useState(() => adminData.getCategories());
   const [allClients, setAllClients] = useState(() => adminData.getClients());
+  const [allDelivery, setAllDelivery] = useState(() => adminData.getDelivery());
   // Rýchle vyhľadávanie klienta podľa loginId alebo id — reaktívne (fotky, zľavy)
   const clientMap = useMemo(() => {
     const m = new Map<string, ReturnType<typeof adminData.getClients>[number]>();
@@ -755,6 +756,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
       // → tu načítame čerstvý zoznam aby sa ihneď objavili vrátane discount badges
       setOrders(adminData.getOrders());
       setAllClients(adminData.getClients()); // foto/zľavy klientov sa menia v KlientiTab
+      setAllDelivery(adminData.getDelivery()); // zóny/typ dopravy
     };
     window.addEventListener("admin-data-synced", handler);
     return () => window.removeEventListener("admin-data-synced", handler);
@@ -1571,8 +1573,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
             const effDiscSluzby  = o.discountSluzby  ?? linkedClient?.discountSluzby  ?? 0;
             const effDiscCelkovo = o.discountCelkovo ?? linkedClient?.discountCelkovo ?? 0;
             const oZoneType = o.deliveryZoneType ?? (() => {
-              const all = adminData.getDelivery();
-              const z = linkedClient?.deliveryZoneId ? (all.find(zz => zz.id === linkedClient.deliveryZoneId) ?? all[0]) : all[0];
+              const z = linkedClient?.deliveryZoneId ? (allDelivery.find(zz => zz.id === linkedClient.deliveryZoneId) ?? allDelivery[0]) : allDelivery[0];
               return z?.pricingType ?? "standard";
             })();
             return (
@@ -1858,8 +1859,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                           // Fallback reťazec — Typ dopravy MUSÍ byť vždy viditeľný:
                           // objednávka → klientova zóna → prvá (default) zóna → label podľa typu
                           const cl = clientMap.get(String(o.clientId));
-                          const all = adminData.getDelivery();
-                          const zone = cl?.deliveryZoneId ? (all.find(z => z.id === cl.deliveryZoneId) ?? all[0]) : all[0];
+                          const zone = cl?.deliveryZoneId ? (allDelivery.find(z => z.id === cl.deliveryZoneId) ?? allDelivery[0]) : allDelivery[0];
                           const dType = o.deliveryZoneType ?? zone?.pricingType ?? "standard";
                           const typeLabel = dType === "km" ? "Kilometre" : dType === "auto" ? "Počet áut" : "Štandard";
                           const dName = o.deliveryZoneName ?? zone?.name ?? typeLabel;

@@ -570,11 +570,18 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     if (deliveryMode !== "address" || !addressInputRef.current) return;
     const ORIGIN = { lat: 49.204417, lng: 18.729029 };
 
+    let ac: google.maps.places.Autocomplete | null = null;
+
     const initMaps = () => {
       if (!addressInputRef.current) return;
-      const ac = new google.maps.places.Autocomplete(addressInputRef.current, { types: ["geocode"], componentRestrictions: { country: "sk" } });
-      ac.addListener("place_changed", () => {
-        const place = ac.getPlace();
+      // Cleanup predchádzajúceho inštancie (re-init pri prepnutí deliveryMode)
+      if (ac && typeof google !== "undefined" && google.maps?.event) {
+        google.maps.event.clearInstanceListeners(ac);
+      }
+      ac = new google.maps.places.Autocomplete(addressInputRef.current, { types: ["geocode"], componentRestrictions: { country: "sk" } });
+      const acInst = ac; // capture pred callbackom — TS narrowing pre mutable let
+      acInst.addListener("place_changed", () => {
+        const place = acInst.getPlace();
         if (!place?.formatted_address) return;
         setAddress(place.formatted_address);
         // Uloží lat/lng pre okamžité umiestnenie pinu pri prepnutí na mapu
@@ -610,7 +617,13 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         if (typeof google !== "undefined" && google.maps?.places) { clearInterval(intervalId!); initMaps(); }
       }, 300);
     }
-    return () => { if (intervalId) clearInterval(intervalId); };
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      if (ac && typeof google !== "undefined" && google.maps?.event) {
+        google.maps.event.clearInstanceListeners(ac);
+        ac = null;
+      }
+    };
   }, [deliveryMode]);
 
   // Map mode — Google Maps interactive picker
@@ -618,6 +631,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     if (deliveryMode !== "map" || mapKmConfirmed) return;
     const ORIGIN = { lat: 49.204417, lng: 18.729029 };
     let intervalId: ReturnType<typeof setInterval> | null = null;
+    let clickListener: google.maps.MapsEventListener | null = null;
 
     const initMapMode = () => {
       const mapEl = document.getElementById("calculator-map");
@@ -736,7 +750,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         );
       };
 
-      map.addListener("click", (e: google.maps.MapMouseEvent) => {
+      clickListener = map.addListener("click", (e: google.maps.MapMouseEvent) => {
         if (!e.latLng) return;
         const lat = e.latLng.lat(), lng = e.latLng.lng();
         setMapError("");
@@ -806,7 +820,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       intervalId = setInterval(() => { if (tryInit()) clearInterval(intervalId!); }, 200);
     }
     // Nemazať mapLocateFnRef — zostáva platný pri re-vstupe do map modu
-    return () => { if (intervalId) clearInterval(intervalId); };
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      if (clickListener) { clickListener.remove(); clickListener = null; }
+    };
   }, [deliveryMode, mapKmConfirmed]);
 
   const allCategories = useMemo(() => adminData.getCategories(), [revision]);

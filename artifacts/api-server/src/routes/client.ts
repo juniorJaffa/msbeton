@@ -773,11 +773,19 @@ router.post("/webauthn/auth-complete", async (req, res) => {
 });
 
 // Zmazanie WebAuthn credential (zabudnúť toto zariadenie)
+// Vyžaduje platný sessionId (UUID z prihlásenia) — len vlastné credentials
 router.delete("/webauthn/credential/:credId", async (req, res) => {
   try {
-    const { clientInternalId } = req.body ?? {};
+    const { clientInternalId, sessionId } = req.body ?? {};
     const credId = req.params.credId;
-    if (!clientInternalId || !credId) return res.status(400).json({ ok: false });
+    if (!clientInternalId || !credId || !sessionId) return res.status(400).json({ ok: false });
+
+    // Overenie session — sessionId musí patriť rovnakému clientInternalId
+    const accounts = await getClientAccounts();
+    const session = accounts.find((a) => a.id === String(sessionId) && a.active !== false);
+    if (!session) return res.status(401).json({ ok: false, error: "Neplatná session" });
+    if (session.id !== String(clientInternalId)) return res.status(403).json({ ok: false, error: "Prístup zamietnutý" });
+
     const rows = await db.select().from(adminConfig).where(eq(adminConfig.key, "clients"));
     if (!rows.length || !Array.isArray(rows[0].data)) return res.status(500).json({ ok: false });
     const clients = rows[0].data as UnifiedClient[];
