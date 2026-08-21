@@ -809,6 +809,12 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const [ts, setTs] = useState<TransportSettings>(adminData.getTransportSettings());
   const saveTs = (data: TransportSettings) => { setTs(data); adminData.saveTransportSettings(data); };
   const [mapModalOrder, setMapModalOrder] = useState<Order | null>(null);
+  useEffect(() => {
+    if (!mapModalOrder) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMapModalOrder(null); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [mapModalOrder]);
   const [clientPhotoModal, setClientPhotoModal] = useState<string | null>(null); // client.id
   const plusCodeBackfilledRef = useRef<Set<string>>(new Set());
   const [ordersPage, setOrdersPage] = useState(0);
@@ -2375,7 +2381,10 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                   {/* 2. Plus Code + locality */}
                   {mapModalOrder.mapPlusCode && (
                     <div className="flex items-center gap-1.5">
-                      <span className="text-white/40 text-[10px] font-mono truncate">{mapModalOrder.mapPlusCode}{mapModalOrder.mapLocality ? ` · ${mapModalOrder.mapLocality}` : ""}</span>
+                      <span className="flex items-center gap-1 flex-1 min-w-0">
+                        <span className="text-white/40 text-[10px] font-mono shrink-0">{mapModalOrder.mapPlusCode}</span>
+                        {mapModalOrder.mapLocality && <span className="text-white font-bold text-xs truncate">· {mapModalOrder.mapLocality}</span>}
+                      </span>
                       <button onClick={() => { const txt = `${mapModalOrder.mapPlusCode}${mapModalOrder.mapLocality ? " " + mapModalOrder.mapLocality : ""}`; navigator.clipboard?.writeText(txt); setCopiedPlusCode(mapModalOrder.id); setTimeout(() => setCopiedPlusCode(null), 1500); }}
                         className="shrink-0 text-white/30 hover:text-primary transition-colors" title="Kopírovať Plus Code">
                         {copiedPlusCode === mapModalOrder.id ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
