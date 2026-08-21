@@ -694,33 +694,37 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       {/* ─── CASHFLOW ────────────────────────────────────────────────── */}
       {sub === "cashflow" && (
         <div className="space-y-3">
-          {/* R0: Status filter — buttony ako v Objednávkach */}
-          <div className="flex flex-wrap gap-1 items-center">
-            <button
-              onClick={() => setCashStatusFilter("vsetky")}
-              className={`px-2.5 py-1 text-[10px] font-bold rounded border transition-all cursor-pointer ${cashStatusFilter === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"}`}>
-              Všetky <span className="ml-0.5 opacity-60 text-[9px]">{liveOrders.length}</span>
-            </button>
-            {CASH_STATUSES.map(s => {
-              const cnt = liveOrders.filter(o => o.status === s).length;
-              const isActive = cashStatusFilter === s;
-              return (
-                <button key={s} onClick={() => setCashStatusFilter(isActive ? "vsetky" : s)}
-                  className={`px-2.5 py-1 text-[10px] font-bold rounded border transition-all cursor-pointer ${
-                    isActive ? STATUS_ACTIVE[s] ?? "bg-secondary text-white border-secondary"
-                             : `bg-white border-gray-200 ${STATUS_COLOR[s] ?? ""} opacity-80 hover:opacity-100`
-                  }`}>
-                  {STATUS_LABEL[s]} <span className="ml-0.5 opacity-70 text-[9px]">{cnt}</span>
-                </button>
-              );
-            })}
+          {/* R0: Status filter — horizontal scroll na mobile, wrap na desktop */}
+          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+            <div className="flex gap-1 items-center sm:flex-wrap min-w-max sm:min-w-0">
+              <button
+                onClick={() => setCashStatusFilter("vsetky")}
+                className={`px-2.5 py-1.5 text-[10px] font-bold rounded border transition-all cursor-pointer whitespace-nowrap shrink-0 ${cashStatusFilter === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"}`}>
+                Všetky <span className="ml-0.5 opacity-60 text-[9px]">{liveOrders.length}</span>
+              </button>
+              {CASH_STATUSES.map(s => {
+                const cnt = liveOrders.filter(o => o.status === s).length;
+                const isActive = cashStatusFilter === s;
+                return (
+                  <button key={s} onClick={() => setCashStatusFilter(isActive ? "vsetky" : s)}
+                    className={`px-2.5 py-1.5 text-[10px] font-bold rounded border transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                      isActive ? STATUS_ACTIVE[s] ?? "bg-secondary text-white border-secondary"
+                               : `bg-white border-gray-200 ${STATUS_COLOR[s] ?? ""} opacity-80 hover:opacity-100`
+                    }`}>
+                    {STATUS_LABEL[s]} <span className="ml-0.5 opacity-70 text-[9px]">{cnt}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {/* R1: Dátumové filtre — čistý riadok */}
-          <div className="flex flex-wrap gap-1.5 items-center">
-            {DATE_BTNS.map(f => (
-              <button key={f.id} onClick={() => setCashDateFilter(f.id)} className={dateBtnCls(cashDateFilter === f.id)}>{f.label}</button>
-            ))}
+          {/* R1: Dátumové filtre — horizontal scroll na mobile */}
+          <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
+            <div className="flex gap-1.5 items-center min-w-max sm:min-w-0 sm:flex-wrap">
+              {DATE_BTNS.map(f => (
+                <button key={f.id} onClick={() => setCashDateFilter(f.id)} className={`${dateBtnCls(cashDateFilter === f.id)} shrink-0 whitespace-nowrap`}>{f.label}</button>
+              ))}
+            </div>
           </div>
 
           {/* R2: KTO vľavo ··· Klient + Záloha vpravo */}
