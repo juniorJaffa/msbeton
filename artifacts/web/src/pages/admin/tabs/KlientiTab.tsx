@@ -866,6 +866,10 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     const c = clients.find(cl => cl.loginId === expandClientId);
     if (c) {
       setExpanded(c.id);
+      // Reset scroll kontajnera pred scrollom na klienta —
+      // admin-content si pamätá pozíciu z predchádzajúceho tabu (napr. Objednávky)
+      const container = document.getElementById("admin-content");
+      if (container) container.scrollTo({ top: 0, behavior: "instant" });
       scrollToClientCard(c.id, true);
     }
     onExpanded?.();

@@ -189,10 +189,10 @@ export default function AdminDashboard() {
   const tabs: { id: Tab; label: string; short: string; icon: React.ReactNode }[] = [
     { id: "klienti",    label: "KLIENTI",    short: "KLIENTI",  icon: <Users className="w-5 h-5" /> },
     { id: "objednavky", label: "OBJEDNÁVKY", short: "OBJED.",   icon: <ClipboardList className="w-5 h-5" /> },
+    { id: "historia",   label: "HISTÓRIA",   short: "HIST.",    icon: <Clock className="w-5 h-5" /> },
     { id: "doprava",    label: "DOPRAVA",    short: "DOPRAVA",  icon: <Truck className="w-5 h-5" /> },
     { id: "sluzby",     label: "SLUŽBY",     short: "SLUŽBY",   icon: <Wrench className="w-5 h-5" /> },
     { id: "betony",     label: "BETÓNY",     short: "BETÓNY",   icon: <Layers className="w-5 h-5" /> },
-    { id: "historia",   label: "HISTÓRIA",   short: "HIST.",    icon: <Clock className="w-5 h-5" /> },
     { id: "statistiky", label: "ŠTATISTIKY", short: "ŠTAT.",    icon: <TrendingUp className="w-5 h-5" /> },
     { id: "seo",        label: "SEO",        short: "SEO",      icon: <Search className="w-5 h-5" /> },
     { id: "server",     label: "SERVER",     short: "SERVER",   icon: <Server className="w-5 h-5" /> },

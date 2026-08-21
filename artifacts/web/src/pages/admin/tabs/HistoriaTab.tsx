@@ -190,6 +190,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [cashKtoFilters,   setCashKtoFilters]   = useState<string[]>([]);
   const [ktoDropOpen,      setKtoDropOpen]      = useState(false);
   const [onlyDeposit,      setOnlyDeposit]      = useState(false);
+  const [onlyVyplatena,    setOnlyVyplatena]    = useState(false);
   const [displayLimit,     setDisplayLimit]     = useState(100);
   const [flashDeletedId,   setFlashDeletedId]   = useState<string | null>(null);
   const cashClientRef = useRef<HTMLDivElement>(null);
@@ -409,6 +410,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     const result = liveOrders
       .filter(o => {
         if (onlyDeposit && !(o.depositUsed && o.depositUsed > 0)) return false;
+        if (onlyVyplatena && o.status !== "vyplatena") return false;
         if (cashClientFilter !== "vsetci" && o.clientId !== cashClientFilter) return false;
         if (cashKtoFilters.length > 0 && !cashKtoFilters.includes(deviceToGroupKey.get(o.createdByDevice ?? "") ?? "")) return false;
         // Dátumový filter — posledná zmena (nie createdAt) určuje, do ktorého dňa patrí
@@ -416,10 +418,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       })
       .sort((a, b) => orderLastChanged(b).localeCompare(orderLastChanged(a)));
     return result;
-  }, [liveOrders, cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit, deviceToGroupKey]);
+  }, [liveOrders, cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit, onlyVyplatena, deviceToGroupKey]);
 
   // Reset displayLimit pri každej zmene filtrov
-  useEffect(() => { setDisplayLimit(100); }, [cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit]);
+  useEffect(() => { setDisplayLimit(100); }, [cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit, onlyVyplatena]);
 
   // Klienti s fotkou z filtrovaných objednávok — pre photo lightbox navigáciu
   const clientsWithPhoto = useMemo(() => {
@@ -769,6 +771,11 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                 dropRef={cashClientRef} open={cashClientDrop} setOpen={setCashClientDrop}
                 search={cashClientSearch} setSearch={setCashClientSearch} />
             )}
+            {/* Vyplatená checkbox */}
+            <label className={`flex items-center gap-1.5 cursor-pointer border rounded-full px-2.5 py-1.5 shrink-0 transition-colors ${onlyVyplatena ? "bg-teal-50 border-teal-300" : "bg-white border-gray-200"}`}>
+              <input type="checkbox" checked={onlyVyplatena} onChange={e => setOnlyVyplatena(e.target.checked)} className="w-3.5 h-3.5 accent-teal-600" />
+              <span className={`text-[10px] font-bold ${onlyVyplatena ? "text-teal-700" : "text-gray-500"}`}>Vyplatená</span>
+            </label>
             {/* Záloha checkbox */}
             <label className="flex items-center gap-1.5 cursor-pointer bg-white border border-gray-200 rounded-full px-2.5 py-1.5 shrink-0">
               <input type="checkbox" checked={onlyDeposit} onChange={e => setOnlyDeposit(e.target.checked)} className="w-3.5 h-3.5 accent-amber-500" />
@@ -813,7 +820,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
           ) : (
             <div className="bg-white border border-gray-100 rounded-lg overflow-hidden">
               <div className="overflow-x-auto">
-                <div className="hidden sm:grid grid-cols-[90px_1fr_1fr_70px_70px_90px_110px_20px] gap-2 px-3 py-2 bg-gray-50 border-b border-gray-100 text-[9px] font-black uppercase tracking-widest text-gray-400">
+                <div className="hidden sm:grid grid-cols-[90px_1fr_1fr_70px_70px_120px_110px_20px] gap-2 px-3 py-2 bg-gray-50 border-b border-gray-100 text-[9px] font-black uppercase tracking-widest text-gray-400">
                   <span>Dátum</span><span>Klient</span><span>Betón</span><span className="text-right">Celkom</span><span className="text-right">Záloha</span><span>Stav</span><span>KTO</span><span />
                 </div>
                 <div className="">
