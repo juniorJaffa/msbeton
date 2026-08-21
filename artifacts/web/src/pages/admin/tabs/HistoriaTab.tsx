@@ -985,10 +985,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             <span className="flex-1" />
                             <button
                               onClick={e => toggleExcelConfirmed(e, o.id)}
-                              className={`inline-flex items-center gap-0.5 text-[8px] font-black px-1.5 py-0.5 rounded border transition-colors cursor-pointer ${
+                              className={`inline-flex items-center gap-0.5 text-[8px] font-black px-1.5 py-0.5 rounded border transition-all cursor-pointer ${
                                 o.excelConfirmed
-                                  ? "bg-green-100 text-green-700 border-green-300"
-                                  : "bg-white text-gray-300 border-gray-200 hover:border-green-400 hover:text-green-600"
+                                  ? "bg-green-100 text-green-700 border-green-400 hover:bg-red-50 hover:text-red-500 hover:border-red-300"
+                                  : "bg-white text-green-600 border-green-300 hover:bg-green-50 hover:border-green-500"
                               }`}>
                               <Check className="w-2.5 h-2.5 shrink-0" />
                               {o.excelConfirmed ? "EXCEL OK" : "EXCEL?"}
@@ -1052,10 +1052,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                           <div className="flex justify-end">
                             <button
                               onClick={e => toggleExcelConfirmed(e, o.id)}
-                              className={`inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded border transition-colors cursor-pointer ${
+                              className={`inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded border transition-all cursor-pointer ${
                                 o.excelConfirmed
-                                  ? "bg-green-100 text-green-700 border-green-300"
-                                  : "bg-white text-gray-300 border-gray-200 hover:border-green-400 hover:text-green-600"
+                                  ? "bg-green-100 text-green-700 border-green-400 hover:bg-red-50 hover:text-red-500 hover:border-red-300"
+                                  : "bg-white text-green-600 border-green-300 hover:bg-green-50 hover:border-green-500"
                               }`}>
                               <Check className="w-2.5 h-2.5 shrink-0" />
                               {o.excelConfirmed ? "EXCEL OK" : "EXCEL?"}
