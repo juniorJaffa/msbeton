@@ -514,7 +514,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
             <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
           </button>
           {open && (
-          <div className="absolute left-0 top-full mt-1.5 z-30 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden w-[220px]">
+          <div className="absolute right-0 top-full mt-1.5 z-30 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden w-[220px]">
             {/* Search — vždy viditeľný */}
             <div className="px-3 py-2 border-b border-gray-100">
               <input autoFocus type="text" value={search} onChange={e => setSearch(e.target.value)}
