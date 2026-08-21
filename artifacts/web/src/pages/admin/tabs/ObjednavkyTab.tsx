@@ -1630,18 +1630,18 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                       <span className="font-medium text-gray-600">{o.concreteType.replace(/ – [\d.,]+ €.*/, "")}</span>
                       <span className="font-bold text-secondary">{o.totalQty} m³</span>
                       {o.km ? <span className="text-gray-400">{o.km} km</span> : null}
-                      {(o.address || o.mapPlusCode || o.mapLocality) ? (
-                        <button onClick={e => { e.stopPropagation(); setMapModalOrder(o); }}
-                          className="inline-flex items-center gap-1 text-primary/50 hover:text-primary transition-colors" title="Zobraziť na mape">
-                          <MapPin className="w-3 h-3 shrink-0" />
-                          {o.mapLocality
-                            ? <span className="font-semibold text-secondary">{o.mapLocality.split(",")[0]}</span>
-                            : o.address && <span className="font-semibold text-secondary">{extractAddrLocality(o.address)}</span>
-                          }
-                          {o.mapPlusCode && <span className="text-gray-400 font-mono text-[10px]">{o.mapPlusCode}</span>}
-                        </button>
-                      ) : null}
                     </div>
+                    {(o.address || o.mapPlusCode || o.mapLocality) ? (
+                      <button onClick={e => { e.stopPropagation(); setMapModalOrder(o); }}
+                        className="inline-flex items-center gap-1 text-primary/50 hover:text-primary transition-colors" title="Zobraziť na mape">
+                        <MapPin className="w-3 h-3 shrink-0" />
+                        {o.mapLocality
+                          ? <span className="font-semibold text-secondary">{o.mapLocality.split(",")[0]}</span>
+                          : o.address && <span className="font-semibold text-secondary">{extractAddrLocality(o.address)}</span>
+                        }
+                        {o.mapPlusCode && <span className="text-gray-400 font-mono text-[10px]">{o.mapPlusCode}</span>}
+                      </button>
+                    ) : null}
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className={`text-xs font-bold ${o.createdAt.slice(0,10) === todayStr ? "bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-sm" : o.createdAt.slice(0,10) === yesterdayStr ? "text-blue-500" : "text-gray-400 font-normal"}`}>{fmtDate(o.createdAt)}</span>
                       {/* Typ dopravy — konzistentné s Klienti listom */}
