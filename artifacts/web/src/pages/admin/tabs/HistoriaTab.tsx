@@ -165,6 +165,16 @@ const STATUS_COLOR: Record<string, string> = {
   vybavena:   "bg-gray-100 text-gray-500",
   zmazana:    "bg-red-900 text-red-100",
 };
+const STATUS_ACTIVE: Record<string, string> = {
+  nova:       "bg-blue-500 text-white border-blue-500",
+  potvrdena:  "bg-yellow-400 text-white border-yellow-400",
+  odoslana:   "bg-green-600 text-white border-green-600",
+  vyuctovana: "bg-purple-600 text-white border-purple-600",
+  vyplatena:  "bg-teal-600 text-white border-teal-600",
+  zrusena:    "bg-red-500 text-white border-red-500",
+  vybavena:   "bg-gray-400 text-white border-gray-400",
+};
+const CASH_STATUSES = ["nova","potvrdena","odoslana","vyuctovana","vyplatena","zrusena"] as const;
 
 export default function HistoriaTab({ initialSub, initialClientId, initialDate, initialDateFilter, initialOrderId, onGoToClient, onGoToOrder }: Props) {
   const [sub, setSub] = useState<Sub>(() => {
@@ -190,7 +200,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [cashKtoFilters,   setCashKtoFilters]   = useState<string[]>([]);
   const [ktoDropOpen,      setKtoDropOpen]      = useState(false);
   const [onlyDeposit,      setOnlyDeposit]      = useState(false);
-  const [onlyVyplatena,    setOnlyVyplatena]    = useState(false);
+  const [cashStatusFilter, setCashStatusFilter] = useState<"vsetky" | typeof CASH_STATUSES[number]>("vsetky");
   const [displayLimit,     setDisplayLimit]     = useState(100);
   const [flashDeletedId,   setFlashDeletedId]   = useState<string | null>(null);
   const cashClientRef = useRef<HTMLDivElement>(null);
@@ -410,7 +420,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     const result = liveOrders
       .filter(o => {
         if (onlyDeposit && !(o.depositUsed && o.depositUsed > 0)) return false;
-        if (onlyVyplatena && o.status !== "vyplatena") return false;
+        if (cashStatusFilter !== "vsetky" && o.status !== cashStatusFilter) return false;
         if (cashClientFilter !== "vsetci" && o.clientId !== cashClientFilter) return false;
         if (cashKtoFilters.length > 0 && !cashKtoFilters.includes(deviceToGroupKey.get(o.createdByDevice ?? "") ?? "")) return false;
         // Dátumový filter — posledná zmena (nie createdAt) určuje, do ktorého dňa patrí
@@ -418,10 +428,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       })
       .sort((a, b) => orderLastChanged(b).localeCompare(orderLastChanged(a)));
     return result;
-  }, [liveOrders, cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit, onlyVyplatena, deviceToGroupKey]);
+  }, [liveOrders, cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit, cashStatusFilter, deviceToGroupKey]);
 
   // Reset displayLimit pri každej zmene filtrov
-  useEffect(() => { setDisplayLimit(100); }, [cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit, onlyVyplatena]);
+  useEffect(() => { setDisplayLimit(100); }, [cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit, cashStatusFilter]);
 
   // Klienti s fotkou z filtrovaných objednávok — pre photo lightbox navigáciu
   const clientsWithPhoto = useMemo(() => {
@@ -684,6 +694,28 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       {/* ─── CASHFLOW ────────────────────────────────────────────────── */}
       {sub === "cashflow" && (
         <div className="space-y-3">
+          {/* R0: Status filter — buttony ako v Objednávkach */}
+          <div className="flex flex-wrap gap-1 items-center">
+            <button
+              onClick={() => setCashStatusFilter("vsetky")}
+              className={`px-2.5 py-1 text-[10px] font-bold rounded border transition-all cursor-pointer ${cashStatusFilter === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"}`}>
+              Všetky <span className="ml-0.5 opacity-60 text-[9px]">{liveOrders.length}</span>
+            </button>
+            {CASH_STATUSES.map(s => {
+              const cnt = liveOrders.filter(o => o.status === s).length;
+              const isActive = cashStatusFilter === s;
+              return (
+                <button key={s} onClick={() => setCashStatusFilter(isActive ? "vsetky" : s)}
+                  className={`px-2.5 py-1 text-[10px] font-bold rounded border transition-all cursor-pointer ${
+                    isActive ? STATUS_ACTIVE[s] ?? "bg-secondary text-white border-secondary"
+                             : `bg-white border-gray-200 ${STATUS_COLOR[s] ?? ""} opacity-80 hover:opacity-100`
+                  }`}>
+                  {STATUS_LABEL[s]} <span className="ml-0.5 opacity-70 text-[9px]">{cnt}</span>
+                </button>
+              );
+            })}
+          </div>
+
           {/* R1: Dátumové filtre — čistý riadok */}
           <div className="flex flex-wrap gap-1.5 items-center">
             {DATE_BTNS.map(f => (
@@ -771,11 +803,6 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                 dropRef={cashClientRef} open={cashClientDrop} setOpen={setCashClientDrop}
                 search={cashClientSearch} setSearch={setCashClientSearch} />
             )}
-            {/* Vyplatená checkbox */}
-            <label className={`flex items-center gap-1.5 cursor-pointer border rounded-full px-2.5 py-1.5 shrink-0 transition-colors ${onlyVyplatena ? "bg-teal-50 border-teal-300" : "bg-white border-gray-200"}`}>
-              <input type="checkbox" checked={onlyVyplatena} onChange={e => setOnlyVyplatena(e.target.checked)} className="w-3.5 h-3.5 accent-teal-600" />
-              <span className={`text-[10px] font-bold ${onlyVyplatena ? "text-teal-700" : "text-gray-500"}`}>Vyplatená</span>
-            </label>
             {/* Záloha checkbox */}
             <label className="flex items-center gap-1.5 cursor-pointer bg-white border border-gray-200 rounded-full px-2.5 py-1.5 shrink-0">
               <input type="checkbox" checked={onlyDeposit} onChange={e => setOnlyDeposit(e.target.checked)} className="w-3.5 h-3.5 accent-amber-500" />
