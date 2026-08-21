@@ -28,13 +28,14 @@ function localDateStr(offsetDays = 0): string {
 }
 
 const SK_MONTHS = ["januára","februára","marca","apríla","mája","júna","júla","augusta","septembra","októbra","novembra","decembra"];
+const SK_DAYS   = ["Nedeľa","Pondelok","Utorok","Streda","Štvrtok","Piatok","Sobota"];
 function fmtGroupDate(dateStr: string): { label: string; sub: string | null } {
   const d = new Date(dateStr + "T00:00:00");
   const day = `${d.getDate()}. ${SK_MONTHS[d.getMonth()]}`;
   const full = d.getFullYear() === new Date().getFullYear() ? day : `${day} ${d.getFullYear()}`;
   if (dateStr === localDateStr(0))  return { label: "Dnes",  sub: day };
   if (dateStr === localDateStr(-1)) return { label: "Včera", sub: day };
-  return { label: full, sub: null };
+  return { label: SK_DAYS[d.getDay()], sub: full };
 }
 
 function toDateStr(iso: string) { return iso.slice(0, 10); }

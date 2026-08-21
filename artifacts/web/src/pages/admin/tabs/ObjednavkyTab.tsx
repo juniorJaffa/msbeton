@@ -12,10 +12,15 @@ const fM3 = (n?: number) => Math.round((n ?? 0) * 10) / 10;
 // "013 04 Dolná Tižina, Slovensko" → "Dolná Tižina"
 // "Hlavná 123, 010 01 Žilina, Slovensko" → "Žilina"
 const extractAddrLocality = (address: string): string => {
-  const parts = address.split(",").map(p => p.trim()).filter(p => p && !/^(Slovensko|Slovakia|Česko|Czech Republic)$/i.test(p));
+  const ZIP = /^\d{3}\s?\d{2}$/;
+  const COUNTRY = /^(Slovensko|Slovakia|Česká republika|Česko|Czech Republic|SR|SK)$/i;
+  const parts = address.split(",").map(p => p.trim()).filter(p => p && !COUNTRY.test(p) && !ZIP.test(p));
   if (!parts.length) return address;
-  const last = parts[parts.length - 1];
-  return last.replace(/^\d{3}\s?\d{2}\s+/, ""); // strip ZIP prefix
+  const candidate = parts[parts.length - 1];
+  return candidate
+    .replace(/^\d{3}\s?\d{2}\s+/, "")  // strip ZIP prefix: "013 04 Dolná Tižina"
+    .replace(/\s+\d{3}\s?\d{2}$/, "")  // strip ZIP suffix: "Dolná Tižina 013 04"
+    .trim();
 };
 
 // Doťaženie cieľ — dodatočná oprava starých objednávok. Bug (chýbal addToMainQty) ukladal target < minimum
