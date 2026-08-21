@@ -898,7 +898,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             <div className="space-y-px pt-0.5">
                               {[...hist].reverse().map((h, i) => (
                                 <div key={i} className="flex items-center gap-1.5 text-[8px]">
-                                  <span className="text-gray-700 tabular-nums font-bold w-[66px] shrink-0">{fmtTimeShort(h.changedAt)}</span>
+                                  <span className={`tabular-nums w-[66px] shrink-0 ${i === 0 ? "text-secondary font-black text-[10px]" : "text-gray-700 font-bold"}`}>{fmtTimeShort(h.changedAt)}</span>
                                   {h.type === "note" ? (
                                     <span className="flex items-center gap-0.5 text-gray-400 font-medium min-w-0">
                                       <MessageSquare className="w-2 h-2 shrink-0" />
@@ -974,14 +974,12 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               ); })()}
                             </div>
                           )}
-                          {/* R4: KTO + DÁTUM + Excel confirm */}
-                          <div className="flex items-center gap-1 text-[10px]">
-                            {kto
-                              ? <DeviceLabel label={kto} className="shrink-0" />
-                              : <span className="text-gray-400">—</span>
-                            }
-                            <span className="text-gray-300 mx-0.5">·</span>
-                            <span className="tabular-nums text-gray-700 font-semibold shrink-0">{fmtDate(o.createdAt)}</span>
+                          {/* R4: KTO (menej viditeľný) + Vytvorené dátum + Excel confirm */}
+                          <div className="flex items-center gap-1 text-[9px]">
+                            {kto && <DeviceLabel label={kto} className="shrink-0 opacity-50" />}
+                            {kto && <span className="text-gray-200 mx-0.5">·</span>}
+                            <span className="text-gray-400 shrink-0">Vytvorené</span>
+                            <span className="tabular-nums text-gray-500 font-medium shrink-0 ml-0.5">{fmtDate(o.createdAt)}</span>
                             <span className="flex-1" />
                             <button
                               onClick={e => toggleExcelConfirmed(e, o.id)}
@@ -1044,8 +1042,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               )}
                               {STATUS_LABEL[o.status] ?? o.status}
                             </span>
-                            {/* KTO */}
-                            <DeviceLabel label={kto} className="text-[10px] truncate" />
+                            {/* KTO — menej viditeľný */}
+                            <DeviceLabel label={kto} className="text-[10px] truncate opacity-50" />
                             {onGoToOrder && !isDeleted ? <ChevronRight className="w-3.5 h-3.5 text-gray-300" /> : <span />}
                           </div>
                           {/* Excel confirm — desktop */}
@@ -1066,7 +1064,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             <div className="pl-[94px] space-y-px pt-0.5">
                               {[...hist].reverse().map((h, i) => (
                                 <div key={i} className="flex items-center gap-1.5 text-[8px]">
-                                  <span className="text-gray-700 tabular-nums font-bold w-[70px] shrink-0">{fmtTimeShort(h.changedAt)}</span>
+                                  <span className={`tabular-nums w-[70px] shrink-0 ${i === 0 ? "text-secondary font-black text-[10px]" : "text-gray-700 font-bold"}`}>{fmtTimeShort(h.changedAt)}</span>
                                   {h.type === "note" ? (
                                     <span className="flex items-center gap-0.5 text-gray-400 font-medium min-w-0">
                                       <MessageSquare className="w-2 h-2 shrink-0" />
@@ -1089,6 +1087,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                 <span className={`font-bold px-1.5 py-0.5 rounded ${STATUS_COLOR[firstStatus] ?? "bg-gray-100 text-gray-500"}`}>
                                   {STATUS_LABEL[firstStatus] ?? firstStatus}
                                 </span>
+                                <span className="text-gray-500 font-medium">Vytvorené</span>
                               </div>
                             </div>
                           )}

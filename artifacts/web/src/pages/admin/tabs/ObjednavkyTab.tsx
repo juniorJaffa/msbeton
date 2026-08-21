@@ -871,21 +871,25 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
       }
       return { lat: lat - 90 + lR / 2, lng: lng - 180 + lnR / 2 };
     };
+    let cancelled = false;
+    const timeoutIds: ReturnType<typeof setTimeout>[] = [];
     toFill.forEach((o, idx) => {
       plusCodeBackfilledRef.current.add(o.id);
-      setTimeout(async () => {
+      const tid = setTimeout(async () => {
+        if (cancelled) return;
         try {
           const { lat, lng } = decodePlusCode(o.mapPlusCode!);
           const r = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=sk`,
             { headers: { "User-Agent": "msbeton-admin/1.0" } }
           );
+          if (cancelled) return;
           const d = await r.json();
           const a = d.address ?? {};
           const loc = (a.village ?? a.town ?? a.city ?? a.municipality ?? "") as string;
           const dist = (a.county ?? "") as string;
           const mapLocality = [loc, dist].filter(Boolean).join(", ");
-          if (!mapLocality) return;
+          if (!mapLocality || cancelled) return;
           setOrders(prev => {
             const updated = prev.map(p => p.id === o.id ? { ...p, mapLocality } : p);
             adminData.saveOrders(updated);
@@ -893,7 +897,9 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
           });
         } catch { /* silent */ }
       }, idx * 1100); // Nominatim rate limit: 1 req/s
+      timeoutIds.push(tid);
     });
+    return () => { cancelled = true; timeoutIds.forEach(clearTimeout); };
   }, [orders]);
 
   const readOnly = isReader(); // admin-čitateľ — žiadne zmeny objednávok

@@ -368,6 +368,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const pendingGeocodeAddressRef = useRef<string | null>(null);
   const pendingGeocodePlaceRef = useRef<{ lat: number; lng: number } | null>(null);
   const lastResolvedAddressRef = useRef<{ address: string; lat: number; lng: number } | null>(null);
+  const reverseGeocodeReqIdRef = useRef(0);
   const [podmienkyEnabled, setPodmienkyEnabled] = useState(false);
   const [podmienkyTrucks, setPodmienkyTrucks] = useState(1);
   const [podmienkyPumpa, setPodmienkyPumpa] = useState(1);
@@ -689,13 +690,16 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
       // Reverse geocode via Nominatim (OpenStreetMap) — Google Geocoding API nie je aktivovaná
       const reverseGeocode = async (lat: number, lng: number) => {
+        const myReqId = ++reverseGeocodeReqIdRef.current;
         try {
           const r = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=sk`,
             { headers: { "User-Agent": "msbeton-app/1.0" } }
           );
+          if (myReqId !== reverseGeocodeReqIdRef.current) return; // stale — user klikol znova
           if (!r.ok) { setMapLocality(""); setMapGeocodedAddress(""); return; }
           const d = await r.json();
+          if (myReqId !== reverseGeocodeReqIdRef.current) return; // stale po JSON parse
           const a = d.address ?? {};
           // SK validácia
           if (a.country_code && a.country_code !== "sk") {
@@ -714,7 +718,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
           setAddress(addr);
           if (addressInputRef.current) addressInputRef.current.value = addr;
         } catch {
-          setMapLocality(""); setMapGeocodedAddress("");
+          if (myReqId === reverseGeocodeReqIdRef.current) {
+            setMapLocality(""); setMapGeocodedAddress("");
+          }
         }
       };
 

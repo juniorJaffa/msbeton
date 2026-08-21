@@ -16,8 +16,11 @@ function trackSave(key: string, p: Promise<unknown> | null | undefined): void {
   emitSaveState(key, "saving");
   // Ak API call visí > 15s, považujeme to za chybu (sieť/server)
   let settled = false;
-  const timeout = setTimeout(() => { if (!settled) emitSaveState(key, "error"); }, 15000);
+  const timeout = setTimeout(() => {
+    if (!settled) { settled = true; emitSaveState(key, "error"); }
+  }, 15000);
   Promise.resolve(p).then(r => {
+    if (settled) return; // timeout already fired — ignoruj neskorú odpoveď
     settled = true; clearTimeout(timeout);
     const res = r as { ok?: boolean; mergedFromOthers?: number } | null;
     if (!res || res.ok === false) { emitSaveState(key, "error"); return; }
@@ -27,7 +30,7 @@ function trackSave(key: string, p: Promise<unknown> | null | undefined): void {
     } else {
       emitSaveState(key, "saved");
     }
-  }).catch(() => { settled = true; clearTimeout(timeout); emitSaveState(key, "error"); });
+  }).catch(() => { if (settled) return; settled = true; clearTimeout(timeout); emitSaveState(key, "error"); });
 }
 
 // Admin-čitateľ: pokus o zmenu → toast + zablokuj. Throttle (1 toast / 2s) proti spamu.
