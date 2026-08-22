@@ -491,10 +491,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const dateBtnCls  = (a: boolean) => `px-2.5 py-1.5 text-[10px] font-bold rounded-full transition-colors cursor-pointer ${a ? "bg-secondary text-white" : "bg-white text-gray-500 border border-gray-200 hover:border-gray-300"}`;
 
   // Kompaktný dropdown pre výber klienta — skaluje na 100+ klientov
-  function ClientDropdown({ clients, value, onChange, dropRef, open, setOpen, search, setSearch }:
+  function ClientDropdown({ clients, value, onChange, dropRef, open, setOpen, search, setSearch, align = "right" }:
     { clients: {id: string; name: string}[]; value: string; onChange: (id: string) => void;
       dropRef: React.RefObject<HTMLDivElement | null>; open: boolean; setOpen: (v: boolean) => void;
-      search: string; setSearch: (v: string) => void; }) {
+      search: string; setSearch: (v: string) => void; align?: "left" | "right"; }) {
     const selected = clients.find(c => c.id === value);
     // Multi-word search: každé slovo musí byť v mene alebo clientId (telefóne)
     const filtered = search ? clients.filter(c => {
@@ -514,7 +514,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
             <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
           </button>
           {open && (
-          <div className="absolute right-0 top-full mt-1.5 z-30 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden w-[220px]">
+          <div className={`absolute ${align === "left" ? "left-0" : "right-0"} top-full mt-1.5 z-30 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden w-[220px]`}>
             {/* Search — vždy viditeľný */}
             <div className="px-3 py-2 border-b border-gray-100">
               <input autoFocus type="text" value={search} onChange={e => setSearch(e.target.value)}
@@ -605,7 +605,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
           {depositClients.length > 0 && (
             <ClientDropdown clients={depositClients} value={depClientFilter} onChange={setDepClientFilter}
               dropRef={depClientRef} open={depClientDrop} setOpen={setDepClientDrop}
-              search={depClientSearch} setSearch={setDepClientSearch} />
+              search={depClientSearch} setSearch={setDepClientSearch} align="left" />
           )}
 
           {/* Súhrn — kompaktný inline bar */}
