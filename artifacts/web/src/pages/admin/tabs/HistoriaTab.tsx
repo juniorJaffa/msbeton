@@ -833,8 +833,9 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
             </div>
           </div>
 
-          {/* R2: KTO vľavo ··· Klient + Záloha vpravo */}
-          <div className="flex items-center gap-2">
+          {/* R2: KTO · Klient · Záloha · Nedoplatok · EXCEL — horizontal scroll na mobile */}
+          <div style={{overflowX:'scroll',WebkitOverflowScrolling:'touch',marginLeft:'-16px',marginRight:'-16px',paddingBottom:'2px'}}>
+          <div style={{display:'flex',gap:'6px',alignItems:'center',paddingLeft:'16px',paddingRight:'16px',width:'max-content',minWidth:'100%'}}>
             {/* KTO dropdown */}
             {deviceGroups.length > 1 && (
               <div ref={ktoRef} className="relative inline-flex items-center gap-1 shrink-0">
@@ -905,8 +906,6 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                 )}
               </div>
             )}
-            {/* Spacer */}
-            <div className="flex-1" />
             {/* Klient dropdown */}
             {orderClients.length > 0 && (
               <ClientDropdown clients={orderClients} value={cashClientFilter} onChange={setCashClientFilter}
@@ -919,20 +918,21 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
               <span className="text-[10px] font-bold text-gray-500">Záloha</span>
             </label>
             {/* Nedoplatok checkbox */}
-            <label className="flex items-center gap-1.5 cursor-pointer bg-white border border-red-200 rounded-full px-2.5 py-1.5 shrink-0">
+            <label className="flex items-center gap-1.5 cursor-pointer bg-white border border-gray-200 rounded-full px-2.5 py-1.5 shrink-0">
               <input type="checkbox" checked={onlyNedoplatok} onChange={e => setOnlyNedoplatok(e.target.checked)} className="w-3.5 h-3.5 accent-red-500" />
               <span className="text-[10px] font-bold text-red-500">Nedoplatok</span>
             </label>
             {/* EXCEL filter — 3-stavový toggle */}
             <div className="flex items-center gap-0.5 bg-white border border-gray-200 rounded-full px-1 py-1 shrink-0">
-              {([["vsetky", "EXCEL", "text-gray-400"], ["ok", "✓ OK", "text-green-600"], ["chyba", "? Chýba", "text-gray-400"]] as const).map(([val, label, cls]) => (
+              {([["vsetky", "XLS", "text-gray-400"], ["ok", "✓ OK", "text-green-600"], ["chyba", "?", "text-gray-400"]] as const).map(([val, label, cls]) => (
                 <button key={val} onClick={() => setCashExcelFilter(val)}
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full transition-all ${cashExcelFilter === val ? (val === "ok" ? "bg-green-100 text-green-700 border border-green-400" : val === "chyba" ? "bg-gray-100 text-gray-600 border border-gray-300" : "bg-gray-100 text-gray-600 border border-gray-200") : `${cls} hover:bg-gray-50`}`}>
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full transition-all cursor-pointer ${cashExcelFilter === val ? (val === "ok" ? "bg-green-100 text-green-700 border border-green-400" : val === "chyba" ? "bg-gray-100 text-gray-600 border border-gray-300" : "bg-gray-100 text-gray-600 border border-gray-200") : `${cls} hover:bg-gray-50`}`}>
                   {label}
                 </button>
               ))}
             </div>
-          </div>
+          </div>{/* inner flex */}
+          </div>{/* scroll wrapper */}
 
           {/* Nadpis sekcie + kompaktný súhrn v jednom riadku */}
           <div className="flex flex-col gap-1.5">
