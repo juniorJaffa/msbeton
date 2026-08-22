@@ -1031,7 +1031,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
             <div className="bg-white border border-gray-100 rounded-lg text-center text-gray-400 py-10 text-sm">Žiadne objednávky</div>
           ) : (
             <div className="bg-white border border-gray-100 rounded-lg">
-              <div className="hidden sm:grid grid-cols-[90px_1fr_1fr_70px_70px_120px_110px_20px] gap-2 px-3 py-2 bg-gray-50 border-b border-gray-100 text-[9px] font-black uppercase tracking-widest text-gray-400 sticky top-0 z-20 rounded-t-lg">
+              <div className="hidden sm:grid grid-cols-[90px_1fr_1fr_70px_70px_120px_110px_20px] gap-2 px-3 py-2 bg-secondary border-b border-secondary/80 text-[9px] font-black uppercase tracking-widest text-white/50 sticky top-0 z-20 rounded-t-lg">
                 <span>Dátum</span><span>Klient</span><span>Betón</span><span className="text-right">Celkom</span><span className="text-right">Záloha</span><span>Stav</span><span>KTO</span><span />
               </div>
               <div className="">
@@ -1247,8 +1247,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               onClick={e => toggleExcelConfirmed(e, o.id)}
                               className={`inline-flex items-center gap-0.5 text-[8px] font-black px-1.5 py-0.5 rounded border transition-all cursor-pointer ${
                                 o.excelConfirmed
-                                  ? "bg-green-100 text-green-700 border-green-400 hover:bg-red-50 hover:text-red-500 hover:border-red-300"
-                                  : "bg-white text-green-600 border-green-300 hover:bg-green-50 hover:border-green-500"
+                                  ? "bg-green-100 text-green-700 border-green-500 hover:bg-red-50 hover:text-red-500 hover:border-red-300"
+                                  : "bg-gray-50 text-gray-400 border-gray-200 hover:bg-green-50 hover:text-green-600 hover:border-green-400"
                               }`}>
                               <Check className="w-2.5 h-2.5 shrink-0" />
                               {o.excelConfirmed ? "EXCEL OK" : "EXCEL?"}
@@ -1272,7 +1272,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                   <span className="text-secondary font-black tabular-nums text-[11px] leading-tight">{lp.date}</span>
                                   <span className="text-gray-500 tabular-nums text-[10px] leading-tight">{lp.time}</span>
                                   {createdDay !== changedDay && (
-                                    <span className="text-gray-300 tabular-nums text-[9px] leading-tight" title={`Vytvorené: ${fmtDate(o.createdAt)}`}>
+                                    <span className="text-gray-400 tabular-nums text-[9px] leading-tight" title={`Vytvorené: ${fmtDate(o.createdAt)}`}>
                                       vzn. {cp.date}
                                     </span>
                                   )}
@@ -1395,8 +1395,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               onClick={e => toggleExcelConfirmed(e, o.id)}
                               className={`inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded border transition-all cursor-pointer ${
                                 o.excelConfirmed
-                                  ? "bg-green-100 text-green-700 border-green-400 hover:bg-red-50 hover:text-red-500 hover:border-red-300"
-                                  : "bg-white text-green-600 border-green-300 hover:bg-green-50 hover:border-green-500"
+                                  ? "bg-green-100 text-green-700 border-green-500 hover:bg-red-50 hover:text-red-500 hover:border-red-300"
+                                  : "bg-gray-50 text-gray-400 border-gray-200 hover:bg-green-50 hover:text-green-600 hover:border-green-400"
                               }`}>
                               <Check className="w-2.5 h-2.5 shrink-0" />
                               {o.excelConfirmed ? "EXCEL OK" : "EXCEL?"}
