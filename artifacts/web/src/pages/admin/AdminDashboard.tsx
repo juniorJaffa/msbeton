@@ -280,7 +280,7 @@ export default function AdminDashboard() {
       {/* Mobile tab bar — white, fixed pod headerom, ikona + label */}
       <div className="sm:hidden fixed top-12 left-0 right-0 z-40 bg-white border-b border-gray-200 shadow-sm">
         <div className="flex">
-          {tabs.filter(t => t.id !== "statistiky" && t.id !== "historia" && t.id !== "seo" && t.id !== "server").map(t => (
+          {tabs.filter(t => t.id !== "statistiky" && t.id !== "betony" && t.id !== "seo" && t.id !== "server").map(t => (
             <button key={t.id} onClick={() => { setTab(t.id); window.location.hash = t.id; setMoreOpen(false); }}
               className={`flex-1 flex flex-col items-center justify-center py-1.5 gap-0.5 border-b-2 transition-all ${
                 tab === t.id ? "text-primary border-primary" : "text-gray-400 border-transparent"
@@ -301,16 +301,16 @@ export default function AdminDashboard() {
             <button
               onClick={() => setMoreOpen(o => !o)}
               className={`w-full flex flex-col items-center justify-center py-1.5 gap-0.5 border-b-2 transition-all ${
-                (tab === "historia" || tab === "statistiky" || tab === "seo" || tab === "server") ? "text-primary border-primary" : moreOpen ? "text-secondary border-transparent" : "text-gray-400 border-transparent"
+                (tab === "betony" || tab === "statistiky" || tab === "seo" || tab === "server") ? "text-primary border-primary" : moreOpen ? "text-secondary border-transparent" : "text-gray-400 border-transparent"
               }`}>
               <MoreHorizontal className="w-5 h-5" />
               <span className="text-[8px] font-bold uppercase leading-none">VIAC</span>
             </button>
             {moreOpen && (
               <div className="absolute top-full right-0 mt-px w-44 bg-white border border-gray-200 rounded-sm shadow-xl overflow-hidden z-50">
-                <button onClick={() => { setTab("historia"); window.location.hash = "historia"; setMoreOpen(false); }}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-bold transition-colors ${tab === "historia" ? "text-primary bg-primary/5" : "text-gray-600 hover:bg-gray-50"}`}>
-                  <Clock className="w-4 h-4 shrink-0" /> História
+                <button onClick={() => { setTab("betony"); window.location.hash = "betony"; setMoreOpen(false); }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-bold transition-colors ${tab === "betony" ? "text-primary bg-primary/5" : "text-gray-600 hover:bg-gray-50"}`}>
+                  <Layers className="w-4 h-4 shrink-0" /> Betóny
                 </button>
                 <button onClick={() => { setTab("statistiky"); window.location.hash = "statistiky"; setMoreOpen(false); }}
                   className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-bold transition-colors border-t border-gray-100 ${tab === "statistiky" ? "text-primary bg-primary/5" : "text-gray-600 hover:bg-gray-50"}`}>

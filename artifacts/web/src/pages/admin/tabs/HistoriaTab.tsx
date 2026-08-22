@@ -694,29 +694,26 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       {/* ─── CASHFLOW ────────────────────────────────────────────────── */}
       {sub === "cashflow" && (
         <div className="space-y-3">
-          {/* R0: Status filter — horizontal scroll na mobile */}
-          {/* iOS fix: plné inline styles, overflow-x:scroll (nie auto), width:max-content na inner */}
-          <div style={{overflowX:'scroll',WebkitOverflowScrolling:'touch',marginLeft:'-16px',marginRight:'-16px',paddingBottom:'2px'}}>
-            <div style={{display:'flex',gap:'4px',alignItems:'center',paddingLeft:'16px',paddingRight:'16px',width:'max-content',minWidth:'100%'}}>
-              <button
-                onClick={() => setCashStatusFilter("vsetky")}
-                className={`px-2.5 py-1.5 text-[10px] font-bold rounded border transition-all cursor-pointer whitespace-nowrap shrink-0 ${cashStatusFilter === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"}`}>
-                Všetky <span className="ml-0.5 opacity-60 text-[9px]">{liveOrders.length}</span>
-              </button>
-              {CASH_STATUSES.map(s => {
-                const cnt = liveOrders.filter(o => o.status === s).length;
-                const isActive = cashStatusFilter === s;
-                return (
-                  <button key={s} onClick={() => setCashStatusFilter(isActive ? "vsetky" : s)}
-                    className={`px-2.5 py-1.5 text-[10px] font-bold rounded border transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                      isActive ? STATUS_ACTIVE[s] ?? "bg-secondary text-white border-secondary"
-                               : `bg-white border-gray-200 ${STATUS_COLOR[s] ?? ""} opacity-80 hover:opacity-100`
-                    }`}>
-                    {STATUS_LABEL[s]} <span className="ml-0.5 opacity-70 text-[9px]">{cnt}</span>
-                  </button>
-                );
-              })}
-            </div>
+          {/* R0: Status filter — flex-wrap grid (žiadny scroll, všetky viditeľné naraz) */}
+          <div className="flex flex-wrap gap-1">
+            <button
+              onClick={() => setCashStatusFilter("vsetky")}
+              className={`px-2.5 py-1.5 text-[10px] font-bold rounded border transition-all cursor-pointer whitespace-nowrap ${cashStatusFilter === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"}`}>
+              Všetky <span className="ml-0.5 opacity-60 text-[9px]">{liveOrders.length}</span>
+            </button>
+            {CASH_STATUSES.map(s => {
+              const cnt = liveOrders.filter(o => o.status === s).length;
+              const isActive = cashStatusFilter === s;
+              return (
+                <button key={s} onClick={() => setCashStatusFilter(isActive ? "vsetky" : s)}
+                  className={`px-2.5 py-1.5 text-[10px] font-bold rounded border transition-all cursor-pointer whitespace-nowrap ${
+                    isActive ? STATUS_ACTIVE[s] ?? "bg-secondary text-white border-secondary"
+                             : `bg-white border-gray-200 ${STATUS_COLOR[s] ?? ""} opacity-80 hover:opacity-100`
+                  }`}>
+                  {STATUS_LABEL[s]} <span className="ml-0.5 opacity-70 text-[9px]">{cnt}</span>
+                </button>
+              );
+            })}
           </div>
 
           {/* R1: Dátumové filtre — horizontal scroll na mobile */}
