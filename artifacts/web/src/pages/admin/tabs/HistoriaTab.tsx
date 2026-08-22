@@ -946,15 +946,15 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
             </div>
             {/* Sekundárny riadok: zálohy klientov (viazané) + payout trend */}
             {(cashflowExtras.totalDeposits > 0 || cashflowExtras.trendPct !== null) && (
-              <div className="flex items-center gap-3 justify-end flex-wrap">
+              <div className="flex items-center gap-2 justify-end flex-wrap">
                 {cashflowExtras.totalDeposits > 0 && (
-                  <span className="flex items-center gap-1 text-[9px] text-gray-400" title="Celkový zostatok zálohy všetkých klientov (viazané peniaze)">
+                  <span className="inline-flex items-center gap-1 text-[9px] bg-white/90 border border-gray-200 rounded-full px-2.5 py-1 font-medium text-gray-500" title="Celkový zostatok zálohy všetkých klientov (viazané peniaze)">
                     🏦 <span className="font-black text-amber-600 tabular-nums">{fmtEur(cashflowExtras.totalDeposits, 0)} €</span>
-                    <span className="text-gray-500">viazané</span>
+                    <span className="text-gray-400">viazané</span>
                   </span>
                 )}
                 {cashflowExtras.trendPct !== null && cashflowExtras.todayPay > 0 && (
-                  <span className={`flex items-center gap-1 text-[9px] font-black ${cashflowExtras.trendPct >= 0 ? "text-teal-600" : "text-red-500"}`}
+                  <span className={`inline-flex items-center gap-1 text-[9px] font-black bg-white/90 border border-gray-200 rounded-full px-2.5 py-1 ${cashflowExtras.trendPct >= 0 ? "text-teal-600" : "text-red-500"}`}
                     title={`Dnes vyplatené vs. rovnaký deň minulý týždeň (${fmtEur(cashflowExtras.weekAgoPay, 0)} €)`}>
                     {cashflowExtras.trendPct >= 0 ? "↑" : "↓"}{Math.abs(cashflowExtras.trendPct)}% vs. −7d
                   </span>
