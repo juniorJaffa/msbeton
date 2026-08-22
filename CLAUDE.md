@@ -445,6 +445,82 @@ Tailwind `overflow-x-auto` + `min-w-max` class NEFUNGUJE spoľahlivo na iOS ak m
 
 **Používa sa v:** `HistoriaTab.tsx` status filter row, date filter row.
 
+### GPS z EXIF fotky klienta
+
+Kalkulačka (`Calculator.tsx`) extrahuje GPS + dátum z EXIF metadát fotky priloženej k objednávke:
+
+```typescript
+// extractExifGps(file): Promise<{lat, lon, dateStr?} | null>
+// - JPEG EXIF: GPSLatitude/GPSLongitude/GPSLatitudeRef/GPSLongitudeRef + DateTimeOriginal
+// - Parsuje binárne APP1 segment (bez externej knižnice)
+```
+
+**Výsledok v UI:**
+- `📍 Turie (Žilinský kraj)` pill — tučný názov obce + kraj v zátvorkách (z Nominatim reverseGeocode na GPS z EXIF)
+- 📷 dátum z EXIF (DateTimeOriginal) — ak chýba GPS, dátum sa stále zobrazí
+- `🗺 Navigovať` button — otvorí Apple Maps / Google Maps
+- Zelená `📍` ikona pri type ak má GPS, sivá ak nemá
+
+**Pravidlá:**
+- EXIF extrakcia prebehne v `FileReader` (async), GPS/dátum sa uloží do order state pred submitom
+- Ak EXIF parsing zlyhá (PNG, WEBP, poškodený JPEG) → graceful fallback, objednávka sa odošle bez GPS
+- `DateTimeOriginal` sa zobrazí namiesto `created_at` ak dostupný (viac relevantný)
+
+### Foto klienta — lightbox a avatar
+
+**Avatar v kartách** (ObjednavkyTab, HistoriaTab):
+- Round avatar `w-8 h-8 rounded-full object-cover` vedľa mena klienta
+- Klik na avatar → lightbox
+- Fotky komprimované pri nahrávaní: max 1280px, JPEG 0.85 quality, EXIF orientácia fix (canvas rotate pred kompresiou)
+
+**Lightbox:**
+- Fullscreen overlay, backdrop-blur
+- Keyboard: `←` / `→` navigácia medzi fotkami, `Escape` close
+- Swipe (touch) — `touchstart` / `touchend` delta ≥ 50px → prev/next
+- GPS pill + `🗺 Navigovať` + `📞 Zavolať` (ak má telefón klienta) v header lightboxu
+- Klik mimo foto (na backdrop) → close; `✕` button vpravo hore → close
+- Prev/next šípky len ak >1 fotka
+
+**`compressClientPhoto()`** v `Calculator.tsx` / `KlientiTab.tsx`:
+```typescript
+// canvas → drawImage s rotate podľa EXIF orientation tag
+// output: dataURL JPEG max 1280px / quality 0.85
+```
+
+### mapLocality — obec/mesto prominentne
+
+`mapLocality?: string` na `Order` type — text lokalita z Nominatim reverseGeocode (napr. `"Turie"`). Ukladá sa pri submite objednávky z mapa/geolokácia režimu.
+
+**Zobrazenie:**
+- **Objednávka karta** (ObjednavkyTab): tučný `mapLocality` pod adresou — hneď viditeľné bez rozkliknutia
+- **PDF export** (A4 + A5): lokalita v adresnom riadku — `"Turie (via GPS)"`
+- **HistoriaTab cashflow**: malý locality badge vedľa sumy
+
+**`extractAddrLocality(fullAddress)`** — z textovej adresy (nie GPS) vytiahne obec:
+```typescript
+// Strip: PSČ (5 číslic), "Slovensko", "Slovakia", krajský/okresný prefix
+// Input: "Turie 468, 013 12 Turie, Slovenská republika"
+// Output: "Turie"
+```
+
+**Backfill v ObjednavkyTab:** Objednávky bez `mapLocality` sa doplnia cez Nominatim pri otvorení tabu (ak majú `lat`/`lon`). Race condition chránená `mapsReady` flag + `reversGeocodeReqIdRef` pattern.
+
+### Admin Objednávky — soft delete a poznámka
+
+**Soft delete:**
+- `deletedAt?: string` na `Order` — ISO timestamp, nie fyzický delete
+- `isDeleted` computed: `!!o.deletedAt`
+- Zmazaná objednávka: zachová sa v HistoriaTab (dimmed `opacity-50`, `🗑` count badge)
+- V ObjednavkyTab: vylúčená z hlavného zoznamu (filter `!isDeleted`)
+- UI: tlačidlo zmazať → flash warning → confirm → soft delete. Nie je možné obnoviť cez UI (iba DB reset)
+
+**Poznámka (note):**
+- `note?: string` na `Order`
+- Inline edit priamo v karte objednávky (click na text alebo `✏` ikona → `<textarea>`, auto-save on blur)
+- Zmena note → `statusHistory` entry: `{type: "note", text: "...", by: deviceLabel, at: ISO}`
+- **Zobrazenie v HistoriaTab** cashflow timeline: ikona `MessageSquare`, skrátený text poznámky (max 60 znakov)
+- **PAMÄTAJ** (z TODO memory): poznámky zatiaľ nie sú zobrazené v HistoriaTab timeline — to je plánovaná feature (Peto, 2026-08-19)
+
 ### Testovacie prihlasovacie údaje
 
 | Rola | Login ID | Heslo | Poznámka |
