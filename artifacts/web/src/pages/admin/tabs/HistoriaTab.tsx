@@ -823,7 +823,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
               </button>
             )}
             {/* EXCEL filter — vedľa koša, rovnaký štýl ako status buttony */}
-            <div className="flex items-center gap-1 ml-auto">
+            <div className="flex items-center gap-1">
               <span className="text-[9px] font-black uppercase tracking-widest text-gray-300 shrink-0 mr-0.5">XLS</span>
               {([["vsetky", "Všetky"] as const, ["ok", "✓ OK"] as const, ["chyba", "?"] as const]).map(([val, label]) => (
                 <button key={val} onClick={() => setCashExcelFilter(val)}
@@ -847,9 +847,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
             </div>
           </div>
 
-          {/* R2: KTO · Klient · Záloha · Nedoplatok · EXCEL — horizontal scroll na mobile */}
-          <div style={{overflowX:'scroll',WebkitOverflowScrolling:'touch',marginLeft:'-16px',marginRight:'-16px',paddingBottom:'2px'}}>
-          <div style={{display:'flex',gap:'6px',alignItems:'center',paddingLeft:'16px',paddingRight:'16px',width:'max-content',minWidth:'100%'}}>
+          {/* R2: KTO vľavo ··· Klient + Záloha vpravo */}
+          <div className="flex items-center gap-2">
             {/* KTO dropdown */}
             {deviceGroups.length > 1 && (
               <div ref={ktoRef} className="relative inline-flex items-center gap-1 shrink-0">
@@ -920,6 +919,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                 )}
               </div>
             )}
+            {/* Spacer */}
+            <div className="flex-1" />
             {/* Klient dropdown */}
             {orderClients.length > 0 && (
               <ClientDropdown clients={orderClients} value={cashClientFilter} onChange={setCashClientFilter}
@@ -931,8 +932,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
               <input type="checkbox" checked={onlyDeposit} onChange={e => setOnlyDeposit(e.target.checked)} className="w-3.5 h-3.5 accent-amber-500" />
               <span className="text-[10px] font-bold text-gray-500">Záloha</span>
             </label>
-          </div>{/* inner flex */}
-          </div>{/* scroll wrapper */}
+          </div>{/* R2 */}
 
           {/* Nadpis sekcie + kompaktný súhrn v jednom riadku */}
           <div className="flex flex-col gap-1.5">
