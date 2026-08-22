@@ -845,7 +845,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
 
           {/* R1b: EXCEL filter — pod dátumovým riadkom, identický štýl ako EXCEL btn na karte */}
           <div className="flex items-center gap-1.5">
-            <span className="text-[9px] font-black uppercase tracking-widest text-gray-500 shrink-0">Excel</span>
+            <span className="text-[9px] font-black uppercase tracking-wide text-green-700 bg-green-50 border border-green-400 rounded px-1.5 py-0.5 shrink-0">EXCEL</span>
             <button onClick={() => setCashExcelFilter("vsetky")}
               className={`inline-flex items-center gap-0.5 text-[10px] font-black px-2.5 py-1 rounded border transition-all cursor-pointer whitespace-nowrap ${
                 cashExcelFilter === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-green-300 hover:border-green-400"
