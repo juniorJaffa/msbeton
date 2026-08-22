@@ -491,6 +491,36 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     return { count: activeCount, deletedCount, dep, total };
   }, [filteredOrders]);
 
+  // Payout insight — "dnes/včera sa prerozdeľujú peniaze"
+  // Detekuje: statusHistory záznamy kde status="vyplatena", zoskupí podľa dňa zmeny (nie createdAt)
+  // Date-filter aware: adaptuje sa podľa aktívneho cashDateFilter
+  const payoutInsight = useMemo(() => {
+    type DayPayout = { sum: number; count: number; orderIds: Set<string> };
+    const byDay = new Map<string, DayPayout>();
+    for (const o of filteredOrders) {
+      if (o.status === "zmazana") continue;
+      const hist = o.statusHistory ?? [];
+      for (const h of hist) {
+        if (h.status !== "vyplatena") continue;
+        const day = h.changedAt.slice(0, 10);
+        let dp = byDay.get(day);
+        if (!dp) { dp = { sum: 0, count: 0, orderIds: new Set() }; byDay.set(day, dp); }
+        if (!dp.orderIds.has(o.id)) {
+          dp.sum += h.paidAmount ?? o.paidAmount ?? o.totalSDph ?? o.totalBezDph ?? 0;
+          dp.count++;
+          dp.orderIds.add(o.id);
+        }
+      }
+    }
+    const todayKey   = localDateStr(0);
+    const yestKey    = localDateStr(-1);
+    // Fokus deň: podľa aktívneho filtra
+    const focusKey = cashDateFilter === "dnes" ? todayKey : cashDateFilter === "vcera" ? yestKey : null;
+    // Top deň v aktuálnom zobrazení (pre týždeň/mesiac/všetko)
+    const topEntry = [...byDay.entries()].sort((a, b) => b[1].sum - a[1].sum)[0];
+    return { byDay, todayKey, yestKey, focusKey, topEntry };
+  }, [filteredOrders, cashDateFilter]);
+
   const orderClients = useMemo(() => {
     // Pre každý clientId ulož najlepšie meno (registrovaný klient > clientName > clientId)
     const bestName = new Map<string, string>();
@@ -869,6 +899,69 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
             </div>
           </div>
 
+          {/* ── PAYOUT INSIGHT BANNER (A) ────────────────────────────────────────────
+               Date-filter aware: adaptuje sa podľa aktívneho cashDateFilter.
+               Zobrazí sa len keď sú reálne výplaty v zobrazenom období.
+          ─────────────────────────────────────────────────────────────────────── */}
+          {(() => {
+            const { byDay, todayKey, yestKey, focusKey, topEntry } = payoutInsight;
+            // Fokus-day variant (dnes/včera filter)
+            if (focusKey) {
+              const dp = byDay.get(focusKey);
+              if (!dp || dp.count === 0) return null;
+              const label = focusKey === todayKey ? "Dnes" : "Včera";
+              const isToday = focusKey === todayKey;
+              return (
+                <div className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border ${isToday ? "bg-teal-50 border-teal-200" : "bg-blue-50 border-blue-200"}`}>
+                  <span className="text-lg shrink-0">💸</span>
+                  <div className="flex-1 min-w-0">
+                    <span className={`text-[10px] font-black uppercase tracking-wider ${isToday ? "text-teal-700" : "text-blue-700"}`}>
+                      {label} sa vyplatilo
+                    </span>
+                    <div className={`font-black tabular-nums text-sm ${isToday ? "text-teal-800" : "text-blue-800"}`}>
+                      {fmtEur(dp.sum, 0)} €
+                      <span className={`ml-2 text-[10px] font-bold ${isToday ? "text-teal-500" : "text-blue-500"}`}>
+                        · {dp.count} {dp.count === 1 ? "objednávka" : dp.count < 5 ? "objednávky" : "objednávok"}
+                      </span>
+                    </div>
+                  </div>
+                  {dp.count >= 2 && (
+                    <span className={`text-[9px] font-black px-2 py-1 rounded-full shrink-0 ${isToday ? "bg-teal-100 text-teal-700" : "bg-blue-100 text-blue-700"}`}>
+                      priemer {fmtEur(dp.sum / dp.count, 0)} €/obj.
+                    </span>
+                  )}
+                </div>
+              );
+            }
+            // Týždeň/mesiac/všetko — zobraziť dnes + včera ak sú, alebo top deň
+            const todayDp = byDay.get(todayKey);
+            const yestDp  = byDay.get(yestKey);
+            if (!todayDp && !yestDp && !topEntry) return null;
+            // Aspoň jeden deň musí mať výplaty > 0
+            if (!todayDp && !yestDp) return null;
+            return (
+              <div className="flex flex-col gap-1.5 px-3 py-2 rounded-lg border bg-teal-50/60 border-teal-200">
+                <span className="text-[9px] font-black uppercase tracking-widest text-teal-600">💸 Výplaty</span>
+                <div className="flex flex-wrap gap-3">
+                  {todayDp && todayDp.count > 0 && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-black text-teal-700">Dnes</span>
+                      <span className="font-black tabular-nums text-sm text-teal-800">{fmtEur(todayDp.sum, 0)} €</span>
+                      <span className="text-[9px] text-teal-500">·{todayDp.count} obj.</span>
+                    </div>
+                  )}
+                  {yestDp && yestDp.count > 0 && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-bold text-blue-600">Včera</span>
+                      <span className="font-black tabular-nums text-sm text-blue-700">{fmtEur(yestDp.sum, 0)} €</span>
+                      <span className="text-[9px] text-blue-400">·{yestDp.count} obj.</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Tabuľka */}
           {filteredOrders.length === 0 ? (
             <div className="bg-white border border-gray-100 rounded-lg text-center text-gray-400 py-10 text-sm">Žiadne objednávky</div>
@@ -881,14 +974,22 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                 <div className="">
                   {groupedOrders.map(({ date: dateKey, orders: dayOrders }) => (
                     <div key={dateKey}>
-                      {/* Date group header */}
+                      {/* Date group header + payout indicator (C) */}
                       {(() => {
                         const gd = fmtGroupDate(dateKey);
                         const isToday = dateKey === localDateStr(0);
+                        const dayPayout = payoutInsight.byDay.get(dateKey);
                         return (
                           <div className={`flex items-center gap-2 px-3 py-1.5 border-t border-b sticky top-0 z-10 ${isToday ? "bg-amber-50 border-amber-200" : "bg-gray-50 border-gray-200"}`}>
                             <span className={`text-[10px] font-black uppercase tracking-widest shrink-0 ${isToday ? "text-primary" : "text-secondary"}`}>{gd.label}</span>
                             <div className={`flex-1 h-px ${isToday ? "bg-amber-200" : "bg-gray-200"}`} />
+                            {/* 💸 Payout indicator — C */}
+                            {dayPayout && dayPayout.count > 0 && (
+                              <span className="inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700 shrink-0">
+                                💸 {fmtEur(dayPayout.sum, 0)} €
+                                {dayPayout.count > 1 && <span className="opacity-70">·{dayPayout.count}</span>}
+                              </span>
+                            )}
                             {gd.sub && <span className={`text-[9px] font-bold shrink-0 ${isToday ? "text-amber-600" : "text-gray-400"}`}>{gd.sub}</span>}
                           </div>
                         );
