@@ -843,14 +843,12 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
             )}
           </div>
 
-          {/* R1: Dátumové filtre — horizontal scroll na mobile */}
-          <div style={{overflowX:'scroll',WebkitOverflowScrolling:'touch',marginLeft:'-16px',marginRight:'-16px',paddingBottom:'2px'}}>
-            <div style={{display:'flex',gap:'6px',alignItems:'center',paddingLeft:'16px',paddingRight:'16px',width:'max-content',minWidth:'100%'}}>
-              {DATE_BTNS.map(f => (
-                <button key={f.id} onClick={() => setCashDateFilter(f.id)}
-                  className={`${dateBtnCls(cashDateFilter === f.id)} shrink-0 whitespace-nowrap`}>{f.label}</button>
-              ))}
-            </div>
+          {/* R1: Dátumové filtre */}
+          <div className="flex flex-wrap gap-1.5">
+            {DATE_BTNS.map(f => (
+              <button key={f.id} onClick={() => setCashDateFilter(f.id)}
+                className={`${dateBtnCls(cashDateFilter === f.id)} whitespace-nowrap`}>{f.label}</button>
+            ))}
           </div>
 
           {/* R1b: EXCEL filter — pod dátumovým riadkom, identický štýl ako EXCEL btn na karte */}
