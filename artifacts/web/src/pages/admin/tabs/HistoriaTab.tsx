@@ -1114,11 +1114,19 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                 <span className="text-[9px] text-gray-400 truncate">{o.concreteCategory}</span>
                               )}
                             </div>
-                            {/* CELKOM + paidAmount pod ním */}
-                            <div className="text-right flex flex-col gap-0.5">
+                            {/* CELKOM + paidAmount + diff pod ním */}
+                            <div className="text-right flex flex-col gap-0.5 items-end">
                               <span className="font-black tabular-nums text-secondary text-sm">{fmtEur(o.totalSDph ?? o.totalBezDph ?? 0, 0)} €</span>
                               {(o.status === "vyplatena" || o.status === "vyuctovana") && o.paidAmount !== undefined && o.paidAmount > 0 && (
-                                <span className="text-teal-600 font-black tabular-nums text-xs whitespace-nowrap">{fmtEur(o.paidAmount, 0)} €</span>
+                                <div className="flex items-center gap-1 justify-end">
+                                  <span className="text-[9px] text-gray-400">zap.</span>
+                                  <span className="text-teal-600 font-black tabular-nums text-xs whitespace-nowrap">{fmtEur(o.paidAmount, 0)} €</span>
+                                  {Math.abs(o.paidAmount - (o.totalSDph ?? 0)) > 0.5 && (
+                                    <span className={`text-[9px] font-bold tabular-nums px-1 py-0.5 rounded ${o.paidAmount > (o.totalSDph ?? 0) ? "bg-teal-50 text-teal-600" : "bg-red-50 text-red-500"}`}>
+                                      {o.paidAmount > (o.totalSDph ?? 0) ? "+" : ""}{fmtEur(o.paidAmount - (o.totalSDph ?? 0), 0)}
+                                    </span>
+                                  )}
+                                </div>
                               )}
                             </div>
                             {/* ZÁLOHA */}
