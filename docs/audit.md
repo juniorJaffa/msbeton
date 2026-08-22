@@ -1,6 +1,6 @@
 # MS-BETON — Audit stav projektu
 
-> Aktualizované: 2026-06-15 (iterácia #6)
+> Aktualizované: 2026-08-22 (iterácia #7)
 > Prostredie: msbeton.sk (VPS 178.105.242.17) — DNS migrácia dokončená 2026-05-29
 
 **Legenda:** ✅ Hotovo | ⏳ Čaká (externá podmienka) | ❌ Plánované | ⚠ Čiastočne
@@ -154,6 +154,18 @@
 ---
 
 ## Changelog
+
+### Iterácia #7 — 2026-08-22
+- Fix: Historia cashflow — multi-status filter (Nová/Potvrdená/Odoslaná/Vyúčtovaná/Vyplatená/Zrušená) s active/inactive farebným stavom
+- Fix: Historia cashflow — "Dnes" amber highlight pre group header + order riadky
+- Fix: Historia Klient dropdown — `absolute right-0` (otvára sa doľava, nie doprava)
+- Fix: Historia filter scroll iOS — `overflow-x: scroll` + `WebkitOverflowScrolling: touch` + `width: max-content` inline (obchádza `overflow-x: clip` na ancestor)
+- Fix: Historia dátum filter scroll iOS — rovnaký inline style pattern
+- Fix: KlientiTab expandClientId useEffect — pridaný `clients` do deps array (stale closure ak clients príde neskôr)
+- Security audit: WebAuthn DELETE auth (sessionId) — potvrdený fix z `0d717e4` ✓; stickyTrueFields excelConfirmed — race-safe ✓; SMTP header injection sanitizácia ✓
+- Fix: Calculator.tsx — reverseGeocode stale response (reqIdRef pattern); Autocomplete clearInstanceListeners; map clickListener.remove()
+- Fix: admin.ts mergeItems — stickyTrueFields pre excelConfirmed, appendOnlyFields pre statusHistory
+- Audit zistenia: trackSave timeout po unmount harmless (event do void, žiadna setState); STATUS_ACTIVE kompletný
 
 ### Iterácia #6 — 2026-06-15
 - #89 Feat: Admin-čitateľ rola (JWT role:reader, 3-vrstvová ochrana, redirect z ClientLogin)
