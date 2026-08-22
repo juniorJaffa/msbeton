@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { adminData, Client, DepositTx, Order, getKamenivoGroup, readerBlocked } from "@/lib/adminData";
-import { ChevronRight, ChevronLeft, TrendingUp, Minus, Smartphone, Monitor, Laptop, ChevronDown, Users, ShoppingCart, Mountain, Waves, X, MessageSquare, Check } from "lucide-react";
+import { ChevronRight, ChevronLeft, TrendingUp, Minus, Smartphone, Monitor, Laptop, ChevronDown, Users, ShoppingCart, Mountain, Waves, X, MessageSquare, Check, AlertTriangle } from "lucide-react";
 
 type Sub = "zalohy" | "cashflow";
 
@@ -913,6 +913,14 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     const isDeleted = o.status === "zmazana";
                     const isFlashing = flashDeletedId === o.id;
                     const isOrderToday = dateKey === localDateStr(0);
+                    // Zľavy z klienta
+                    const effDiscCelkovo = c?.discountCelkovo || 0;
+                    const effDiscBeton   = !effDiscCelkovo ? (c?.discountBeton   || 0) : 0;
+                    const effDiscDoprava = !effDiscCelkovo ? (c?.discountDoprava || 0) : 0;
+                    const effDiscSluzby  = !effDiscCelkovo ? (c?.discountSluzby  || 0) : 0;
+                    // Záloha — isPartial keď záloha nestačila a klient doplácal
+                    const depUsed = o.depositUsed && o.depositUsed > 0 ? o.depositUsed : undefined;
+                    const isPartialDep = depUsed !== undefined && o.paidAmount !== undefined && depUsed < o.paidAmount - 0.01;
                     return (
                       <div key={o.id}
                         ref={o.id === focusOrderId ? scrollToFocused : undefined}
@@ -1129,10 +1137,15 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                 </div>
                               )}
                             </div>
-                            {/* ZÁLOHA */}
-                            <span className={`text-right font-black tabular-nums text-xs ${o.depositUsed && o.depositUsed > 0 ? "text-amber-600" : "text-gray-300"}`}>
-                              {o.depositUsed && o.depositUsed > 0 ? `${fmtEur(o.depositUsed, 0)} €` : "—"}
-                            </span>
+                            {/* ZÁLOHA — 💰 badge štýl ako Objednávky */}
+                            <div className="flex justify-end">
+                              {depUsed ? (
+                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-sm border leading-tight ${isPartialDep ? "bg-orange-100 text-orange-700 border-orange-200" : "bg-amber-100 text-amber-700 border-amber-200"}`}
+                                  title={isPartialDep ? `Záloha: ${depUsed.toFixed(2)} € + doplatok: ${((o.paidAmount ?? 0) - depUsed).toFixed(2)} €` : "Záloha"}>
+                                  💰 {isPartialDep ? "záloha+dopl." : `${fmtEur(depUsed, 0)} €`}
+                                </span>
+                              ) : <span className="text-gray-300 text-[9px]">—</span>}
+                            </div>
                             {/* STAV — s prevStatus → */}
                             <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${STATUS_COLOR[o.status] ?? "bg-gray-100 text-gray-500"}`}>
                               {prevStatus && STATUS_LABEL[prevStatus] && (
@@ -1144,21 +1157,31 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             <DeviceLabel label={kto} className="text-[10px] truncate opacity-50" />
                             {onGoToOrder && !isDeleted ? <ChevronRight className="w-3.5 h-3.5 text-gray-300" /> : <span />}
                           </div>
-                          {/* Záloha chips — desktop (rovnaké ako mobile R3) */}
-                          {o.depositUsed && o.depositUsed > 0 && (
+                          {/* Badges row — SMS/košík, zľavy, podmienky, nedoplatok */}
+                          {(o.viaSms !== undefined || effDiscCelkovo > 0 || effDiscBeton > 0 || effDiscDoprava > 0 || effDiscSluzby > 0 || o.podmienky || (depUsed && isPartialDep)) && (
                             <div className="pl-[94px] flex items-center gap-1.5 flex-wrap mt-0.5">
-                              <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                                záloha {fmtEur(o.depositUsed, 0)} €
-                              </span>
-                              {(() => { const paid2 = o.totalSDph ?? o.totalBezDph ?? 0; return paid2 - o.depositUsed > 0.5 ? (
-                                <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">
-                                  nedoplatok {fmtEur(paid2 - o.depositUsed, 0)} €
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700">
-                                  uhradená zálohou ✓
+                              {/* SMS / Košík */}
+                              {o.viaSms
+                                ? <span className="inline-flex items-center gap-0.5 bg-green-100 text-green-700 text-[9px] font-black px-1.5 py-0.5 rounded-sm"><MessageSquare className="w-2.5 h-2.5" /> SMS</span>
+                                : o.viaSms === false && <span className="inline-flex items-center bg-secondary/10 text-secondary px-1.5 py-0.5 rounded-sm"><ShoppingCart className="w-3 h-3" /></span>}
+                              {/* Podmienky */}
+                              {o.podmienky && (() => { const ir = o.podmienky.pumpa * 7 + o.podmienky.mix * 9 < (o.totalQty ?? 0); return (
+                                <span className={`inline-flex items-center gap-0.5 text-[9px] font-black px-1.5 py-0.5 rounded-sm ${ir ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-800"}`}>
+                                  {ir ? <AlertTriangle className="w-2.5 h-2.5 shrink-0" /> : <span>★</span>}
+                                  {o.podmienky.pumpa > 0 ? `1×P+${o.podmienky.mix}×M` : `${o.podmienky.trucks}×Mix`}
                                 </span>
                               ); })()}
+                              {/* Zľavy */}
+                              {effDiscCelkovo > 0 && <span className="bg-primary text-secondary text-[9px] font-black px-1.5 py-0.5 rounded-sm">−{effDiscCelkovo}%</span>}
+                              {effDiscBeton   > 0 && <span className="bg-primary/20 text-secondary text-[9px] font-black px-1 py-0.5 rounded-sm">B−{effDiscBeton}%</span>}
+                              {effDiscDoprava > 0 && <span className="bg-primary/20 text-secondary text-[9px] font-black px-1 py-0.5 rounded-sm">D−{effDiscDoprava}%</span>}
+                              {effDiscSluzby  > 0 && <span className="bg-primary/20 text-secondary text-[9px] font-black px-1 py-0.5 rounded-sm">S−{effDiscSluzby}%</span>}
+                              {/* Nedoplatok ak čiastočná záloha */}
+                              {depUsed && isPartialDep && o.paidAmount && (
+                                <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">
+                                  nedoplatok {fmtEur(o.paidAmount - depUsed, 0)} €
+                                </span>
+                              )}
                             </div>
                           )}
                           {/* Excel confirm — desktop */}
