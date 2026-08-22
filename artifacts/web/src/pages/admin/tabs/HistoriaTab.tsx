@@ -226,6 +226,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [displayLimit,     setDisplayLimit]     = useState(100);
   const [flashDeletedId,   setFlashDeletedId]   = useState<string | null>(null);
   const [showDeleted,      setShowDeleted]      = useState(false);
+  const [colHeaderScrolled, setColHeaderScrolled] = useState(false);
   const cashClientRef = useRef<HTMLDivElement>(null);
   const ktoRef        = useRef<HTMLDivElement>(null);
 
@@ -463,6 +464,15 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
 
   // Reset displayLimit pri každej zmene filtrov
   useEffect(() => { setDisplayLimit(100); }, [cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit, onlyNedoplatok, cashExcelFilter, cashStatusFilter, showDeleted]);
+
+  // Scroll listener — zmena farby column headera pri scrollovaní
+  useEffect(() => {
+    const el = document.getElementById("admin-content");
+    if (!el) return;
+    const onScroll = () => setColHeaderScrolled(el.scrollTop > 40);
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
 
   // Klienti s fotkou z filtrovaných objednávok — pre photo lightbox navigáciu
   const clientsWithPhoto = useMemo(() => {
@@ -835,7 +845,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
 
           {/* R1b: EXCEL filter — pod dátumovým riadkom, identický štýl ako EXCEL btn na karte */}
           <div className="flex items-center gap-1.5">
-            <span className="text-[9px] font-black uppercase tracking-widest text-gray-300 shrink-0">Excel</span>
+            <span className="text-[9px] font-black uppercase tracking-widest text-gray-500 shrink-0">Excel</span>
             <button onClick={() => setCashExcelFilter("vsetky")}
               className={`inline-flex items-center gap-0.5 text-[10px] font-black px-2.5 py-1 rounded border transition-all cursor-pointer whitespace-nowrap ${
                 cashExcelFilter === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-400 border-gray-200 hover:border-gray-300"
@@ -1057,7 +1067,11 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
             <div className="bg-white border border-gray-100 rounded-lg text-center text-gray-400 py-10 text-sm">Žiadne objednávky</div>
           ) : (
             <div className="bg-white border border-gray-100 rounded-lg overflow-clip">
-              <div className="hidden sm:grid grid-cols-[90px_1fr_1fr_70px_70px_120px_110px_20px] gap-2 px-3 py-2 bg-secondary border-b border-secondary/80 text-[9px] font-black uppercase tracking-widest text-white/50 sticky top-0 z-20">
+              <div className={`hidden sm:grid grid-cols-[90px_1fr_1fr_70px_70px_120px_110px_20px] gap-2 px-3 py-2 border-b text-[9px] font-black uppercase tracking-widest sticky top-0 z-20 transition-all duration-200 ${
+                colHeaderScrolled
+                  ? "bg-blue-600 border-blue-700 text-white tracking-[0.12em]"
+                  : "bg-secondary border-secondary/80 text-white/50"
+              }`}>
                 <span>Dátum</span><span>Klient</span><span>Betón</span><span className="text-right">Celkom</span><span className="text-right">Záloha</span><span>Stav</span><span>KTO</span><span />
               </div>
               <div className="">
