@@ -3,6 +3,19 @@ import { adminData, Client, DepositTx, Order, getKamenivoGroup, readerBlocked } 
 import { ChevronRight, ChevronLeft, TrendingUp, Minus, Smartphone, Monitor, Laptop, ChevronDown, Users, ShoppingCart, Mountain, Waves, X, MessageSquare, Check } from "lucide-react";
 
 type Sub = "zalohy" | "cashflow";
+
+// Extrahuje obec z textovej adresy (rovnaká logika ako ObjednávkyTab)
+const extractAddrLocality = (address: string): string => {
+  const ZIP = /^\d{3}\s?\d{2}$/;
+  const COUNTRY = /^(Slovensko|Slovakia|Česká republika|Česko|Czech Republic|SR|SK)$/i;
+  const parts = address.split(",").map(p => p.trim()).filter(p => p && !COUNTRY.test(p) && !ZIP.test(p));
+  if (!parts.length) return address;
+  const candidate = parts[parts.length - 1];
+  return candidate
+    .replace(/^\d{3}\s?\d{2}\s+/, "")
+    .replace(/\s+\d{3}\s?\d{2}$/, "")
+    .trim();
+};
 type DateFilter = "dnes" | "vcera" | "tyzden" | "mesiac" | "vsetko";
 
 interface Props {
@@ -897,6 +910,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     const prevStatus = lastChange?.prevStatus;
                     const firstStatus = hist[0]?.prevStatus ?? "nova";
                     const kg = o.concreteCategory ? getKamenivoGroup(o.concreteCategory) : null;
+                    const locality = o.mapLocality || (o.address ? extractAddrLocality(o.address) : "");
                     const isDeleted = o.status === "zmazana";
                     const isFlashing = flashDeletedId === o.id;
                     const isOrderToday = dateKey === localDateStr(0);
@@ -930,7 +944,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               </button>
                             )}
                             <div className="flex-1 min-w-0">
-                              <span className="font-bold text-secondary text-[13px] leading-snug break-words">{name}</span>
+                              <span className="font-bold text-secondary text-base leading-snug break-words">{name}</span>
                               {/* Phone sub-label — keď clientId je telefón a líši sa od mena */}
                               {isPhoneId && o.clientId && o.clientId !== name && (
                                 <div className="text-[10px] text-gray-400 font-medium leading-tight mt-0.5 tabular-nums">{o.clientId}</div>
@@ -989,20 +1003,29 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               </span>
                             )}
                           </div>
-                          {/* R2b: Typ + qty + Celkom € */}
+                          {/* R2b: Typ betónu + qty — ľavý text, suma — pravá výrazná */}
                           <div className="flex items-baseline gap-2">
-                            <span className="text-gray-500 text-[10px] flex-1 truncate min-w-0">
-                              {o.concreteType} {o.totalQty ?? o.quantity} m³
+                            <span className="text-gray-600 text-[11px] flex-1 min-w-0">
+                              {o.concreteType && <span className="font-semibold">{o.concreteType}</span>}
+                              {(o.totalQty ?? o.quantity) ? <span className="text-gray-400 ml-1">{o.totalQty ?? o.quantity} m³</span> : null}
                             </span>
                             {(() => { const invoice = o.totalSDph ?? o.totalBezDph; return invoice != null && invoice > 0 ? (
-                              <span className="font-black tabular-nums text-sm text-gray-900 shrink-0">{fmtEur(invoice, 0)} €</span>
+                              <span className="font-black tabular-nums text-base text-secondary shrink-0">{fmtEur(invoice, 0)} €</span>
                             ) : null; })()}
                           </div>
-                          {/* R2c: Reálne zaplatené (paidAmount) — keď vyplatená */}
-                          {o.status === "vyplatena" && o.paidAmount !== undefined && o.paidAmount > 0 && (
+                          {/* R2c: Lokalita + km */}
+                          {(locality || o.km) && (
+                            <div className="flex items-center gap-1.5 text-[10px] text-gray-400">
+                              {locality && <span className="font-semibold text-gray-600 truncate">{locality}</span>}
+                              {locality && o.km ? <span className="text-gray-300">·</span> : null}
+                              {o.km ? <span className="tabular-nums">{o.km} km</span> : null}
+                            </div>
+                          )}
+                          {/* R2d: Reálne zaplatené (paidAmount) — keď vyplatená / vyúčtovaná */}
+                          {(o.status === "vyplatena" || o.status === "vyuctovana") && o.paidAmount !== undefined && o.paidAmount > 0 && (
                             <div className="flex items-center justify-end gap-1.5">
                               <span className="text-[9px] text-gray-400 font-medium">zaplatené</span>
-                              <span className="text-teal-600 font-black tabular-nums text-[13px]">{fmtEur(o.paidAmount, 0)} €</span>
+                              <span className="text-teal-600 font-black tabular-nums text-base">{fmtEur(o.paidAmount, 0)} €</span>
                               {Math.abs(o.paidAmount - (o.totalSDph ?? 0)) > 0.5 && (
                                 <span className={`text-[9px] font-bold tabular-nums px-1 py-0.5 rounded ${o.paidAmount > (o.totalSDph ?? 0) ? "bg-teal-50 text-teal-600" : "bg-red-50 text-red-500"}`}>
                                   {o.paidAmount > (o.totalSDph ?? 0) ? "+" : ""}{fmtEur(o.paidAmount - (o.totalSDph ?? 0), 0)}
@@ -1062,13 +1085,13 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                 </button>
                               )}
                               <div className="min-w-0">
-                                <div className="font-bold text-secondary text-xs truncate">{name}</div>
+                                <div className="font-bold text-secondary text-sm truncate">{name}</div>
                                 {isPhoneId && o.clientId && o.clientId !== name && (
                                   <div className="text-[9px] text-gray-400 tabular-nums truncate">{o.clientId}</div>
                                 )}
                               </div>
                             </div>
-                            {/* BETÓN — kamenivo + tab/pay badges */}
+                            {/* BETÓN — kamenivo + tab/pay badges + lokalita */}
                             <div className="flex flex-col gap-0.5 min-w-0">
                               <div className="flex items-center gap-1 flex-wrap">
                                 {o.tab && <TabBadge tab={o.tab} />}
@@ -1077,13 +1100,28 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               <div className="flex items-center gap-1 min-w-0">
                                 {kg === "drvene" && <Mountain className="w-3 h-3 shrink-0 text-stone-500" />}
                                 {kg === "riecne" && <Waves className="w-3 h-3 shrink-0 text-blue-400" />}
-                                <span className="text-gray-500 truncate text-[10px]">
-                                  {o.concreteCategory ? `${o.concreteCategory} · ` : ""}{o.concreteType} {o.totalQty ?? o.quantity} m³
+                                <span className="text-gray-600 truncate text-xs font-semibold">
+                                  {o.concreteType}{(o.totalQty ?? o.quantity) ? <span className="font-normal text-gray-400 ml-1">{o.totalQty ?? o.quantity} m³</span> : null}
                                 </span>
                               </div>
+                              {(locality || o.km) && (
+                                <div className="flex items-center gap-1 text-[10px] text-gray-400">
+                                  {locality && <span className="font-semibold text-gray-500 truncate">{locality}</span>}
+                                  {locality && o.km ? <span className="text-gray-300">·</span> : null}
+                                  {o.km ? <span className="tabular-nums">{o.km} km</span> : null}
+                                </div>
+                              )}
+                              {o.concreteCategory && (
+                                <span className="text-[9px] text-gray-400 truncate">{o.concreteCategory}</span>
+                              )}
                             </div>
-                            {/* CELKOM */}
-                            <span className="text-right font-black tabular-nums text-gray-700 text-xs">{fmtEur(o.totalSDph ?? o.totalBezDph ?? 0, 0)} €</span>
+                            {/* CELKOM + paidAmount pod ním */}
+                            <div className="text-right flex flex-col gap-0.5">
+                              <span className="font-black tabular-nums text-secondary text-sm">{fmtEur(o.totalSDph ?? o.totalBezDph ?? 0, 0)} €</span>
+                              {(o.status === "vyplatena" || o.status === "vyuctovana") && o.paidAmount !== undefined && o.paidAmount > 0 && (
+                                <span className="text-teal-600 font-black tabular-nums text-xs whitespace-nowrap">{fmtEur(o.paidAmount, 0)} €</span>
+                              )}
+                            </div>
                             {/* ZÁLOHA */}
                             <span className={`text-right font-black tabular-nums text-xs ${o.depositUsed && o.depositUsed > 0 ? "text-amber-600" : "text-gray-300"}`}>
                               {o.depositUsed && o.depositUsed > 0 ? `${fmtEur(o.depositUsed, 0)} €` : "—"}
@@ -1099,6 +1137,23 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             <DeviceLabel label={kto} className="text-[10px] truncate opacity-50" />
                             {onGoToOrder && !isDeleted ? <ChevronRight className="w-3.5 h-3.5 text-gray-300" /> : <span />}
                           </div>
+                          {/* Záloha chips — desktop (rovnaké ako mobile R3) */}
+                          {o.depositUsed && o.depositUsed > 0 && (
+                            <div className="pl-[94px] flex items-center gap-1.5 flex-wrap mt-0.5">
+                              <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                                záloha {fmtEur(o.depositUsed, 0)} €
+                              </span>
+                              {(() => { const paid2 = o.totalSDph ?? o.totalBezDph ?? 0; return paid2 - o.depositUsed > 0.5 ? (
+                                <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">
+                                  nedoplatok {fmtEur(paid2 - o.depositUsed, 0)} €
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700">
+                                  uhradená zálohou ✓
+                                </span>
+                              ); })()}
+                            </div>
+                          )}
                           {/* Excel confirm — desktop */}
                           <div className="flex justify-end">
                             <button
