@@ -68,6 +68,13 @@ function fmtDate(iso: string): string {
   const mm = String(d.getMinutes()).padStart(2, "0");
   return `${d.getDate()}.${d.getMonth() + 1}. ${hh}:${mm}`;
 }
+// Rozdelí dátum na dve časti pre desktop stĺpec (date + time oddelene)
+function fmtDateParts(iso: string): { date: string; time: string } {
+  const d = new Date(iso);
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return { date: `${d.getDate()}.${d.getMonth() + 1}.`, time: `${hh}:${mm}` };
+}
 // Pre mini timeline — HH:MM ak dnes, inak d.M. HH:MM
 function fmtTimeShort(iso: string): string {
   const d = new Date(iso);
@@ -1182,8 +1189,25 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                         <div className="hidden sm:flex flex-col gap-0.5">
                           {/* Hlavný riadok */}
                           <div className="grid grid-cols-[90px_1fr_1fr_70px_70px_120px_110px_20px] gap-2 items-center">
-                            {/* DÁTUM */}
-                            <span className="text-gray-600 tabular-nums font-semibold text-[10px]">{fmtDate(o.createdAt)}</span>
+                            {/* DÁTUM — posledná zmena (zhodné s group sort), createdAt sub-label ak iný deň */}
+                            {(() => {
+                              const lastChanged = orderLastChanged(o);
+                              const lp = fmtDateParts(lastChanged);
+                              const createdDay = o.createdAt.slice(0, 10);
+                              const changedDay = lastChanged.slice(0, 10);
+                              const cp = fmtDateParts(o.createdAt);
+                              return (
+                                <div className="flex flex-col gap-0 min-w-0">
+                                  <span className="text-secondary font-black tabular-nums text-[11px] leading-tight">{lp.date}</span>
+                                  <span className="text-gray-500 tabular-nums text-[10px] leading-tight">{lp.time}</span>
+                                  {createdDay !== changedDay && (
+                                    <span className="text-gray-300 tabular-nums text-[9px] leading-tight" title={`Vytvorené: ${fmtDate(o.createdAt)}`}>
+                                      vzn. {cp.date}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })()}
                             {/* KLIENT — navy bold, phone subline ak telefón */}
                             <div className="min-w-0 flex items-center gap-1.5">
                               {c?.photo && (
