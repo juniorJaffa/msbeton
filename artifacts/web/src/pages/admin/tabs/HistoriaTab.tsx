@@ -922,17 +922,28 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
               <input type="checkbox" checked={onlyNedoplatok} onChange={e => setOnlyNedoplatok(e.target.checked)} className="w-3.5 h-3.5 accent-red-500" />
               <span className="text-[10px] font-bold text-red-500">Nedoplatok</span>
             </label>
-            {/* EXCEL filter — 3-stavový toggle */}
-            <div className="flex items-center gap-0.5 bg-white border border-gray-200 rounded-full px-1 py-1 shrink-0">
-              {([["vsetky", "XLS", "text-gray-400"], ["ok", "✓ OK", "text-green-600"], ["chyba", "?", "text-gray-400"]] as const).map(([val, label, cls]) => (
-                <button key={val} onClick={() => setCashExcelFilter(val)}
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full transition-all cursor-pointer ${cashExcelFilter === val ? (val === "ok" ? "bg-green-100 text-green-700 border border-green-400" : val === "chyba" ? "bg-gray-100 text-gray-600 border border-gray-300" : "bg-gray-100 text-gray-600 border border-gray-200") : `${cls} hover:bg-gray-50`}`}>
-                  {label}
-                </button>
-              ))}
-            </div>
           </div>{/* inner flex */}
           </div>{/* scroll wrapper */}
+
+          {/* R3: EXCEL filter — vlastný riadok, 3 reálne buttony */}
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 shrink-0">EXCEL</span>
+            <div className="flex items-center gap-1.5">
+              {([["vsetky", "Všetky", "bg-white border-gray-200 text-gray-500 hover:border-gray-300"],
+                 ["ok",     "✓ Prenesené", "bg-white border-gray-200 text-gray-500 hover:border-green-300 hover:text-green-600"],
+                 ["chyba",  "? Chýba", "bg-white border-gray-200 text-gray-500 hover:border-gray-300"]] as const).map(([val, label, idleCls]) => (
+                <button key={val} onClick={() => setCashExcelFilter(val)} className={`px-3 py-1.5 rounded-full text-[10px] font-bold border transition-all cursor-pointer ${
+                  cashExcelFilter === val
+                    ? val === "ok"
+                      ? "bg-green-100 border-green-500 text-green-700"
+                      : val === "chyba"
+                        ? "bg-gray-100 border-gray-400 text-gray-700"
+                        : "bg-secondary border-secondary text-white"
+                    : idleCls
+                }`}>{label}</button>
+              ))}
+            </div>
+          </div>
 
           {/* Nadpis sekcie + kompaktný súhrn v jednom riadku */}
           <div className="flex flex-col gap-1.5">
