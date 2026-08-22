@@ -528,6 +528,35 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     return { byDay, todayKey, yestKey, focusKey, topEntry };
   }, [filteredOrders, cashDateFilter]);
 
+  // Cashflow extras — zálohy klientov, pohľadávky FA, trend dnes vs. minulý týždeň
+  const cashflowExtras = useMemo(() => {
+    // Celkový zostatok zálohy všetkých klientov (viazané peniaze)
+    const totalDeposits = liveClients.reduce((s, c) => s + (c.deposit?.balance ?? 0), 0);
+
+    // Pohľadávky: odoslaná + FA (faktúry čakajúce na platbu)
+    const pohladavkyOrders = liveOrders.filter(o => o.status === "odoslana" && o.priceMode === "faktura");
+    const pohladavky = pohladavkyOrders.reduce((s, o) => s + (o.totalSDph ?? o.totalBezDph ?? 0), 0);
+    const pohladavkyCount = pohladavkyOrders.length;
+
+    // Payout trend: dnes vs. rovnaký deň minulý týždeň (z liveOrders — nefiltrované dátumom)
+    const todayKey   = localDateStr(0);
+    const weekAgoKey = localDateStr(-7);
+    const payByDay = new Map<string, number>();
+    for (const o of liveOrders) {
+      if (o.status === "zmazana") continue;
+      for (const h of (o.statusHistory ?? [])) {
+        if (h.status !== "vyplatena") continue;
+        const day = h.changedAt.slice(0, 10);
+        payByDay.set(day, (payByDay.get(day) ?? 0) + (h.paidAmount ?? o.paidAmount ?? o.totalSDph ?? o.totalBezDph ?? 0));
+      }
+    }
+    const todayPay   = payByDay.get(todayKey)   ?? 0;
+    const weekAgoPay = payByDay.get(weekAgoKey) ?? 0;
+    const trendPct   = weekAgoPay > 10 ? Math.round((todayPay - weekAgoPay) / weekAgoPay * 100) : null;
+
+    return { totalDeposits, pohladavky, pohladavkyCount, todayPay, weekAgoPay, trendPct };
+  }, [liveClients, liveOrders]);
+
   const orderClients = useMemo(() => {
     // Pre každý clientId ulož najlepšie meno (registrovaný klient > clientName > clientId)
     const bestName = new Map<string, string>();
@@ -882,28 +911,55 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
           </div>
 
           {/* Nadpis sekcie + kompaktný súhrn v jednom riadku */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-black text-secondary uppercase tracking-wide shrink-0">Objednávky</span>
-            <span className="text-[9px] font-bold bg-white/90 text-gray-600 px-1.5 py-0.5 rounded border border-gray-100 shrink-0">[cashflow]</span>
-            <div className="flex-1" />
-            {/* Súhrn — kompaktný inline bar */}
-            <div className="flex items-center gap-2 bg-white/90 border border-gray-100 rounded-lg px-3 py-1.5">
-              <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 shrink-0">Spolu</span>
-              <span className="font-black tabular-nums text-sm text-gray-800 shrink-0">{cashSummary.count}</span>
-              {cashSummary.total > 0 && (
-                <>
-                  <span className="text-gray-200 shrink-0">|</span>
-                  <span className="font-black tabular-nums text-sm text-gray-900 shrink-0">{fmtEur(cashSummary.total, 0)} €</span>
-                </>
-              )}
-              {cashSummary.dep > 0 && (
-                <>
-                  <span className="text-gray-200 shrink-0">|</span>
-                  <span className="text-[9px] font-black text-gray-400 shrink-0">záloha</span>
-                  <span className="font-black tabular-nums text-sm text-amber-600 shrink-0">{fmtEur(cashSummary.dep, 0)} €</span>
-                </>
-              )}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-black text-secondary uppercase tracking-wide shrink-0">Objednávky</span>
+              <span className="text-[9px] font-bold bg-white/90 text-gray-600 px-1.5 py-0.5 rounded border border-gray-100 shrink-0">[cashflow]</span>
+              <div className="flex-1" />
+              {/* Súhrn — kompaktný inline bar */}
+              <div className="flex items-center gap-2 bg-white/90 border border-gray-100 rounded-lg px-3 py-1.5">
+                <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 shrink-0">Spolu</span>
+                <span className="font-black tabular-nums text-sm text-gray-800 shrink-0">{cashSummary.count}</span>
+                {cashSummary.total > 0 && (
+                  <>
+                    <span className="text-gray-200 shrink-0">|</span>
+                    <span className="font-black tabular-nums text-sm text-gray-900 shrink-0">{fmtEur(cashSummary.total, 0)} €</span>
+                  </>
+                )}
+                {cashSummary.dep > 0 && (
+                  <>
+                    <span className="text-gray-200 shrink-0">|</span>
+                    <span className="text-[9px] font-black text-gray-400 shrink-0">záloha</span>
+                    <span className="font-black tabular-nums text-sm text-amber-600 shrink-0">{fmtEur(cashSummary.dep, 0)} €</span>
+                  </>
+                )}
+                {/* Pohľadávky FA — odoslaná + faktura */}
+                {cashflowExtras.pohladavky > 0 && (
+                  <>
+                    <span className="text-gray-200 shrink-0">|</span>
+                    <span className="text-[9px] font-black text-gray-400 shrink-0" title={`${cashflowExtras.pohladavkyCount} faktúr čaká na platbu`}>pohľ.</span>
+                    <span className="font-black tabular-nums text-sm text-orange-600 shrink-0">{fmtEur(cashflowExtras.pohladavky, 0)} €</span>
+                  </>
+                )}
+              </div>
             </div>
+            {/* Sekundárny riadok: zálohy klientov (viazané) + payout trend */}
+            {(cashflowExtras.totalDeposits > 0 || cashflowExtras.trendPct !== null) && (
+              <div className="flex items-center gap-3 justify-end flex-wrap">
+                {cashflowExtras.totalDeposits > 0 && (
+                  <span className="flex items-center gap-1 text-[9px] text-gray-400" title="Celkový zostatok zálohy všetkých klientov (viazané peniaze)">
+                    🏦 <span className="font-black text-amber-600 tabular-nums">{fmtEur(cashflowExtras.totalDeposits, 0)} €</span>
+                    <span className="text-gray-300">viazané</span>
+                  </span>
+                )}
+                {cashflowExtras.trendPct !== null && cashflowExtras.todayPay > 0 && (
+                  <span className={`flex items-center gap-1 text-[9px] font-black ${cashflowExtras.trendPct >= 0 ? "text-teal-600" : "text-red-500"}`}
+                    title={`Dnes vyplatené vs. rovnaký deň minulý týždeň (${fmtEur(cashflowExtras.weekAgoPay, 0)} €)`}>
+                    {cashflowExtras.trendPct >= 0 ? "↑" : "↓"}{Math.abs(cashflowExtras.trendPct)}% vs. −7d
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* ── PAYOUT INSIGHT BANNER (A) ────────────────────────────────────────────
