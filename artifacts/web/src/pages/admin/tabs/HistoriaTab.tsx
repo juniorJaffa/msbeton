@@ -822,20 +822,6 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                 🗑 <span className="opacity-70">{cashSummary.deletedCount}</span>
               </button>
             )}
-            {/* EXCEL filter — vedľa koša, rovnaký štýl ako status buttony */}
-            <div className="flex items-center gap-1">
-              <span className="text-[9px] font-black uppercase tracking-widest text-gray-300 shrink-0 mr-0.5">XLS</span>
-              {([["vsetky", "Všetky"] as const, ["ok", "✓ OK"] as const, ["chyba", "?"] as const]).map(([val, label]) => (
-                <button key={val} onClick={() => setCashExcelFilter(val)}
-                  className={`px-2.5 py-1.5 text-[10px] font-bold rounded border transition-all cursor-pointer whitespace-nowrap ${
-                    cashExcelFilter === val
-                      ? val === "ok" ? "bg-green-100 border-green-500 text-green-700"
-                      : val === "chyba" ? "bg-gray-100 border-gray-400 text-gray-700"
-                      : "bg-secondary text-white border-secondary"
-                    : "bg-white border-gray-200 text-gray-400 hover:border-gray-300"
-                  }`}>{label}</button>
-              ))}
-            </div>
           </div>
 
           {/* R1: Dátumové filtre — horizontal scroll na mobile */}
@@ -845,6 +831,23 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                 <button key={f.id} onClick={() => setCashDateFilter(f.id)} className={`${dateBtnCls(cashDateFilter === f.id)} shrink-0 whitespace-nowrap`}>{f.label}</button>
               ))}
             </div>
+          </div>
+
+          {/* R1b: EXCEL filter — pod dátumovým riadkom, identický štýl ako EXCEL btn na karte */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-gray-300 shrink-0">Excel</span>
+            <button onClick={() => setCashExcelFilter("vsetky")}
+              className={`inline-flex items-center gap-0.5 text-[10px] font-black px-2.5 py-1 rounded border transition-all cursor-pointer whitespace-nowrap ${
+                cashExcelFilter === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-400 border-gray-200 hover:border-gray-300"
+              }`}>Všetky</button>
+            <button onClick={() => setCashExcelFilter("ok")}
+              className={`inline-flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded border transition-all cursor-pointer whitespace-nowrap ${
+                cashExcelFilter === "ok" ? "bg-green-100 text-green-700 border-green-500" : "bg-gray-50 text-gray-400 border-gray-200 hover:bg-green-50 hover:text-green-600 hover:border-green-400"
+              }`}><Check className="w-2.5 h-2.5 shrink-0" />EXCEL OK</button>
+            <button onClick={() => setCashExcelFilter("chyba")}
+              className={`inline-flex items-center gap-0.5 text-[10px] font-black px-2.5 py-1 rounded border transition-all cursor-pointer whitespace-nowrap ${
+                cashExcelFilter === "chyba" ? "bg-gray-100 text-gray-700 border-gray-400" : "bg-gray-50 text-gray-400 border-gray-200 hover:border-gray-300"
+              }`}>EXCEL?</button>
           </div>
 
           {/* R2: KTO vľavo ··· Klient + Záloha vpravo */}
