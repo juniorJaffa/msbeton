@@ -722,8 +722,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             setMapPin(null); setMapPlusCode(""); setMapLocality(""); setMapGeocodedAddress(""); setDistance("");
             return;
           }
-          const loc = a.village ?? a.town ?? a.city ?? a.municipality ?? "";
-          const dist = a.county ?? "";
+          // Pokrytie všetkých typov sídiel (osada, dedina, obec, mesto, mestská štvrť)
+          const loc = a.village ?? a.hamlet ?? a.town ?? a.city
+            ?? a.city_district ?? a.suburb ?? a.municipality
+            ?? a.neighbourhood ?? a.locality ?? "";
+          const dist = a.county ?? a.state_district ?? "";
           const localityStr = [loc, dist].filter(Boolean).join(", ");
           setMapLocality(localityStr);
           // Adresa: locality ako čistý fallback (display_name je príliš dlhý)

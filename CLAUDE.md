@@ -288,6 +288,163 @@ Pravidlo: **ľavý pruh farba = filter active farba** pre daný status. Nikdy ne
 - Vzorec km: Distance Matrix API (rovnaký ako adresný režim) → `Math.round((oneWayKm * 2 + 2) * 10) / 10`
 - `mapKmConfirmed` kontroluje viditeľnosť cez `display:none` (nie unmount) — Google Maps div musí ostať v DOM
 
+### Kalkulačka – mapa reverseGeocode (Nominatim) — lokalita
+
+`reverseGeocode()` v `Calculator.tsx` volá Nominatim pri kliku na mapu a pri geolokácii. Extrahuje názov sídla z odpovede:
+
+```typescript
+// Pokrytie VŠETKÝCH typov sídiel na Slovensku:
+const loc = a.village ?? a.hamlet ?? a.town ?? a.city
+  ?? a.city_district ?? a.suburb ?? a.municipality
+  ?? a.neighbourhood ?? a.locality ?? "";
+const dist = a.county ?? a.state_district ?? "";
+```
+
+**Poradie priority:**
+| Typ | Príklady |
+|-----|---------|
+| `village` | väčšina obcí |
+| `hamlet` | osady, malé sídla |
+| `town` | okresné mestá |
+| `city` | krajské mestá |
+| `city_district` | mestské časti (Bratislava-Petržalka) |
+| `suburb` | predmestia, štvrte |
+| `municipality` | municipality |
+| `neighbourhood` | štvrte, sídliská |
+| `locality` | obecný fallback |
+
+**stale-response fix**: `reverseGeocodeReqIdRef = useRef(0)` — pri každom volaní `myReqId = ++ref.current`, pred každým `setState` check `myReqId !== ref.current → return`. Zabráni prepísaniu výsledku novšieho kliku starším.
+
+**Google Maps Geocoder (adresný režim)** používa iný kód (pre `place_changed` autocomplete), ten čerpá z `comps.find(c => c.types.includes("locality"))` — to je Google API, nie Nominatim.
+
+### Kalkulačka – Google Maps listener cleanup
+
+Pri každej zmene `deliveryMode` sa znova inicializuje Autocomplete a map. Bez cleanup sa listeners akumulujú:
+
+```typescript
+// Autocomplete cleanup — effect-scoped let, nie module-level
+let ac: google.maps.places.Autocomplete | null = null;
+const initMaps = () => {
+  if (ac && google.maps?.event) google.maps.event.clearInstanceListeners(ac);
+  ac = new google.maps.places.Autocomplete(addressInputRef.current, {...});
+  const acInst = ac; // capture — mutable let nie je safe v closure
+  acInst.addListener("place_changed", () => {
+    const place = acInst.getPlace(); // acInst, nie ac
+  });
+};
+return () => {
+  if (intervalId) clearInterval(intervalId);
+  if (ac && google.maps?.event) { google.maps.event.clearInstanceListeners(ac); ac = null; }
+};
+
+// Map click listener
+let clickListener: google.maps.MapsEventListener | null = null;
+clickListener = map.addListener("click", (e) => { ... });
+return () => {
+  if (clickListener) { clickListener.remove(); clickListener = null; }
+};
+```
+
+**Pravidlo:** Vždy `clearInstanceListeners` na starom `ac` pred vytvorením nového. `clickListener.remove()` v cleanup. Bez toho každý toggle `deliveryMode` → osada listener.
+
+### Admin História — architektúra a pravidlá
+
+`HistoriaTab.tsx` má dva sub-taby prepínané cez `sub: "zalohy" | "cashflow"`:
+
+**Zálohy tab** (`sub === "zalohy"`)
+- Zálohy klientov — záznamy v `statusHistory` s typom depozitu
+- Timeline chronologický zoznam
+
+**Objednávky/Cashflow tab** (`sub === "cashflow"`)
+- Zoznam objednávok pre cashflow prehľad (nie na detail — to je ObjednavkyTab)
+- Klik na riadok → `onGoToOrder(o.id)` → navigácia do ObjednavkyTab
+
+**Filtre (cashflow):**
+
+| Filter | Stav | Kód |
+|--------|------|-----|
+| Status filter | `cashStatusFilter` | `"vsetky" \| CASH_STATUSES[number]` |
+| Dátum filter | `cashDateFilter` | `DateFilter` type |
+| Klient filter | `cashClientFilter` | loginId string |
+| KTO filter | `cashKtoFilters` | Set<string> |
+| Záloha | `onlyDeposit` | boolean |
+
+`CASH_STATUSES = ["nova","potvrdena","odoslana","vyuctovana","vyplatena","zrusena"]`
+
+**"Dnes" amber highlight:**
+```typescript
+const isToday = dateKey === localDateStr(0);
+// Group header: bg-amber-50 border-amber-200, label text-primary
+// Row: bg-amber-50 border-amber-100, hover bg-amber-100/70
+```
+
+**ClientDropdown** — `absolute right-0` (otvára sa doľava od tlačidla, nie doprava). Na úzkych mobiloch sa button zarovná napravo → dropdown ide doľava 220px → centrovanejší.
+
+**Tab poradie v AdminDashboard:** KLIENTI → OBJEDNÁVKY → HISTÓRIA → DOPRAVA → SLUŽBY → BETÓNY → ŠTATISTIKY → SEO → SERVER. História je na pozícii 3 (viditeľná v mobile nav, nie v "Viac").
+
+### Admin Objednávky — excelConfirmed
+
+`excelConfirmed?: boolean` na `Order` type — označí objednávku ako potvrdenú pre Excel export. Ukladá sa do DB, viditeľné všetkým adminom. UI: zelené tlačidlo → po kliknutí červené "Zruš" (hover).
+
+**Kritické:** `excelConfirmed` je `stickyTrueField` v `mergeItems`. Raz nastavené `true` sa nikdy nestratí pri concurrent merge (ani ak iný admin pošle verziu bez tohto poľa).
+
+### Admin server — mergeItems stickyTrueFields a appendOnlyFields
+
+`mergeItems()` v `admin.ts` rieši multi-admin race pri concurrent PUT:
+
+```typescript
+function mergeItems(incoming, current, baseSyncMs,
+  preserveUnstamped = true,
+  appendOnlyFields: string[] = [],    // polia kde union arrays (napr. statusHistory)
+  stickyTrueFields: string[] = []     // boolean polia kde true sa nikdy nestratí
+): Item[]
+```
+
+**`stickyTrueFields`** — po určení winner/loser: ak loser mal `field === true` ale merged nemá → nastav `merged[field] = true`. Použitie: `excelConfirmed`.
+
+**`appendOnlyFields`** — union arrays (dedup by deep equal). Použitie: `statusHistory`.
+
+```typescript
+// Orders PUT call:
+mergeSaveArray(KEYS.orders, ..., false, ["statusHistory"], ["excelConfirmed"])
+```
+
+### iOS horizontal scroll — spoľahlivý pattern
+
+Tailwind `overflow-x-auto` + `min-w-max` class NEFUNGUJE spoľahlivo na iOS ak má ancestor `overflowX: "clip"` (AdminDashboard wrapper). **Správny pattern:**
+
+```tsx
+// Vonkajší kontajner — plné inline styles, overflow-x: scroll (nie auto!)
+<div style={{
+  overflowX: 'scroll',
+  WebkitOverflowScrolling: 'touch',
+  marginLeft: '-16px',   // zrkadlí px-4 parenta
+  marginRight: '-16px',
+  paddingBottom: '2px',
+}}>
+  {/* Vnútorný flex — width: max-content (nie minWidth!), inline style */}
+  <div style={{
+    display: 'flex',
+    gap: '4px',
+    alignItems: 'center',
+    paddingLeft: '16px',
+    paddingRight: '16px',
+    width: 'max-content',   // KĽÚČOVÉ: width nie minWidth
+    minWidth: '100%',       // ak málo itemov, vyplní kontajner
+  }}>
+    {/* buttons s whitespace-nowrap */}
+  </div>
+</div>
+```
+
+**Prečo `overflow-x: scroll` nie `auto`:** `auto` triggerne scroll len keď content > container. Na iOS Safari s ancestor `overflow-x: clip`, `auto` niekedy nedetekuje overflow správne. `scroll` vždy vytvorí scrollable kontext.
+
+**Prečo inline styles:** Tailwind v4 classes môžu byť clipped ancestor `overflow-x: clip`. Inline styles majú najvyššiu specificitu a obchádzajú toto.
+
+**Prečo `width` nie `minWidth`:** `minWidth: max-content` nedefinuje výšku scroll contentu pre iOS layout engine. `width: max-content` explicitne nastaví šírku flex kontajnera na content šírku.
+
+**Používa sa v:** `HistoriaTab.tsx` status filter row, date filter row.
+
 ### Testovacie prihlasovacie údaje
 
 | Rola | Login ID | Heslo | Poznámka |
