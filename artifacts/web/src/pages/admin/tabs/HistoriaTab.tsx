@@ -848,15 +848,15 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
             <span className="text-[9px] font-black uppercase tracking-widest text-gray-500 shrink-0">Excel</span>
             <button onClick={() => setCashExcelFilter("vsetky")}
               className={`inline-flex items-center gap-0.5 text-[10px] font-black px-2.5 py-1 rounded border transition-all cursor-pointer whitespace-nowrap ${
-                cashExcelFilter === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-400 border-gray-200 hover:border-gray-300"
+                cashExcelFilter === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-green-300 hover:border-green-400"
               }`}>Všetky</button>
             <button onClick={() => setCashExcelFilter("ok")}
               className={`inline-flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded border transition-all cursor-pointer whitespace-nowrap ${
-                cashExcelFilter === "ok" ? "bg-green-100 text-green-700 border-green-500" : "bg-white text-gray-600 border-gray-200 hover:bg-green-50 hover:text-green-600 hover:border-green-400"
+                cashExcelFilter === "ok" ? "bg-green-100 text-green-700 border-green-500" : "bg-white text-gray-600 border-green-300 hover:bg-green-50 hover:text-green-600 hover:border-green-400"
               }`}><Check className="w-2.5 h-2.5 shrink-0" />EXCEL OK</button>
             <button onClick={() => setCashExcelFilter("chyba")}
               className={`inline-flex items-center gap-0.5 text-[10px] font-black px-2.5 py-1 rounded border transition-all cursor-pointer whitespace-nowrap ${
-                cashExcelFilter === "chyba" ? "bg-gray-100 text-gray-700 border-gray-400" : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                cashExcelFilter === "chyba" ? "bg-gray-100 text-gray-700 border-gray-400" : "bg-white text-gray-600 border-green-300 hover:border-green-400"
               }`}>EXCEL?</button>
           </div>
 
