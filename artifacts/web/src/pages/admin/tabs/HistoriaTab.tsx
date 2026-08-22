@@ -822,6 +822,20 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                 🗑 <span className="opacity-70">{cashSummary.deletedCount}</span>
               </button>
             )}
+            {/* EXCEL filter — vedľa koša, rovnaký štýl ako status buttony */}
+            <div className="flex items-center gap-1 ml-auto">
+              <span className="text-[9px] font-black uppercase tracking-widest text-gray-300 shrink-0 mr-0.5">XLS</span>
+              {([["vsetky", "Všetky"] as const, ["ok", "✓ OK"] as const, ["chyba", "?"] as const]).map(([val, label]) => (
+                <button key={val} onClick={() => setCashExcelFilter(val)}
+                  className={`px-2.5 py-1.5 text-[10px] font-bold rounded border transition-all cursor-pointer whitespace-nowrap ${
+                    cashExcelFilter === val
+                      ? val === "ok" ? "bg-green-100 border-green-500 text-green-700"
+                      : val === "chyba" ? "bg-gray-100 border-gray-400 text-gray-700"
+                      : "bg-secondary text-white border-secondary"
+                    : "bg-white border-gray-200 text-gray-400 hover:border-gray-300"
+                  }`}>{label}</button>
+              ))}
+            </div>
           </div>
 
           {/* R1: Dátumové filtre — horizontal scroll na mobile */}
@@ -917,33 +931,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
               <input type="checkbox" checked={onlyDeposit} onChange={e => setOnlyDeposit(e.target.checked)} className="w-3.5 h-3.5 accent-amber-500" />
               <span className="text-[10px] font-bold text-gray-500">Záloha</span>
             </label>
-            {/* Nedoplatok checkbox */}
-            <label className="flex items-center gap-1.5 cursor-pointer bg-white border border-gray-200 rounded-full px-2.5 py-1.5 shrink-0">
-              <input type="checkbox" checked={onlyNedoplatok} onChange={e => setOnlyNedoplatok(e.target.checked)} className="w-3.5 h-3.5 accent-red-500" />
-              <span className="text-[10px] font-bold text-red-500">Nedoplatok</span>
-            </label>
           </div>{/* inner flex */}
           </div>{/* scroll wrapper */}
-
-          {/* R3: EXCEL filter — vlastný riadok, 3 reálne buttony */}
-          <div className="flex items-center gap-2">
-            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 shrink-0">EXCEL</span>
-            <div className="flex items-center gap-1.5">
-              {([["vsetky", "Všetky", "bg-white border-gray-200 text-gray-500 hover:border-gray-300"],
-                 ["ok",     "✓ Prenesené", "bg-white border-gray-200 text-gray-500 hover:border-green-300 hover:text-green-600"],
-                 ["chyba",  "? Chýba", "bg-white border-gray-200 text-gray-500 hover:border-gray-300"]] as const).map(([val, label, idleCls]) => (
-                <button key={val} onClick={() => setCashExcelFilter(val)} className={`px-3 py-1.5 rounded-full text-[10px] font-bold border transition-all cursor-pointer ${
-                  cashExcelFilter === val
-                    ? val === "ok"
-                      ? "bg-green-100 border-green-500 text-green-700"
-                      : val === "chyba"
-                        ? "bg-gray-100 border-gray-400 text-gray-700"
-                        : "bg-secondary border-secondary text-white"
-                    : idleCls
-                }`}>{label}</button>
-              ))}
-            </div>
-          </div>
 
           {/* Nadpis sekcie + kompaktný súhrn v jednom riadku */}
           <div className="flex flex-col gap-1.5">
