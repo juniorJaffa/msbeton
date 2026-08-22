@@ -203,6 +203,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [cashStatusFilter, setCashStatusFilter] = useState<"vsetky" | typeof CASH_STATUSES[number]>("vsetky");
   const [displayLimit,     setDisplayLimit]     = useState(100);
   const [flashDeletedId,   setFlashDeletedId]   = useState<string | null>(null);
+  const [showDeleted,      setShowDeleted]      = useState(false);
   const cashClientRef = useRef<HTMLDivElement>(null);
   const ktoRef        = useRef<HTMLDivElement>(null);
 
@@ -431,7 +432,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   }, [liveOrders, cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit, cashStatusFilter, deviceToGroupKey]);
 
   // Reset displayLimit pri každej zmene filtrov
-  useEffect(() => { setDisplayLimit(100); }, [cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit, cashStatusFilter]);
+  useEffect(() => { setDisplayLimit(100); }, [cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit, cashStatusFilter, showDeleted]);
 
   // Klienti s fotkou z filtrovaných objednávok — pre photo lightbox navigáciu
   const clientsWithPhoto = useMemo(() => {
@@ -444,10 +445,15 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     return result;
   }, [filteredOrders, clientByLoginId]);
 
+  // Visible orders — skryje zmazané keď showDeleted=false
+  const visibleOrders = useMemo(() =>
+    showDeleted ? filteredOrders : filteredOrders.filter(o => o.status !== "zmazana"),
+  [filteredOrders, showDeleted]);
+
   // Pre-computed date groups — eliminuje mutable lastDate v JSX renderi (crash risk)
   // Skupinuje podľa poslednej zmeny (nie createdAt) — konzistentné so sort kľúčom
   const groupedOrders = useMemo(() => {
-    const display = filteredOrders.slice(0, displayLimit);
+    const display = visibleOrders.slice(0, displayLimit);
     const groups: { date: string; orders: typeof display }[] = [];
     for (const o of display) {
       const d = orderLastChanged(o).slice(0, 10);
@@ -456,7 +462,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       else groups.push({ date: d, orders: [o] });
     }
     return groups;
-  }, [filteredOrders, displayLimit]);
+  }, [visibleOrders, displayLimit]);
 
   const cashSummary = useMemo(() => {
     let dep = 0, total = 0, deletedCount = 0;
@@ -817,7 +823,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
             <span className="text-sm font-black text-secondary uppercase tracking-wide shrink-0">Objednávky</span>
             <span className="text-[9px] font-bold bg-white/90 text-gray-600 px-1.5 py-0.5 rounded border border-gray-100 shrink-0">[cashflow]</span>
             <div className="flex-1" />
-            {/* Súhrn — kompaktný inline bar, nie veľké karty */}
+            {/* Súhrn — kompaktný inline bar */}
             <div className="flex items-center gap-2 bg-white/90 border border-gray-100 rounded-lg px-3 py-1.5">
               <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 shrink-0">Spolu</span>
               <span className="font-black tabular-nums text-sm text-gray-800 shrink-0">{cashSummary.count}</span>
@@ -834,13 +840,21 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   <span className="font-black tabular-nums text-sm text-amber-600 shrink-0">{fmtEur(cashSummary.dep, 0)} €</span>
                 </>
               )}
-              {cashSummary.deletedCount > 0 && (
-                <>
-                  <span className="text-gray-200 shrink-0">|</span>
-                  <span className="text-[9px] font-bold text-red-400 shrink-0">🗑 {cashSummary.deletedCount}</span>
-                </>
-              )}
             </div>
+            {/* 🗑 Zmazané — standalone toggle button */}
+            {cashSummary.deletedCount > 0 && (
+              <button
+                onClick={() => setShowDeleted(v => !v)}
+                title={showDeleted ? "Skryť zmazané" : "Zobraziť zmazané"}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-[11px] font-bold cursor-pointer transition-colors shrink-0 ${
+                  showDeleted
+                    ? "bg-red-100 border-red-300 text-red-600"
+                    : "bg-white border-gray-200 text-gray-400 hover:border-red-200 hover:text-red-400"
+                }`}>
+                <span>🗑</span>
+                <span>{cashSummary.deletedCount}</span>
+              </button>
+            )}
           </div>
 
           {/* Tabuľka */}
