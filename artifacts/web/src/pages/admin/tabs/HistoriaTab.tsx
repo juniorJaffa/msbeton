@@ -1029,12 +1029,11 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
           {filteredOrders.length === 0 ? (
             <div className="bg-white border border-gray-100 rounded-lg text-center text-gray-400 py-10 text-sm">Žiadne objednávky</div>
           ) : (
-            <div className="bg-white border border-gray-100 rounded-lg overflow-hidden">
-              <div className="overflow-x-auto">
-                <div className="hidden sm:grid grid-cols-[90px_1fr_1fr_70px_70px_120px_110px_20px] gap-2 px-3 py-2 bg-gray-50 border-b border-gray-100 text-[9px] font-black uppercase tracking-widest text-gray-400">
-                  <span>Dátum</span><span>Klient</span><span>Betón</span><span className="text-right">Celkom</span><span className="text-right">Záloha</span><span>Stav</span><span>KTO</span><span />
-                </div>
-                <div className="">
+            <div className="bg-white border border-gray-100 rounded-lg">
+              <div className="hidden sm:grid grid-cols-[90px_1fr_1fr_70px_70px_120px_110px_20px] gap-2 px-3 py-2 bg-gray-50 border-b border-gray-100 text-[9px] font-black uppercase tracking-widest text-gray-400 sticky top-0 z-20 rounded-t-lg">
+                <span>Dátum</span><span>Klient</span><span>Betón</span><span className="text-right">Celkom</span><span className="text-right">Záloha</span><span>Stav</span><span>KTO</span><span />
+              </div>
+              <div className="">
                   {groupedOrders.map(({ date: dateKey, orders: dayOrders }) => (
                     <div key={dateKey}>
                       {/* Date group header + payout indicator (C) */}
@@ -1043,7 +1042,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                         const isToday = dateKey === localDateStr(0);
                         const dayPayout = payoutInsight.byDay.get(dateKey);
                         return (
-                          <div className={`flex items-center gap-2 px-3 py-1.5 border-t border-b sticky top-0 z-10 ${isToday ? "bg-amber-50 border-amber-200" : "bg-gray-50 border-gray-200"}`}>
+                          <div className={`flex items-center gap-2 px-3 py-1.5 border-t border-b sticky top-0 sm:top-[30px] z-10 ${isToday ? "bg-amber-50 border-amber-200" : "bg-gray-50 border-gray-200"}`}>
                             <span className={`text-[10px] font-black uppercase tracking-widest shrink-0 ${isToday ? "text-primary" : "text-secondary"}`}>{gd.label}</span>
                             <div className={`flex-1 h-px ${isToday ? "bg-amber-200" : "bg-gray-200"}`} />
                             {/* 💸 Payout indicator — C */}
@@ -1435,7 +1434,6 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   </div>
                 )}
               </div>
-            </div>
           )}
         </div>
       )}
