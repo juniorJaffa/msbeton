@@ -220,6 +220,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [cashKtoFilters,   setCashKtoFilters]   = useState<string[]>([]);
   const [ktoDropOpen,      setKtoDropOpen]      = useState(false);
   const [onlyDeposit,      setOnlyDeposit]      = useState(false);
+  const [onlyNedoplatok,   setOnlyNedoplatok]   = useState(false);
+  const [cashExcelFilter,  setCashExcelFilter]  = useState<"vsetky" | "ok" | "chyba">("vsetky");
   const [cashStatusFilter, setCashStatusFilter] = useState<"vsetky" | typeof CASH_STATUSES[number]>("vsetky");
   const [displayLimit,     setDisplayLimit]     = useState(100);
   const [flashDeletedId,   setFlashDeletedId]   = useState<string | null>(null);
@@ -442,6 +444,13 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     const result = liveOrders
       .filter(o => {
         if (onlyDeposit && !(o.depositUsed && o.depositUsed > 0)) return false;
+        if (onlyNedoplatok) {
+          const dep = o.depositUsed ?? 0;
+          const paid = o.paidAmount ?? 0;
+          if (!(dep > 0 && paid > 0 && dep < paid - 0.01)) return false;
+        }
+        if (cashExcelFilter === "ok" && !o.excelConfirmed) return false;
+        if (cashExcelFilter === "chyba" && o.excelConfirmed) return false;
         if (cashStatusFilter !== "vsetky" && o.status !== cashStatusFilter) return false;
         if (cashClientFilter !== "vsetci" && o.clientId !== cashClientFilter) return false;
         if (cashKtoFilters.length > 0 && !cashKtoFilters.includes(deviceToGroupKey.get(o.createdByDevice ?? "") ?? "")) return false;
@@ -450,10 +459,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       })
       .sort((a, b) => orderLastChanged(b).localeCompare(orderLastChanged(a)));
     return result;
-  }, [liveOrders, cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit, cashStatusFilter, deviceToGroupKey]);
+  }, [liveOrders, cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit, onlyNedoplatok, cashExcelFilter, cashStatusFilter, deviceToGroupKey]);
 
   // Reset displayLimit pri každej zmene filtrov
-  useEffect(() => { setDisplayLimit(100); }, [cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit, cashStatusFilter, showDeleted]);
+  useEffect(() => { setDisplayLimit(100); }, [cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit, onlyNedoplatok, cashExcelFilter, cashStatusFilter, showDeleted]);
 
   // Klienti s fotkou z filtrovaných objednávok — pre photo lightbox navigáciu
   const clientsWithPhoto = useMemo(() => {
@@ -909,6 +918,20 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
               <input type="checkbox" checked={onlyDeposit} onChange={e => setOnlyDeposit(e.target.checked)} className="w-3.5 h-3.5 accent-amber-500" />
               <span className="text-[10px] font-bold text-gray-500">Záloha</span>
             </label>
+            {/* Nedoplatok checkbox */}
+            <label className="flex items-center gap-1.5 cursor-pointer bg-white border border-red-200 rounded-full px-2.5 py-1.5 shrink-0">
+              <input type="checkbox" checked={onlyNedoplatok} onChange={e => setOnlyNedoplatok(e.target.checked)} className="w-3.5 h-3.5 accent-red-500" />
+              <span className="text-[10px] font-bold text-red-500">Nedoplatok</span>
+            </label>
+            {/* EXCEL filter — 3-stavový toggle */}
+            <div className="flex items-center gap-0.5 bg-white border border-gray-200 rounded-full px-1 py-1 shrink-0">
+              {([["vsetky", "EXCEL", "text-gray-400"], ["ok", "✓ OK", "text-green-600"], ["chyba", "? Chýba", "text-gray-400"]] as const).map(([val, label, cls]) => (
+                <button key={val} onClick={() => setCashExcelFilter(val)}
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full transition-all ${cashExcelFilter === val ? (val === "ok" ? "bg-green-100 text-green-700 border border-green-400" : val === "chyba" ? "bg-gray-100 text-gray-600 border border-gray-300" : "bg-gray-100 text-gray-600 border border-gray-200") : `${cls} hover:bg-gray-50`}`}>
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Nadpis sekcie + kompaktný súhrn v jednom riadku */}
