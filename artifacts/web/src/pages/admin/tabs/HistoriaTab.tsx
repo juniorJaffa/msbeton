@@ -733,6 +733,19 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                 </button>
               );
             })}
+            {/* 🗑 Kôš — zmazané objednávky, v tom istom riadku ako statusy */}
+            {cashSummary.deletedCount > 0 && (
+              <button
+                onClick={() => setShowDeleted(v => !v)}
+                title={showDeleted ? "Skryť zmazané" : "Zobraziť zmazané"}
+                className={`px-2.5 py-1.5 text-[10px] font-bold rounded border transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${
+                  showDeleted
+                    ? "bg-red-100 border-red-300 text-red-600"
+                    : "bg-white border-gray-200 text-gray-400 hover:border-red-200 hover:text-red-400"
+                }`}>
+                🗑 <span className="opacity-70">{cashSummary.deletedCount}</span>
+              </button>
+            )}
           </div>
 
           {/* R1: Dátumové filtre — horizontal scroll na mobile */}
@@ -854,20 +867,6 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                 </>
               )}
             </div>
-            {/* 🗑 Zmazané — standalone toggle button */}
-            {cashSummary.deletedCount > 0 && (
-              <button
-                onClick={() => setShowDeleted(v => !v)}
-                title={showDeleted ? "Skryť zmazané" : "Zobraziť zmazané"}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-[11px] font-bold cursor-pointer transition-colors shrink-0 ${
-                  showDeleted
-                    ? "bg-red-100 border-red-300 text-red-600"
-                    : "bg-white border-gray-200 text-gray-400 hover:border-red-200 hover:text-red-400"
-                }`}>
-                <span>🗑</span>
-                <span>{cashSummary.deletedCount}</span>
-              </button>
-            )}
           </div>
 
           {/* Tabuľka */}
