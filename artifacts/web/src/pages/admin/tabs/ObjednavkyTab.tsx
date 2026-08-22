@@ -793,6 +793,11 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const [newBadge, setNewBadge] = useState(0);
   useEffect(() => {
     if (!focusOrderId) return;
+    // Auto-expand + highlight pri navigácii z Histórie
+    setExpanded(focusOrderId);
+    setHighlightedOrder(focusOrderId);
+    // Reset statusFilter aby objednávka nebola skrytá aktívnym filtrom
+    setFilterStatus("vsetky");
     const t1 = setTimeout(() => {
       const container = document.getElementById("admin-content");
       const el = document.getElementById(`order-card-${focusOrderId}`);
