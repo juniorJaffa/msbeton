@@ -204,22 +204,22 @@ export default function AdminDashboard() {
     <div className="min-h-screen concrete-light" style={{ fontFamily: "Montserrat, sans-serif", overflowX: "clip" }}>
       {/* Admin-čitateľ banner — read-only režim */}
       {readerMode && (
-        <div className="fixed top-12 sm:top-[88px] left-0 right-0 z-40 bg-blue-600 text-white text-center text-[11px] sm:text-xs font-bold py-1.5 px-4 flex items-center justify-center gap-2 shadow">
+        <div className="admin-role-banner fixed top-12 sm:top-[88px] left-0 right-0 z-40 bg-blue-600 text-white text-center text-[11px] sm:text-xs font-bold py-1.5 px-4 flex items-center justify-center gap-2 shadow">
           <Eye className="w-4 h-4 shrink-0" />
           Režim čítania — admin-čitateľ. Zmeny a mazanie sú vypnuté.
         </div>
       )}
       {/* Správca banner — môže upravovať, ale nie povyšovať/mazať/server */}
       {managerMode && (
-        <div className="fixed top-12 sm:top-[88px] left-0 right-0 z-40 bg-secondary text-white text-center text-[11px] sm:text-xs font-bold py-1.5 px-4 flex items-center justify-center gap-2 shadow">
+        <div className="admin-role-banner fixed top-12 sm:top-[88px] left-0 right-0 z-40 bg-secondary text-white text-center text-[11px] sm:text-xs font-bold py-1.5 px-4 flex items-center justify-center gap-2 shadow">
           <ShieldCheck className="w-4 h-4 shrink-0" />
           Režim Správca — môžeš upravovať. Povyšovanie adminov, mazanie klientov a server akcie sú len pre vlastníka.
         </div>
       )}
       {/* Top nav */}
       {/* Combined sticky header — logo row + desktop tab row */}
-      <header className="bg-secondary shadow-lg fixed top-0 left-0 right-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-12">
+      <header id="admin-header" className="bg-secondary shadow-lg fixed top-0 left-0 right-0 z-50">
+        <div className="admin-logo-row max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-12">
           <a href="/" onClick={(e) => { e.preventDefault(); window.location.href = "/"; }} className="flex items-center gap-0.5 select-none cursor-pointer">
             <motion.span
               className="font-black text-2xl tracking-tighter text-primary relative"
@@ -253,7 +253,7 @@ export default function AdminDashboard() {
           </div>
         </div>
         {/* Desktop tab row — dark navy, inside header */}
-        <div className="hidden sm:block border-t border-white/10">
+        <div className="admin-tab-row hidden sm:block border-t border-white/10">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <div className="flex">
               {tabs.map(t => (

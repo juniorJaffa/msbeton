@@ -53,7 +53,7 @@ export function Navbar() {
     <>
     <div className="fixed top-0 left-0 right-0 z-[60]">
       {/* ── Top info bar ── */}
-      <div className="bg-secondary border-b border-white/10">
+      <div className="navbar-topbar bg-secondary border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-9 w-full">
             {/* ── Group 1: Kontakt ── */}
@@ -170,7 +170,7 @@ export function Navbar() {
       {/* ── Main navbar ── */}
       <header
         className={cn(
-          "transition-all duration-300 bg-secondary",
+          "navbar-main transition-all duration-300 bg-secondary",
           isScrolled ? "shadow-lg shadow-black/40 py-2" : "py-3"
         )}
       >
@@ -179,7 +179,7 @@ export function Navbar() {
 
             {/* ── Logo ── */}
             <a href="/" className="flex items-center select-none" aria-label="MS-BETON">
-              <span className="relative inline-flex items-center">
+              <span className="navbar-logo-text relative inline-flex items-center">
                 <span className="font-display font-black text-[2.1rem] leading-none tracking-tighter text-primary relative inline-block">
                   MS
                   <span className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -256,7 +256,7 @@ export function Navbar() {
       </header>
     </div>
     {/* Spacer — pushes page content below fixed navbar (topbar 36px + main nav ~60px) */}
-    <div className="h-[96px]" aria-hidden="true" />
+    <div className="navbar-spacer h-[96px]" aria-hidden="true" />
     </>
   );
 }

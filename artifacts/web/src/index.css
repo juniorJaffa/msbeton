@@ -190,3 +190,38 @@
    Concrete hero sa už nedá "odtiahnuť" a odhaliť biele pozadie. */
 html, body { background-color: #001D3D; }
 html, body { overscroll-behavior-y: none; overscroll-behavior: none; }
+
+/* ─── LANDSCAPE KOMPAKTNÝ MODE ──────────────────────────────────────────────
+   Cieľ: iPhone / Android v landscape (výška ≤ 500px).
+   Šetrí vertikálny priestor — nav z 80px → 62px (admin), 96px → 50px (public).
+   ──────────────────────────────────────────────────────────────────────────── */
+@media (orientation: landscape) and (max-height: 500px) {
+
+  /* === ADMIN NAV === */
+  /* Logo riadok kompaktný */
+  #admin-header .admin-logo-row { height: 2rem; /* 32px */ }
+  /* Desktop taby — menší padding */
+  #admin-header .admin-tab-row a,
+  #admin-header .admin-tab-row button { padding-top: 0.2rem; padding-bottom: 0.2rem; font-size: 0.6rem; }
+  /* Content offset: 32px logo + ~30px tabs = 62px */
+  #admin-content { top: 62px !important; }
+  /* Reader/manager bannery */
+  .admin-role-banner { top: 62px !important; }
+
+  /* === PUBLIC NAVBAR === */
+  /* Topbar — skry (email, kalkulačka link; nedôležité v landscape) */
+  .navbar-topbar { display: none; }
+  /* Main nav — menší padding, spacer sa skráti */
+  .navbar-main { padding-top: 0.3rem !important; padding-bottom: 0.3rem !important; }
+  /* Logo text menší */
+  .navbar-logo-text { font-size: 1.4rem !important; }
+  /* Spacer: bez topbaru (36px) + menší main (~44px) = 44px */
+  .navbar-spacer { height: 44px !important; }
+
+  /* === HOMEPAGE HERO === */
+  /* min-h-[480px] spôsobí scroll v landscape — override na rozumné minimum */
+  #home { min-height: 240px !important; }
+
+  /* === LOGIN PAGES === */
+  /* min-h-screen OK — formy scrollujú prirodzene v landscape */
+}
