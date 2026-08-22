@@ -227,6 +227,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [flashDeletedId,   setFlashDeletedId]   = useState<string | null>(null);
   const [showDeleted,      setShowDeleted]      = useState(false);
   const [colHeaderScrolled, setColHeaderScrolled] = useState(false);
+  const [cashDateFrom,     setCashDateFrom]     = useState("");
+  const [cashDateTo,       setCashDateTo]       = useState("");
   const cashClientRef = useRef<HTMLDivElement>(null);
   const ktoRef        = useRef<HTMLDivElement>(null);
 
@@ -455,15 +457,22 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
         if (cashStatusFilter !== "vsetky" && o.status !== cashStatusFilter) return false;
         if (cashClientFilter !== "vsetci" && o.clientId !== cashClientFilter) return false;
         if (cashKtoFilters.length > 0 && !cashKtoFilters.includes(deviceToGroupKey.get(o.createdByDevice ?? "") ?? "")) return false;
-        // Dátumový filter — posledná zmena (nie createdAt) určuje, do ktorého dňa patrí
-        return passesDate(toDateStr(orderLastChanged(o)), cashDateFilter);
+        // Dátumový filter — custom range má prednosť pred quick tlačidlami
+        const ds = toDateStr(orderLastChanged(o));
+        if (cashDateFrom || cashDateTo) {
+          if (cashDateFrom && ds < cashDateFrom) return false;
+          if (cashDateTo   && ds > cashDateTo)   return false;
+        } else {
+          if (!passesDate(ds, cashDateFilter)) return false;
+        }
+        return true;
       })
       .sort((a, b) => orderLastChanged(b).localeCompare(orderLastChanged(a)));
     return result;
-  }, [liveOrders, cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit, onlyNedoplatok, cashExcelFilter, cashStatusFilter, deviceToGroupKey]);
+  }, [liveOrders, cashClientFilter, cashKtoFilters, cashDateFilter, cashDateFrom, cashDateTo, onlyDeposit, onlyNedoplatok, cashExcelFilter, cashStatusFilter, deviceToGroupKey]);
 
   // Reset displayLimit pri každej zmene filtrov
-  useEffect(() => { setDisplayLimit(100); }, [cashClientFilter, cashKtoFilters, cashDateFilter, onlyDeposit, onlyNedoplatok, cashExcelFilter, cashStatusFilter, showDeleted]);
+  useEffect(() => { setDisplayLimit(100); }, [cashClientFilter, cashKtoFilters, cashDateFilter, cashDateFrom, cashDateTo, onlyDeposit, onlyNedoplatok, cashExcelFilter, cashStatusFilter, showDeleted]);
 
   // Scroll listener — zmena farby column headera pri scrollovaní
   useEffect(() => {
@@ -838,8 +847,22 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
           <div style={{overflowX:'scroll',WebkitOverflowScrolling:'touch',marginLeft:'-16px',marginRight:'-16px',paddingBottom:'2px'}}>
             <div style={{display:'flex',gap:'6px',alignItems:'center',paddingLeft:'16px',paddingRight:'16px',width:'max-content',minWidth:'100%'}}>
               {DATE_BTNS.map(f => (
-                <button key={f.id} onClick={() => setCashDateFilter(f.id)} className={`${dateBtnCls(cashDateFilter === f.id)} shrink-0 whitespace-nowrap`}>{f.label}</button>
+                <button key={f.id} onClick={() => { setCashDateFilter(f.id); setCashDateFrom(""); setCashDateTo(""); }}
+                  className={`${dateBtnCls(cashDateFilter === f.id && !cashDateFrom && !cashDateTo)} shrink-0 whitespace-nowrap`}>{f.label}</button>
               ))}
+              <span className="text-gray-300 shrink-0 mx-1">|</span>
+              <span className="text-[9px] font-bold text-gray-400 shrink-0">od</span>
+              <input type="date" value={cashDateFrom} onChange={e => setCashDateFrom(e.target.value)}
+                className="text-[10px] font-bold text-gray-600 bg-white border border-gray-200 rounded px-1.5 py-1 shrink-0 cursor-pointer focus:border-secondary focus:outline-none" style={{fontSize:'10px'}} />
+              <span className="text-[9px] font-bold text-gray-400 shrink-0">do</span>
+              <input type="date" value={cashDateTo} onChange={e => setCashDateTo(e.target.value)}
+                className="text-[10px] font-bold text-gray-600 bg-white border border-gray-200 rounded px-1.5 py-1 shrink-0 cursor-pointer focus:border-secondary focus:outline-none" style={{fontSize:'10px'}} />
+              {(cashDateFrom || cashDateTo) && (
+                <button onClick={() => { setCashDateFrom(""); setCashDateTo(""); }}
+                  className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 cursor-pointer shrink-0" title="Zrušiť range">
+                  <X className="w-3 h-3 text-gray-500" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -953,8 +976,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
               <span className="text-sm font-black text-secondary uppercase tracking-wide shrink-0">Objednávky</span>
               <span className="text-[9px] font-bold bg-white/90 text-gray-600 px-1.5 py-0.5 rounded border border-gray-100 shrink-0">[cashflow]</span>
               <div className="flex-1" />
-              {/* Súhrn — kompaktný inline bar */}
-              <div className="flex items-center gap-2 bg-white/90 border border-gray-100 rounded-lg px-3 py-1.5">
+              {/* Súhrn — kompaktný inline bar, overflow-x-auto pre veľké čísla */}
+              <div className="flex items-center gap-2 bg-white/90 border border-gray-100 rounded-lg px-3 py-1.5 overflow-x-auto max-w-full">
                 <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 shrink-0">Spolu</span>
                 <span className="font-black tabular-nums text-sm text-gray-800 shrink-0">{cashSummary.count}</span>
                 {cashSummary.total > 0 && (
