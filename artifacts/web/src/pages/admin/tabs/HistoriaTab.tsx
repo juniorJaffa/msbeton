@@ -1230,8 +1230,6 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                 {o.priceMode && <PayBadge priceMode={o.priceMode} />}
                               </div>
                               <div className="flex items-center gap-1 min-w-0">
-                                {kg === "drvene" && <Mountain className="w-3 h-3 shrink-0 text-stone-500" />}
-                                {kg === "riecne" && <Waves className="w-3 h-3 shrink-0 text-blue-400" />}
                                 <span className="text-gray-600 truncate text-xs font-semibold">
                                   {o.concreteType}{(o.totalQty ?? o.quantity) ? <span className="font-normal text-gray-400 ml-1">{o.totalQty ?? o.quantity} m³</span> : null}
                                 </span>
@@ -1244,7 +1242,11 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                 </div>
                               )}
                               {o.concreteCategory && (
-                                <span className="text-[9px] text-gray-400 truncate">{o.concreteCategory}</span>
+                                <div className="flex items-center gap-0.5 text-[9px] text-gray-400 truncate">
+                                  {kg === "drvene" && <Mountain className="w-3 h-3 shrink-0 text-stone-400" />}
+                                  {kg === "riecne" && <Waves className="w-3 h-3 shrink-0 text-blue-400" />}
+                                  <span className="truncate">{o.concreteCategory}</span>
+                                </div>
                               )}
                             </div>
                             {/* CELKOM + paidAmount + diff pod ním */}
