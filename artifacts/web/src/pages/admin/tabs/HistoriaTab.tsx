@@ -1030,8 +1030,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
           {filteredOrders.length === 0 ? (
             <div className="bg-white border border-gray-100 rounded-lg text-center text-gray-400 py-10 text-sm">Žiadne objednávky</div>
           ) : (
-            <div className="bg-white border border-gray-100 rounded-lg">
-              <div className="hidden sm:grid grid-cols-[90px_1fr_1fr_70px_70px_120px_110px_20px] gap-2 px-3 py-2 bg-secondary border-b border-secondary/80 text-[9px] font-black uppercase tracking-widest text-white/50 sticky top-0 z-20 rounded-t-lg">
+            <div className="bg-white border border-gray-100 rounded-lg overflow-clip">
+              <div className="hidden sm:grid grid-cols-[90px_1fr_1fr_70px_70px_120px_110px_20px] gap-2 px-3 py-2 bg-secondary border-b border-secondary/80 text-[9px] font-black uppercase tracking-widest text-white/50 sticky top-0 z-20">
                 <span>Dátum</span><span>Klient</span><span>Betón</span><span className="text-right">Celkom</span><span className="text-right">Záloha</span><span>Stav</span><span>KTO</span><span />
               </div>
               <div className="">
