@@ -847,22 +847,9 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
           <div style={{overflowX:'scroll',WebkitOverflowScrolling:'touch',marginLeft:'-16px',marginRight:'-16px',paddingBottom:'2px'}}>
             <div style={{display:'flex',gap:'6px',alignItems:'center',paddingLeft:'16px',paddingRight:'16px',width:'max-content',minWidth:'100%'}}>
               {DATE_BTNS.map(f => (
-                <button key={f.id} onClick={() => { setCashDateFilter(f.id); setCashDateFrom(""); setCashDateTo(""); }}
-                  className={`${dateBtnCls(cashDateFilter === f.id && !cashDateFrom && !cashDateTo)} shrink-0 whitespace-nowrap`}>{f.label}</button>
+                <button key={f.id} onClick={() => setCashDateFilter(f.id)}
+                  className={`${dateBtnCls(cashDateFilter === f.id)} shrink-0 whitespace-nowrap`}>{f.label}</button>
               ))}
-              <span className="text-gray-300 shrink-0 mx-1">|</span>
-              <span className="text-[9px] font-bold text-gray-400 shrink-0">od</span>
-              <input type="date" value={cashDateFrom} onChange={e => setCashDateFrom(e.target.value)}
-                className="text-[10px] font-bold text-gray-600 bg-white border border-gray-200 rounded px-1.5 py-1 shrink-0 cursor-pointer focus:border-secondary focus:outline-none" style={{fontSize:'10px'}} />
-              <span className="text-[9px] font-bold text-gray-400 shrink-0">do</span>
-              <input type="date" value={cashDateTo} onChange={e => setCashDateTo(e.target.value)}
-                className="text-[10px] font-bold text-gray-600 bg-white border border-gray-200 rounded px-1.5 py-1 shrink-0 cursor-pointer focus:border-secondary focus:outline-none" style={{fontSize:'10px'}} />
-              {(cashDateFrom || cashDateTo) && (
-                <button onClick={() => { setCashDateFrom(""); setCashDateTo(""); }}
-                  className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 cursor-pointer shrink-0" title="Zrušiť range">
-                  <X className="w-3 h-3 text-gray-500" />
-                </button>
-              )}
             </div>
           </div>
 
