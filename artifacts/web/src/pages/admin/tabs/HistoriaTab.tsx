@@ -88,6 +88,59 @@ function fmtEur(v: number, decimals = 2) {
   return v.toLocaleString("sk-SK", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
+/** Sticky day-group header — na mobile sa pri scrollovaní zmodrí (bg-secondary) */
+function DayGroupHeader({
+  dateKey, gd, isToday, dayPayout,
+}: {
+  dateKey: string;
+  gd: { label: string; sub: string | null };
+  isToday: boolean;
+  dayPayout: { sum: number; count: number } | undefined;
+}) {
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const [isStuck, setIsStuck] = useState(false);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const root = document.getElementById("admin-content");
+    const obs = new IntersectionObserver(
+      ([entry]) => setIsStuck(!entry.isIntersecting),
+      { root: root ?? undefined, threshold: 0, rootMargin: "-1px 0px 0px 0px" }
+    );
+    obs.observe(sentinel);
+    return () => obs.disconnect();
+  }, []);
+
+  // Farby: stuck → mobile modrá (bg-secondary), desktop ostáva pôvodná (sm: override)
+  const bg    = isStuck ? "bg-secondary border-secondary sm:border-gray-300 sm:bg-gray-100/80"
+                        : isToday ? "bg-amber-50 border-amber-200" : "bg-gray-100/80 border-gray-300";
+  const label = isStuck ? "text-white sm:text-secondary"
+                        : isToday ? "text-primary" : "text-secondary";
+  const line  = isStuck ? "bg-white/20 sm:bg-gray-200"
+                        : isToday ? "bg-amber-200" : "bg-gray-200";
+  const sub   = isStuck ? "text-white/60 sm:text-gray-400"
+                        : isToday ? "text-amber-600" : "text-gray-400";
+
+  return (
+    <>
+      {/* Sentinel — IntersectionObserver ho sleduje; keď vyjde z viewportu = header stuck */}
+      <div ref={sentinelRef} style={{ height: 1, marginTop: -1 }} aria-hidden />
+      <div className={`flex items-center gap-2 px-3 py-2 border-y sticky top-0 sm:top-[30px] z-10 shadow-sm transition-colors duration-150 ${bg}`}>
+        <span className={`text-[10px] font-black uppercase tracking-widest shrink-0 transition-colors duration-150 ${label}`}>{gd.label}</span>
+        <div className={`flex-1 h-px transition-colors duration-150 ${line}`} />
+        {dayPayout && dayPayout.count > 0 && (
+          <span className={`inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-full shrink-0 transition-colors duration-150 ${isStuck ? "bg-white/15 text-white sm:bg-teal-100 sm:text-teal-700" : "bg-teal-100 text-teal-700"}`}>
+            💸 {fmtEur(dayPayout.sum, 0)} €
+            {dayPayout.count > 1 && <span className="opacity-70">·{dayPayout.count}</span>}
+          </span>
+        )}
+        {gd.sub && <span className={`text-[9px] font-bold shrink-0 transition-colors duration-150 ${sub}`}>{gd.sub}</span>}
+      </div>
+    </>
+  );
+}
+
 function DeviceIconSmall({ label, className }: { label: string; className?: string }) {
   const l = label.toLowerCase();
   if (/iphone|ipad|android|mobil|telefon|phone|tablet/.test(l)) return <Smartphone className={className} />;
@@ -1082,25 +1135,12 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   {groupedOrders.map(({ date: dateKey, orders: dayOrders }, gIdx) => (
                     <div key={dateKey} className={gIdx > 0 ? "mt-2" : ""}>
                       {/* Date group header + payout indicator (C) */}
-                      {(() => {
-                        const gd = fmtGroupDate(dateKey);
-                        const isToday = dateKey === localDateStr(0);
-                        const dayPayout = payoutInsight.byDay.get(dateKey);
-                        return (
-                          <div className={`flex items-center gap-2 px-3 py-2 border-y sticky top-0 sm:top-[30px] z-10 shadow-sm ${isToday ? "bg-amber-50 border-amber-200" : "bg-gray-100/80 border-gray-300"}`}>
-                            <span className={`text-[10px] font-black uppercase tracking-widest shrink-0 ${isToday ? "text-primary" : "text-secondary"}`}>{gd.label}</span>
-                            <div className={`flex-1 h-px ${isToday ? "bg-amber-200" : "bg-gray-200"}`} />
-                            {/* 💸 Payout indicator — C */}
-                            {dayPayout && dayPayout.count > 0 && (
-                              <span className="inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700 shrink-0">
-                                💸 {fmtEur(dayPayout.sum, 0)} €
-                                {dayPayout.count > 1 && <span className="opacity-70">·{dayPayout.count}</span>}
-                              </span>
-                            )}
-                            {gd.sub && <span className={`text-[9px] font-bold shrink-0 ${isToday ? "text-amber-600" : "text-gray-400"}`}>{gd.sub}</span>}
-                          </div>
-                        );
-                      })()}
+                      <DayGroupHeader
+                        dateKey={dateKey}
+                        gd={fmtGroupDate(dateKey)}
+                        isToday={dateKey === localDateStr(0)}
+                        dayPayout={payoutInsight.byDay.get(dateKey)}
+                      />
                       {dayOrders.map(o => {
                     const c = o.clientId ? clientByLoginId.get(o.clientId) : undefined;
                     // Primárne meno (bez telefónu) — ako ObjednavkyTab
