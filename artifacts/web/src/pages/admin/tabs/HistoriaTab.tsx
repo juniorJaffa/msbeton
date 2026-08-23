@@ -119,7 +119,7 @@ function DayGroupHeader({
                         : isToday ? "text-primary" : "text-secondary";
   const line  = isStuck ? "bg-white/20 sm:bg-gray-200"
                         : isToday ? "bg-amber-200" : "bg-gray-200";
-  const sub   = isStuck ? "text-white/60 sm:text-gray-400"
+  const sub   = isStuck ? "text-white/75 sm:text-gray-400"
                         : isToday ? "text-amber-600" : "text-gray-400";
 
   return (
@@ -130,7 +130,11 @@ function DayGroupHeader({
         <span className={`text-[10px] font-black uppercase tracking-widest shrink-0 transition-colors duration-150 ${label}`}>{gd.label}</span>
         <div className={`flex-1 h-px transition-colors duration-150 ${line}`} />
         {dayPayout && dayPayout.count > 0 && (
-          <span className={`inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-full shrink-0 transition-colors duration-150 ${isStuck ? "bg-white/15 text-white sm:bg-teal-100 sm:text-teal-700" : "bg-teal-100 text-teal-700"}`}>
+          <span className={`inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full shrink-0 transition-all duration-150 ${
+            isStuck
+              ? "bg-primary/25 text-primary border border-primary/40 sm:bg-teal-100 sm:text-teal-700 sm:border-transparent"
+              : "bg-teal-100 text-teal-700"
+          }`}>
             💸 {fmtEur(dayPayout.sum, 0)} €
             {dayPayout.count > 1 && <span className="opacity-70">·{dayPayout.count}</span>}
           </span>
