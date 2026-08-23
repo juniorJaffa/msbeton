@@ -961,29 +961,29 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
               <span className="text-sm font-black text-secondary uppercase tracking-wide shrink-0">Objednávky</span>
               <span className="text-[9px] font-bold bg-white/90 text-gray-600 px-1.5 py-0.5 rounded border border-gray-100 shrink-0">[cashflow]</span>
               <div className="flex-1" />
-              {/* Súhrn — kompaktný inline bar, overflow-x-auto pre veľké čísla */}
-              <div className="flex items-center gap-2 bg-white/90 border border-gray-100 rounded-lg px-3 py-1.5 overflow-x-auto max-w-full">
-                <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 shrink-0">Spolu</span>
-                <span className="font-black tabular-nums text-sm text-gray-800 shrink-0">{cashSummary.count}</span>
+              {/* Súhrn — kompaktný inline bar */}
+              <div className="flex items-center gap-1.5 bg-white/90 border border-gray-100 rounded-lg px-2 py-1.5">
+                <span className="text-[8px] font-black uppercase tracking-widest text-gray-400 shrink-0">Spolu</span>
+                <span className="font-black tabular-nums text-xs text-gray-800 shrink-0">{cashSummary.count}</span>
                 {cashSummary.total > 0 && (
                   <>
                     <span className="text-gray-200 shrink-0">|</span>
-                    <span className="font-black tabular-nums text-sm text-gray-900 shrink-0">{fmtEur(cashSummary.total, 0)} €</span>
+                    <span className="font-black tabular-nums text-xs text-gray-900 shrink-0">{fmtEur(cashSummary.total, 0)} €</span>
                   </>
                 )}
                 {cashSummary.dep > 0 && (
                   <>
                     <span className="text-gray-200 shrink-0">|</span>
-                    <span className="text-[9px] font-black text-gray-400 shrink-0">záloha</span>
-                    <span className="font-black tabular-nums text-sm text-amber-600 shrink-0">{fmtEur(cashSummary.dep, 0)} €</span>
+                    <span className="text-[8px] font-black text-gray-400 shrink-0">záloha</span>
+                    <span className="font-black tabular-nums text-xs text-amber-600 shrink-0">{fmtEur(cashSummary.dep, 0)} €</span>
                   </>
                 )}
                 {/* Pohľadávky FA — odoslaná + faktura */}
                 {cashflowExtras.pohladavky > 0 && (
                   <>
                     <span className="text-gray-200 shrink-0">|</span>
-                    <span className="text-[9px] font-black text-gray-400 shrink-0" title={`${cashflowExtras.pohladavkyCount} faktúr čaká na platbu`}>pohľ.</span>
-                    <span className="font-black tabular-nums text-sm text-orange-600 shrink-0">{fmtEur(cashflowExtras.pohladavky, 0)} €</span>
+                    <span className="text-[8px] font-black text-gray-400 shrink-0" title={`${cashflowExtras.pohladavkyCount} faktúr čaká na platbu`}>pohľ.</span>
+                    <span className="font-black tabular-nums text-xs text-orange-600 shrink-0">{fmtEur(cashflowExtras.pohladavky, 0)} €</span>
                   </>
                 )}
               </div>
