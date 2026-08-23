@@ -571,10 +571,13 @@ router.get("/orders", async (req, res) => {
 });
 router.put("/orders", async (req, res) => {
   // Atomický item-level merge (rovnako ako klienti) — zabráni strate zmien (paid→nová, delete→návrat)
-  // pri súbežných adminoch a stale polloch. preserveUnstamped=false → legacy objednávky sa dajú zmazať.
+  // pri súbežných adminoch a stale polloch.
+  // preserveUnstamped=TRUE (zmenené z false): klientske objednávky (POST /api/client/order) nemajú updatedAt
+  //   → bez ochrany ich admin PUT zahodí ak jeho baseSyncMs > order.createdAt (bug Pallo 2026-08-23).
+  //   Soft delete a status zmeny majú updatedAt (stampArray) → správne mergovanie podľa času.
   // appendOnlyFields: statusHistory sa union-uje z oboch verziií — nikdy nestratí záznamy pri súbežných zmenách
   // stickyTrueFields: excelConfirmed — raz potvrdené nikdy nestratí pri concurrent edite
-  try { const r = await mergeSaveArray(KEYS.orders, req.body, req.get("X-Base-Sync"), null, undefined, false, ["statusHistory"], ["excelConfirmed"]); res.json({ ok: true, ...r }); }
+  try { const r = await mergeSaveArray(KEYS.orders, req.body, req.get("X-Base-Sync"), null, undefined, true, ["statusHistory"], ["excelConfirmed"]); res.json({ ok: true, ...r }); }
   catch (err) { req.log.error({ err }, "Failed to save orders"); res.status(500).json({ error: "Internal server error" }); }
 });
 

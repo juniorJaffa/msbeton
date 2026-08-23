@@ -380,8 +380,10 @@ router.post("/order", async (req, res) => {
     const rows = await db.select().from(adminConfig).where(eq(adminConfig.key, "orders"));
     const existing: unknown[] = rows.length > 0 && Array.isArray(rows[0].data) ? rows[0].data as unknown[] : [];
     const nowIso = new Date().toISOString();
-    // updatedAt = nová objednávka je "stamped" → prežije súbežný admin save (merge ju nezahodí)
-    const updated = [...existing, { ...order, createdAt: nowIso, updatedAt: nowIso }];
+    // POZOR: klientska objednávka NESMIE mať updatedAt — inak ju admin PUT zmaže ak jeho baseSyncMs > createdAt.
+    // preserveUnstamped=true v mergeSaveArray(orders) zaručí, že nestampované objednávky sa VŽDY zachovajú.
+    // Admin-stamped objednávky (status zmena, soft delete) majú updatedAt → správne mergovanie podľa času.
+    const updated = [...existing, { ...order, createdAt: nowIso }];
     await db
       .insert(adminConfig)
       .values({ key: "orders", data: updated })

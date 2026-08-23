@@ -330,7 +330,7 @@ function TabBadge({ tab }: { tab: Order["tab"] }) {
   );
 }
 
-function exportOrderPDF(o: Order, format: "a4" | "a5" = "a4") {
+function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof adminData.getClients>[number]>, format: "a4" | "a5" = "a4") {
   const tabLabels: Record<string, string> = { pumpa: "Pumpa", mix: "Domiešavač", vlastnadoprava: "Vlastná doprava" };
   const statusLabels: Record<string, string> = { nova: "Nová", potvrdena: "Potvrdená", odoslana: "Odoslaná FA", vyuctovana: "Vyúčtovaná", vyplatena: "Vyplatená", zrusena: "Zrušená" };
   const today = new Date(o.createdAt).toLocaleDateString("sk-SK");
@@ -2013,13 +2013,13 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                               {o.priceMode === "hotovost" ? "Hotovosť" : "Faktúra"}
                             </span>
                             <div className="ml-auto flex items-center gap-1.5">
-                              <button onClick={e => { e.stopPropagation(); exportOrderPDF(o, "a5"); }}
+                              <button onClick={e => { e.stopPropagation(); exportOrderPDF(o, clientMap, "a5"); }}
                                 title="Kompaktný A5 doklad — na hotovostné betonáže (páruje s ručným čerpacím listkom)"
                                 className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-black text-secondary border border-secondary/30 rounded-sm hover:bg-secondary hover:text-white transition-all">
                                 <FileText className="w-3 h-3" />
                                 A5
                               </button>
-                              <button onClick={e => { e.stopPropagation(); exportOrderPDF(o, "a4"); }}
+                              <button onClick={e => { e.stopPropagation(); exportOrderPDF(o, clientMap, "a4"); }}
                                 className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-black text-secondary border border-secondary/30 rounded-sm hover:bg-secondary hover:text-white transition-all">
                                 <FileText className="w-3 h-3" />
                                 <span className="hidden sm:inline">PDF</span> A4
