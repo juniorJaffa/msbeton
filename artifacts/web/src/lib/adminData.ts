@@ -453,7 +453,13 @@ function loadData<T>(key: string, defaults: T): T {
 }
 
 function saveData<T>(key: string, data: T): void {
-  localStorage.setItem(key, JSON.stringify(data));
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch {
+    // Safari iOS: QuotaExceededError alebo storage permission error — loguj, pokračuj.
+    // Volajúci (saveClients atď.) pokračuje s PUT na server; syncFromServer neskôr obnoví localStorage.
+    console.warn(`saveData(${key}): localStorage write failed — data saved only to server`);
+  }
 }
 
 // ── Item-level merge support (multi-admin concurrency) ──────────────────────────

@@ -825,8 +825,15 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   // Refresh from external changes (sync, Doprava tab) without remounting/closing expanded
   useEffect(() => {
     const handler = () => {
+      const fresh = adminData.getClients();
       setTs(adminData.getTransportSettings());
-      setClients(adminData.getClients());
+      // Merge: ak lokálna verzia klienta má novší updatedAt (napr. práve nahraná fotka ale GET ešte
+      // neobsahuje nové dáta), zachovaj lokálnu verziu — zabraňuje bliknutiu fotky pri stale GET.
+      setClients(prev => fresh.map(c => {
+        const local = prev.find(p => p.id === c.id);
+        if (local?.updatedAt && c.updatedAt && local.updatedAt > c.updatedAt) return local;
+        return c;
+      }));
     };
     window.addEventListener("admin-data-synced", handler);
     return () => window.removeEventListener("admin-data-synced", handler);
