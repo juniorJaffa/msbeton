@@ -727,6 +727,40 @@ if (isBiometricAvailable() && hasClientBiometric()) { /* bio auto-trigger */ }
 | GET | `/api/client/orders?id=` | Posledných 50 objednávok klienta (autentifikácia cez session UUID) |
 | GET | `/api/client/me?id=` | Aktuálny profil klienta (refresh session) |
 
+### Async handler — stale closure anti-pattern (KRITICKÉ)
+
+Admin komponenty majú `syncFromServer()` bežiaci na pozadí (event `admin-data-synced`). Počas dlhého `await` (geolocation 8s, Nominatim HTTP, authFetch) sa `clients`/`orders` state prepíše. Async funkcia drží OLD closure → uloží stale dáta → server `mergeItems` uprednostní novší DB záznam → zmena sa stratí.
+
+**Symptóm:** UI krátkodobo zobrazí zmenu, potom preblikne a zmizne.
+
+**Pravidlo pre každú async funkciu s dlhým await:**
+
+```typescript
+// ❌ ZLE — clients je stale po await
+const client = clients.find(c => c.id === id); // stale!
+await longOperation();
+update(id, changes); // update() tiež stale closure
+
+// ✅ SPRÁVNE — čítaj po await z adminData
+await longOperation();
+const freshClients = adminData.getClients();          // vždy aktuálne z localStorage
+const freshClient = freshClients.find(c => c.id === id);
+save(freshClients.map(c => c.id === id
+  ? { ...c, ...changes, updatedAt: new Date().toISOString() }  // stamp → mergeItems winner
+  : c));
+```
+
+**Povinné:**
+1. Po každom `await` > 1s → `adminData.getClients()` / `adminData.getOrders()` (nie closure state)
+2. Stamp `updatedAt: new Date().toISOString()` → mergeItems vyberie náš save ako winner nad starším DB záznamom
+3. `save(fresh.map(...))` priamo — nikdy `update()` z stale closure
+
+**Module-level funkcie** (mimo komponentu) nesmú referencovať component-scoped premenné (`useMemo`, `useState` hodnoty). Musia prijímať ich ako parametre alebo volať `adminData.getXxx()` priamo.
+
+**Opravené príklady (2026-08-24):** `processPhotoFile` + `forgetDevice` v `KlientiTab.tsx`.
+
+---
+
 ### Kľúčové komponenty
 
 - `PhoneInput` — globálny komponent pre telefónne čísla, formátuje na blur, normalizuje +421/00421 → 0xxx
