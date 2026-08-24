@@ -589,13 +589,21 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   const [delDeviceState, setDelDeviceState] = useState<Record<string, "idle" | "loading">>({}); // kľúč: `${clientId}:${credId}`
 
   // Per-device: zabudni JEDNO zariadenie (credential), ostatné ostanú
-  const forgetDevice = async (clientId: string, credId: string, creds: { id: string; createdAt?: string; counter?: number }[]) => {
+  const forgetDevice = async (clientId: string, credId: string) => {
     const key = `${clientId}:${credId}`;
     setDelDeviceState(s => ({ ...s, [key]: "loading" }));
     try {
       const r = await authFetch(`/api/admin/clients/${clientId}/webauthn/${encodeURIComponent(credId)}`, { method: "DELETE" });
       const json = await r.json() as { ok: boolean };
-      if (json.ok) update(clientId, { webauthnCredentials: creds.filter(cr => cr.id !== credId) });
+      if (json.ok) {
+        // Čítaj čerstvé dáta — počas await mohol syncFromServer prepísať state (stale closure)
+        const freshClients = adminData.getClients();
+        const freshClient = freshClients.find(c => c.id === clientId);
+        const freshCreds = freshClient?.webauthnCredentials ?? [];
+        save(freshClients.map(c => c.id === clientId
+          ? { ...c, webauthnCredentials: freshCreds.filter(cr => cr.id !== credId), updatedAt: new Date().toISOString() }
+          : c));
+      }
     } catch { /* tichý fail — necháme stav */ }
     setDelDeviceState(s => { const n = { ...s }; delete n[key]; return n; });
   };
@@ -2162,7 +2170,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                                         {isSuper() && (
                                           <button
                                             disabled={deleting}
-                                            onClick={() => { if (confirm(`Zabudnúť zariadenie „${device}" pre ${fullName}? Z tohto zariadenia sa bude vyžadovať opätovná aktivácia.`)) forgetDevice(c.id, cr.id, creds); }}
+                                            onClick={() => { if (confirm(`Zabudnúť zariadenie „${device}" pre ${fullName}? Z tohto zariadenia sa bude vyžadovať opätovná aktivácia.`)) forgetDevice(c.id, cr.id); }}
                                             title="Zabudnúť toto zariadenie"
                                             className="shrink-0 flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-red-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50 cursor-pointer">
                                             {deleting ? <RefreshCw className="w-3 h-3 animate-spin" /> : <ShieldX className="w-3 h-3" />} Zabudnúť
