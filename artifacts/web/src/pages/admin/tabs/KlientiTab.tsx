@@ -524,6 +524,9 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   const [deleteModal, setDeleteModal] = useState<Client | null>(null);
   const [deleteInput, setDeleteInput] = useState("");
   const [photoLightbox, setPhotoLightbox] = useState<{ clientId: string; index: number } | null>(null);
+  // Fronta nahrávania fotiek per klient — zabráni race condition pri rýchlom nahrávaní viacerých fotiek.
+  // Druhé nahrávania počká na dokončenie prvého, potom číta čerstvé dáta (s prvou fotkou).
+  const photoUploadQueues = useRef<Map<string, Promise<void>>>(new Map());
   const [lbGpsLabel, setLbGpsLabel] = useState<string | null>(null);
   const [lbGpsLoading, setLbGpsLoading] = useState(false);
   const lbTouchStartX = useRef<number | null>(null);
@@ -720,11 +723,15 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     } catch (err) { console.error("Photo compress failed", err); }
   };
 
-  const handleAddPhoto = async (clientId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAddPhoto = async (clientId: string, e: React.ChangeEvent<HTMLInputElement>, fromLightbox?: boolean) => {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
-    await processPhotoFile(clientId, file);
+    // Serializuj uploady per klient — ak predchádzajúci beží, čakaj aby second read freshClients videl first photo
+    const prev = photoUploadQueues.current.get(clientId) ?? Promise.resolve();
+    const next = prev.then(() => processPhotoFile(clientId, file, fromLightbox)).catch(() => {});
+    photoUploadQueues.current.set(clientId, next);
+    await next;
   };
 
   const handleDeletePhoto = (clientId: string, index: number) => {
@@ -1604,19 +1611,18 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                     </div>
                   )}
 
-                  {/* Biometria badge — top-right */}
+                  {/* Biometria badge — top-right (iba indikátor, bez kliknutia — prekrýval camera button) */}
                   {(() => {
                     const ownerBio = c.isOwner && isAdminBioAvail() && hasAdminBio();
                     const clientBio = (c.webauthnCredentials?.length ?? 0) > 0;
                     if (!ownerBio && !clientBio) return null;
                     return (
-                      <button type="button"
-                        onClick={(e) => { e.stopPropagation(); onGoToBiometria?.(c.loginId); }}
-                        className="absolute -top-1 -right-1 min-w-4 h-4 px-0.5 rounded-full bg-emerald-500 ring-2 ring-white flex items-center justify-center gap-px hover:bg-emerald-600 hover:scale-110 transition-all cursor-pointer"
+                      <div
+                        className="absolute -top-1 -right-1 min-w-4 h-4 px-0.5 rounded-full bg-emerald-500 ring-2 ring-white flex items-center justify-center gap-px pointer-events-none"
                         title={ownerBio ? "Admin biometria aktívna" : `Biometria aktívna — ${c.webauthnCredentials!.length} zariadenie`}>
                         <Fingerprint className="w-2.5 h-2.5 text-white" />
                         {clientBio && <span className="text-white text-[8px] font-black leading-none">{c.webauthnCredentials!.length}</span>}
-                      </button>
+                      </div>
                     );
                   })()}
 
@@ -1634,7 +1640,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                       className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white border border-gray-300 hover:border-primary hover:bg-primary/20 flex items-center justify-center cursor-pointer transition-colors group ring-1 ring-white"
                       title={c.photos && c.photos.length > 0 ? "Pridať ďalšiu fotku" : "Pridať fotku miesta (brána, číslo domu…)"}>
                       <Camera className="w-2.5 h-2.5 text-gray-400 group-hover:text-primary transition-colors" />
-                      <input type="file" accept="image/*,image/heic,image/heif" capture="environment" className="hidden"
+                      <input type="file" accept="image/*,image/heic,image/heif" className="hidden"
                         onChange={(e) => handleAddPhoto(c.id, e)} />
                     </label>
                   )}
@@ -2959,13 +2965,8 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                   {photos.length < 3 && !readOnly && (
                     <label className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-white text-xs font-bold cursor-pointer transition-colors">
                       <Camera className="w-3.5 h-3.5" /> Pridať
-                      <input type="file" accept="image/*,image/heic,image/heif" capture="environment" className="hidden"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          e.target.value = "";
-                          await processPhotoFile(photoLightbox.clientId, file, true);
-                        }} />
+                      <input type="file" accept="image/*,image/heic,image/heif" className="hidden"
+                        onChange={(e) => handleAddPhoto(photoLightbox.clientId, e, true)} />
                     </label>
                   )}
                   {!readOnly && (

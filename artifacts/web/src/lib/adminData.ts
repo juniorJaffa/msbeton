@@ -503,7 +503,14 @@ function stampArray<T extends { id: string; updatedAt?: string; types?: unknown[
   });
 }
 
+// Revízny počítač — zabraňuje stale GET odpovedi prepísať čerstvo uložené dáta klientov/objednávok.
+// Každé volanie syncFromServer dostane vlastný myRevision. Ak medzičasom štartoval novší sync
+// (napr. po saveClients PUT), starý sync opustí clients/orders sekciu — čím zabrání bliknutiu
+// čerstvo nahranej fotky alebo straty nových objednávok.
+let _syncRevision = 0;
+
 export async function syncFromServer(): Promise<void> {
+  const myRevision = ++_syncRevision;
   const hasData = (v: unknown) => v !== null && v !== undefined && !(Array.isArray(v) && v.length === 0);
   const hasDataOrEmpty = (v: unknown) => v !== null && v !== undefined && Array.isArray(v);
   let updated = false;
@@ -535,9 +542,13 @@ export async function syncFromServer(): Promise<void> {
         adminApi.getClients(),
         adminApi.getOrders(),
       ]);
-      if (hasDataOrEmpty(clients?.data)) { saveData("msbeton_clients", clients!.data); updated = true; }
-      else { const local = loadData<Client[]>("msbeton_clients", []); if (local.length > 0) adminApi.saveClients(local); }
-      if (hasDataOrEmpty(orders?.data)) { saveData("msbeton_orders", orders!.data); updated = true; }
+      // Ochrana pred stale sync: ak medzičasom štartoval novší sync (napr. po saveClients PUT),
+      // nechaj clients/orders bez prepísania — novší sync dostane aktuálne dáta z DB.
+      if (myRevision === _syncRevision) {
+        if (hasDataOrEmpty(clients?.data)) { saveData("msbeton_clients", clients!.data); updated = true; }
+        else { const local = loadData<Client[]>("msbeton_clients", []); if (local.length > 0) adminApi.saveClients(local); }
+        if (hasDataOrEmpty(orders?.data)) { saveData("msbeton_orders", orders!.data); updated = true; }
+      }
     } catch {
     }
   }
