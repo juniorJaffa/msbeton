@@ -671,9 +671,6 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
       const exifDate = extractExifDateTime(buf);
       const capturedAt = exifDate ?? new Date().toISOString();
       const [compressed] = await Promise.all([compressClientPhoto(file, buf)]);
-      const client = clients.find(c => c.id === clientId);
-      const existing = client?.photos ?? [];
-      if (existing.length >= 3) return;
 
       // Ak EXIF nemá GPS → spýtaj sa prehliadač na aktuálnu polohu (browser zobrazí permission popup)
       if (!gpsCoords && navigator.geolocation) {
@@ -686,18 +683,31 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
         });
       }
 
-      const updates: Partial<Client> = { photos: [...existing, compressed] };
+      // KRITICKÉ: čítaj čerstvé dáta z adminData (nie z closure `clients`) — počas async ops (geolocation
+      // 8s + Nominatim) môže syncFromServer prepísať `clients` state. Stale closure → stary updatedAt →
+      // server merge preferuje novšiu DB verziu → foto vymizne. Riešenie: vždy čítaj z localStorage
+      // a stamp updatedAt aby bol náš záznam winner v mergeItems.
+      const freshClients = adminData.getClients();
+      const freshClient = freshClients.find(c => c.id === clientId);
+      const existing = freshClient?.photos ?? [];
+      if (existing.length >= 3) return;
+
+      const updates: Partial<Client> = {
+        photos: [...existing, compressed],
+        updatedAt: new Date().toISOString(), // stamp → mergeItems nás uprednostní pred starším DB záznamom
+      };
       if (gpsCoords) {
         const place = await nominatimReverse(gpsCoords.lat, gpsCoords.lng);
         updates.locationPhoto = { lat: gpsCoords.lat, lng: gpsCoords.lng, capturedAt, place };
       } else {
         // Bez GPS — uložíme aspoň dátum fotky; zachovaj existujúce GPS ak sú
-        const prevLoc = client?.locationPhoto;
+        const prevLoc = freshClient?.locationPhoto;
         updates.locationPhoto = prevLoc?.lat !== undefined
           ? { ...prevLoc, capturedAt }
           : { capturedAt };
       }
-      update(clientId, updates);
+      // Uložíme priamo z freshClients (nie cez stale `update()` closure) → ochrana pred prepísaním
+      save(freshClients.map(c => c.id === clientId ? { ...c, ...updates } : c));
       if (fromLightbox) setPhotoLightbox({ clientId, index: existing.length });
     } catch (err) { console.error("Photo compress failed", err); }
   };
