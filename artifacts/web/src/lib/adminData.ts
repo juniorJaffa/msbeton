@@ -452,7 +452,13 @@ function loadData<T>(key: string, defaults: T): T {
   }
 }
 
+// In-memory cache pre klientov — prežije zlyhanie localStorage (Safari iOS QuotaExceededError).
+// Aktualizovaný vždy keď saveData("msbeton_clients") prebehne — aj keď localStorage write zlyhá.
+// Vďaka tomu druhá fotka vždy vidí prvú, aj keď localStorage neobsahuje photo_1.
+let _clientsMemCache: Client[] | null = null;
+
 function saveData<T>(key: string, data: T): void {
+  if (key === "msbeton_clients") _clientsMemCache = data as unknown as Client[];
   try {
     localStorage.setItem(key, JSON.stringify(data));
   } catch {
@@ -595,7 +601,9 @@ export const adminData = {
     trackSave("services", adminApi.saveServices(stamped));
   },
 
-  getClients: (): Client[] => ensureOwner(loadData("msbeton_clients", DEFAULT_CLIENTS)),
+  // Čítaj z in-memory cache (ak existuje) — prežije QuotaExceededError, zaistí konzistentné
+  // poradie fotiek pri rýchlom nahrávaní (photo 2 vždy vidí photo 1 aj bez localStorage).
+  getClients: (): Client[] => ensureOwner(_clientsMemCache ?? loadData("msbeton_clients", DEFAULT_CLIENTS)),
   saveClients: (data: Client[]) => {
     if (readerBlocked()) return;
     const safe = stampArray(ensureOwner(data), "msbeton_clients");
