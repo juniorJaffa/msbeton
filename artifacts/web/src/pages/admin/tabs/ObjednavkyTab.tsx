@@ -65,10 +65,11 @@ function PaymentsModal({ order, clientDepositBalance, onClose, onAdd, onDelete, 
   readOnly: boolean;
 }) {
   const todayStr = new Date().toISOString().slice(0, 10);
-  const [date,   setDate]   = useState(todayStr);
-  const [method, setMethod] = useState<"hotovost" | "zaloha">("hotovost");
-  const [amount, setAmount] = useState("");
-  const [err,    setErr]    = useState("");
+  const [date,        setDate]        = useState(todayStr);
+  const [method,      setMethod]      = useState<"hotovost" | "zaloha">("hotovost");
+  const [amount,      setAmount]      = useState("");
+  const [err,         setErr]         = useState("");
+  const [lastAddedId, setLastAddedId] = useState<string | null>(null);
 
   // ESC zatvára modal
   useEffect(() => {
@@ -118,10 +119,12 @@ function PaymentsModal({ order, clientDepositBalance, onClose, onAdd, onDelete, 
       setErr(`Max ${skEur(availableDeposit)} € (zostatok zálohy)`);
       return;
     }
+    const newId = crypto.randomUUID();
     onAdd(
-      { id: crypto.randomUUID(), at: new Date(date + "T12:00:00").toISOString(), createdAt: new Date().toISOString(), method, amount: amt, by: getAdminDeviceLabel() || "admin" },
+      { id: newId, at: new Date(date + "T12:00:00").toISOString(), createdAt: new Date().toISOString(), method, amount: amt, by: getAdminDeviceLabel() || "admin" },
       method === "zaloha"
     );
+    setLastAddedId(newId);
     setAmount("");
     setErr("");
   };
@@ -138,6 +141,12 @@ function PaymentsModal({ order, clientDepositBalance, onClose, onAdd, onDelete, 
         100% { background: transparent; transform: scale(1); padding: 0; box-shadow: none; }
       }
       .pm-val-flash { animation: pm-val-flash 1.4s cubic-bezier(0.22,1,0.36,1) both; }
+      @keyframes pm-card-flash {
+        0%   { box-shadow: 0 0 0 3px rgba(234,179,8,0.9), 0 0 16px 6px rgba(253,224,71,0.55); transform: scale(1.025); }
+        40%  { box-shadow: 0 0 0 2px rgba(234,179,8,0.5), 0 0 8px 2px rgba(253,224,71,0.3); transform: scale(1.01); }
+        100% { box-shadow: none; transform: scale(1); }
+      }
+      .pm-card-flash { animation: pm-card-flash 1.6s cubic-bezier(0.22,1,0.36,1) both; }
     `}</style>
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
         {/* Header */}
@@ -173,7 +182,7 @@ function PaymentsModal({ order, clientDepositBalance, onClose, onAdd, onDelete, 
             <div className="text-xs text-gray-400 italic text-center py-3">Žiadne úhrady doplatku</div>
           )}
           {[...payments].reverse().sort((a, b) => b.at.localeCompare(a.at)).map((p, i) => (
-            <div key={p.id} className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md ${p.method === "zaloha" ? "bg-amber-50 border border-amber-100" : "bg-gray-50 border border-gray-100"}`}>
+            <div key={p.id} className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md ${p.method === "zaloha" ? "bg-amber-50 border border-amber-100" : "bg-gray-50 border border-gray-100"}${p.id === lastAddedId ? " pm-card-flash" : ""}`}>
               <div className="flex flex-col shrink-0 w-[72px]">
                 <span className="text-gray-400 text-[10px] tabular-nums">{fmtD(p.at)}</span>
                 {p.createdAt && <span className="text-gray-300 text-[9px] tabular-nums font-semibold">{fmtT(p.createdAt)}</span>}
