@@ -77,7 +77,7 @@ export default function StatistikyTab() {
   }
   const maxWeek = Math.max(...weeks.map(w => w.count), 1);
 
-  const fmtEur = (n: number) => `${n.toLocaleString("sk", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+  const fmtEur = (n: number) => `${n.toLocaleString("sk", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
   const pct = (n: number) => total > 0 ? Math.round((n / total) * 100) : 0;
 
   // ── Mesačné uzávierky ──

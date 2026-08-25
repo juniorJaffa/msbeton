@@ -1554,7 +1554,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
     if (ds === yesterdayStr) return `Včera ${time}`;
     return `${d.toLocaleDateString("sk-SK")} ${time}`;
   };
-  const fmtEur = (n: number) => n.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+  const fmtEur = (n: number) => n.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
   const tabLabel: Record<Order["tab"], string> = { pumpa: "Pumpa", mix: "Mix", vlastnadoprava: "Vl. doprava" };
   const activeFilters = [filterStatus !== "vsetky", filterTab !== "vsetky", filterPriceMode !== "vsetky", filterChannel !== "vsetky", filterZaloha !== "vsetky", !!clientIdActive, !!search, !!(dateFrom || dateTo)].filter(Boolean).length;
   const sortedCount = sorted.length;

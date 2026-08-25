@@ -86,7 +86,7 @@ function fmtTimeShort(iso: string): string {
   return `${d.getDate()}.${d.getMonth() + 1}. ${hh}:${mm}`;
 }
 function fmtEur(v: number, decimals = 2) {
-  return v.toLocaleString("sk-SK", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  return v.toLocaleString("sk-SK", { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + " €";
 }
 
 /** Sticky day-group header — na mobile sa pri scrollovaní zmodrí (bg-secondary) */
@@ -136,7 +136,7 @@ function DayGroupHeader({
               ? "bg-primary/25 text-primary border border-primary/40 sm:bg-teal-100 sm:text-teal-700 sm:border-transparent"
               : "bg-teal-100 text-teal-700"
           }`}>
-            💸 {fmtEur(dayPayout.sum, 0)} €
+            💸 {fmtEur(dayPayout.sum, 0)}
             {dayPayout.count > 1 && <span className="opacity-70">·{dayPayout.count}</span>}
           </span>
         )}
@@ -833,12 +833,12 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
 
           {/* Súhrn — kompaktný inline bar */}
           <div className="flex items-center gap-2 flex-wrap bg-white/90 border border-gray-100 rounded-lg px-3 py-1.5 w-fit">
-            <span className="text-teal-600 font-black tabular-nums text-sm shrink-0">+{fmtEur(depSummary.topup, 0)} €</span>
+            <span className="text-teal-600 font-black tabular-nums text-sm shrink-0">+{fmtEur(depSummary.topup, 0)}</span>
             <span className="text-gray-200 shrink-0">|</span>
-            <span className="text-red-500 font-black tabular-nums text-sm shrink-0">−{fmtEur(depSummary.payment, 0)} €</span>
+            <span className="text-red-500 font-black tabular-nums text-sm shrink-0">−{fmtEur(depSummary.payment, 0)}</span>
             <span className="text-gray-200 shrink-0">|</span>
             <span className={`font-black tabular-nums text-sm shrink-0 ${depSummary.net >= 0 ? "text-amber-600" : "text-red-500"}`}>
-              {depSummary.net >= 0 ? "+" : ""}{fmtEur(depSummary.net, 0)} €
+              {depSummary.net >= 0 ? "+" : ""}{fmtEur(depSummary.net, 0)}
             </span>
           </div>
 
@@ -859,7 +859,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     const isTopup = r.kind === "tx" && r.tx.type === "topup";
                     const isOrderUse = r.kind === "order";
                     const amountVal = r.kind === "tx" ? r.tx.amount : -r.amount;
-                    const amountStr = `${amountVal >= 0 ? "+" : "−"}${fmtEur(Math.abs(amountVal))} €`;
+                    const amountStr = `${amountVal >= 0 ? "+" : "−"}${fmtEur(Math.abs(amountVal))}`;
                     const amountCls = isTopup ? "text-teal-600" : "text-red-500";
                     const iconBg = isTopup ? "bg-teal-100 text-teal-600" : isOrderUse ? "bg-orange-100 text-orange-600" : "bg-red-100 text-red-500";
                     const rowIcon = isTopup ? <TrendingUp className="w-3 h-3" /> : isOrderUse ? <ShoppingCart className="w-3 h-3" /> : <Minus className="w-3 h-3" />;
@@ -1101,14 +1101,14 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                 {cashSummary.total > 0 && (
                   <>
                     <span className="text-gray-200 shrink-0">|</span>
-                    <span className="font-black tabular-nums text-xs text-gray-900 shrink-0">{fmtEur(cashSummary.total, 0)} €</span>
+                    <span className="font-black tabular-nums text-xs text-gray-900 shrink-0">{fmtEur(cashSummary.total, 0)}</span>
                   </>
                 )}
                 {cashSummary.dep > 0 && (
                   <>
                     <span className="text-gray-200 shrink-0">|</span>
                     <span className="text-[8px] font-black text-gray-400 shrink-0">záloha</span>
-                    <span className="font-black tabular-nums text-xs text-amber-600 shrink-0">{fmtEur(cashSummary.dep, 0)} €</span>
+                    <span className="font-black tabular-nums text-xs text-amber-600 shrink-0">{fmtEur(cashSummary.dep, 0)}</span>
                   </>
                 )}
                 {/* Pohľadávky FA — odoslaná + faktura */}
@@ -1116,7 +1116,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   <>
                     <span className="text-gray-200 shrink-0">|</span>
                     <span className="text-[8px] font-black text-gray-400 shrink-0" title={`${cashflowExtras.pohladavkyCount} faktúr čaká na platbu`}>pohľ.</span>
-                    <span className="font-black tabular-nums text-xs text-orange-600 shrink-0">{fmtEur(cashflowExtras.pohladavky, 0)} €</span>
+                    <span className="font-black tabular-nums text-xs text-orange-600 shrink-0">{fmtEur(cashflowExtras.pohladavky, 0)}</span>
                   </>
                 )}
               </div>
@@ -1126,13 +1126,13 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
               <div className="flex items-center gap-2 justify-end flex-wrap">
                 {cashflowExtras.totalDeposits > 0 && (
                   <span className="inline-flex items-center gap-1 text-[9px] bg-white/90 border border-gray-200 rounded-full px-2.5 py-1 font-medium text-gray-500" title="Celkový zostatok zálohy všetkých klientov (viazané peniaze)">
-                    🏦 <span className="font-black text-amber-600 tabular-nums">{fmtEur(cashflowExtras.totalDeposits, 0)} €</span>
+                    🏦 <span className="font-black text-amber-600 tabular-nums">{fmtEur(cashflowExtras.totalDeposits, 0)}</span>
                     <span className="text-gray-400">viazané</span>
                   </span>
                 )}
                 {cashflowExtras.trendPct !== null && cashflowExtras.todayPay > 0 && (
                   <span className={`inline-flex items-center gap-1 text-[9px] font-black bg-white/90 border border-gray-200 rounded-full px-2.5 py-1 ${cashflowExtras.trendPct >= 0 ? "text-teal-600" : "text-red-500"}`}
-                    title={`Dnes vyplatené vs. rovnaký deň minulý týždeň (${fmtEur(cashflowExtras.weekAgoPay, 0)} €)`}>
+                    title={`Dnes vyplatené vs. rovnaký deň minulý týždeň (${fmtEur(cashflowExtras.weekAgoPay, 0)})`}>
                     {cashflowExtras.trendPct >= 0 ? "↑" : "↓"}{Math.abs(cashflowExtras.trendPct)}% vs. −7d
                   </span>
                 )}
@@ -1160,7 +1160,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                       {label} sa vyplatilo
                     </span>
                     <div className={`flex items-center gap-2 font-black tabular-nums text-sm ${isToday ? "text-teal-800" : "text-blue-800"}`}>
-                      {fmtEur(dp.sum, 0)} €
+                      {fmtEur(dp.sum, 0)}
                       <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${isToday ? "bg-teal-200 text-teal-800" : "bg-blue-200 text-blue-800"}`}>
                         {dp.count} {dp.count === 1 ? "obj." : dp.count < 5 ? "obj." : "obj."}
                       </span>
@@ -1168,7 +1168,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   </div>
                   {dp.count >= 2 && (
                     <span className={`text-[9px] font-black px-2 py-1 rounded-full shrink-0 ${isToday ? "bg-teal-100 text-teal-700" : "bg-blue-100 text-blue-700"}`}>
-                      priemer {fmtEur(dp.sum / dp.count, 0)} €/obj.
+                      priemer {fmtEur(dp.sum / dp.count, 0)}/obj.
                     </span>
                   )}
                 </div>
@@ -1187,14 +1187,14 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   {todayDp && todayDp.count > 0 && (
                     <div className="flex items-center gap-1.5">
                       <span className="text-[10px] font-black text-teal-700">Dnes</span>
-                      <span className="font-black tabular-nums text-sm text-teal-800">{fmtEur(todayDp.sum, 0)} €</span>
+                      <span className="font-black tabular-nums text-sm text-teal-800">{fmtEur(todayDp.sum, 0)}</span>
                       <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-200 text-teal-800">{todayDp.count} obj.</span>
                     </div>
                   )}
                   {yestDp && yestDp.count > 0 && (
                     <div className="flex items-center gap-1.5">
                       <span className="text-[10px] font-bold text-blue-700">Včera</span>
-                      <span className="font-black tabular-nums text-sm text-blue-800">{fmtEur(yestDp.sum, 0)} €</span>
+                      <span className="font-black tabular-nums text-sm text-blue-800">{fmtEur(yestDp.sum, 0)}</span>
                       <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-200 text-blue-800">{yestDp.count} obj.</span>
                     </div>
                   )}
@@ -1295,9 +1295,25 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               )}
                             </div>
                             <div className="flex items-center gap-1 shrink-0 mt-0.5">
-                              <span className={`inline-flex items-center text-[9px] font-bold px-2 py-0.5 rounded-full ${STATUS_COLOR[o.status] ?? "bg-gray-100 text-gray-500"}`}>
-                                {STATUS_LABEL[o.status] ?? o.status}
-                              </span>
+                              <div className="flex flex-col items-end gap-0.5">
+                                <span className={`inline-flex items-center text-[9px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${STATUS_COLOR[o.status] ?? "bg-gray-100 text-gray-500"}`}>
+                                  {STATUS_LABEL[o.status] ?? o.status}
+                                </span>
+                                {(o.status === "vyuctovana" || o.status === "vyplatena") && (() => {
+                                  const hasZ = (depUsed ?? 0) > 0 || (o.payments ?? []).some(p => p.method === "zaloha");
+                                  const dMethods = [...new Set((o.payments ?? []).filter(p => p.method !== "zaloha").map(p => p.method))];
+                                  return (hasZ || dMethods.length > 0) ? (
+                                    <div className="flex items-center gap-0.5 flex-wrap justify-end">
+                                      {hasZ && <span className="text-[7px] text-amber-600 font-bold bg-amber-50 border border-amber-200 px-1 rounded whitespace-nowrap">💰 zál.</span>}
+                                      {dMethods.map(m => (
+                                        <span key={m} className="text-[7px] text-green-700 font-bold bg-green-50 border border-green-200 px-1 rounded whitespace-nowrap">
+                                          {m === "hotovost" ? "Hot." : m === "prevod" ? "Prev." : m}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  ) : null;
+                                })()}
+                              </div>
                               {onGoToOrder && !isDeleted && <ChevronRight className="w-3.5 h-3.5 text-gray-300" />}
                             </div>
                           </div>
@@ -1320,7 +1336,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               {(o.totalQty ?? o.quantity) ? <span className="text-gray-400 ml-1">{o.totalQty ?? o.quantity} m³</span> : null}
                             </span>
                             {(() => { const invoice = o.totalSDph ?? o.totalBezDph; return invoice != null && invoice > 0 ? (
-                              <span className="font-black tabular-nums text-base text-secondary shrink-0">{fmtEur(invoice)} €</span>
+                              <span className="font-black tabular-nums text-base text-secondary shrink-0">{fmtEur(invoice)}</span>
                             ) : null; })()}
                           </div>
                           {/* R2c: Lokalita + km */}
@@ -1339,7 +1355,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                 {o.depositUsed && o.depositUsed > 0 && (
                                   <>
                                     <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                                      záloha {fmtEur(o.depositUsed)} €
+                                      záloha {fmtEur(o.depositUsed)}
                                     </span>
                                     {(() => {
                                       const total = o.totalSDph ?? o.totalBezDph ?? 0;
@@ -1350,7 +1366,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                       const remaining = Math.max(0, doplatokNeeded - payTotal);
                                       return doplatokNeeded > 0.5 && !isDoplatokPaid ? (
                                         <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">
-                                          nedoplatok {fmtEur(remaining)} €
+                                          nedoplatok {fmtEur(remaining)}
                                         </span>
                                       ) : (
                                         <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700">
@@ -1365,7 +1381,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               {(o.status === "vyplatena" || o.status === "vyuctovana") && o.paidAmount !== undefined && o.paidAmount > 0 && (
                                 <div className="flex items-center gap-1.5 shrink-0">
                                   <span className="text-[9px] text-gray-400 font-medium">zaplatené</span>
-                                  <span className="text-teal-600 font-black tabular-nums text-base">{fmtEur(o.paidAmount)} €</span>
+                                  <span className="text-teal-600 font-black tabular-nums text-base">{fmtEur(o.paidAmount)}</span>
                                   {Math.abs(o.paidAmount - (o.totalSDph ?? 0)) > 0.01 && (
                                     <span className={`text-[9px] font-bold tabular-nums px-1 py-0.5 rounded ${o.paidAmount > (o.totalSDph ?? 0) ? "bg-teal-50 text-teal-600" : "bg-red-50 text-red-500"}`}>
                                       {o.paidAmount > (o.totalSDph ?? 0) ? "+" : ""}{fmtEur(o.paidAmount - (o.totalSDph ?? 0))}
@@ -1398,32 +1414,32 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                       <span className="flex items-center gap-1 min-w-0 flex-wrap">
                                         <span className={`font-bold px-1.5 py-0.5 rounded shrink-0 ${STATUS_COLOR[h.status] ?? "bg-gray-100 text-gray-500"}`}>{STATUS_LABEL[h.status] ?? h.status}</span>
                                         <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
-                                        <span className="text-amber-700 font-black tabular-nums whitespace-nowrap">💰 {h.amount != null ? fmtEur(h.amount) : "?"} €</span>
+                                        <span className="text-amber-700 font-black tabular-nums whitespace-nowrap">💰 {h.amount != null ? fmtEur(h.amount) : "?"}</span>
                                         <span className="text-amber-500 font-medium shrink-0 text-[7px] uppercase tracking-wide">záloha</span>
                                       </span>
                                     ) : (
                                       <span className="flex items-center gap-1 min-w-0 flex-wrap">
                                         <span className={`font-bold px-1.5 py-0.5 rounded shrink-0 ${STATUS_COLOR[h.status] ?? "bg-gray-100 text-gray-500"}`}>{STATUS_LABEL[h.status] ?? h.status}</span>
                                         <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
-                                        <span className="text-green-700 font-black tabular-nums whitespace-nowrap">+{h.amount != null ? fmtEur(h.amount) : "?"} €</span>
+                                        <span className="text-green-700 font-black tabular-nums whitespace-nowrap">+{h.amount != null ? fmtEur(h.amount) : "?"}</span>
                                         {h.method && <span className="text-gray-400 font-medium shrink-0">({h.method === "hotovost" ? "Hot." : h.method === "prevod" ? "Prev." : h.method})</span>}
                                       </span>
                                     )
                                   ) : h.type === "payment_delete" ? (
                                     <span className="flex items-center gap-1 min-w-0">
                                       <span className="w-2 h-2 rounded-full bg-red-400 shrink-0" />
-                                      <span className="text-red-600 font-black tabular-nums whitespace-nowrap">−{h.amount !== undefined ? fmtEur(h.amount) : "?"} €</span>
+                                      <span className="text-red-600 font-black tabular-nums whitespace-nowrap">−{h.amount !== undefined ? fmtEur(h.amount) : "?"}</span>
                                       <span className="text-gray-400 font-medium">zrušené</span>
                                     </span>
                                   ) : h.type === "deposit_pay" ? (
                                     <span className="flex items-center gap-1 min-w-0">
                                       <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
-                                      <span className="text-amber-700 font-black tabular-nums whitespace-nowrap">💰 −{h.amount !== undefined ? fmtEur(h.amount) : "?"} €</span>
+                                      <span className="text-amber-700 font-black tabular-nums whitespace-nowrap">💰 −{h.amount !== undefined ? fmtEur(h.amount) : "?"}</span>
                                     </span>
                                   ) : h.type === "deposit_reversal" ? (
                                     <span className="flex items-center gap-1 min-w-0">
                                       <span className="w-2 h-2 rounded-full bg-blue-300 shrink-0" />
-                                      <span className="text-blue-600 font-black whitespace-nowrap">↩ +{h.amount !== undefined ? fmtEur(h.amount) : "?"} €</span>
+                                      <span className="text-blue-600 font-black whitespace-nowrap">↩ +{h.amount !== undefined ? fmtEur(h.amount) : "?"}</span>
                                     </span>
                                   ) : (
                                     <>
@@ -1431,7 +1447,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                         {STATUS_LABEL[h.status] ?? h.status}
                                       </span>
                                       {h.paidAmount !== undefined && h.paidAmount > 0 && (
-                                        <span className="text-teal-600 tabular-nums font-semibold whitespace-nowrap">{fmtEur(h.paidAmount, 0)} €</span>
+                                        <span className="text-teal-600 tabular-nums font-semibold whitespace-nowrap">{fmtEur(h.paidAmount, 0)}</span>
                                       )}
                                     </>
                                   )}
@@ -1531,11 +1547,11 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             </div>
                             {/* CELKOM + paidAmount + diff pod ním */}
                             <div className="text-right flex flex-col gap-0.5 items-end">
-                              <span className="font-black tabular-nums text-secondary text-sm whitespace-nowrap">{fmtEur(o.totalSDph ?? o.totalBezDph ?? 0)} €</span>
+                              <span className="font-black tabular-nums text-secondary text-sm whitespace-nowrap">{fmtEur(o.totalSDph ?? o.totalBezDph ?? 0)}</span>
                               {(o.status === "vyplatena" || o.status === "vyuctovana") && o.paidAmount !== undefined && o.paidAmount > 0 && (
                                 <div className="flex items-center gap-1 justify-end">
                                   <span className="text-[9px] text-gray-400">zap.</span>
-                                  <span className="text-teal-600 font-black tabular-nums text-xs whitespace-nowrap">{fmtEur(o.paidAmount)} €</span>
+                                  <span className="text-teal-600 font-black tabular-nums text-xs whitespace-nowrap">{fmtEur(o.paidAmount)}</span>
                                   {Math.abs(o.paidAmount - (o.totalSDph ?? 0)) > 0.01 && (
                                     <span className={`text-[9px] font-bold tabular-nums px-1 py-0.5 rounded ${o.paidAmount > (o.totalSDph ?? 0) ? "bg-teal-50 text-teal-600" : "bg-red-50 text-red-500"}`}>
                                       {o.paidAmount > (o.totalSDph ?? 0) ? "+" : ""}{fmtEur(o.paidAmount - (o.totalSDph ?? 0))}
@@ -1550,24 +1566,37 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                 <>
                                   <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-sm border leading-tight ${isPartialDep ? "bg-orange-100 text-orange-700 border-orange-200" : "bg-amber-100 text-amber-700 border-amber-200"}`}
                                     title={`Záloha pri obj.: ${depUsed.toFixed(2)} €${zalohaPaymentsSumH > 0.001 ? ` + platby zo zálohy: ${zalohaPaymentsSumH.toFixed(2)} €` : ""}`}>
-                                    💰 {fmtEur(totalZalohaUsed)} €
+                                    💰 {fmtEur(totalZalohaUsed)}
                                     {zalohaPaymentsSumH > 0.001 && <span className="opacity-70"> ({zalohaPaymentsSumH > 0.001 ? `+${fmtEur(zalohaPaymentsSumH)}` : ""})</span>}
                                   </span>
                                   {isPartialDep && hDoplatokNeeded > 0.01 && (
                                     <span className={`text-[8px] font-bold px-1 py-0.5 rounded-sm border leading-tight ${hFullyPaid ? "bg-teal-50 text-teal-600 border-teal-200" : "bg-red-50 text-red-600 border-red-200"}`}>
-                                      {hFullyPaid ? "✓ dopl." : `ned. ${fmtEur(hRemaining)} €`}
+                                      {hFullyPaid ? "✓ dopl." : `ned. ${fmtEur(hRemaining)}`}
                                     </span>
                                   )}
                                 </>
                               ) : <span className="text-gray-300 text-[9px]">—</span>}
                             </div>
-                            {/* STAV — s prevStatus → */}
-                            <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${STATUS_COLOR[o.status] ?? "bg-gray-100 text-gray-500"}`}>
-                              {prevStatus && STATUS_LABEL[prevStatus] && (
-                                <span className="opacity-50 font-medium">{STATUS_LABEL[prevStatus]} →</span>
-                              )}
-                              {STATUS_LABEL[o.status] ?? o.status}
-                            </span>
+                            {/* STAV */}
+                            <div className="flex flex-col items-center gap-0.5">
+                              <span className={`inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap ${STATUS_COLOR[o.status] ?? "bg-gray-100 text-gray-500"}`}>
+                                {STATUS_LABEL[o.status] ?? o.status}
+                              </span>
+                              {(o.status === "vyuctovana" || o.status === "vyplatena") && (() => {
+                                const hasZ = (depUsed ?? 0) > 0 || (o.payments ?? []).some(p => p.method === "zaloha");
+                                const dMethods = [...new Set((o.payments ?? []).filter(p => p.method !== "zaloha").map(p => p.method))];
+                                return (hasZ || dMethods.length > 0) ? (
+                                  <div className="flex items-center gap-0.5 flex-wrap justify-center">
+                                    {hasZ && <span className="text-[8px] text-amber-600 font-bold bg-amber-50 border border-amber-200 px-1 rounded whitespace-nowrap">💰 zál.</span>}
+                                    {dMethods.map(m => (
+                                      <span key={m} className="text-[8px] text-green-700 font-bold bg-green-50 border border-green-200 px-1 rounded whitespace-nowrap">
+                                        {m === "hotovost" ? "Hot." : m === "prevod" ? "Prev." : m}
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : null;
+                              })()}
+                            </div>
                             {/* KTO — menej viditeľný */}
                             <DeviceLabel label={kto} className="text-[10px] truncate opacity-50" />
                             {onGoToOrder && !isDeleted ? <ChevronRight className="w-3.5 h-3.5 text-gray-300" /> : <span />}
@@ -1602,7 +1631,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                   </span>
                                 ) : (
                                   <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">
-                                    nedoplatok {fmtEur(Math.max(0, doplatokNeeded - payTotal), 0)} €
+                                    nedoplatok {fmtEur(Math.max(0, doplatokNeeded - payTotal), 0)}
                                   </span>
                                 );
                               })()}
@@ -1644,14 +1673,14 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                       <span className="flex items-center gap-1 min-w-0 flex-wrap">
                                         <span className={`font-bold px-1.5 py-0.5 rounded shrink-0 ${STATUS_COLOR[h.status] ?? "bg-gray-100 text-gray-500"}`}>{STATUS_LABEL[h.status] ?? h.status}</span>
                                         <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
-                                        <span className="text-amber-700 font-black tabular-nums whitespace-nowrap">💰 {h.amount != null ? fmtEur(h.amount) : "?"} €</span>
+                                        <span className="text-amber-700 font-black tabular-nums whitespace-nowrap">💰 {h.amount != null ? fmtEur(h.amount) : "?"}</span>
                                         <span className="text-amber-500 font-medium shrink-0 text-[7px] uppercase tracking-wide">záloha</span>
                                       </span>
                                     ) : (
                                       <span className="flex items-center gap-1 min-w-0 flex-wrap">
                                         <span className={`font-bold px-1.5 py-0.5 rounded shrink-0 ${STATUS_COLOR[h.status] ?? "bg-gray-100 text-gray-500"}`}>{STATUS_LABEL[h.status] ?? h.status}</span>
                                         <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
-                                        <span className="text-green-700 font-black tabular-nums whitespace-nowrap">+{h.amount != null ? fmtEur(h.amount) : "?"} €</span>
+                                        <span className="text-green-700 font-black tabular-nums whitespace-nowrap">+{h.amount != null ? fmtEur(h.amount) : "?"}</span>
                                         {h.method && <span className="text-gray-400 font-medium shrink-0">({h.method === "hotovost" ? "Hot." : h.method === "prevod" ? "Prev." : h.method})</span>}
                                       </span>
                                     )
@@ -1659,18 +1688,18 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                     <span className="flex items-center gap-1 min-w-0">
                                       <span className={`font-bold px-1.5 py-0.5 rounded shrink-0 ${STATUS_COLOR[h.status] ?? "bg-gray-100 text-gray-500"}`}>{STATUS_LABEL[h.status] ?? h.status}</span>
                                       <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
-                                      <span className="text-red-600 font-black tabular-nums whitespace-nowrap">−{h.amount != null ? fmtEur(h.amount) : "?"} €</span>
+                                      <span className="text-red-600 font-black tabular-nums whitespace-nowrap">−{h.amount != null ? fmtEur(h.amount) : "?"}</span>
                                       <span className="text-gray-400 font-medium">zrušené</span>
                                     </span>
                                   ) : h.type === "deposit_pay" ? (
                                     <span className="flex items-center gap-1 min-w-0">
                                       <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
-                                      <span className="text-amber-700 font-black tabular-nums whitespace-nowrap">💰 −{h.amount != null ? fmtEur(h.amount) : "?"} €</span>
+                                      <span className="text-amber-700 font-black tabular-nums whitespace-nowrap">💰 −{h.amount != null ? fmtEur(h.amount) : "?"}</span>
                                     </span>
                                   ) : h.type === "deposit_reversal" ? (
                                     <span className="flex items-center gap-1 min-w-0">
                                       <span className="w-1.5 h-1.5 rounded-full bg-blue-300 shrink-0" />
-                                      <span className="text-blue-600 font-black whitespace-nowrap">↩ +{h.amount != null ? fmtEur(h.amount) : "?"} €</span>
+                                      <span className="text-blue-600 font-black whitespace-nowrap">↩ +{h.amount != null ? fmtEur(h.amount) : "?"}</span>
                                     </span>
                                   ) : (
                                     <>
@@ -1678,7 +1707,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                         {STATUS_LABEL[h.status] ?? h.status}
                                       </span>
                                       {h.paidAmount !== undefined && h.paidAmount > 0 && (
-                                        <span className="text-teal-600 tabular-nums font-semibold whitespace-nowrap">{fmtEur(h.paidAmount, 0)} €</span>
+                                        <span className="text-teal-600 tabular-nums font-semibold whitespace-nowrap">{fmtEur(h.paidAmount, 0)}</span>
                                       )}
                                     </>
                                   )}
