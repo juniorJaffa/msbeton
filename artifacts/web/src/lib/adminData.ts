@@ -168,8 +168,10 @@ export interface StatusHistoryEntry {
   changedAt: string;        // ISO timestamp
   changedBy: string;        // getAdminDeviceLabel() alebo "systém" / meno klienta
   paidAmount?: number;      // len pri vyplatena
-  type?: "status" | "note"; // "note" = zmena poznámky (nie zmena statusu)
+  type?: "status" | "note" | "payment_add" | "payment_delete" | "deposit_pay" | "deposit_reversal";
   note?: string;            // text poznámky (len ak type === "note")
+  amount?: number;          // pre payment_add/delete/deposit_pay/deposit_reversal
+  method?: string;          // pre payment_add: "hotovost" | "zaloha" | "prevod" | "ine"
 }
 
 export interface PaymentEntry {

@@ -1187,6 +1187,20 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
       };
     });
     adminData.saveClients(updatedClients);
+    // Finančný záznam — záloha odpočítaná (pred updateStatus ktorý pridá Vyplatená entry)
+    const freshForDep = adminData.getOrders();
+    const withDepHist = freshForDep.map(o => {
+      if (o.id !== orderId) return o;
+      const depHistEntry: StatusHistoryEntry = {
+        status: o.status,
+        changedAt: now,
+        changedBy: getAdminDeviceLabel() || "admin",
+        type: "deposit_pay",
+        amount: depositAmount,
+      };
+      return { ...o, statusHistory: [...(o.statusHistory ?? []), depHistEntry], updatedAt: now };
+    });
+    adminData.saveOrders(withDepHist);
     // paidAmount = celá suma objednávky, depositUsed = koľko zo zálohy
     updateStatus(orderId, "vyplatena", orderTotal, depositAmount);
   };
@@ -1224,11 +1238,19 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
     const freshOrders2 = adminData.getOrders();
     save(freshOrders2.map(o => {
       if (o.id !== orderId) return o;
-      const entryWithPrev: StatusHistoryEntry = { ...entry, prevStatus: o.status };
+      // Finančný záznam — záloha vrátená
+      const reversalHistEntry: StatusHistoryEntry = {
+        status: o.status,
+        changedAt: now,
+        changedBy: getAdminDeviceLabel() || "admin",
+        type: "deposit_reversal",
+        amount: depositUsed,
+      };
+      const statusEntry: StatusHistoryEntry = { ...entry, prevStatus: o.status };
       // Vymaž depositUsed, paidAmount AJ payments[] — staré platby z predch. cyklu by falošne "Plne uhradené"
       const { depositUsed: _d, paidAmount: _p, payments: _pay, ...rest } = o;
       void _d; void _p; void _pay;
-      return { ...rest, status: newStatus, statusHistory: [...(o.statusHistory ?? []), entryWithPrev], updatedAt: now };
+      return { ...rest, status: newStatus, statusHistory: [...(o.statusHistory ?? []), reversalHistEntry, statusEntry], updatedAt: now };
     }));
     setDepositReversal(null);
   };
@@ -1268,9 +1290,19 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
       const doplatokPaid = newPayments.reduce((s, p) => s + p.amount, 0);
       const doplatokTotal = Math.max(0, (o.totalSDph ?? 0) - depositUsed);
       const isFullyPaid = doplatokPaid >= doplatokTotal - 0.01;
-      const updates: Partial<Order> = { payments: newPayments, updatedAt: now };
+      // Finančný záznam v histórii
+      const payHistEntry: StatusHistoryEntry = {
+        status: o.status,
+        changedAt: now,
+        changedBy: getAdminDeviceLabel() || "admin",
+        type: "payment_add",
+        amount: entry.amount,
+        method: deductFromDeposit ? "zaloha" : entry.method,
+      };
+      const newHist = [...(o.statusHistory ?? []), payHistEntry];
+      const updates: Partial<Order> = { payments: newPayments, updatedAt: now, statusHistory: newHist };
       if (isFullyPaid && o.status !== "vyplatena") {
-        const histEntry: StatusHistoryEntry = {
+        const statusHistEntry: StatusHistoryEntry = {
           status: "vyplatena",
           prevStatus: o.status,
           changedAt: now,
@@ -1279,7 +1311,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
         };
         Object.assign(updates, {
           status: "vyplatena" as const,
-          statusHistory: [...(o.statusHistory ?? []), histEntry],
+          statusHistory: [...newHist, statusHistEntry],
         });
       }
       return { ...o, ...updates };
@@ -1319,17 +1351,38 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
     const freshOrders = adminData.getOrders();
     save(freshOrders.map(o => {
       if (o.id !== orderId) return o;
+      const deletedPay = (o.payments ?? []).find(p => p.id === paymentId);
       const newPayments = (o.payments ?? []).filter(p => p.id !== paymentId);
       const payTotal = newPayments.reduce((s, p) => s + p.amount, 0);
       const depositUsed = o.depositUsed ?? 0;
       const doplatokTotal = Math.max(0, (o.totalSDph ?? 0) - depositUsed);
       const wasAutoVyplatena = o.status === "vyplatena" && payTotal < doplatokTotal - 0.01;
+      // Finančný záznam — vymazanie platby
+      const delHistEntry: StatusHistoryEntry = {
+        status: o.status,
+        changedAt: now,
+        changedBy: getAdminDeviceLabel() || "admin",
+        type: "payment_delete",
+        amount: deletedPay?.amount,
+        method: deletedPay?.method,
+      };
       const updates: Partial<Order> = {
         payments: newPayments.length ? newPayments : undefined,
         updatedAt: now,
+        statusHistory: [...(o.statusHistory ?? []), delHistEntry],
       };
       if (wasAutoVyplatena) {
-        Object.assign(updates, { status: "vyuctovana" as const, paidAmount: undefined });
+        const revertEntry: StatusHistoryEntry = {
+          status: "vyuctovana",
+          prevStatus: "vyplatena",
+          changedAt: now,
+          changedBy: getAdminDeviceLabel() || "admin",
+        };
+        Object.assign(updates, {
+          status: "vyuctovana" as const,
+          paidAmount: undefined,
+          statusHistory: [...(o.statusHistory ?? []), delHistEntry, revertEntry],
+        });
       }
       return { ...o, ...updates };
     }));
@@ -2142,13 +2195,13 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                         <>
                           {/* Badge: stav doplatku */}
                           {isFullyPaid ? (
-                            /* Doplatok plne uhradený — zelené tlačidlo s históriou */
+                            /* Doplatok plne uhradený — kompaktný zelený chip s históriou */
                             <button onClick={e => { e.stopPropagation(); setPaymentsModal(o.id); }}
                               title="Zobraziť úhrady doplatku"
-                              className="mt-0.5 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-black bg-green-600 text-white rounded hover:bg-green-700 transition-all cursor-pointer shadow-sm">
+                              className="mt-0.5 inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold bg-green-600 text-white rounded-sm hover:bg-green-700 transition-all cursor-pointer shadow-sm border border-green-700/20">
                               <span>✓ Doplatok uhradený</span>
                               {(o.payments?.length ?? 0) > 0 && (
-                                <span className="bg-white/20 rounded px-1 text-[10px]">{o.payments!.length}×</span>
+                                <span className="bg-white/25 rounded px-0.5">{o.payments!.length}×</span>
                               )}
                             </button>
                           ) : canAddPayment ? (
@@ -2692,6 +2745,35 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                           <KtoChip label={h.changedBy} />
                                         </div>
                                       );
+                                      // Finančné záznamy — payment_add / payment_delete / deposit_pay / deposit_reversal
+                                      if (h.type === "payment_add" || h.type === "payment_delete" || h.type === "deposit_pay" || h.type === "deposit_reversal") {
+                                        const isAdd = h.type === "payment_add";
+                                        const isDel = h.type === "payment_delete";
+                                        const isDepPay = h.type === "deposit_pay";
+                                        const isDepRev = h.type === "deposit_reversal";
+                                        const fmtAmt = (v?: number) => v !== undefined ? v.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €" : "";
+                                        const methodLabel: Record<string, string> = { hotovost: "Hotovosť", zaloha: "Zo zálohy", prevod: "Prevod", ine: "Iné" };
+                                        const [label, dotCls, amtCls, bgCls] = isAdd
+                                          ? [`+ Doplatok uhradený${h.method ? ` (${methodLabel[h.method] ?? h.method})` : ""}`, "bg-green-500", "text-green-700 font-black", "bg-green-50/60 border-green-100"]
+                                          : isDel
+                                          ? [`− Platba zmazaná${h.method ? ` (${methodLabel[h.method] ?? h.method})` : ""}`, "bg-red-400", "text-red-600 font-black", "bg-red-50/60 border-red-100"]
+                                          : isDepPay
+                                          ? ["💰 Záloha odpočítaná", "bg-amber-400", "text-amber-700 font-black", "bg-amber-50/60 border-amber-100"]
+                                          : ["↩ Záloha vrátená", "bg-blue-300", "text-blue-700 font-black", "bg-blue-50/60 border-blue-100"];
+                                        return (
+                                          <div key={`s-${ei}`} className={`flex items-start gap-2 text-xs py-1.5 border-t ${bgCls} -mx-1 px-1 rounded-sm`}>
+                                            <span className="text-gray-500 tabular-nums text-[10px] shrink-0 w-24 mt-0.5">{fmtTs(entry.ts)}</span>
+                                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1 ${dotCls}`} />
+                                            <span className="flex-1 min-w-0 text-[11px]">
+                                              <span className="text-gray-700 font-semibold">{label}</span>
+                                              {h.amount !== undefined && (
+                                                <span className={`ml-1.5 tabular-nums ${amtCls}`}>{fmtAmt(h.amount)}</span>
+                                              )}
+                                            </span>
+                                            <KtoChip label={h.changedBy} />
+                                          </div>
+                                        );
+                                      }
                                       return (
                                         <div key={`s-${ei}`} className="flex items-start gap-2 text-xs py-1 border-t border-gray-50">
                                           <span className="text-gray-500 tabular-nums text-[10px] shrink-0 w-24 mt-0.5">{fmtTs(entry.ts)}</span>
