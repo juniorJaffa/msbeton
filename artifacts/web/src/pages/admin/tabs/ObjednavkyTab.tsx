@@ -2818,7 +2818,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                         const fmtAmt = (v?: number) => v !== undefined ? v.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €" : "";
                                         const methodLabel: Record<string, string> = { hotovost: "Hotovosť", zaloha: "Zo zálohy", prevod: "Prevod", ine: "Iné" };
                                         const [label, dotCls, amtCls, bgCls] = isAdd
-                                          ? [`+ Doplatok uhradený${h.method ? ` (${methodLabel[h.method] ?? h.method})` : ""}`, "bg-green-500", "text-green-700 font-black", "bg-green-50/60 border-green-100"]
+                                          ? [`+ Doplatok${h.method ? ` (${methodLabel[h.method] ?? h.method})` : ""}`, "bg-green-500", "text-green-700 font-black", "bg-green-50/60 border-green-100"]
                                           : isDel
                                           ? [`− Platba zmazaná${h.method ? ` (${methodLabel[h.method] ?? h.method})` : ""}`, "bg-red-400", "text-red-600 font-black", "bg-red-50/60 border-red-100"]
                                           : isDepPay
