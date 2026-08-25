@@ -1395,7 +1395,8 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   // Pridaj poznámku do statusHistory (type:"note") a aktualizuj o.note
   const addNoteHistory = (id: string, newNote: string) => {
     const now = new Date().toISOString();
-    save(orders.map(o => {
+    const freshOrders = adminData.getOrders(); // ANTI-STALE: čítaj fresh, nie closure
+    save(freshOrders.map(o => {
       if (o.id !== id) return o;
       const entry: StatusHistoryEntry = {
         type: "note",
@@ -2682,7 +2683,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                 { kind: "created" as const, ts: o.createdAt },
                                 ...hist.map(h => ({ kind: "status" as const, ts: h.changedAt, h })),
                                 ...depTxForOrder.map(tx => ({ kind: "deposit" as const, ts: tx.createdAt, tx })),
-                              ].sort((a, b) => a.ts.localeCompare(b.ts));
+                              ].sort((a, b) => b.ts.localeCompare(a.ts)); // DESC — newest first (rovnako ako globálna história)
 
                               const hasDepTx = depTxForOrder.length > 0;
 
