@@ -705,7 +705,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
 
       const updates: Partial<Client> = {
         photos: [...existing, compressed],
-        updatedAt: new Date().toISOString(), // stamp → mergeItems nás uprednostní pred starším DB záznamom
+        // updatedAt sa nastaví AŽ po Nominatim awaite → winner timestamp vždy novší ako concurrent saves
       };
       if (gpsCoords) {
         const place = await nominatimReverse(gpsCoords.lat, gpsCoords.lng);
@@ -717,10 +717,12 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
           ? { ...prevLoc, capturedAt }
           : { capturedAt };
       }
+      // Stamp AFTER all awaits — zaručí že náš save je winner v mergeItems aj keď Nominatim trvá 2-3s
+      updates.updatedAt = new Date().toISOString();
       // Photo history log
       const photoLogEntry: NonNullable<Client["photoHistory"]>[number] = {
         type: "upload",
-        at: updates.updatedAt!,
+        at: updates.updatedAt,
         note: gpsCoords
           ? `GPS ${gpsCoords.lat.toFixed(5)},${gpsCoords.lng.toFixed(5)}${updates.locationPhoto?.place ? ` (${updates.locationPhoto.place})` : ""}`
           : "Bez GPS",
