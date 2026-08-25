@@ -1250,7 +1250,14 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     const effDiscSluzby  = !effDiscCelkovo ? (c?.discountSluzby  || 0) : 0;
                     // Záloha — isPartial keď záloha nestačila a klient doplácal
                     const depUsed = o.depositUsed && o.depositUsed > 0 ? o.depositUsed : undefined;
+                    const zalohaPaymentsSumH = (o.payments ?? []).filter(p => p.method === "zaloha").reduce((s, p) => s + p.amount, 0);
+                    const totalZalohaUsed = (depUsed ?? 0) + zalohaPaymentsSumH;
                     const isPartialDep = depUsed !== undefined && o.paidAmount !== undefined && depUsed < o.paidAmount - 0.01;
+                    // Nedoplatok v História — zostatok po zalohe + platbách
+                    const hDoplatokNeeded = depUsed !== undefined ? Math.max(0, (o.totalSDph ?? 0) - depUsed) : 0;
+                    const hPaid = (o.payments ?? []).reduce((s, p) => s + p.amount, 0);
+                    const hRemaining = Math.max(0, hDoplatokNeeded - hPaid);
+                    const hFullyPaid = hDoplatokNeeded < 0.01 || hPaid >= hDoplatokNeeded - 0.01;
                     return (
                       <div key={o.id}
                         ref={o.id === focusOrderId ? scrollToFocused : undefined}
@@ -1540,13 +1547,21 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                 </div>
                               )}
                             </div>
-                            {/* ZÁLOHA — 💰 badge štýl ako Objednávky */}
-                            <div className="flex justify-end">
+                            {/* ZÁLOHA — 💰 badge + nedoplatok */}
+                            <div className="flex flex-col items-end gap-0.5">
                               {depUsed ? (
-                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-sm border leading-tight ${isPartialDep ? "bg-orange-100 text-orange-700 border-orange-200" : "bg-amber-100 text-amber-700 border-amber-200"}`}
-                                  title={isPartialDep ? `Záloha: ${depUsed.toFixed(2)} € + doplatok: ${((o.paidAmount ?? 0) - depUsed).toFixed(2)} €` : "Záloha"}>
-                                  💰 {isPartialDep ? "záloha+dopl." : `${fmtEur(depUsed)} €`}
-                                </span>
+                                <>
+                                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-sm border leading-tight ${isPartialDep ? "bg-orange-100 text-orange-700 border-orange-200" : "bg-amber-100 text-amber-700 border-amber-200"}`}
+                                    title={`Záloha pri obj.: ${depUsed.toFixed(2)} €${zalohaPaymentsSumH > 0.001 ? ` + platby zo zálohy: ${zalohaPaymentsSumH.toFixed(2)} €` : ""}`}>
+                                    💰 {fmtEur(totalZalohaUsed)} €
+                                    {zalohaPaymentsSumH > 0.001 && <span className="opacity-70"> ({zalohaPaymentsSumH > 0.001 ? `+${fmtEur(zalohaPaymentsSumH)}` : ""})</span>}
+                                  </span>
+                                  {isPartialDep && hDoplatokNeeded > 0.01 && (
+                                    <span className={`text-[8px] font-bold px-1 py-0.5 rounded-sm border leading-tight ${hFullyPaid ? "bg-teal-50 text-teal-600 border-teal-200" : "bg-red-50 text-red-600 border-red-200"}`}>
+                                      {hFullyPaid ? "✓ dopl." : `ned. ${fmtEur(hRemaining)} €`}
+                                    </span>
+                                  )}
+                                </>
                               ) : <span className="text-gray-300 text-[9px]">—</span>}
                             </div>
                             {/* STAV — s prevStatus → */}

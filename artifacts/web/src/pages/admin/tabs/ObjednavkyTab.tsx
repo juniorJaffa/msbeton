@@ -2617,6 +2617,10 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                 const doplatokPaidAmt = (o.payments ?? []).reduce((s, p) => s + p.amount, 0);
                                 const doplatokIsFullyPaid = doplatokTotal < 0.01 || doplatokPaidAmt >= doplatokTotal - 0.01;
                                 const isPartialDep = depUsed !== undefined && doplatokTotal > 0.01;
+                                const zalohaPaymentsVypl = (o.payments ?? []).filter(p => p.method === "zaloha");
+                                const zalohaPaymentsSumVypl = zalohaPaymentsVypl.reduce((s, p) => s + p.amount, 0);
+                                const hotovostPaidVypl = (o.payments ?? []).filter(p => p.method !== "zaloha").reduce((s, p) => s + p.amount, 0);
+                                const fmt2v = (v: number) => v.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                                 return (
                                   <>
                                     <div className={`flex justify-between items-center rounded-sm px-3 py-2 mt-1.5 border ${isNeg ? "bg-red-50 border-red-200" : "bg-teal-50 border-teal-200"}`}>
@@ -2638,9 +2642,16 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                             💰 Záloha klienta
                                           </span>
                                           <span className={`font-black tabular-nums text-sm ${isPartialDep && !doplatokIsFullyPaid ? "text-orange-700" : isPartialDep ? "text-green-700" : "text-amber-700"}`}>
-                                            −{depUsed.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                                            −{fmt2v(depUsed)} €
                                           </span>
                                         </div>
+                                        {/* Záloha platby (method=zaloha v payments[]) */}
+                                        {zalohaPaymentsSumVypl > 0.001 && (
+                                          <div className={`flex justify-between items-center px-3 py-1.5 border-t ${isPartialDep && !doplatokIsFullyPaid ? "bg-orange-50/60 border-orange-100" : isPartialDep ? "bg-green-50/60 border-green-100" : "bg-amber-50/60 border-amber-100"}`}>
+                                            <span className="text-[10px] font-bold text-amber-600 flex items-center gap-1">💰 Zo zálohy (platby × {zalohaPaymentsVypl.length})</span>
+                                            <span className="font-bold tabular-nums text-[11px] text-amber-600">−{fmt2v(zalohaPaymentsSumVypl)} €</span>
+                                          </div>
+                                        )}
                                         {isPartialDep && (
                                           doplatokIsFullyPaid ? (
                                             /* Doplatok uhradený — zelený banner */
@@ -2650,10 +2661,15 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                               </svg>
                                               <div className="flex-1 min-w-0">
                                                 <div className="text-white font-black text-xs tracking-wide uppercase leading-tight">✓ Doplatok uhradený</div>
-                                                <div className="text-white/80 text-[10px] font-semibold">{doplatokPaidAmt.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € celkovo uhradené</div>
+                                                <div className="text-white/80 text-[10px] font-semibold">
+                                                  {hotovostPaidVypl > 0.001 && <span>{fmt2v(hotovostPaidVypl)} € hot.</span>}
+                                                  {hotovostPaidVypl > 0.001 && zalohaPaymentsSumVypl > 0.001 && " + "}
+                                                  {zalohaPaymentsSumVypl > 0.001 && <span>{fmt2v(zalohaPaymentsSumVypl)} € zo zál.</span>}
+                                                  {hotovostPaidVypl <= 0.001 && zalohaPaymentsSumVypl <= 0.001 && `${fmt2v(doplatokPaidAmt)} € celkovo`}
+                                                </div>
                                               </div>
                                               <span className="text-white font-black text-lg tabular-nums shrink-0 leading-tight">
-                                                {doplatokTotal.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                                                {fmt2v(doplatokTotal)} €
                                               </span>
                                             </div>
                                           ) : (
@@ -2664,10 +2680,15 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                               </svg>
                                               <div className="flex-1 min-w-0">
                                                 <div className="text-white font-black text-xs tracking-wide uppercase leading-tight">Klient musí doplatiť</div>
-                                                <div className="text-white/80 text-[10px] font-semibold">na mieste alebo doplniť zálohu</div>
+                                                {doplatokPaidAmt > 0.01 && (
+                                                  <div className="text-white/80 text-[10px] font-semibold">
+                                                    uhradené: {fmt2v(doplatokPaidAmt)} €
+                                                    {zalohaPaymentsSumVypl > 0.001 && ` (vr. ${fmt2v(zalohaPaymentsSumVypl)} € zo zál.)`}
+                                                  </div>
+                                                )}
                                               </div>
                                               <span className="text-white font-black text-lg tabular-nums shrink-0 leading-tight">
-                                                {doplatokTotal.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                                                {fmt2v(doplatokTotal - doplatokPaidAmt > 0 ? doplatokTotal - doplatokPaidAmt : doplatokTotal)} €
                                               </span>
                                             </div>
                                           )
@@ -2682,17 +2703,28 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                             {/* ── Záloha + nedoplatok pre non-Vyplatená objednávky ── */}
                             {o.depositUsed && o.depositUsed > 0 && o.status !== "vyplatena" && (() => {
                               const dep = o.depositUsed;
+                              const zalohaPayments = (o.payments ?? []).filter(p => p.method === "zaloha");
+                              const zalohaPaymentsSum = zalohaPayments.reduce((s, p) => s + p.amount, 0);
+                              const hotovostPaid = (o.payments ?? []).filter(p => p.method !== "zaloha").reduce((s, p) => s + p.amount, 0);
                               const doplatokNeeded = Math.max(0, (o.totalSDph ?? 0) - dep);
                               const paid = (o.payments ?? []).reduce((s, p) => s + p.amount, 0);
                               const remaining = Math.max(0, doplatokNeeded - paid);
                               const fullyPaid = doplatokNeeded < 0.01 || paid >= doplatokNeeded - 0.01;
+                              const fmt2 = (v: number) => v.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                               return (
                                 <div className="rounded-md mt-1.5 border overflow-hidden border-amber-200">
-                                  {/* Záloha riadok */}
+                                  {/* Záloha pri objednávke */}
                                   <div className="flex justify-between items-center px-3 py-2 bg-amber-50">
                                     <span className="text-xs font-bold flex items-center gap-1.5 text-amber-700">💰 Záloha klienta</span>
-                                    <span className="font-black tabular-nums text-sm text-amber-700">−{dep.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+                                    <span className="font-black tabular-nums text-sm text-amber-700">−{fmt2(dep)} €</span>
                                   </div>
+                                  {/* Záloha platby (method=zaloha) — ak existujú */}
+                                  {zalohaPaymentsSum > 0.001 && (
+                                    <div className="flex justify-between items-center px-3 py-1.5 bg-amber-50/60 border-t border-amber-100">
+                                      <span className="text-[10px] font-bold text-amber-600 flex items-center gap-1">💰 Zo zálohy (platby × {zalohaPayments.length})</span>
+                                      <span className="font-bold tabular-nums text-[11px] text-amber-600">−{fmt2(zalohaPaymentsSum)} €</span>
+                                    </div>
+                                  )}
                                   {doplatokNeeded > 0.01 && (
                                     fullyPaid ? (
                                       <div className="bg-green-600 px-3 py-2.5 flex items-center gap-2.5">
@@ -2701,9 +2733,14 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                         </svg>
                                         <div className="flex-1 min-w-0">
                                           <div className="text-white font-black text-xs tracking-wide uppercase leading-tight">✓ Doplatok uhradený</div>
-                                          <div className="text-white/80 text-[10px] font-semibold">{paid.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € celkovo uhradené</div>
+                                          <div className="text-white/80 text-[10px] font-semibold">
+                                            {hotovostPaid > 0.001 && <span>{fmt2(hotovostPaid)} € hot.</span>}
+                                            {hotovostPaid > 0.001 && zalohaPaymentsSum > 0.001 && <span> + </span>}
+                                            {zalohaPaymentsSum > 0.001 && <span>{fmt2(zalohaPaymentsSum)} € zo zál.</span>}
+                                            {hotovostPaid <= 0.001 && zalohaPaymentsSum <= 0.001 && <span>{fmt2(paid)} € celkovo</span>}
+                                          </div>
                                         </div>
-                                        <span className="text-white font-black text-lg tabular-nums shrink-0">{doplatokNeeded.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+                                        <span className="text-white font-black text-lg tabular-nums shrink-0">{fmt2(doplatokNeeded)} €</span>
                                       </div>
                                     ) : (
                                       <div className="bg-orange-500 px-3 py-2.5 flex items-center gap-2.5">
@@ -2712,9 +2749,14 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                         </svg>
                                         <div className="flex-1 min-w-0">
                                           <div className="text-white font-black text-xs tracking-wide uppercase leading-tight">Zostatok na doplatok</div>
-                                          {paid > 0.01 && <div className="text-white/80 text-[10px] font-semibold">uhradené: {paid.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € z {doplatokNeeded.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</div>}
+                                          {paid > 0.01 && (
+                                            <div className="text-white/80 text-[10px] font-semibold">
+                                              uhradené: {fmt2(paid)} € z {fmt2(doplatokNeeded)} €
+                                              {zalohaPaymentsSum > 0.001 && ` (vr. ${fmt2(zalohaPaymentsSum)} € zo zál.)`}
+                                            </div>
+                                          )}
                                         </div>
-                                        <span className="text-white font-black text-lg tabular-nums shrink-0 leading-tight">{remaining.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+                                        <span className="text-white font-black text-lg tabular-nums shrink-0 leading-tight">{fmt2(remaining)} €</span>
                                       </div>
                                     )
                                   )}
