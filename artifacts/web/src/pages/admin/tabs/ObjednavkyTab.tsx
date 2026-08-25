@@ -1600,13 +1600,6 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
           )}
           <span className="ml-auto text-xs font-bold text-secondary shrink-0">{sortedCount} {sortedCountLabel}</span>
           {newBadge > 0 && <span className="relative bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">{newBadge} nových</span>}
-          {/* Koš — zmazané objednávky */}
-          <button onClick={e => { e.stopPropagation(); setShowDeleted(v => !v); }}
-            title="Zobraziť / skryť zmazané objednávky"
-            className={`text-[10px] font-bold rounded-full px-2 py-0.5 transition-colors cursor-pointer shrink-0 border ${showDeleted ? "bg-red-500 text-white border-red-500" : "text-red-400 border-red-200 hover:border-red-400 hover:text-red-600"}`}>
-            🗑 {showDeleted ? "Koš ✓" : "Koš"}
-            {showDeleted && <span className="ml-1 opacity-80">{orders.filter(o => o.status === "zmazana").length}</span>}
-          </button>
           {onGoToHistoria && (
             <button
               onClick={(e) => { e.stopPropagation(); onGoToHistoria({ sub: "cashflow" }); }}
@@ -1661,6 +1654,13 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                     {s.label} <span className="ml-1 text-[10px] opacity-70">{orders.filter(o => o.status === s.key).length}</span>
                   </button>
                 ))}
+                {/* Koš — oddelený od statusov vizuálne */}
+                <span className="text-gray-200 self-center">|</span>
+                <button onClick={() => setShowDeleted(v => !v)}
+                  title="Zobraziť / skryť zmazané objednávky"
+                  className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${showDeleted ? "bg-red-500 text-white border-red-500" : "bg-white text-red-400 border-red-200 hover:border-red-400 hover:text-red-600"}`}>
+                  🗑 Koš <span className="ml-1 text-[10px] opacity-70">{orders.filter(o => o.status === "zmazana").length}</span>
+                </button>
               </div>
             )}
           </div>
