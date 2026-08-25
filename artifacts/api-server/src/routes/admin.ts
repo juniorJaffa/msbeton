@@ -225,7 +225,13 @@ function mergeItems(incoming: Item[], current: Item[], baseSyncMs: number, prese
     const dedupKey = (x: unknown): string => {
       const r = x as Record<string, unknown>;
       if (r.id) return String(r.id);
-      return `${r.changedAt ?? ""}|${r.status ?? ""}|${r.changedBy ?? ""}`;
+      // statusHistory: changedAt|status|changedBy
+      if (r.changedAt != null || r.status != null || r.changedBy != null)
+        return `${r.changedAt ?? ""}|${r.status ?? ""}|${r.changedBy ?? ""}`;
+      // photoHistory / iné at-based záznamy: at|type — ISO timestamp je unikátny per event
+      if (r.at != null) return `${r.at}|${r.type ?? ""}`;
+      // fallback: deep compare
+      return JSON.stringify(x);
     };
     for (const field of appendOnlyFields) {
       const parts = field.split(".");
