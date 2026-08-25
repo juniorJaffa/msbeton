@@ -124,6 +124,14 @@ function PaymentsModal({ order, clientDepositBalance, onClose, onAdd, onDelete, 
 
   return createPortal(
     <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/60" onClick={onClose}>
+    <style>{`
+      @keyframes pm-val-flash {
+        0%   { background: rgba(253,224,71,0.85); transform: scale(1.12); border-radius: 6px; padding: 0 4px; }
+        55%  { background: rgba(253,224,71,0.35); transform: scale(1.04); }
+        100% { background: transparent; transform: scale(1); padding: 0; }
+      }
+      .pm-val-flash { animation: pm-val-flash 0.75s cubic-bezier(0.22,1,0.36,1) both; }
+    `}</style>
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
@@ -179,14 +187,14 @@ function PaymentsModal({ order, clientDepositBalance, onClose, onAdd, onDelete, 
           {doplatokPaid > 0.01 && (
             <div className="flex justify-between text-xs">
               <span className="text-gray-500">Spolu uhradené</span>
-              <span key={doplatokPaid} className="font-bold text-teal-600 tabular-nums animate-[pulse_0.4s_ease-out]">{skEur(doplatokPaid)} €</span>
+              <span key={doplatokPaid} className="font-bold text-teal-600 tabular-nums pm-val-flash">{skEur(doplatokPaid)} €</span>
             </div>
           )}
           <div className="flex justify-between text-sm font-black border-t border-gray-200 pt-1.5">
             <span className={isFullyPaid ? "text-teal-600" : "text-orange-600"}>
               {isFullyPaid ? "✓ Plne uhradená" : "Zostatok na úhradu"}
             </span>
-            <span key={outstanding} className={`tabular-nums transition-all duration-300 ${isFullyPaid ? "text-teal-600" : "text-orange-600"}`}>
+            <span key={outstanding} className={`tabular-nums pm-val-flash ${isFullyPaid ? "text-teal-600" : "text-orange-600"}`}>
               {isFullyPaid ? "—" : `${skEur(outstanding)} €`}
             </span>
           </div>
