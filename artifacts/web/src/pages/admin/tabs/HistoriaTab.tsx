@@ -1238,7 +1238,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     const firstStatus = hist[0]?.prevStatus ?? "nova";
                     const resolvedCat = o.concreteCategory ?? allCategories.find(cat => cat.types.some(t => t.label === o.concreteType))?.name ?? null;
                     const kg = resolvedCat ? getKamenivoGroup(resolvedCat) : null;
-                    const locality = o.mapLocality || (o.address ? extractAddrLocality(o.address) : "");
+                    const rawLoc = o.mapLocality || (o.address ? extractAddrLocality(o.address) : "");
+                    const locality = /^\d/.test(rawLoc) ? "" : rawLoc;
                     const isDeleted = o.status === "zmazana";
                     const isFlashing = flashDeletedId === o.id;
                     const isOrderToday = dateKey === localDateStr(0);
@@ -1367,15 +1368,22 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                     <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
                                       záloha {fmtEur(o.depositUsed)} €
                                     </span>
-                                    {(() => { const paid = o.totalSDph ?? o.totalBezDph ?? 0; return paid - o.depositUsed > 0.5 ? (
-                                      <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">
-                                        nedoplatok {fmtEur(paid - o.depositUsed)} €
-                                      </span>
-                                    ) : (
-                                      <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700">
-                                        uhradená zálohou ✓
-                                      </span>
-                                    ); })()}
+                                    {(() => {
+                                      const total = o.totalSDph ?? o.totalBezDph ?? 0;
+                                      const dep = o.depositUsed ?? 0;
+                                      const doplatokNeeded = Math.max(0, total - dep);
+                                      const payTotal = (o.payments ?? []).reduce((s, p) => s + p.amount, 0);
+                                      const isDoplatokPaid = doplatokNeeded < 0.01 || payTotal >= doplatokNeeded - 0.01;
+                                      return doplatokNeeded > 0.5 && !isDoplatokPaid ? (
+                                        <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">
+                                          nedoplatok {fmtEur(doplatokNeeded)} €
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700">
+                                          uhradená zálohou ✓
+                                        </span>
+                                      );
+                                    })()}
                                   </>
                                 )}
                               </div>
@@ -1397,7 +1405,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                           {o.note && (
                             <div className="flex items-start gap-1 text-[10px] text-gray-500 italic">
                               <MessageSquare className="w-3 h-3 shrink-0 mt-0.5 text-gray-400" />
-                              <span className="line-clamp-2">{o.note}</span>
+                              <span>{o.note}</span>
                             </div>
                           )}
                           {/* R4: KTO (menej viditeľný) + Vytvorené dátum + Excel confirm */}
@@ -1486,7 +1494,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             </div>
                             {/* CELKOM + paidAmount + diff pod ním */}
                             <div className="text-right flex flex-col gap-0.5 items-end">
-                              <span className="font-black tabular-nums text-secondary text-sm">{fmtEur(o.totalSDph ?? o.totalBezDph ?? 0)} €</span>
+                              <span className="font-black tabular-nums text-secondary text-sm whitespace-nowrap">{fmtEur(o.totalSDph ?? o.totalBezDph ?? 0)} €</span>
                               {(o.status === "vyplatena" || o.status === "vyuctovana") && o.paidAmount !== undefined && o.paidAmount > 0 && (
                                 <div className="flex items-center gap-1 justify-end">
                                   <span className="text-[9px] text-gray-400">zap.</span>
@@ -1539,18 +1547,27 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               {effDiscDoprava > 0 && <span className="bg-primary/20 text-secondary text-[9px] font-black px-1 py-0.5 rounded-sm">D−{effDiscDoprava}%</span>}
                               {effDiscSluzby  > 0 && <span className="bg-primary/20 text-secondary text-[9px] font-black px-1 py-0.5 rounded-sm">S−{effDiscSluzby}%</span>}
                               {/* Nedoplatok ak čiastočná záloha */}
-                              {depUsed && isPartialDep && o.paidAmount && (
-                                <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">
-                                  nedoplatok {fmtEur(o.paidAmount - depUsed, 0)} €
-                                </span>
-                              )}
+                              {depUsed && isPartialDep && (() => {
+                                const doplatokNeeded = Math.max(0, (o.totalSDph ?? o.totalBezDph ?? 0) - depUsed);
+                                const payTotal = (o.payments ?? []).reduce((s, p) => s + p.amount, 0);
+                                const isDoplatokPaid = doplatokNeeded < 0.01 || payTotal >= doplatokNeeded - 0.01;
+                                return isDoplatokPaid ? (
+                                  <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700">
+                                    doplatok uhradený ✓
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">
+                                    nedoplatok {fmtEur(doplatokNeeded, 0)} €
+                                  </span>
+                                );
+                              })()}
                             </div>
                           )}
                           {/* Poznámka — desktop */}
                           {o.note && (
                             <div className="pl-[94px] flex items-start gap-1 text-[10px] text-gray-500 italic">
                               <MessageSquare className="w-3 h-3 shrink-0 mt-0.5 text-gray-400" />
-                              <span className="line-clamp-2">{o.note}</span>
+                              <span>{o.note}</span>
                             </div>
                           )}
                           {/* Excel confirm — desktop */}

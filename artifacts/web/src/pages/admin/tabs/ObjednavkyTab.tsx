@@ -2067,7 +2067,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                         <MapPin className="w-3 h-3 shrink-0" />
                         {o.mapLocality
                           ? <span className="font-semibold text-secondary">{o.mapLocality.split(",")[0]}</span>
-                          : o.address && <span className="font-semibold text-secondary">{extractAddrLocality(o.address)}</span>
+                          : o.address && (() => { const loc = extractAddrLocality(o.address!); return loc && !/^\d/.test(loc) ? <span className="font-semibold text-secondary">{loc}</span> : null; })()
                         }
                         {o.mapPlusCode && <span className="text-gray-400 font-mono text-[10px]">{o.mapPlusCode}</span>}
                       </button>
@@ -2409,11 +2409,12 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                           <div className="flex gap-2 items-start">
                             <span className="text-gray-400 w-24 shrink-0">Adresa</span>
                             <span className="text-gray-600 break-words flex-1">
-                              {(o.mapLocality || o.address) && (
-                                <span className="font-semibold text-secondary block">
-                                  {o.mapLocality ?? extractAddrLocality(o.address!)}
-                                </span>
-                              )}
+                              {(o.mapLocality || o.address) && (() => {
+                                const loc = o.mapLocality ?? extractAddrLocality(o.address!);
+                                return loc && !/^\d/.test(loc) ? (
+                                  <span className="font-semibold text-secondary block">{loc}</span>
+                                ) : null;
+                              })()}
                               {o.address && <span className="block text-gray-500 text-xs">{o.address}</span>}
                               {o.mapPlusCode && (
                                 <span className="flex items-center gap-1 mt-0.5">
