@@ -1,6 +1,6 @@
 # MS-BETON — Audit stav projektu
 
-> Aktualizované: 2026-08-22 (iterácia #7)
+> Aktualizované: 2026-08-25 (iterácia #8)
 > Prostredie: msbeton.sk (VPS 178.105.242.17) — DNS migrácia dokončená 2026-05-29
 
 **Legenda:** ✅ Hotovo | ⏳ Čaká (externá podmienka) | ❌ Plánované | ⚠ Čiastočne
@@ -154,6 +154,16 @@
 ---
 
 ## Changelog
+
+### Iterácia #8 — 2026-08-25
+- Fix: HistoriaTab cashflow — payment_add záloha vs doplatok: `method=zaloha` → 💰 amber, inak → ● zelená (mobile + desktop timeline)
+- Fix: ObjednavkyTab lokálna história — `isZalohaPayment` → amber "💰 Záloha" label/bg namiesto "Doplatok"
+- Feat: PaymentsModal — `lastAddedId` state → `pm-card-flash` (zlatý glow ring 1.6s) na novo pridanej platobnej karte
+- Fix: processPhotoFile — `updatedAt` stamp presunutý po Nominatim awaite (predchádza stale timestamp v mergeItems)
+- Fix: záloha kumulatívna suma — sub-riadok "💰 Zo zálohy (platby × N)" ak existujú záloha payments v `payments[]`
+- Fix: ObjednavkyTab "uhradené" text — breakdown hotovosť + záloha payments
+- Fix: HistoriaTab ZÁLOHA stĺpec — zobrazuje `totalZalohaUsed = depositUsed + záloha payments sum`
+- Feat: HistoriaTab nedoplatok badge — `ned. X€` (červený) alebo `✓ dopl.` (teal) pod ZÁLOHA badgom
 
 ### Iterácia #7 — 2026-08-22
 - Fix: Historia cashflow — multi-status filter (Nová/Potvrdená/Odoslaná/Vyúčtovaná/Vyplatená/Zrušená) s active/inactive farebným stavom
