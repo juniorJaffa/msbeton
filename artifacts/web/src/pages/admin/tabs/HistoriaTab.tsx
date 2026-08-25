@@ -1083,10 +1083,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     <span className={`text-[10px] font-black uppercase tracking-wider ${isToday ? "text-teal-700" : "text-blue-700"}`}>
                       {label} sa vyplatilo
                     </span>
-                    <div className={`font-black tabular-nums text-sm ${isToday ? "text-teal-800" : "text-blue-800"}`}>
+                    <div className={`flex items-center gap-2 font-black tabular-nums text-sm ${isToday ? "text-teal-800" : "text-blue-800"}`}>
                       {fmtEur(dp.sum, 0)} €
-                      <span className={`ml-2 text-[10px] font-bold ${isToday ? "text-teal-500" : "text-blue-500"}`}>
-                        · {dp.count} {dp.count === 1 ? "objednávka" : dp.count < 5 ? "objednávky" : "objednávok"}
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${isToday ? "bg-teal-200 text-teal-800" : "bg-blue-200 text-blue-800"}`}>
+                        {dp.count} {dp.count === 1 ? "obj." : dp.count < 5 ? "obj." : "obj."}
                       </span>
                     </div>
                   </div>
@@ -1112,14 +1112,14 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     <div className="flex items-center gap-1.5">
                       <span className="text-[10px] font-black text-teal-700">Dnes</span>
                       <span className="font-black tabular-nums text-sm text-teal-800">{fmtEur(todayDp.sum, 0)} €</span>
-                      <span className="text-[9px] text-teal-500">·{todayDp.count} obj.</span>
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-200 text-teal-800">{todayDp.count} obj.</span>
                     </div>
                   )}
                   {yestDp && yestDp.count > 0 && (
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-bold text-blue-600">Včera</span>
-                      <span className="font-black tabular-nums text-sm text-blue-700">{fmtEur(yestDp.sum, 0)} €</span>
-                      <span className="text-[9px] text-blue-400">·{yestDp.count} obj.</span>
+                      <span className="text-[10px] font-bold text-blue-700">Včera</span>
+                      <span className="font-black tabular-nums text-sm text-blue-800">{fmtEur(yestDp.sum, 0)} €</span>
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-200 text-blue-800">{yestDp.count} obj.</span>
                     </div>
                   )}
                 </div>
