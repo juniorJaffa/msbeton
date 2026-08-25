@@ -738,7 +738,11 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     const client = clients.find(c => c.id === clientId);
     const photos = [...(client?.photos ?? [])];
     photos.splice(index, 1);
-    update(clientId, { photos: photos.length > 0 ? photos : undefined });
+    // Keď sa vymaže posledná fotka, vymaž aj GPS/locationPhoto — GPS bez fotky je orphaned
+    update(clientId, {
+      photos: photos.length > 0 ? photos : undefined,
+      locationPhoto: photos.length > 0 ? client?.locationPhoto : undefined,
+    });
     setPhotoLightbox(null);
   };
 
