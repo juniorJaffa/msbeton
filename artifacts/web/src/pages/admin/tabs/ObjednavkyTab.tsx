@@ -1154,7 +1154,9 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
 
   const handleDepositPay = (orderId: string, depositAmount: number, clientLoginId: string) => {
     if (readerBlocked()) return;
-    const order = orders.find(o => o.id === orderId);
+    // Anti-stale: čítame čerstvo z localStorage (nie closure orders)
+    const freshForDep0 = adminData.getOrders();
+    const order = freshForDep0.find(o => o.id === orderId);
     // GUARD: záloha už bola odpočítaná — neodpočítaj znovu, iba zmeň stav
     if (order?.depositUsed !== undefined && order.depositUsed > 0) {
       updateStatus(orderId, "vyplatena", order.paidAmount ?? order.totalSDph, order.depositUsed);
@@ -1263,7 +1265,9 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
       changedBy: getAdminDeviceLabel() || "admin",
       ...(paidAmount !== undefined ? { paidAmount } : {}),
     };
-    save(orders.map(o => {
+    // Anti-stale: čítame čerstvo z localStorage — save môže predchádzať (handleDepositPay, handleDepositReversal)
+    const freshForStatus = adminData.getOrders();
+    save(freshForStatus.map(o => {
       if (o.id !== id) return o;
       const hist = o.statusHistory ?? [];
       const entryWithPrev: StatusHistoryEntry = { ...entry, prevStatus: o.status };
