@@ -367,14 +367,17 @@ function OrderStatusBadge({ status, onChange, orderTotal, depositBalance, deposi
           <div className="absolute inset-0 bg-black/40" />
           <div className="relative bg-white rounded-lg shadow-2xl w-full max-w-xs p-5" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
-                <svg className="w-4 h-4 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              {/* Icon: green=hotovosť (čerstvé €), amber=záloha (presunuté €) */}
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${payTab === "deposit" ? "bg-amber-100" : "bg-green-100"}`}>
+                <svg className={`w-4 h-4 ${payTab === "deposit" ? "text-amber-600" : "text-green-600"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                 </svg>
               </div>
               <div>
                 <div className="font-black text-secondary text-sm">Vyplatená suma</div>
-                <div className="text-xs text-gray-400">{payTab === "deposit" ? "Odpočíta zo zálohy klienta" : "Uprav ak klient dal viac (tringelt)"}</div>
+                <div className={`text-xs ${payTab === "deposit" ? "text-amber-600 font-semibold" : "text-gray-400"}`}>
+                  {payTab === "deposit" ? "💰 Odpočíta zo zálohy klienta" : "Hotovosť — uprav ak klient dal viac (tringelt)"}
+                </div>
               </div>
             </div>
 
@@ -389,15 +392,15 @@ function OrderStatusBadge({ status, onChange, orderTotal, depositBalance, deposi
               </div>
             )}
 
-            {/* Tab prepínač: Hotovosť / Záloha — len keď záloha zapnutá */}
+            {/* Tab prepínač: Hotovosť (green) / Záloha (amber) — len keď záloha zapnutá */}
             {canUseDeposit && (
               <div className="flex mb-4 rounded-md overflow-hidden border border-gray-200">
                 <button onClick={() => setPayTab("cash")}
-                  className={`flex-1 py-1.5 text-xs font-bold transition-colors ${payTab === "cash" ? "bg-secondary text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}>
+                  className={`flex-1 py-1.5 text-xs font-bold transition-colors ${payTab === "cash" ? "bg-green-600 text-white" : "bg-white text-gray-500 hover:bg-green-50 hover:text-green-700"}`}>
                   💵 Hotovosť
                 </button>
                 <button onClick={() => setPayTab("deposit")}
-                  className={`flex-1 py-1.5 text-xs font-bold transition-colors ${payTab === "deposit" ? "bg-amber-500 text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}>
+                  className={`flex-1 py-1.5 text-xs font-bold transition-colors border-l border-gray-200 ${payTab === "deposit" ? "bg-amber-500 text-white" : "bg-white text-gray-500 hover:bg-amber-50 hover:text-amber-700"}`}>
                   🏦 Záloha ({depositBalance.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €)
                 </button>
               </div>
@@ -420,13 +423,15 @@ function OrderStatusBadge({ status, onChange, orderTotal, depositBalance, deposi
                   <span className="font-black text-amber-700 tabular-nums">{depositBalance.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
                 </div>
                 <div className="flex justify-between items-center mt-1">
+                  {/* amber = peniaze zo zálohy, nie red (červená = chyba) */}
                   <span className="text-xs text-gray-500">Odpočet zo zálohy:</span>
-                  <span className="font-black text-red-500 tabular-nums">−{depositPayAmt.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+                  <span className="font-black text-amber-600 tabular-nums">−{depositPayAmt.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
                 </div>
                 {!isPartialDeposit && orderTotal !== undefined && (
                   <div className="flex justify-between items-center mt-1 pt-1 border-t border-amber-200">
                     <span className="text-xs font-bold text-amber-700">Zostatok zálohy po:</span>
-                    <span className="font-black text-teal-600 tabular-nums">{(depositBalance - depositPayAmt).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+                    {/* green = zostatok = pozitívne, hotovosť zálohy ešte dostupná */}
+                    <span className="font-black text-green-600 tabular-nums">{(depositBalance - depositPayAmt).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
                   </div>
                 )}
                 {isPartialDeposit && (
@@ -450,7 +455,7 @@ function OrderStatusBadge({ status, onChange, orderTotal, depositBalance, deposi
                   value={payInput}
                   onChange={e => setPayInput(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter") confirmPay(); if (e.key === "Escape") setPayModal(false); }}
-                  className="w-full border border-gray-200 rounded-md px-3 py-2.5 text-lg font-black text-secondary text-right focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400 pr-10"
+                  className="w-full border border-gray-200 rounded-md px-3 py-2.5 text-lg font-black text-secondary text-right focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400 pr-10"
                   autoFocus
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm pointer-events-none">€</span>
@@ -499,8 +504,14 @@ function OrderStatusBadge({ status, onChange, orderTotal, depositBalance, deposi
                 Zrušiť
               </button>
               <button onClick={confirmPay}
-                className={`flex-1 px-3 py-2 text-xs font-black text-white rounded-md transition-colors cursor-pointer ${payTab === "deposit" ? (isPartialDeposit ? "bg-orange-500 hover:bg-orange-600" : "bg-amber-500 hover:bg-amber-600") : "bg-teal-600 hover:bg-teal-700"}`}>
-                {payTab === "deposit" ? (isPartialDeposit ? `💰 ${depositPayAmt.toFixed(2)} € + doplatok ${doplatokAmt.toFixed(2)} €` : "Odpočítať zo zálohy") : "Potvrdiť"}
+                className={`flex-1 px-3 py-2 text-xs font-black text-white rounded-md transition-colors cursor-pointer ${
+                  payTab === "deposit"
+                    ? (isPartialDeposit ? "bg-orange-500 hover:bg-orange-600" : "bg-amber-500 hover:bg-amber-600")
+                    : "bg-green-600 hover:bg-green-700"   /* hotovosť = zelená */
+                }`}>
+                {payTab === "deposit"
+                  ? (isPartialDeposit ? `💰 ${depositPayAmt.toFixed(2)} € + doplatok ${doplatokAmt.toFixed(2)} €` : "Odpočítať zo zálohy")
+                  : "✓ Potvrdiť platbu"}
               </button>
             </div>
           </div>
@@ -1288,7 +1299,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
             orderId,
             note: `Doplatok k objednávke (záloha)`,
             createdAt: entry.at,
-            createdBy: entry.by ?? getAdminDeviceLabel() || "admin",
+            createdBy: (entry.by ?? getAdminDeviceLabel()) || "admin",
           };
           return { ...c, deposit: { ...cur, balance: newBalance, transactions: [...cur.transactions, tx] } };
         });
@@ -2123,27 +2134,34 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                       return (
                         <>
                           {/* Badge: stav doplatku */}
-                          <div className="flex items-center gap-1 mt-0.5">
-                            {isFullyPaid ? (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-black rounded-sm bg-teal-100 text-teal-700 border border-teal-200">
-                                ✓ Plne uhradená
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-black rounded-sm bg-orange-100 text-orange-700 border border-orange-200">
-                                ⚠ Čiastočne uhradená — {skEur(remaining)} €
-                              </span>
-                            )}
-                          </div>
-                          {canAddPayment && (
+                          {isFullyPaid ? (
+                            /* Doplatok plne uhradený — zelené tlačidlo s históriou */
                             <button onClick={e => { e.stopPropagation(); setPaymentsModal(o.id); }}
-                              title="Zobraziť / pridať úhradu doplatku"
-                              className="mt-0.5 inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-black bg-secondary text-white rounded-sm hover:bg-secondary/80 transition-all cursor-pointer shadow-sm">
-                              ▤ Doplatok
+                              title="Zobraziť úhrady doplatku"
+                              className="mt-0.5 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-black bg-green-600 text-white rounded hover:bg-green-700 transition-all cursor-pointer shadow-sm">
+                              <span>✓ Doplatok uhradený</span>
                               {(o.payments?.length ?? 0) > 0 && (
-                                <span className="ml-0.5 bg-white/20 rounded px-0.5">{o.payments!.length}×</span>
+                                <span className="bg-white/20 rounded px-1 text-[10px]">{o.payments!.length}×</span>
                               )}
                             </button>
-                          )}
+                          ) : canAddPayment ? (
+                            /* Nedoplatok — orange badge + výrazný button */
+                            <>
+                              <div className="flex items-center gap-1 mt-0.5">
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-black rounded-sm bg-orange-100 text-orange-700 border border-orange-200">
+                                  ! Doplatok — zostatok {skEur(remaining)} €
+                                </span>
+                              </div>
+                              <button onClick={e => { e.stopPropagation(); setPaymentsModal(o.id); }}
+                                title="Pridať úhradu doplatku"
+                                className="mt-0.5 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-black bg-secondary text-white rounded hover:bg-secondary/80 transition-all cursor-pointer shadow-sm">
+                                + Pridať doplatok
+                                {(o.payments?.length ?? 0) > 0 && (
+                                  <span className="ml-0.5 bg-white/20 rounded px-1 text-[10px]">{o.payments!.length}×</span>
+                                )}
+                              </button>
+                            </>
+                          ) : null}
                         </>
                       );
                     })()}
