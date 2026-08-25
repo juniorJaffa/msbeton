@@ -1295,10 +1295,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               )}
                             </div>
                             <div className="flex items-center gap-1 shrink-0 mt-0.5">
-                              <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-2 py-0.5 rounded-full ${STATUS_COLOR[o.status] ?? "bg-gray-100 text-gray-500"}`}>
-                                {prevStatus && STATUS_LABEL[prevStatus] && (
-                                  <span className="opacity-50 font-medium">{STATUS_LABEL[prevStatus]} →</span>
-                                )}
+                              <span className={`inline-flex items-center text-[9px] font-bold px-2 py-0.5 rounded-full ${STATUS_COLOR[o.status] ?? "bg-gray-100 text-gray-500"}`}>
                                 {STATUS_LABEL[o.status] ?? o.status}
                               </span>
                               {onGoToOrder && !isDeleted && <ChevronRight className="w-3.5 h-3.5 text-gray-300" />}
