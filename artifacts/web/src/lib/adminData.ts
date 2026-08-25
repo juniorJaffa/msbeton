@@ -495,8 +495,8 @@ const LAST_SYNC_KEY = "msbeton_last_sync";
 export function getLastSync(): string {
   return localStorage.getItem(LAST_SYNC_KEY) ?? new Date(0).toISOString();
 }
-function setLastSync(): void {
-  localStorage.setItem(LAST_SYNC_KEY, new Date().toISOString());
+function setLastSync(ts?: string): void {
+  localStorage.setItem(LAST_SYNC_KEY, ts ?? new Date().toISOString());
 }
 
 // Porovnanie obsahu položky bez `updatedAt` (a bez vnorených updatedAt) — či sa zmenila
@@ -545,6 +545,10 @@ export async function syncFromServer(): Promise<void> {
   const hasData = (v: unknown) => v !== null && v !== undefined && !(Array.isArray(v) && v.length === 0);
   const hasDataOrEmpty = (v: unknown) => v !== null && v !== undefined && Array.isArray(v);
   let updated = false;
+  // Zaznamenaj čas ŠTARTU fetchu (nie konca spracovania) — kritické pre mergeItems baseSyncMs.
+  // Ak by sme použili čas konca, klienti pridaní POČAS fetchu (T0→T5) by mali updatedAt < baseSyncMs
+  // a server by ich pri ďalšom PUT zahodil ako "staré, zámer zmazať". Bug: zmiznutie nových klientov a fotiek.
+  const syncStartTs = new Date().toISOString();
   try {
     // Public endpoints — vždy fetchovať (kalkulačka potrebuje aktuálne dáta aj bez admin loginu)
     const [cats, delivery, services, tzones, tsettings] = await Promise.all([
@@ -576,15 +580,22 @@ export async function syncFromServer(): Promise<void> {
       // Ochrana pred stale sync: ak medzičasom štartoval novší sync (napr. po saveClients PUT),
       // nechaj clients/orders bez prepísania — novší sync dostane aktuálne dáta z DB.
       if (myRevision === _syncRevision) {
-        if (hasDataOrEmpty(clients?.data)) { saveData("msbeton_clients", clients!.data); updated = true; }
-        else { const local = loadData<Client[]>("msbeton_clients", []); if (local.length > 0) adminApi.saveClients(local); }
+        if (hasDataOrEmpty(clients?.data)) {
+          saveData("msbeton_clients", clients!.data);
+          updated = true;
+          // setLastSync tu (nie na konci): len keď klienti skutočne uložení, a čas = ŠTART fetchu.
+          // Ak by sme volali setLastSync() po skončení celého sync, baseSyncMs by bol vyšší ako
+          // updatedAt klientov pridaných POČAS fetchu → server by ich zmazal pri ďalšom PUT.
+          setLastSync(syncStartTs);
+        } else { const local = loadData<Client[]>("msbeton_clients", []); if (local.length > 0) adminApi.saveClients(local); }
         if (hasDataOrEmpty(orders?.data)) { saveData("msbeton_orders", orders!.data); updated = true; }
       }
     } catch {
     }
   }
   if (updated) window.dispatchEvent(new Event("admin-data-synced"));
-  setLastSync(); // zaznamenaj kedy sme naposledy videli serverové dáta (baseSync pre merge)
+  // setLastSync() odstraňujem odtiaľto — pôsobilo race condition: čas konca sync (T5) > čas nových
+  // klientov (T1–T4 počas fetchu) → baseSyncMs preskočil nových klientov → zmiznutie pri ďalšom PUT.
 }
 
 export const adminData = {
