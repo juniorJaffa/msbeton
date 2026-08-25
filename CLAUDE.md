@@ -521,6 +521,112 @@ Kalkulačka (`Calculator.tsx`) extrahuje GPS + dátum z EXIF metadát fotky pril
 - **Zobrazenie v HistoriaTab** cashflow timeline: ikona `MessageSquare`, skrátený text poznámky (max 60 znakov)
 - **PAMÄTAJ** (z TODO memory): poznámky zatiaľ nie sú zobrazené v HistoriaTab timeline — to je plánovaná feature (Peto, 2026-08-19)
 
+### Admin Objednávky — záloha vs doplatok vizuálne pravidlá
+
+`StatusHistoryEntry.method` môže byť `"hotovost" | "zaloha" | "prevod"`. Záloha znamená čerpanie z depozitného zostatku klienta — **vždy odlišné vizuálne** od bežného doplatku.
+
+**Pravidlo — metóda `zaloha` → amber 💰, inak → zelená ●** (platí na TROCH miestach súčasne):
+
+| Miesto | Záloha (method=zaloha) | Doplatok (iný method) |
+|--------|------------------------|----------------------|
+| HistoriaTab mobile timeline | `💰` amber dot `bg-amber-400`, text `text-amber-700 font-black`, label `záloha` | `●` zelená `bg-green-500`, `text-green-700 font-black`, label `+ Doplatok` |
+| HistoriaTab desktop timeline | rovnaké ako mobile | rovnaké ako mobile |
+| ObjednavkyTab local history | `label="💰 Záloha"`, `bg-amber-50/60 border-amber-100` | `label="+ Doplatok (Hot./Prev.)"`, `bg-green-50/60 border-green-100` |
+
+**KRITICKÉ:** HistoriaTab má DVA samostatné renderers — mobile (`sm:hidden`) a desktop (`hidden sm:flex`). Ak fixuješ jeden, musíš fixnúť aj druhý.
+
+### Admin Objednávky — záloha kumulatívna suma (ZÁLOHA stĺpec)
+
+`order.depositUsed` = suma zálohy fixovaná pri vytvorení objednávky. Neskorší platby `method=zaloha` v `payments[]` sa tu **neprejavia** — preto treba kumulovať ručne:
+
+```typescript
+const zalohaPaymentsSum = (o.payments ?? [])
+  .filter(p => p.method === "zaloha")
+  .reduce((s, p) => s + p.amount, 0);
+const totalZalohaUsed = (o.depositUsed ?? 0) + zalohaPaymentsSum;
+```
+
+**HistoriaTab ZÁLOHA badge** zobrazuje `totalZalohaUsed` + ak `zalohaPaymentsSum > 0.001` → bonus text `(+X.XX)`.
+
+**Nedoplatok badge** (pod zálohou):
+- `hDoplatokNeeded = max(0, totalSDph - depositUsed)` — koľko treba doplatiť hotovosťou/prevodom
+- `hPaid = sum(payments)` — čo bolo zaplatené
+- `hRemaining = max(0, hDoplatokNeeded - hPaid)`
+- `hFullyPaid = hDoplatokNeeded < 0.01 || hPaid >= hDoplatokNeeded - 0.01`
+- Badge: teal `✓ dopl.` ak `hFullyPaid`, inak červená `ned. X.XX €`
+
+### PaymentsModal — pm-card-flash (nový doplatok)
+
+Nová platobná karta po pridaní dostane gold glow animáciu (1.6s). Implementácia:
+
+```typescript
+// State v PaymentsModal:
+const [lastAddedId, setLastAddedId] = useState<string | null>(null);
+
+// Pri submite:
+const newId = crypto.randomUUID();
+onAdd({ id: newId, ... }, method === "zaloha");
+setLastAddedId(newId);
+
+// Na karte:
+className={`... ${p.id === lastAddedId ? " pm-card-flash" : ""}`}
+```
+
+CSS keyframe (inline `<style>` v komponente):
+```css
+@keyframes pm-card-flash {
+  0%   { box-shadow: 0 0 0 3px rgba(234,179,8,0.9), 0 0 16px 6px rgba(253,224,71,0.55); transform: scale(1.025); }
+  40%  { box-shadow: 0 0 0 2px rgba(234,179,8,0.5), 0 0 8px 2px rgba(253,224,71,0.3); transform: scale(1.01); }
+  100% { box-shadow: none; transform: scale(1); }
+}
+.pm-card-flash { animation: pm-card-flash 1.6s cubic-bezier(0.22,1,0.36,1) both; }
+```
+
+### processPhotoFile — updatedAt stamp musí byť PO VŠETKÝCH awaitoch
+
+`processPhotoFile` v `KlientiTab.tsx` robí: arrayBuffer → compress → geolocation (8s) → `adminData.getClients()` → nominatimReverse (1-3s) → save.
+
+**KRITICKÉ:** `updatedAt` stamp musí byť AFTER všetkých awaitoch — vrátane Nominatim:
+
+```typescript
+// ❌ ZLE — stamp pred Nominatim await:
+const updates = {
+  updatedAt: new Date().toISOString(), // ← TOO EARLY
+  photos: [...],
+};
+const locality = await nominatimReverse(lat, lon); // < 3s
+// Počas tohto awaitu concurrent save s novším updatedAt → náš save stratí
+
+// ✅ SPRÁVNE — stamp až po všetkých awaitoch:
+const updates: Partial<ClientAccount> = { photos: [...] };
+const locality = await nominatimReverse(lat, lon);
+updates.updatedAt = new Date().toISOString(); // ← po awaitoch = winner
+```
+
+**Prečo:** `mergeItems()` vyberie winner podľa `updatedAt`. Ak stamp je pred Nominatim await a concurrent save príde počas toho awaitu s novším timestamp, náš `updates` prehrá → fotka sa vizuálne objaví, ale pri ďalšom sync sa premazá.
+
+### FOTO LOG — pole `by` (kto zmazal)
+
+`handleDeletePhoto` v `KlientiTab.tsx` pridáva záznam do `photoHistory`. Každý delete entry musí mať `by` pole pre traceability:
+
+```typescript
+const deleteEntry = {
+  type: "delete",
+  at: new Date().toISOString(),
+  note: `Fotka #${index + 1}${isLast ? " — posledná, GPS vymazané" : ""}`,
+  by: getAdminDeviceLabel() || "admin",  // ← povinné
+};
+```
+
+Render v FOTO LOG:
+```tsx
+{(entry as {by?: string}).by && (
+  <span className="text-gray-500 italic shrink-0">— {(entry as {by?: string}).by}</span>
+)}
+```
+
+`handleDeletePhoto` je **jediná** funkcia vytvárajúca `"type": "delete"` záznamy. Close (✕) button ani swipe nevymazáva fotky — iba explicitný 🗑 button vpravo dole (close a delete sú ~60vh od seba, mis-tap nemožný).
+
 ### Testovacie prihlasovacie údaje
 
 | Rola | Login ID | Heslo | Poznámka |
