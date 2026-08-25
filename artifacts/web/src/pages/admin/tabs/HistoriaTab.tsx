@@ -886,6 +886,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                         className={`px-3 py-2.5 transition-colors ${handleClick ? "cursor-pointer hover:bg-orange-50" : "hover:bg-gray-50"}`}>
                         {/* Mobile layout */}
                         <div className="sm:hidden">
+                          {/* Riadok 1: dátum | klient | suma | typ-ikona */}
                           <div className="flex items-center gap-2">
                             <span className="text-gray-400 tabular-nums text-[10px] shrink-0 w-16">{fmtDate(ts)}</span>
                             <button type="button" onClick={e => { e.stopPropagation(); r.loginId && onGoToClient?.(r.loginId); }}
@@ -894,18 +895,17 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             </button>
                             <span className={`font-black tabular-nums text-sm shrink-0 ${amountCls}`}>{amountStr}</span>
                             <span className={`shrink-0 flex items-center justify-center w-6 h-6 rounded-full ${iconBg}`}>{rowIcon}</span>
-                            {/* EXCEL btn — mobile */}
-                            <button onClick={handleExcel}
-                              className={`inline-flex items-center gap-0.5 text-[8px] font-black px-1.5 py-0.5 rounded border transition-all cursor-pointer shrink-0 ${excelBtnCls}`}>
-                              <Check className="w-2.5 h-2.5 shrink-0" />{isExcelOk ? "OK" : "?"}
-                            </button>
                           </div>
                           {isOrderUse && <div className="pl-[72px] mt-0.5 text-[9px] text-orange-600 truncate">{r.orderLabel}</div>}
-                          {devLabel && (
-                            <div className="pl-[72px] mt-0.5 text-[10px] truncate">
-                              <DeviceLabel label={devLabel} />
-                            </div>
-                          )}
+                          {/* Riadok 2: DeviceLabel + EXCEL btn (cashflow vzor — spacer + btn na pravej) */}
+                          <div className="pl-[72px] mt-1 flex items-center gap-1">
+                            {devLabel && <DeviceLabel label={devLabel} className="text-[10px] shrink-0 opacity-70" />}
+                            <span className="flex-1" />
+                            <button onClick={handleExcel}
+                              className={`inline-flex items-center gap-0.5 text-[8px] font-black px-1.5 py-0.5 rounded border transition-all cursor-pointer shrink-0 ${excelBtnCls}`}>
+                              <Check className="w-2.5 h-2.5 shrink-0" />{isExcelOk ? "EXCEL OK" : "EXCEL?"}
+                            </button>
+                          </div>
                         </div>
                         {/* Desktop layout */}
                         <div className="hidden sm:grid grid-cols-[90px_1fr_100px_110px_1fr_1fr_72px] gap-2 items-center">
