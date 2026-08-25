@@ -871,6 +871,22 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
       });
       if (changed) { setAllOrders(repaired); adminData.saveOrders(repaired); }
     }).catch(() => {});
+
+    // Auto-cleanup: klienti s locationPhoto ale bez fotky (orphaned GPS z blink bugu)
+    {
+      const freshC = adminData.getClients();
+      const orphaned = freshC.filter(c => c.locationPhoto && (!c.photos || c.photos.length === 0));
+      if (orphaned.length > 0) {
+        const now = new Date().toISOString();
+        const fixed = freshC.map(c =>
+          orphaned.some(o => o.id === c.id)
+            ? { ...c, locationPhoto: undefined, updatedAt: now }
+            : c
+        );
+        adminData.saveClients(fixed);
+        setClients(fixed);
+      }
+    }
   }, []);
 
   // Obnoviť klientov zo servera pri rozbalení karty — zabezpečí čerstvé webauthnCredentials/biometricAuthLog
