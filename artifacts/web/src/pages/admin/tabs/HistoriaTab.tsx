@@ -293,6 +293,14 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   // Photo lightbox — foto klienta z objednávky — { clientId, photoIdx } naviguje len cez fotky daného klienta
   const [clientPhotoModal, setClientPhotoModal] = useState<{ clientId: string; photoIdx: number } | null>(null);
 
+  // ESC zatvára photo lightbox
+  useEffect(() => {
+    if (!clientPhotoModal) return;
+    const h = (e: KeyboardEvent) => { if (e.key === "Escape") setClientPhotoModal(null); };
+    document.addEventListener("keydown", h);
+    return () => document.removeEventListener("keydown", h);
+  }, [clientPhotoModal]);
+
   // Excel confirm — uložené na objednávke v DB (viditeľné všetkým adminom)
   const toggleExcelConfirmed = (e: React.MouseEvent, orderId: string) => {
     e.stopPropagation();

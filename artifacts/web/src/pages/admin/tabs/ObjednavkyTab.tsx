@@ -73,6 +73,13 @@ function PaymentsModal({ order, onClose, onAdd, onDelete, readOnly }: {
   const [amount, setAmount] = useState("");
   const [err,    setErr]    = useState("");
 
+  // ESC zatvára modal
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", h);
+    return () => document.removeEventListener("keydown", h);
+  }, [onClose]);
+
   const payments  = order.payments ?? [];
   const payTotal  = payments.reduce((s, p) => s + p.amount, 0);
   const total     = order.totalSDph ?? 0;
@@ -981,9 +988,24 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const [depositReversal, setDepositReversal] = useState<{ orderId: string; depositUsed: number; clientLoginId: string; newStatus: Order["status"] } | null>(null);
   // Payments modal (KROS-štýl) — orderId otvorenej objednávky
   const [paymentsModal, setPaymentsModal] = useState<string | null>(null);
+  // Koš — zobraz zmazané objednávky
+  const [showDeleted, setShowDeleted] = useState(false);
   // Presence: kto iný práve prezerá danú objednávku (soft lock indicator)
   const [presenceMap, setPresenceMap] = useState<Record<string, string[]>>({});
   const [conflictToast, setConflictToast] = useState<string | null>(null);
+
+  // ESC zatvára ľubovoľný otvorený modal/popup
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (clientPhotoModal) { setClientPhotoModal(null); return; }
+      if (paymentsModal) { setPaymentsModal(null); return; }
+      if (deleteConfirmId) { setDeleteConfirmId(null); return; }
+      if (depositReversal) { setDepositReversal(null); return; }
+    };
+    document.addEventListener("keydown", h);
+    return () => document.removeEventListener("keydown", h);
+  }, [clientPhotoModal, paymentsModal, deleteConfirmId, depositReversal]);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -1256,7 +1278,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const searchTerms = search.trim().split(/\s+/).filter(Boolean);
   const filtered = orders
-    .filter(o => o.status !== "zmazana")   // zmazané sú len v História, nie tu
+    .filter(o => showDeleted || o.status !== "zmazana")
     .filter(o => filterStatus    === "vsetky" || o.status    === filterStatus)
     .filter(o => filterTab       === "vsetky" || o.tab       === filterTab)
     .filter(o => filterPriceMode === "vsetky" || o.priceMode === filterPriceMode)
@@ -1269,7 +1291,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
     .filter(o => !clientIdActive || o.clientId === clientIdActive)
     .filter(o => {
       if (!searchTerms.length) return true;
-      const haystack = [o.clientName, o.company ?? "", o.phone ?? "", o.clientId ?? "", o.address ?? "", o.email ?? ""].join(" ");
+      const haystack = [o.clientName, o.company ?? "", o.phone ?? "", o.clientId ?? "", o.address ?? "", o.email ?? "", o.totalSDph?.toFixed(2) ?? "", Math.round(o.totalSDph ?? 0).toString(), o.totalBezDph?.toFixed(2) ?? ""].join(" ");
       return searchTerms.every(t => norm(haystack).includes(norm(t)) || haystack.includes(t));
     })
     .filter(o => {
@@ -1480,6 +1502,13 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
           )}
           <span className="ml-auto text-xs font-bold text-secondary shrink-0">{sortedCount} {sortedCountLabel}</span>
           {newBadge > 0 && <span className="relative bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">{newBadge} nových</span>}
+          {/* Koš — zmazané objednávky */}
+          <button onClick={e => { e.stopPropagation(); setShowDeleted(v => !v); }}
+            title="Zobraziť / skryť zmazané objednávky"
+            className={`text-[10px] font-bold rounded-full px-2 py-0.5 transition-colors cursor-pointer shrink-0 border ${showDeleted ? "bg-red-500 text-white border-red-500" : "text-red-400 border-red-200 hover:border-red-400 hover:text-red-600"}`}>
+            🗑 {showDeleted ? "Koš ✓" : "Koš"}
+            {showDeleted && <span className="ml-1 opacity-80">{orders.filter(o => o.status === "zmazana").length}</span>}
+          </button>
           {onGoToHistoria && (
             <button
               onClick={(e) => { e.stopPropagation(); onGoToHistoria({ sub: "cashflow" }); }}
@@ -1700,21 +1729,37 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                   <span className={`text-xs font-bold ${quickDate === "ndni" ? "text-secondary" : "text-gray-500"}`}>dní</span>
                 </div>
               </div>
-              {/* Od–do row */}
-              <div className="px-4 pb-2.5 flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] text-gray-400 font-semibold">od</span>
-                <input type="date" value={dateFrom}
-                  onChange={e => { setDateFrom(e.target.value); setQuickDate(""); }}
-                  className="border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:border-secondary rounded-sm w-32" />
-                <span className="text-[10px] text-gray-400 font-semibold">do</span>
-                <input type="date" value={dateTo}
-                  onChange={e => { setDateTo(e.target.value); setQuickDate(""); }}
-                  className="border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:border-secondary rounded-sm w-32" />
-                {(dateFrom || dateTo) && (
-                  <button onClick={() => { setDateFrom(""); setDateTo(""); setQuickDate(""); }}
-                    className="text-gray-400 hover:text-red-500 transition-colors p-1">
-                    <X className="w-3.5 h-3.5" />
-                  </button>
+              {/* Od–do row — vylepšený dizajn */}
+              <div className="px-4 pb-3">
+                <div className="flex items-center gap-2">
+                  {/* Od */}
+                  <label className={`flex-1 flex items-center gap-1.5 border rounded-lg px-3 py-2 cursor-pointer transition-colors ${dateFrom ? "border-secondary bg-secondary/5" : "border-gray-200 bg-white hover:border-gray-300"} focus-within:border-secondary focus-within:ring-1 focus-within:ring-secondary/20`}>
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider shrink-0">Od</span>
+                    <input type="date" value={dateFrom}
+                      onChange={e => { setDateFrom(e.target.value); setQuickDate(""); }}
+                      className="flex-1 text-xs font-semibold text-secondary focus:outline-none bg-transparent min-w-0 cursor-pointer" />
+                  </label>
+                  <span className="text-gray-300 font-bold shrink-0">—</span>
+                  {/* Do */}
+                  <label className={`flex-1 flex items-center gap-1.5 border rounded-lg px-3 py-2 cursor-pointer transition-colors ${dateTo ? "border-secondary bg-secondary/5" : "border-gray-200 bg-white hover:border-gray-300"} focus-within:border-secondary focus-within:ring-1 focus-within:ring-secondary/20`}>
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider shrink-0">Do</span>
+                    <input type="date" value={dateTo}
+                      onChange={e => { setDateTo(e.target.value); setQuickDate(""); }}
+                      className="flex-1 text-xs font-semibold text-secondary focus:outline-none bg-transparent min-w-0 cursor-pointer" />
+                  </label>
+                  {/* Clear */}
+                  {(dateFrom || dateTo) && (
+                    <button onClick={() => { setDateFrom(""); setDateTo(""); setQuickDate(""); }}
+                      className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0 cursor-pointer">
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                {/* Súhrn vybraného rozsahu */}
+                {dateFrom && dateTo && (
+                  <div className="mt-1.5 text-[10px] text-secondary/70 font-semibold text-center">
+                    {new Date(dateFrom).toLocaleDateString("sk-SK", { day: "numeric", month: "long" })} — {new Date(dateTo).toLocaleDateString("sk-SK", { day: "numeric", month: "long", year: "numeric" })}
+                  </div>
                 )}
               </div>
             </>)}
@@ -1974,11 +2019,11 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                           )}
                           {canAddPayment && (
                             <button onClick={e => { e.stopPropagation(); setPaymentsModal(o.id); }}
-                              title="Pridať úhradu (KROS-štýl)"
-                              className="mt-0.5 inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-black text-teal-700 border border-teal-200 rounded-sm hover:bg-teal-600 hover:text-white hover:border-teal-600 transition-all cursor-pointer">
-                              💳 Pridať úhradu
+                              title="Pridať úhradu"
+                              className="mt-0.5 inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-black bg-secondary text-white rounded-sm hover:bg-secondary/80 transition-all cursor-pointer shadow-sm">
+                              ▤ Pridať úhradu
                               {(o.payments?.length ?? 0) > 0 && (
-                                <span className="ml-0.5 opacity-70">{o.payments!.length}×</span>
+                                <span className="ml-0.5 bg-white/20 rounded px-0.5">{o.payments!.length}×</span>
                               )}
                             </button>
                           )}
