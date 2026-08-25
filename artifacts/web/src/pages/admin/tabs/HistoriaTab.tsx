@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { adminData, Client, DepositTx, Order, getKamenivoGroup, readerBlocked } from "@/lib/adminData";
-import { ChevronRight, ChevronLeft, TrendingUp, Minus, Smartphone, Monitor, Laptop, ChevronDown, Users, ShoppingCart, Mountain, Waves, X, MessageSquare, Check, AlertTriangle } from "lucide-react";
+import { ChevronRight, ChevronLeft, TrendingUp, Minus, Smartphone, Monitor, Laptop, ChevronDown, Users, ShoppingCart, Mountain, Waves, X, MessageSquare, Check, AlertTriangle, MapPin, Navigation, Phone } from "lucide-react";
 
 type Sub = "zalohy" | "cashflow";
 
@@ -289,8 +290,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const cashClientRef = useRef<HTMLDivElement>(null);
   const ktoRef        = useRef<HTMLDivElement>(null);
 
-  // Photo lightbox — foto klienta z objednávky
-  const [clientPhotoModal, setClientPhotoModal] = useState<string | null>(null); // client.id
+  // Photo lightbox — foto klienta z objednávky — { clientId, photoIdx } naviguje len cez fotky daného klienta
+  const [clientPhotoModal, setClientPhotoModal] = useState<{ clientId: string; photoIdx: number } | null>(null);
 
   // Excel confirm — uložené na objednávke v DB (viditeľné všetkým adminom)
   const toggleExcelConfirmed = (e: React.MouseEvent, orderId: string) => {
@@ -543,16 +544,6 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Klienti s fotkou z filtrovaných objednávok — pre photo lightbox navigáciu
-  const clientsWithPhoto = useMemo(() => {
-    const seen = new Set<string>();
-    const result: Client[] = [];
-    for (const o of filteredOrders) {
-      const c = o.clientId ? clientByLoginId.get(o.clientId) : undefined;
-      if (c?.photos?.[0] && !seen.has(c.id)) { seen.add(c.id); result.push(c); }
-    }
-    return result;
-  }, [filteredOrders, clientByLoginId]);
 
   // Visible orders — skryje zmazané keď showDeleted=false
   const visibleOrders = useMemo(() =>
@@ -1201,7 +1192,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                           {/* R1: Klient + Status (s prevStatus→) + Arrow — inšp. ObjednavkyTab */}
                           <div className="flex items-start gap-2">
                             {c?.photos?.[0] && (
-                              <button type="button" onClick={e => { e.stopPropagation(); setClientPhotoModal(c.id); }}
+                              <button type="button" onClick={e => { e.stopPropagation(); setClientPhotoModal({ clientId: c.id, photoIdx: 0 }); }}
                                 className="shrink-0 mt-0.5 cursor-pointer">
                                 <img src={c.photos[0]} className="w-6 h-6 rounded-full object-cover object-top ring-1 ring-primary/30" alt="" />
                               </button>
@@ -1373,7 +1364,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             {/* KLIENT — navy bold, phone subline ak telefón */}
                             <div className="min-w-0 flex items-center gap-1.5">
                               {c?.photos?.[0] && (
-                                <button type="button" onClick={e => { e.stopPropagation(); setClientPhotoModal(c.id); }}
+                                <button type="button" onClick={e => { e.stopPropagation(); setClientPhotoModal({ clientId: c.id, photoIdx: 0 }); }}
                                   className="shrink-0 cursor-pointer">
                                   <img src={c.photos[0]} className="w-5 h-5 rounded-full object-cover object-top ring-1 ring-primary/30" alt="" />
                                 </button>
@@ -1552,45 +1543,73 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
         </div>
       )}
 
-      {/* ── Client photo lightbox ── */}
+      {/* ── Client photo lightbox — len fotky daného klienta + GPS + info ── */}
       {clientPhotoModal && (() => {
-        const idx = clientsWithPhoto.findIndex(c => c.id === clientPhotoModal);
-        const c = idx >= 0 ? clientsWithPhoto[idx] : null;
-        if (!c) return null;
+        const c = liveClients.find(x => x.id === clientPhotoModal.clientId);
+        if (!c?.photos?.length) return null;
+        const photos = c.photos;
+        const photoIdx = Math.min(clientPhotoModal.photoIdx, photos.length - 1);
         const name = [c.firstName, c.lastName].filter(Boolean).join(" ") || c.company || c.loginId || "Klient";
-        const hasPrev = idx > 0;
-        const hasNext = idx < clientsWithPhoto.length - 1;
-        return (
+        const loc = c.locationPhoto;
+        const hasGPS = loc?.lat != null && loc?.lng != null;
+        const mapsUrl = hasGPS ? `https://maps.apple.com/?q=${loc!.lat},${loc!.lng}` : null;
+        return createPortal(
           <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/85 p-4"
             onClick={() => setClientPhotoModal(null)}>
             <div className="relative flex flex-col items-center gap-3 max-w-sm w-full"
               onClick={e => e.stopPropagation()}>
+              {/* X */}
               <button onClick={() => setClientPhotoModal(null)}
                 className="absolute top-0 right-0 w-9 h-9 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors cursor-pointer z-10">
                 <X className="w-5 h-5 text-white" />
               </button>
-              <img src={c.photos![0]} className="w-56 h-56 rounded-full object-cover object-top shadow-2xl ring-4 ring-primary/60" alt={name} />
+              {/* Photo */}
+              <img src={photos[photoIdx]} className="w-56 h-56 rounded-full object-cover object-top shadow-2xl ring-4 ring-primary/60" alt={name} />
+              {/* Name + login */}
               <div className="text-center">
                 <div className="font-black text-white text-lg leading-snug">{name}</div>
                 {c.loginId && <div className="text-white/50 text-xs font-mono mt-0.5">#{c.loginId}</div>}
               </div>
-              {clientsWithPhoto.length > 1 && (
+              {/* GPS + info */}
+              {(hasGPS || loc?.place) && (
+                <div className="flex items-center gap-2 flex-wrap justify-center">
+                  <span className="flex items-center gap-1 text-green-300 text-xs font-semibold">
+                    <MapPin className="w-3 h-3 shrink-0" />
+                    {loc!.place ?? `${loc!.lat?.toFixed(4)}, ${loc!.lng?.toFixed(4)}`}
+                  </span>
+                  {mapsUrl && (
+                    <a href={mapsUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                      className="flex items-center gap-1 px-2 py-1 bg-blue-500/80 hover:bg-blue-500 rounded-lg text-white text-[11px] font-bold transition-colors">
+                      <Navigation className="w-3 h-3" /> Navigovať
+                    </a>
+                  )}
+                  {c.phone && (
+                    <a href={`tel:${c.phone.replace(/\s/g,"")}`} onClick={e => e.stopPropagation()}
+                      className="flex items-center gap-1 px-2 py-1 bg-green-500/80 hover:bg-green-500 rounded-lg text-white text-[11px] font-bold transition-colors">
+                      <Phone className="w-3 h-3" /> Zavolať
+                    </a>
+                  )}
+                </div>
+              )}
+              {/* Prev / Next medzi fotkami toho istého klienta */}
+              {photos.length > 1 && (
                 <div className="flex items-center gap-4 mt-1">
-                  <button onClick={() => setClientPhotoModal(clientsWithPhoto[idx - 1].id)}
-                    disabled={!hasPrev}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors cursor-pointer ${hasPrev ? "bg-white/20 hover:bg-white/40 text-white" : "bg-white/5 text-white/20 cursor-not-allowed"}`}>
+                  <button onClick={() => setClientPhotoModal({ clientId: c.id, photoIdx: photoIdx - 1 })}
+                    disabled={photoIdx === 0}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors cursor-pointer ${photoIdx > 0 ? "bg-white/20 hover:bg-white/40 text-white" : "bg-white/5 text-white/20 cursor-not-allowed"}`}>
                     <ChevronLeft className="w-5 h-5" />
                   </button>
-                  <span className="text-white/40 text-xs tabular-nums">{idx + 1} / {clientsWithPhoto.length}</span>
-                  <button onClick={() => setClientPhotoModal(clientsWithPhoto[idx + 1].id)}
-                    disabled={!hasNext}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors cursor-pointer ${hasNext ? "bg-white/20 hover:bg-white/40 text-white" : "bg-white/5 text-white/20 cursor-not-allowed"}`}>
+                  <span className="text-white/40 text-xs tabular-nums">{photoIdx + 1} / {photos.length}</span>
+                  <button onClick={() => setClientPhotoModal({ clientId: c.id, photoIdx: photoIdx + 1 })}
+                    disabled={photoIdx >= photos.length - 1}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors cursor-pointer ${photoIdx < photos.length - 1 ? "bg-white/20 hover:bg-white/40 text-white" : "bg-white/5 text-white/20 cursor-not-allowed"}`}>
                     <ChevronRight className="w-5 h-5" />
                   </button>
                 </div>
               )}
             </div>
-          </div>
+          </div>,
+          document.body
         );
       })()}
     </div>
