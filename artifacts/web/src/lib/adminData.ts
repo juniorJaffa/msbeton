@@ -159,6 +159,7 @@ export interface DepositTx {
   note?: string;
   createdAt: string;            // ISO
   createdBy: string;            // getAdminDeviceLabel()
+  excelConfirmed?: boolean;     // označený pre Excel export (append-only true, ako na Order)
 }
 
 export interface StatusHistoryEntry {

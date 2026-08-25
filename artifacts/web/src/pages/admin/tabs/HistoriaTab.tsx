@@ -264,6 +264,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   // ZÁLOHY filtre
   const [depClientFilter,  setDepClientFilter]  = useState<string>(initialClientId ?? "vsetci");
   const [depDateFilter,    setDepDateFilter]    = useState<DateFilter>("tyzden");
+  const [depExcelFilter,   setDepExcelFilter]   = useState<"vsetky" | "ok" | "chyba">("vsetky");
   const [depClientDrop,    setDepClientDrop]    = useState(false);
   const [depClientSearch,  setDepClientSearch]  = useState("");
   const depClientRef = useRef<HTMLDivElement>(null);
@@ -308,6 +309,28 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     const all = adminData.getOrders();
     const updated = all.map(o => o.id === orderId ? { ...o, excelConfirmed: !o.excelConfirmed } : o);
     adminData.saveOrders(updated);
+  };
+
+  // Excel confirm pre zálohovú transakciu (kind="tx") — uložené v client.deposit.transactions
+  const toggleDepTxExcel = (e: React.MouseEvent, clientId: string, txId: string) => {
+    e.stopPropagation();
+    if (readerBlocked()) return;
+    const clients = adminData.getClients();
+    const updated = clients.map(c => {
+      if ((c.loginId || c.id) !== clientId) return c;
+      return {
+        ...c,
+        deposit: {
+          ...c.deposit,
+          balance: c.deposit?.balance ?? 0,
+          enabled: c.deposit?.enabled ?? false,
+          transactions: (c.deposit?.transactions ?? []).map(tx =>
+            tx.id === txId ? { ...tx, excelConfirmed: !tx.excelConfirmed } : tx
+          ),
+        },
+      };
+    });
+    adminData.saveClients(updated);
   };
 
   // Focus + scroll na konkrétnu objednávku (navigácia z ObjednavkyTab)
@@ -408,9 +431,18 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const filteredDepRows = useMemo(() =>
     allDepositRows.filter(r => {
       if (depClientFilter !== "vsetci" && r.clientId !== depClientFilter) return false;
-      return passesDate(toDateStr(r.sortKey), depDateFilter);
+      if (!passesDate(toDateStr(r.sortKey), depDateFilter)) return false;
+      if (depExcelFilter !== "vsetky") {
+        // Pre "tx" riadky: tx.excelConfirmed; pre "order" riadky: order.excelConfirmed z liveOrders
+        const isConfirmed = r.kind === "tx"
+          ? !!r.tx.excelConfirmed
+          : !!(liveOrders.find(o => o.id === r.orderId)?.excelConfirmed);
+        if (depExcelFilter === "ok"    && !isConfirmed) return false;
+        if (depExcelFilter === "chyba" &&  isConfirmed) return false;
+      }
+      return true;
     }),
-  [allDepositRows, depClientFilter, depDateFilter]);
+  [allDepositRows, depClientFilter, depDateFilter, depExcelFilter, liveOrders]);
 
   const depSummary = useMemo(() => {
     let topup = 0, payment = 0;
@@ -770,17 +802,34 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       {/* ─── ZÁLOHY ─────────────────────────────────────────────────── */}
       {sub === "zalohy" && (
         <div className="space-y-3">
-          {/* Filtre */}
+          {/* Filtre — riadok 1: dátum */}
           <div className="flex flex-wrap gap-1.5 items-center">
             {DATE_BTNS.map(f => (
               <button key={f.id} onClick={() => setDepDateFilter(f.id)} className={dateBtnCls(depDateFilter === f.id)}>{f.label}</button>
             ))}
           </div>
+          {/* Filtre — riadok 2: klient dropdown */}
           {depositClients.length > 0 && (
             <ClientDropdown clients={depositClients} value={depClientFilter} onChange={setDepClientFilter}
               dropRef={depClientRef} open={depClientDrop} setOpen={setDepClientDrop}
               search={depClientSearch} setSearch={setDepClientSearch} align="left" />
           )}
+          {/* Filtre — riadok 3: EXCEL filter (identický štýl ako cashflow) */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[9px] font-black uppercase tracking-wide text-green-700 bg-green-50 border border-green-400 rounded px-1.5 py-0.5 shrink-0">EXCEL</span>
+            <button onClick={() => setDepExcelFilter("vsetky")}
+              className={`px-2.5 py-1 text-xs font-bold rounded-sm border transition-all cursor-pointer ${
+                depExcelFilter === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-green-300 hover:border-green-400"
+              }`}>Všetky</button>
+            <button onClick={() => setDepExcelFilter("ok")}
+              className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-sm border transition-all cursor-pointer ${
+                depExcelFilter === "ok" ? "bg-green-100 text-green-700 border-green-500" : "bg-white text-gray-600 border-green-300 hover:bg-green-50 hover:text-green-600 hover:border-green-400"
+              }`}><Check className="w-2.5 h-2.5 shrink-0" />EXCEL OK</button>
+            <button onClick={() => setDepExcelFilter("chyba")}
+              className={`px-2.5 py-1 text-xs font-bold rounded-sm border transition-all cursor-pointer ${
+                depExcelFilter === "chyba" ? "bg-gray-100 text-gray-700 border-gray-400" : "bg-white text-gray-600 border-green-300 hover:border-green-400"
+              }`}>EXCEL?</button>
+          </div>
 
           {/* Súhrn — kompaktný inline bar */}
           <div className="flex items-center gap-2 flex-wrap bg-white/90 border border-gray-100 rounded-lg px-3 py-1.5 w-fit">
@@ -800,8 +849,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
             <div className="bg-white border border-gray-100 rounded-lg overflow-hidden">
               <div className="overflow-x-auto">
                 {/* Header — skrytý na mobile */}
-                <div className="hidden sm:grid grid-cols-[90px_1fr_100px_110px_1fr_1fr] gap-2 px-3 py-2 bg-gray-50 border-b border-gray-100 text-[9px] font-black uppercase tracking-widest text-gray-400">
-                  <span>Dátum</span><span>Klient</span><span className="text-right">Suma</span><span>Typ</span><span>Poznámka</span><span>KTO</span>
+                <div className="hidden sm:grid grid-cols-[90px_1fr_100px_110px_1fr_1fr_72px] gap-2 px-3 py-2 bg-gray-50 border-b border-gray-100 text-[9px] font-black uppercase tracking-widest text-gray-400">
+                  <span>Dátum</span><span>Klient</span><span className="text-right">Suma</span><span>Typ</span><span>Poznámka</span><span>KTO</span><span className="text-center">Excel</span>
                 </div>
                 <div className="divide-y divide-gray-100">
                   {filteredDepRows.map((r) => {
@@ -819,6 +868,18 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     const note = r.kind === "tx" ? (r.tx.note ?? "—") : r.orderLabel;
                     const devLabel = r.kind === "tx" ? r.tx.createdBy : (r.orderDevice ?? "");
                     const handleClick = isOrderUse && onGoToOrder ? () => onGoToOrder(r.orderId) : undefined;
+                    // EXCEL stav: pre order riadky z liveOrders, pre tx riadky z tx.excelConfirmed
+                    const isExcelOk = r.kind === "order"
+                      ? !!(liveOrders.find(o => o.id === r.orderId)?.excelConfirmed)
+                      : !!r.tx.excelConfirmed;
+                    const handleExcel = (e: React.MouseEvent) => {
+                      e.stopPropagation();
+                      if (r.kind === "order") toggleExcelConfirmed(e, r.orderId);
+                      else toggleDepTxExcel(e, r.clientId, r.tx.id);
+                    };
+                    const excelBtnCls = isExcelOk
+                      ? "bg-green-100 text-green-700 border-green-500 hover:bg-red-50 hover:text-red-500 hover:border-red-300"
+                      : "bg-gray-50 text-gray-400 border-gray-200 hover:bg-green-50 hover:text-green-600 hover:border-green-400";
                     return (
                       <div key={rowKey}
                         onClick={handleClick}
@@ -833,6 +894,11 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             </button>
                             <span className={`font-black tabular-nums text-sm shrink-0 ${amountCls}`}>{amountStr}</span>
                             <span className={`shrink-0 flex items-center justify-center w-6 h-6 rounded-full ${iconBg}`}>{rowIcon}</span>
+                            {/* EXCEL btn — mobile */}
+                            <button onClick={handleExcel}
+                              className={`inline-flex items-center gap-0.5 text-[8px] font-black px-1.5 py-0.5 rounded border transition-all cursor-pointer shrink-0 ${excelBtnCls}`}>
+                              <Check className="w-2.5 h-2.5 shrink-0" />{isExcelOk ? "OK" : "?"}
+                            </button>
                           </div>
                           {isOrderUse && <div className="pl-[72px] mt-0.5 text-[9px] text-orange-600 truncate">{r.orderLabel}</div>}
                           {devLabel && (
@@ -842,7 +908,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                           )}
                         </div>
                         {/* Desktop layout */}
-                        <div className="hidden sm:grid grid-cols-[90px_1fr_100px_110px_1fr_1fr] gap-2 items-center">
+                        <div className="hidden sm:grid grid-cols-[90px_1fr_100px_110px_1fr_1fr_72px] gap-2 items-center">
                           <span className="text-gray-400 tabular-nums text-[10px]">{fmtDate(ts)}</span>
                           <button type="button" onClick={e => { e.stopPropagation(); r.loginId && onGoToClient?.(r.loginId); }}
                             className={`text-left font-semibold text-gray-700 text-xs truncate ${onGoToClient && r.loginId ? "hover:text-secondary hover:underline cursor-pointer" : "cursor-default"}`}>
@@ -854,6 +920,13 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                           </span>
                           <span className="text-gray-500 text-[10px] truncate">{note}</span>
                           <DeviceLabel label={devLabel} className="text-[10px] truncate" />
+                          {/* EXCEL btn — desktop */}
+                          <div className="flex justify-center">
+                            <button onClick={handleExcel}
+                              className={`inline-flex items-center gap-0.5 text-[8px] font-black px-1.5 py-0.5 rounded border transition-all cursor-pointer ${excelBtnCls}`}>
+                              <Check className="w-2.5 h-2.5 shrink-0" />{isExcelOk ? "EXCEL OK" : "EXCEL?"}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
