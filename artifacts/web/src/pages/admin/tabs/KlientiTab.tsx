@@ -772,6 +772,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
       type: "delete",
       at: new Date().toISOString(),
       note: `Fotka #${index + 1}${isLast ? " — posledná, GPS vymazané" : ""}`,
+      by: getAdminDeviceLabel() || "admin",
     };
     // Keď sa vymaže posledná fotka, vymaž aj GPS/locationPhoto — GPS bez fotky je orphaned
     save(freshClients.map(c => c.id === clientId ? {
@@ -1978,6 +1979,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                               <span className={`font-bold shrink-0 ${cfg.text}`}>{cfg.label}</span>
                               <span className="text-gray-400 shrink-0">{ts}</span>
                               {entry.note && <span className="text-gray-400 truncate">{entry.note}</span>}
+                              {(entry as {by?: string}).by && <span className="text-gray-500 italic shrink-0">— {(entry as {by?: string}).by}</span>}
                             </div>
                           );
                         })}
