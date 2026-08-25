@@ -507,7 +507,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
         if (onlyNedoplatok) {
           const dep = o.depositUsed ?? 0;
           const paid = o.paidAmount ?? 0;
-          if (!(dep > 0 && paid > 0 && dep < paid - 0.01)) return false;
+          const isOldNed = dep > 0 && paid > 0 && dep < paid - 0.01;
+          const payTotal = (o.payments ?? []).reduce((s: number, p: { amount: number }) => s + p.amount, 0);
+          const isNewNed = payTotal > 0.01 && payTotal < (o.totalSDph ?? 0) - 0.01;
+          if (!isOldNed && !isNewNed) return false;
         }
         if (cashExcelFilter === "ok" && !o.excelConfirmed) return false;
         if (cashExcelFilter === "chyba" && o.excelConfirmed) return false;

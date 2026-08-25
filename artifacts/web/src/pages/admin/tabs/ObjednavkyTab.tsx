@@ -43,11 +43,153 @@ function creatorMeta(role?: string): { Icon: React.ElementType; label: string; c
     default: return null; // staré objednávky bez údaja
   }
 }
-import { adminData, adminApi, Order, StatusHistoryEntry, TransportSettings, getKamenivoGroup, readerBlocked } from "@/lib/adminData";
+import { adminData, adminApi, Order, StatusHistoryEntry, PaymentEntry, TransportSettings, getKamenivoGroup, readerBlocked } from "@/lib/adminData";
 import { clientAvatar, nameAvatar } from "@/lib/clientAvatar";
 import { cn, formatPhone } from "@/lib/utils";
 import { isReader, getAdminDeviceLabel } from "@/lib/adminAuth";
 import { authFetch } from "./_shared";
+
+// Modul-level formatter — používajú ho PaymentsModal aj ObjednavkyTab
+const skEur = (n: number) => n.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+// ── PaymentsModal — KROS-štýl splátky pre jednu objednávku ──────────────────
+const PAY_METHODS: { key: PaymentEntry["method"]; label: string }[] = [
+  { key: "hotovost", label: "Hotovosť" },
+  { key: "prevod",   label: "Bankový prevod" },
+  { key: "zaloha",   label: "Záloha" },
+  { key: "ine",      label: "Iné" },
+];
+
+function PaymentsModal({ order, onClose, onAdd, onDelete, readOnly }: {
+  order: Order;
+  onClose: () => void;
+  onAdd: (entry: PaymentEntry) => void;
+  onDelete: (id: string) => void;
+  readOnly: boolean;
+}) {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const [date,   setDate]   = useState(todayStr);
+  const [method, setMethod] = useState<PaymentEntry["method"]>("hotovost");
+  const [amount, setAmount] = useState("");
+  const [err,    setErr]    = useState("");
+
+  const payments  = order.payments ?? [];
+  const payTotal  = payments.reduce((s, p) => s + p.amount, 0);
+  const total     = order.totalSDph ?? 0;
+  const outstanding = Math.max(0, total - payTotal);
+  const isFullyPaid = outstanding < 0.01;
+
+  const fmtD = (iso: string) => {
+    const d = new Date(iso);
+    return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`;
+  };
+
+  const submit = () => {
+    const amt = parseFloat(amount.replace(",", "."));
+    if (isNaN(amt) || amt <= 0) { setErr("Zadaj sumu > 0"); return; }
+    onAdd({ id: crypto.randomUUID(), at: new Date(date + "T12:00:00").toISOString(), method, amount: amt, by: getAdminDeviceLabel() || "admin" });
+    setAmount("");
+    setErr("");
+  };
+
+  return createPortal(
+    <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/60" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div>
+            <div className="font-black text-secondary text-sm">💰 Úhrady k objednávke</div>
+            <div className="text-xs text-gray-500 mt-0.5">{order.clientName}{order.company ? ` · ${order.company}` : ""}</div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center cursor-pointer transition-colors">
+            <X className="w-4 h-4 text-gray-500" />
+          </button>
+        </div>
+        {/* Celková suma */}
+        <div className="px-5 py-2.5 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+          <span className="text-xs font-semibold text-gray-500">Celková suma faktúry</span>
+          <span className="font-black text-secondary tabular-nums">{skEur(total)} €</span>
+        </div>
+        {/* Zoznam úhrad */}
+        <div className="flex-1 overflow-y-auto max-h-52 px-5 py-3 space-y-2">
+          {payments.length === 0 && (
+            <div className="text-xs text-gray-400 italic text-center py-4">Žiadne úhrady</div>
+          )}
+          {payments.map(p => (
+            <div key={p.id} className="flex items-center gap-2">
+              <span className="text-gray-400 text-xs tabular-nums shrink-0 w-20">{fmtD(p.at)}</span>
+              <span className="text-gray-600 text-xs truncate flex-1">{PAY_METHODS.find(m => m.key === p.method)?.label ?? p.method}</span>
+              <span className="font-black text-teal-600 tabular-nums shrink-0 text-sm">{skEur(p.amount)} €</span>
+              {!readOnly && (
+                <button onClick={() => onDelete(p.id)}
+                  className="w-5 h-5 rounded flex items-center justify-center text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors cursor-pointer shrink-0">
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+        {/* Súhrn */}
+        <div className="px-5 py-3 border-t border-gray-100 bg-gray-50 space-y-1.5">
+          <div className="flex justify-between text-xs">
+            <span className="text-gray-500">Zaplatené</span>
+            <span className="font-bold text-teal-600 tabular-nums">{skEur(payTotal)} €</span>
+          </div>
+          <div className="flex justify-between text-sm font-black border-t border-gray-200 pt-1.5">
+            <span className={isFullyPaid ? "text-teal-600" : "text-orange-600"}>Zostatok</span>
+            <span className={`tabular-nums ${isFullyPaid ? "text-teal-600" : "text-orange-600"}`}>
+              {isFullyPaid ? "✓ Uhradené" : `${skEur(outstanding)} €`}
+            </span>
+          </div>
+        </div>
+        {/* Form — pridanie */}
+        {!readOnly && (
+          <div className="px-5 py-4 border-t border-gray-100 space-y-3">
+            <div className="text-[10px] font-black uppercase tracking-wider text-gray-400">Pridať úhradu</div>
+            <div className="flex gap-2">
+              <input type="date" value={date} onChange={e => setDate(e.target.value)}
+                className="flex-1 px-2.5 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-400" />
+              <select value={method} onChange={e => setMethod(e.target.value as PaymentEntry["method"])}
+                className="flex-1 px-2 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-400 bg-white">
+                {PAY_METHODS.map(m => <option key={m.key} value={m.key}>{m.label}</option>)}
+              </select>
+            </div>
+            <div className="flex gap-2">
+              <input type="number" step="0.01" min="0.01"
+                placeholder={outstanding > 0.01 ? `${skEur(outstanding)} (zostatok)` : "Suma v €"}
+                value={amount} onChange={e => setAmount(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") submit(); if (e.key === "Escape") onClose(); }}
+                className="flex-1 px-2.5 py-1.5 text-sm font-bold border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-400"
+              />
+              {outstanding > 0.01 && (
+                <button onClick={() => setAmount(outstanding.toFixed(2))}
+                  title="Vyplň zostatok"
+                  className="px-2.5 py-1.5 text-xs font-bold text-teal-700 border border-teal-200 rounded-md hover:bg-teal-50 transition-colors cursor-pointer whitespace-nowrap">
+                  Zostatok
+                </button>
+              )}
+            </div>
+            {err && <div className="text-xs text-red-500 font-bold">{err}</div>}
+          </div>
+        )}
+        {/* Actions */}
+        <div className="flex gap-2 px-5 pb-5 pt-3 border-t border-gray-100">
+          <button onClick={onClose}
+            className="flex-1 px-3 py-2 text-xs font-bold text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors cursor-pointer">
+            Zavrieť
+          </button>
+          {!readOnly && (
+            <button onClick={submit}
+              className="flex-1 px-3 py-2 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 rounded-md transition-colors cursor-pointer">
+              + Pridať úhradu
+            </button>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
 
 const ORDER_STATUSES: { key: Order["status"]; label: string; color: string }[] = [
   { key: "nova",        label: "Nová",        color: "bg-blue-100 text-blue-700" },
@@ -782,7 +924,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const [filterTab, setFilterTab] = useState<Order["tab"] | "vsetky">("vsetky");
   const [filterPriceMode, setFilterPriceMode] = useState<"vsetky" | "faktura" | "hotovost">("vsetky");
   const [filterChannel, setFilterChannel] = useState<"vsetky" | "sms" | "kosarik">("vsetky");
-  const [filterZaloha, setFilterZaloha] = useState<"vsetky" | "zaloha" | "doplatok">("vsetky");
+  const [filterZaloha, setFilterZaloha] = useState<"vsetky" | "zaloha" | "doplatok" | "nedoplatok">("vsetky");
   const [search, setSearch] = useState(initialSearch ?? "");
   const [clientIdActive, setClientIdActive] = useState<string | null>(initialClientId ?? null);
   const [dateFrom, setDateFrom] = useState("");
@@ -837,6 +979,8 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const [noteEditVal, setNoteEditVal] = useState("");
   // Deposit reversal — keď admin zmení stav preč z vyplatena a order mal depositUsed > 0
   const [depositReversal, setDepositReversal] = useState<{ orderId: string; depositUsed: number; clientLoginId: string; newStatus: Order["status"] } | null>(null);
+  // Payments modal (KROS-štýl) — orderId otvorenej objednávky
+  const [paymentsModal, setPaymentsModal] = useState<string | null>(null);
   // Presence: kto iný práve prezerá danú objednávku (soft lock indicator)
   const [presenceMap, setPresenceMap] = useState<Record<string, string[]>>({});
   const [conflictToast, setConflictToast] = useState<string | null>(null);
@@ -1013,6 +1157,54 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
     }));
   };
 
+  // Pridaj úhradu (KROS-štýl splátka) — ak celkovo zaplatené >= total → auto-vyplatená
+  const handleAddPayment = (orderId: string, entry: PaymentEntry) => {
+    if (readerBlocked()) return;
+    const now = new Date().toISOString();
+    save(orders.map(o => {
+      if (o.id !== orderId) return o;
+      const newPayments = [...(o.payments ?? []), entry];
+      const payTotal = newPayments.reduce((s, p) => s + p.amount, 0);
+      const isFullyPaid = payTotal >= (o.totalSDph ?? 0) - 0.01;
+      const updates: Partial<Order> = { payments: newPayments, updatedAt: now };
+      if (isFullyPaid && o.status !== "vyplatena") {
+        const histEntry: StatusHistoryEntry = {
+          status: "vyplatena",
+          prevStatus: o.status,
+          changedAt: now,
+          changedBy: getAdminDeviceLabel() || "admin",
+          paidAmount: payTotal,
+        };
+        Object.assign(updates, {
+          status: "vyplatena" as const,
+          paidAmount: payTotal,
+          statusHistory: [...(o.statusHistory ?? []), histEntry],
+        });
+      }
+      return { ...o, ...updates };
+    }));
+  };
+
+  // Zmaž konkrétnu úhradu — ak bola posledná a objednávka bola auto-vyplatená, reset na vyuctovana
+  const handleDeletePayment = (orderId: string, paymentId: string) => {
+    if (readerBlocked()) return;
+    const now = new Date().toISOString();
+    save(orders.map(o => {
+      if (o.id !== orderId) return o;
+      const newPayments = (o.payments ?? []).filter(p => p.id !== paymentId);
+      const payTotal = newPayments.reduce((s, p) => s + p.amount, 0);
+      const wasAutoVyplatena = o.status === "vyplatena" && payTotal < (o.totalSDph ?? 0) - 0.01;
+      const updates: Partial<Order> = {
+        payments: newPayments.length ? newPayments : undefined,
+        updatedAt: now,
+      };
+      if (wasAutoVyplatena) {
+        Object.assign(updates, { status: "vyuctovana" as const, paidAmount: undefined });
+      }
+      return { ...o, ...updates };
+    }));
+  };
+
   // Pridaj poznámku do statusHistory (type:"note") a aktualizuj o.note
   const addNoteHistory = (id: string, newNote: string) => {
     const now = new Date().toISOString();
@@ -1070,8 +1262,9 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
     .filter(o => filterPriceMode === "vsetky" || o.priceMode === filterPriceMode)
     .filter(o => filterChannel   === "vsetky" || (filterChannel === "sms" ? !!o.viaSms : !o.viaSms))
     .filter(o => filterZaloha    === "vsetky" || (
-      filterZaloha === "zaloha" ? (o.depositUsed !== undefined && o.depositUsed > 0) :
-      /* doplatok */ (o.depositUsed !== undefined && o.depositUsed > 0 && o.paidAmount !== undefined && o.paidAmount - o.depositUsed > 0.01)
+      filterZaloha === "zaloha"     ? (o.depositUsed !== undefined && o.depositUsed > 0) :
+      filterZaloha === "doplatok"   ? (o.depositUsed !== undefined && o.depositUsed > 0 && o.paidAmount !== undefined && o.paidAmount - o.depositUsed > 0.01) :
+      /* nedoplatok */ (() => { const pt = (o.payments ?? []).reduce((s,p) => s+p.amount,0); return pt > 0.01 && pt < (o.totalSDph ?? 0) - 0.01; })()
     ))
     .filter(o => !clientIdActive || o.clientId === clientIdActive)
     .filter(o => {
@@ -1352,7 +1545,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
               <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">Typ / Platba / Zdroj</span>
               {(filterTab !== "vsetky" || filterPriceMode !== "vsetky" || filterChannel !== "vsetky" || filterZaloha !== "vsetky") && (
                 <span className="bg-secondary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
-                  {[filterTab !== "vsetky" && TAB_STYLES[filterTab]?.label, filterPriceMode !== "vsetky" && (filterPriceMode === "faktura" ? "FA" : "HOT"), filterChannel !== "vsetky" && (filterChannel === "sms" ? "SMS" : "Košík"), filterZaloha !== "vsetky" && (filterZaloha === "doplatok" ? "⚠ Doplatok" : "💰 Záloha")].filter(Boolean).join(" · ")}
+                  {[filterTab !== "vsetky" && TAB_STYLES[filterTab]?.label, filterPriceMode !== "vsetky" && (filterPriceMode === "faktura" ? "FA" : "HOT"), filterChannel !== "vsetky" && (filterChannel === "sms" ? "SMS" : "Košík"), filterZaloha !== "vsetky" && (filterZaloha === "doplatok" ? "⚠ Doplatok" : filterZaloha === "nedoplatok" ? "❗ Nedoplatok" : "💰 Záloha")].filter(Boolean).join(" · ")}
                 </span>
               )}
               <ChevronDown className={`w-3.5 h-3.5 text-gray-400 ml-auto transition-transform duration-150 ${secTypOpen ? "rotate-180" : ""}`} />
@@ -1439,6 +1632,11 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                       className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-sm border transition-all ${filterZaloha === "doplatok" ? "bg-orange-500 text-white border-orange-500" : "bg-white text-gray-500 border-gray-200 hover:border-orange-300"}`}>
                       ⚠ Doplatok
                       <span className="text-[10px] opacity-70 ml-0.5">{orders.filter(o => o.depositUsed !== undefined && o.depositUsed > 0 && o.paidAmount !== undefined && o.paidAmount - o.depositUsed > 0.01).length}</span>
+                    </button>
+                    <button onClick={() => setFilterZaloha("nedoplatok")}
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-sm border transition-all ${filterZaloha === "nedoplatok" ? "bg-red-500 text-white border-red-500" : "bg-white text-gray-500 border-gray-200 hover:border-red-300"}`}>
+                      ❗ Nedoplatky
+                      <span className="text-[10px] opacity-70 ml-0.5">{orders.filter(o => { const pt = (o.payments ?? []).reduce((s,p) => s+p.amount,0); return pt > 0.01 && pt < (o.totalSDph ?? 0) - 0.01; }).length}</span>
                     </button>
                   </div>
                 </div>
@@ -1760,6 +1958,33 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                             );
                           })()}
                     </div>
+                    {/* Čiastočne uhradená badge + Pridať úhradu */}
+                    {(() => {
+                      const payTotal = (o.payments ?? []).reduce((s, p) => s + p.amount, 0);
+                      const isCiastocne = payTotal > 0.01 && payTotal < (o.totalSDph ?? 0) - 0.01;
+                      const canAddPayment = !readOnly && (o.status === "vyuctovana" || o.status === "odoslana" || o.status === "vyplatena" || o.status === "potvrdena");
+                      return (
+                        <>
+                          {isCiastocne && (
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-black rounded-sm bg-orange-100 text-orange-700 border border-orange-200">
+                                ❗ Čiastočne uhradené — zostatok {skEur((o.totalSDph ?? 0) - payTotal)} €
+                              </span>
+                            </div>
+                          )}
+                          {canAddPayment && (
+                            <button onClick={e => { e.stopPropagation(); setPaymentsModal(o.id); }}
+                              title="Pridať úhradu (KROS-štýl)"
+                              className="mt-0.5 inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-black text-teal-700 border border-teal-200 rounded-sm hover:bg-teal-600 hover:text-white hover:border-teal-600 transition-all cursor-pointer">
+                              💳 Pridať úhradu
+                              {(o.payments?.length ?? 0) > 0 && (
+                                <span className="ml-0.5 opacity-70">{o.payments!.length}×</span>
+                              )}
+                            </button>
+                          )}
+                        </>
+                      );
+                    })()}
                     {/* PDF quick-print — bez nutnosti otvárať objednávku */}
                     <div className="flex items-center gap-1">
                       <button onClick={e => { e.stopPropagation(); exportOrderPDF(o, clientMap, "a5"); }}
@@ -2467,6 +2692,20 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
           </div>
         </div>
       )}
+      {/* ── PaymentsModal (KROS-štýl úhrady) ── */}
+      {paymentsModal && (() => {
+        const order = orders.find(o => o.id === paymentsModal);
+        if (!order) return null;
+        return (
+          <PaymentsModal
+            order={order}
+            readOnly={readOnly}
+            onClose={() => setPaymentsModal(null)}
+            onAdd={(entry) => handleAddPayment(order.id, entry)}
+            onDelete={(id) => handleDeletePayment(order.id, id)}
+          />
+        );
+      })()}
       {/* ── Client photo lightbox ── */}
       {clientPhotoModal && (() => {
         const c = allClients.find(x => x.id === clientPhotoModal.clientId);

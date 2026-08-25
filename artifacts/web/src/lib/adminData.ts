@@ -171,6 +171,15 @@ export interface StatusHistoryEntry {
   note?: string;            // text poznámky (len ak type === "note")
 }
 
+export interface PaymentEntry {
+  id: string;
+  at: string;                              // ISO timestamp (dátum úhrady)
+  method: "hotovost" | "prevod" | "zaloha" | "ine";
+  amount: number;                          // EUR
+  note?: string;
+  by?: string;                             // getAdminDeviceLabel()
+}
+
 export interface Order {
   id: string;
   createdAt: string;
@@ -214,6 +223,7 @@ export interface Order {
   createdByDevice?: string;   // názov zariadenia (admin) alebo meno klienta
   createdBySession?: string;  // admin session id (na previazanie s presence/audit)
   excelConfirmed?: boolean;   // Klára: zaznam bol prenesený do Excelu (viditeľné všetkým adminom)
+  payments?: PaymentEntry[];  // splátkové úhrady — Pridať úhradu (KROS-štýl), append-only na serveri
 }
 
 export interface ClientAccount {

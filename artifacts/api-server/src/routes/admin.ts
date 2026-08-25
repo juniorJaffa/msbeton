@@ -583,7 +583,7 @@ router.put("/orders", async (req, res) => {
   //   Soft delete a status zmeny majú updatedAt (stampArray) → správne mergovanie podľa času.
   // appendOnlyFields: statusHistory sa union-uje z oboch verziií — nikdy nestratí záznamy pri súbežných zmenách
   // stickyTrueFields: excelConfirmed — raz potvrdené nikdy nestratí pri concurrent edite
-  try { const r = await mergeSaveArray(KEYS.orders, req.body, req.get("X-Base-Sync"), null, undefined, true, ["statusHistory"], ["excelConfirmed"]); res.json({ ok: true, ...r }); }
+  try { const r = await mergeSaveArray(KEYS.orders, req.body, req.get("X-Base-Sync"), null, undefined, true, ["statusHistory", "payments"], ["excelConfirmed"]); res.json({ ok: true, ...r }); }
   catch (err) { req.log.error({ err }, "Failed to save orders"); res.status(500).json({ error: "Internal server error" }); }
 });
 
