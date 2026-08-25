@@ -157,7 +157,7 @@ function PaymentsModal({ order, clientDepositBalance, onClose, onAdd, onDelete, 
           {payments.length === 0 && (
             <div className="text-xs text-gray-400 italic text-center py-3">Žiadne úhrady doplatku</div>
           )}
-          {payments.map((p, i) => (
+          {[...payments].sort((a, b) => b.at.localeCompare(a.at)).map((p, i) => (
             <div key={p.id} className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md ${p.method === "zaloha" ? "bg-amber-50 border border-amber-100" : "bg-gray-50 border border-gray-100"}`}>
               <span className="text-gray-400 text-[10px] tabular-nums shrink-0 w-[72px]">{fmtD(p.at)}</span>
               <span className={`text-[10px] font-bold shrink-0 px-1.5 py-0.5 rounded-full ${p.method === "zaloha" ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-600"}`}>
@@ -2795,7 +2795,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                         </div>
                                       );
                                       // Finančné záznamy — payment_add / payment_delete / deposit_pay / deposit_reversal
-                                      if (h.type === "payment_add" || h.type === "payment_delete" || h.type === "deposit_pay" || h.type === "deposit_reversal") {
+                                      if (h.type === "payment_add" || (!h.type && h.amount !== undefined) || h.type === "payment_delete" || h.type === "deposit_pay" || h.type === "deposit_reversal") {
                                         const isAdd = h.type === "payment_add";
                                         const isDel = h.type === "payment_delete";
                                         const isDepPay = h.type === "deposit_pay";
