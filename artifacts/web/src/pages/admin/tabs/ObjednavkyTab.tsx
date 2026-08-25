@@ -94,6 +94,10 @@ function PaymentsModal({ order, clientDepositBalance, onClose, onAdd, onDelete, 
     const d = new Date(iso);
     return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`;
   };
+  const fmtT = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleTimeString("sk-SK", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Bratislava" });
+  };
 
   const methodLabel = (m: "hotovost" | "zaloha") =>
     m === "zaloha" ? "Zo zálohy" : "Hotovosť";
@@ -115,7 +119,7 @@ function PaymentsModal({ order, clientDepositBalance, onClose, onAdd, onDelete, 
       return;
     }
     onAdd(
-      { id: crypto.randomUUID(), at: new Date(date + "T12:00:00").toISOString(), method, amount: amt, by: getAdminDeviceLabel() || "admin" },
+      { id: crypto.randomUUID(), at: new Date(date + "T12:00:00").toISOString(), createdAt: new Date().toISOString(), method, amount: amt, by: getAdminDeviceLabel() || "admin" },
       method === "zaloha"
     );
     setAmount("");
@@ -126,11 +130,11 @@ function PaymentsModal({ order, clientDepositBalance, onClose, onAdd, onDelete, 
     <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/60" onClick={onClose}>
     <style>{`
       @keyframes pm-val-flash {
-        0%   { background: rgba(253,224,71,0.85); transform: scale(1.12); border-radius: 6px; padding: 0 4px; }
-        55%  { background: rgba(253,224,71,0.35); transform: scale(1.04); }
+        0%   { background: rgba(253,224,71,0.9); transform: scale(1.14); border-radius: 6px; padding: 0 5px; }
+        40%  { background: rgba(253,224,71,0.6); transform: scale(1.06); }
         100% { background: transparent; transform: scale(1); padding: 0; }
       }
-      .pm-val-flash { animation: pm-val-flash 0.75s cubic-bezier(0.22,1,0.36,1) both; }
+      .pm-val-flash { animation: pm-val-flash 1.2s cubic-bezier(0.22,1,0.36,1) both; }
     `}</style>
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
         {/* Header */}
@@ -167,7 +171,10 @@ function PaymentsModal({ order, clientDepositBalance, onClose, onAdd, onDelete, 
           )}
           {[...payments].reverse().sort((a, b) => b.at.localeCompare(a.at)).map((p, i) => (
             <div key={p.id} className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md ${p.method === "zaloha" ? "bg-amber-50 border border-amber-100" : "bg-gray-50 border border-gray-100"}`}>
-              <span className="text-gray-400 text-[10px] tabular-nums shrink-0 w-[72px]">{fmtD(p.at)}</span>
+              <div className="flex flex-col shrink-0 w-[72px]">
+                <span className="text-gray-400 text-[10px] tabular-nums">{fmtD(p.at)}</span>
+                {p.createdAt && <span className="text-gray-300 text-[9px] tabular-nums font-semibold">{fmtT(p.createdAt)}</span>}
+              </div>
               <span className={`text-[10px] font-bold shrink-0 px-1.5 py-0.5 rounded-full ${p.method === "zaloha" ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-600"}`}>
                 {methodLabel(p.method as "hotovost" | "zaloha")}
               </span>

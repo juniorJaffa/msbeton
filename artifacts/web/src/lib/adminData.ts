@@ -176,7 +176,8 @@ export interface StatusHistoryEntry {
 
 export interface PaymentEntry {
   id: string;
-  at: string;                              // ISO timestamp (dátum úhrady)
+  at: string;                              // ISO timestamp (dátum úhrady) — user-selected date
+  createdAt?: string;                      // ISO timestamp — kedy bola platba reálne zaznamenaná
   method: "hotovost" | "prevod" | "zaloha" | "ine";
   amount: number;                          // EUR
   note?: string;
