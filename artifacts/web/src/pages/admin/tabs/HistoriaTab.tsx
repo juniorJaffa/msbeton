@@ -1374,9 +1374,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                       const doplatokNeeded = Math.max(0, total - dep);
                                       const payTotal = (o.payments ?? []).reduce((s, p) => s + p.amount, 0);
                                       const isDoplatokPaid = doplatokNeeded < 0.01 || payTotal >= doplatokNeeded - 0.01;
+                                      const remaining = Math.max(0, doplatokNeeded - payTotal);
                                       return doplatokNeeded > 0.5 && !isDoplatokPaid ? (
                                         <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">
-                                          nedoplatok {fmtEur(doplatokNeeded)} €
+                                          nedoplatok {fmtEur(remaining)} €
                                         </span>
                                       ) : (
                                         <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700">
@@ -1557,7 +1558,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                   </span>
                                 ) : (
                                   <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">
-                                    nedoplatok {fmtEur(doplatokNeeded, 0)} €
+                                    nedoplatok {fmtEur(Math.max(0, doplatokNeeded - payTotal), 0)} €
                                   </span>
                                 );
                               })()}
