@@ -347,7 +347,7 @@ function OrderStatusBadge({ status, onChange, orderTotal, depositBalance, deposi
   return (
     <>
       <div className="relative">
-        <button ref={btnRef} onClick={e => { e.stopPropagation(); openDrop(); }} className={`px-2 py-1 text-xs font-bold rounded-sm cursor-pointer ${cur.color}`}>{cur.label} ▾</button>
+        <button ref={btnRef} onClick={e => { e.stopPropagation(); openDrop(); }} className={`px-2 py-1 text-xs font-bold rounded-sm cursor-pointer border border-current/30 shadow-sm ${cur.color}`}>{cur.label} ▾</button>
         {open && createPortal(
           <div ref={dropRef} className="fixed z-[500] bg-white border border-gray-200 shadow-lg rounded-sm min-w-[110px]" style={{ top: dropPos.top, bottom: dropPos.bottom, right: dropPos.right }} onClick={e => e.stopPropagation()}>
             {ORDER_STATUSES.map(s => (
