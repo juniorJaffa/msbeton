@@ -546,7 +546,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     const result: Client[] = [];
     for (const o of filteredOrders) {
       const c = o.clientId ? clientByLoginId.get(o.clientId) : undefined;
-      if (c?.photo && !seen.has(c.id)) { seen.add(c.id); result.push(c); }
+      if (c?.photos?.[0] && !seen.has(c.id)) { seen.add(c.id); result.push(c); }
     }
     return result;
   }, [filteredOrders, clientByLoginId]);
@@ -1197,10 +1197,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                         <div className="sm:hidden space-y-1 py-0.5">
                           {/* R1: Klient + Status (s prevStatus→) + Arrow — inšp. ObjednavkyTab */}
                           <div className="flex items-start gap-2">
-                            {c?.photo && (
+                            {c?.photos?.[0] && (
                               <button type="button" onClick={e => { e.stopPropagation(); setClientPhotoModal(c.id); }}
                                 className="shrink-0 mt-0.5 cursor-pointer">
-                                <img src={c.photo} className="w-6 h-6 rounded-full object-cover object-top ring-1 ring-primary/30" alt="" />
+                                <img src={c.photos[0]} className="w-6 h-6 rounded-full object-cover object-top ring-1 ring-primary/30" alt="" />
                               </button>
                             )}
                             <div className="flex-1 min-w-0">
@@ -1270,7 +1270,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               {(o.totalQty ?? o.quantity) ? <span className="text-gray-400 ml-1">{o.totalQty ?? o.quantity} m³</span> : null}
                             </span>
                             {(() => { const invoice = o.totalSDph ?? o.totalBezDph; return invoice != null && invoice > 0 ? (
-                              <span className="font-black tabular-nums text-base text-secondary shrink-0">{fmtEur(invoice, 0)} €</span>
+                              <span className="font-black tabular-nums text-base text-secondary shrink-0">{fmtEur(invoice)} €</span>
                             ) : null; })()}
                           </div>
                           {/* R2c: Lokalita + km */}
@@ -1289,11 +1289,11 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                 {o.depositUsed && o.depositUsed > 0 && (
                                   <>
                                     <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                                      záloha {fmtEur(o.depositUsed, 0)} €
+                                      záloha {fmtEur(o.depositUsed)} €
                                     </span>
                                     {(() => { const paid = o.totalSDph ?? o.totalBezDph ?? 0; return paid - o.depositUsed > 0.5 ? (
                                       <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">
-                                        nedoplatok {fmtEur(paid - o.depositUsed, 0)} €
+                                        nedoplatok {fmtEur(paid - o.depositUsed)} €
                                       </span>
                                     ) : (
                                       <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700">
@@ -1307,10 +1307,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               {(o.status === "vyplatena" || o.status === "vyuctovana") && o.paidAmount !== undefined && o.paidAmount > 0 && (
                                 <div className="flex items-center gap-1.5 shrink-0">
                                   <span className="text-[9px] text-gray-400 font-medium">zaplatené</span>
-                                  <span className="text-teal-600 font-black tabular-nums text-base">{fmtEur(o.paidAmount, 0)} €</span>
-                                  {Math.abs(o.paidAmount - (o.totalSDph ?? 0)) > 0.5 && (
+                                  <span className="text-teal-600 font-black tabular-nums text-base">{fmtEur(o.paidAmount)} €</span>
+                                  {Math.abs(o.paidAmount - (o.totalSDph ?? 0)) > 0.01 && (
                                     <span className={`text-[9px] font-bold tabular-nums px-1 py-0.5 rounded ${o.paidAmount > (o.totalSDph ?? 0) ? "bg-teal-50 text-teal-600" : "bg-red-50 text-red-500"}`}>
-                                      {o.paidAmount > (o.totalSDph ?? 0) ? "+" : ""}{fmtEur(o.paidAmount - (o.totalSDph ?? 0), 0)}
+                                      {o.paidAmount > (o.totalSDph ?? 0) ? "+" : ""}{fmtEur(o.paidAmount - (o.totalSDph ?? 0))}
                                     </span>
                                   )}
                                 </div>
@@ -1369,10 +1369,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             })()}
                             {/* KLIENT — navy bold, phone subline ak telefón */}
                             <div className="min-w-0 flex items-center gap-1.5">
-                              {c?.photo && (
+                              {c?.photos?.[0] && (
                                 <button type="button" onClick={e => { e.stopPropagation(); setClientPhotoModal(c.id); }}
                                   className="shrink-0 cursor-pointer">
-                                  <img src={c.photo} className="w-5 h-5 rounded-full object-cover object-top ring-1 ring-primary/30" alt="" />
+                                  <img src={c.photos[0]} className="w-5 h-5 rounded-full object-cover object-top ring-1 ring-primary/30" alt="" />
                                 </button>
                               )}
                               <div className="min-w-0">
@@ -1410,14 +1410,14 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             </div>
                             {/* CELKOM + paidAmount + diff pod ním */}
                             <div className="text-right flex flex-col gap-0.5 items-end">
-                              <span className="font-black tabular-nums text-secondary text-sm">{fmtEur(o.totalSDph ?? o.totalBezDph ?? 0, 0)} €</span>
+                              <span className="font-black tabular-nums text-secondary text-sm">{fmtEur(o.totalSDph ?? o.totalBezDph ?? 0)} €</span>
                               {(o.status === "vyplatena" || o.status === "vyuctovana") && o.paidAmount !== undefined && o.paidAmount > 0 && (
                                 <div className="flex items-center gap-1 justify-end">
                                   <span className="text-[9px] text-gray-400">zap.</span>
-                                  <span className="text-teal-600 font-black tabular-nums text-xs whitespace-nowrap">{fmtEur(o.paidAmount, 0)} €</span>
-                                  {Math.abs(o.paidAmount - (o.totalSDph ?? 0)) > 0.5 && (
+                                  <span className="text-teal-600 font-black tabular-nums text-xs whitespace-nowrap">{fmtEur(o.paidAmount)} €</span>
+                                  {Math.abs(o.paidAmount - (o.totalSDph ?? 0)) > 0.01 && (
                                     <span className={`text-[9px] font-bold tabular-nums px-1 py-0.5 rounded ${o.paidAmount > (o.totalSDph ?? 0) ? "bg-teal-50 text-teal-600" : "bg-red-50 text-red-500"}`}>
-                                      {o.paidAmount > (o.totalSDph ?? 0) ? "+" : ""}{fmtEur(o.paidAmount - (o.totalSDph ?? 0), 0)}
+                                      {o.paidAmount > (o.totalSDph ?? 0) ? "+" : ""}{fmtEur(o.paidAmount - (o.totalSDph ?? 0))}
                                     </span>
                                   )}
                                 </div>
@@ -1428,7 +1428,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               {depUsed ? (
                                 <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-sm border leading-tight ${isPartialDep ? "bg-orange-100 text-orange-700 border-orange-200" : "bg-amber-100 text-amber-700 border-amber-200"}`}
                                   title={isPartialDep ? `Záloha: ${depUsed.toFixed(2)} € + doplatok: ${((o.paidAmount ?? 0) - depUsed).toFixed(2)} €` : "Záloha"}>
-                                  💰 {isPartialDep ? "záloha+dopl." : `${fmtEur(depUsed, 0)} €`}
+                                  💰 {isPartialDep ? "záloha+dopl." : `${fmtEur(depUsed)} €`}
                                 </span>
                               ) : <span className="text-gray-300 text-[9px]">—</span>}
                             </div>
@@ -1566,7 +1566,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                 className="absolute top-0 right-0 w-9 h-9 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors cursor-pointer z-10">
                 <X className="w-5 h-5 text-white" />
               </button>
-              <img src={c.photo!} className="w-56 h-56 rounded-full object-cover object-top shadow-2xl ring-4 ring-primary/60" alt={name} />
+              <img src={c.photos![0]} className="w-56 h-56 rounded-full object-cover object-top shadow-2xl ring-4 ring-primary/60" alt={name} />
               <div className="text-center">
                 <div className="font-black text-white text-lg leading-snug">{name}</div>
                 {c.loginId && <div className="text-white/50 text-xs font-mono mt-0.5">#{c.loginId}</div>}
