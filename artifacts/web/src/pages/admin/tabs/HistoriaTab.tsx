@@ -1308,7 +1308,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                       <MessageSquare className="w-2 h-2 shrink-0" />
                                       <span className="truncate max-w-[110px] italic">{h.note || "—"}</span>
                                     </span>
-                                  ) : (h.type === "payment_add" || (!h.type && h.amount !== undefined)) ? (
+                                  ) : (h.type === "payment_add" || (!h.type && h.amount != null)) ? (
                                     <span className="flex items-center gap-1 min-w-0">
                                       <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
                                       <span className="text-green-700 font-black tabular-nums whitespace-nowrap">+{h.amount !== undefined ? fmtEur(h.amount) : "?"} €</span>

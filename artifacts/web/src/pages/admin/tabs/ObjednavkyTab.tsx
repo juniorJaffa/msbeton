@@ -2795,7 +2795,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                         </div>
                                       );
                                       // Finančné záznamy — payment_add / payment_delete / deposit_pay / deposit_reversal
-                                      if (h.type === "payment_add" || (!h.type && h.amount !== undefined) || h.type === "payment_delete" || h.type === "deposit_pay" || h.type === "deposit_reversal") {
+                                      if (h.type === "payment_add" || (!h.type && h.amount != null) || h.type === "payment_delete" || h.type === "deposit_pay" || h.type === "deposit_reversal") {
                                         const isAdd = h.type === "payment_add";
                                         const isDel = h.type === "payment_delete";
                                         const isDepPay = h.type === "deposit_pay";
