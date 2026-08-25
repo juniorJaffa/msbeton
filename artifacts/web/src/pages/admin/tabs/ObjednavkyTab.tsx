@@ -1320,7 +1320,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
       }
       return { ...o, ...updates };
     });
-    adminData.saveOrders(updatedOrders);
+    save(updatedOrders); // IMMEDIATE: save() volá setOrders() + adminData.saveOrders() → React re-render okamžite (nie cez event)
 
     // Ak je metóda "Zo zálohy" — odpočítaj z client.deposit.balance + pridaj DepositTx
     if (deductFromDeposit) {
