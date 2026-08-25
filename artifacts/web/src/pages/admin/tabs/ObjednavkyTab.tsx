@@ -1220,11 +1220,14 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
       changedAt: now,
       changedBy: getAdminDeviceLabel() || "admin",
     };
-    save(orders.map(o => {
+    // Anti-stale: čítame čerstvo z localStorage (nie closure)
+    const freshOrders2 = adminData.getOrders();
+    save(freshOrders2.map(o => {
       if (o.id !== orderId) return o;
       const entryWithPrev: StatusHistoryEntry = { ...entry, prevStatus: o.status };
-      const { depositUsed: _d, paidAmount: _p, ...rest } = o;
-      void _d; void _p;
+      // Vymaž depositUsed, paidAmount AJ payments[] — staré platby z predch. cyklu by falošne "Plne uhradené"
+      const { depositUsed: _d, paidAmount: _p, payments: _pay, ...rest } = o;
+      void _d; void _p; void _pay;
       return { ...rest, status: newStatus, statusHistory: [...(o.statusHistory ?? []), entryWithPrev], updatedAt: now };
     }));
     setDepositReversal(null);
@@ -1312,11 +1315,15 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const handleDeletePayment = (orderId: string, paymentId: string) => {
     if (readerBlocked()) return;
     const now = new Date().toISOString();
-    save(orders.map(o => {
+    // Anti-stale: čítame čerstvo z localStorage (nie closure) — blink fix
+    const freshOrders = adminData.getOrders();
+    save(freshOrders.map(o => {
       if (o.id !== orderId) return o;
       const newPayments = (o.payments ?? []).filter(p => p.id !== paymentId);
       const payTotal = newPayments.reduce((s, p) => s + p.amount, 0);
-      const wasAutoVyplatena = o.status === "vyplatena" && payTotal < (o.totalSDph ?? 0) - 0.01;
+      const depositUsed = o.depositUsed ?? 0;
+      const doplatokTotal = Math.max(0, (o.totalSDph ?? 0) - depositUsed);
+      const wasAutoVyplatena = o.status === "vyplatena" && payTotal < doplatokTotal - 0.01;
       const updates: Partial<Order> = {
         payments: newPayments.length ? newPayments : undefined,
         updatedAt: now,
