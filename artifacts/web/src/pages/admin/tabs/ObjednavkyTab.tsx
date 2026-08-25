@@ -1147,7 +1147,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
     const result: { client: (typeof allClients)[number]; }[] = [];
     for (const o of sorted) {
       const c = clientMap.get(String(o.clientId));
-      if (c?.photo && !seen.has(c.id)) { seen.add(c.id); result.push({ client: c }); }
+      if (c?.photos?.[0] && !seen.has(c.id)) { seen.add(c.id); result.push({ client: c }); }
     }
     return result;
   }, [sorted, clientMap]);
@@ -1614,10 +1614,10 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                       <TabBadge tab={o.tab} />
                       {/* Avatar klienta (smart) + biometria — foto ak existuje */}
                       <span className="relative shrink-0"
-                        onClick={linkedClient?.photo ? e => { e.stopPropagation(); setClientPhotoModal(linkedClient.id); } : undefined}
-                        style={linkedClient?.photo ? { cursor: "pointer" } : undefined}>
-                        {linkedClient?.photo
-                          ? <img src={linkedClient.photo} className="w-6 h-6 rounded-full object-cover object-top ring-1 ring-primary/30" alt="" />
+                        onClick={linkedClient?.photos?.[0] ? e => { e.stopPropagation(); setClientPhotoModal(linkedClient.id); } : undefined}
+                        style={linkedClient?.photos?.[0] ? { cursor: "pointer" } : undefined}>
+                        {linkedClient?.photos?.[0]
+                          ? <img src={linkedClient.photos[0]} className="w-6 h-6 rounded-full object-cover object-top ring-1 ring-primary/30" alt="" />
                           : <span className={cn("w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black", av.palette.bg, av.palette.fg)}>
                               {av.kind === "owner" ? <Crown className="w-3 h-3" />
                                 : av.kind === "template" ? <Percent className="w-3 h-3" />
@@ -2497,7 +2497,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                 <X className="w-5 h-5 text-white" />
               </button>
               {/* Photo */}
-              <img src={c.photo!} className="w-56 h-56 rounded-full object-cover object-top shadow-2xl ring-4 ring-primary/60" alt={name} />
+              <img src={c.photos![0]} className="w-56 h-56 rounded-full object-cover object-top shadow-2xl ring-4 ring-primary/60" alt={name} />
               {/* Name + login */}
               <div className="text-center">
                 <div className="font-black text-white text-lg leading-snug">{name}</div>
