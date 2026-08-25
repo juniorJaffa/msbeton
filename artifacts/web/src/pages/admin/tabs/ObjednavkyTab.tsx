@@ -174,19 +174,19 @@ function PaymentsModal({ order, clientDepositBalance, onClose, onAdd, onDelete, 
           ))}
         </div>
 
-        {/* Súhrn */}
+        {/* Súhrn — animácia pri zmene */}
         <div className="px-5 py-3 border-t border-gray-100 bg-gray-50 space-y-1.5">
           {doplatokPaid > 0.01 && (
             <div className="flex justify-between text-xs">
               <span className="text-gray-500">Spolu uhradené</span>
-              <span className="font-bold text-teal-600 tabular-nums">{skEur(doplatokPaid)} €</span>
+              <span key={doplatokPaid} className="font-bold text-teal-600 tabular-nums animate-[pulse_0.4s_ease-out]">{skEur(doplatokPaid)} €</span>
             </div>
           )}
           <div className="flex justify-between text-sm font-black border-t border-gray-200 pt-1.5">
             <span className={isFullyPaid ? "text-teal-600" : "text-orange-600"}>
               {isFullyPaid ? "✓ Plne uhradená" : "Zostatok na úhradu"}
             </span>
-            <span className={`tabular-nums ${isFullyPaid ? "text-teal-600" : "text-orange-600"}`}>
+            <span key={outstanding} className={`tabular-nums transition-all duration-300 ${isFullyPaid ? "text-teal-600" : "text-orange-600"}`}>
               {isFullyPaid ? "—" : `${skEur(outstanding)} €`}
             </span>
           </div>

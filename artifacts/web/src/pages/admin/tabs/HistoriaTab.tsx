@@ -1618,6 +1618,30 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                       <MessageSquare className="w-2 h-2 shrink-0" />
                                       <span className="truncate max-w-[140px] italic">{h.note || "—"}</span>
                                     </span>
+                                  ) : (h.type === "payment_add" || (!h.type && h.amount != null)) ? (
+                                    <span className="flex items-center gap-1 min-w-0 flex-wrap">
+                                      <span className={`font-bold px-1.5 py-0.5 rounded shrink-0 ${STATUS_COLOR[h.status] ?? "bg-gray-100 text-gray-500"}`}>{STATUS_LABEL[h.status] ?? h.status}</span>
+                                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
+                                      <span className="text-green-700 font-black tabular-nums whitespace-nowrap">+{h.amount != null ? fmtEur(h.amount) : "?"} €</span>
+                                      {h.method && <span className="text-gray-400 font-medium shrink-0">({h.method === "hotovost" ? "Hot." : h.method === "zaloha" ? "Zál." : h.method === "prevod" ? "Prev." : h.method})</span>}
+                                    </span>
+                                  ) : h.type === "payment_delete" ? (
+                                    <span className="flex items-center gap-1 min-w-0">
+                                      <span className={`font-bold px-1.5 py-0.5 rounded shrink-0 ${STATUS_COLOR[h.status] ?? "bg-gray-100 text-gray-500"}`}>{STATUS_LABEL[h.status] ?? h.status}</span>
+                                      <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
+                                      <span className="text-red-600 font-black tabular-nums whitespace-nowrap">−{h.amount != null ? fmtEur(h.amount) : "?"} €</span>
+                                      <span className="text-gray-400 font-medium">zrušené</span>
+                                    </span>
+                                  ) : h.type === "deposit_pay" ? (
+                                    <span className="flex items-center gap-1 min-w-0">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                                      <span className="text-amber-700 font-black tabular-nums whitespace-nowrap">💰 −{h.amount != null ? fmtEur(h.amount) : "?"} €</span>
+                                    </span>
+                                  ) : h.type === "deposit_reversal" ? (
+                                    <span className="flex items-center gap-1 min-w-0">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-blue-300 shrink-0" />
+                                      <span className="text-blue-600 font-black whitespace-nowrap">↩ +{h.amount != null ? fmtEur(h.amount) : "?"} €</span>
+                                    </span>
                                   ) : (
                                     <>
                                       <span className={`font-bold px-1.5 py-0.5 rounded shrink-0 ${STATUS_COLOR[h.status] ?? "bg-gray-100 text-gray-500"}`}>
