@@ -1770,6 +1770,21 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                             );
                           })()}
                     </div>
+                    {/* PDF quick-print — bez nutnosti otvárať objednávku */}
+                    <div className="flex items-center gap-1">
+                      <button onClick={e => { e.stopPropagation(); exportOrderPDF(o, clientMap, "a5"); }}
+                        title="Tlačiť A5 doklad (hotovostné betonáže)"
+                        className="flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-black text-gray-400 border border-gray-200 rounded-sm hover:bg-secondary hover:text-white hover:border-secondary transition-all">
+                        <FileText className="w-2.5 h-2.5" />
+                        A5
+                      </button>
+                      <button onClick={e => { e.stopPropagation(); exportOrderPDF(o, clientMap, "a4"); }}
+                        title="Tlačiť PDF A4 faktúra"
+                        className="flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-black text-gray-400 border border-gray-200 rounded-sm hover:bg-secondary hover:text-white hover:border-secondary transition-all">
+                        <FileText className="w-2.5 h-2.5" />
+                        A4
+                      </button>
+                    </div>
                   </div>
                 </div>
                 {isExp && (
