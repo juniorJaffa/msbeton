@@ -514,12 +514,13 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       .filter(o => {
         if (onlyDeposit && !(o.depositUsed && o.depositUsed > 0)) return false;
         if (onlyNedoplatok) {
+          // nedoplatok = záloha čiastočná a doplatok nebol plne uhradený cez payments[]
           const dep = o.depositUsed ?? 0;
-          const paid = o.paidAmount ?? 0;
-          const isOldNed = dep > 0 && paid > 0 && dep < paid - 0.01;
+          if (dep <= 0) return false;
+          const doplatokTotal = Math.max(0, (o.totalSDph ?? 0) - dep);
+          if (doplatokTotal < 0.01) return false;
           const payTotal = (o.payments ?? []).reduce((s: number, p: { amount: number }) => s + p.amount, 0);
-          const isNewNed = payTotal > 0.01 && payTotal < (o.totalSDph ?? 0) - 0.01;
-          if (!isOldNed && !isNewNed) return false;
+          if (payTotal >= doplatokTotal - 0.01) return false;
         }
         if (cashExcelFilter === "ok" && !o.excelConfirmed) return false;
         if (cashExcelFilter === "chyba" && o.excelConfirmed) return false;

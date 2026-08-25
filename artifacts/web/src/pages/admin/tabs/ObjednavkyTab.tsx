@@ -52,14 +52,9 @@ import { authFetch } from "./_shared";
 // Modul-level formatter — používajú ho PaymentsModal aj ObjednavkyTab
 const skEur = (n: number) => n.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-// ── PaymentsModal — KROS-štýl splátky pre jednu objednávku ──────────────────
-const PAY_METHODS: { key: PaymentEntry["method"]; label: string }[] = [
-  { key: "hotovost", label: "Hotovosť" },
-  { key: "prevod",   label: "Bankový prevod" },
-  { key: "zaloha",   label: "Záloha" },
-  { key: "ine",      label: "Iné" },
-];
-
+// ── PaymentsModal — doplatok k zálohovej platbe ──────────────────────────────
+// Zobrazuje sa LEN keď záloha nestačila (depositUsed > 0 && doplatok > 0).
+// Záloha riadok = readonly; nové záznamy = vždy hotovosť; žiadny method selector.
 function PaymentsModal({ order, onClose, onAdd, onDelete, readOnly }: {
   order: Order;
   onClose: () => void;
@@ -69,7 +64,6 @@ function PaymentsModal({ order, onClose, onAdd, onDelete, readOnly }: {
 }) {
   const todayStr = new Date().toISOString().slice(0, 10);
   const [date,   setDate]   = useState(todayStr);
-  const [method, setMethod] = useState<PaymentEntry["method"]>("hotovost");
   const [amount, setAmount] = useState("");
   const [err,    setErr]    = useState("");
 
@@ -80,11 +74,14 @@ function PaymentsModal({ order, onClose, onAdd, onDelete, readOnly }: {
     return () => document.removeEventListener("keydown", h);
   }, [onClose]);
 
-  const payments  = order.payments ?? [];
-  const payTotal  = payments.reduce((s, p) => s + p.amount, 0);
-  const total     = order.totalSDph ?? 0;
-  const outstanding = Math.max(0, total - payTotal);
-  const isFullyPaid = outstanding < 0.01;
+  const payments     = order.payments ?? [];
+  const depositUsed  = order.depositUsed ?? 0;
+  const total        = order.totalSDph ?? 0;
+  // Doplatok = suma objednávky mínus záloha; payments[] eviduje úhrady doplatku
+  const doplatokTotal = Math.max(0, total - depositUsed);
+  const doplatokPaid  = payments.reduce((s, p) => s + p.amount, 0);
+  const outstanding   = Math.max(0, doplatokTotal - doplatokPaid);
+  const isFullyPaid   = outstanding < 0.01;
 
   const fmtD = (iso: string) => {
     const d = new Date(iso);
@@ -94,7 +91,7 @@ function PaymentsModal({ order, onClose, onAdd, onDelete, readOnly }: {
   const submit = () => {
     const amt = parseFloat(amount.replace(",", "."));
     if (isNaN(amt) || amt <= 0) { setErr("Zadaj sumu > 0"); return; }
-    onAdd({ id: crypto.randomUUID(), at: new Date(date + "T12:00:00").toISOString(), method, amount: amt, by: getAdminDeviceLabel() || "admin" });
+    onAdd({ id: crypto.randomUUID(), at: new Date(date + "T12:00:00").toISOString(), method: "hotovost", amount: amt, by: getAdminDeviceLabel() || "admin" });
     setAmount("");
     setErr("");
   };
@@ -105,27 +102,37 @@ function PaymentsModal({ order, onClose, onAdd, onDelete, readOnly }: {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div>
-            <div className="font-black text-secondary text-sm">💰 Úhrady k objednávke</div>
+            <div className="font-black text-secondary text-sm">💰 Doplatok k zálohe</div>
             <div className="text-xs text-gray-500 mt-0.5">{order.clientName}{order.company ? ` · ${order.company}` : ""}</div>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center cursor-pointer transition-colors">
             <X className="w-4 h-4 text-gray-500" />
           </button>
         </div>
-        {/* Celková suma */}
-        <div className="px-5 py-2.5 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-          <span className="text-xs font-semibold text-gray-500">Celková suma faktúry</span>
-          <span className="font-black text-secondary tabular-nums">{skEur(total)} €</span>
+        {/* Záloha info + doplatok */}
+        <div className="px-5 py-3 bg-amber-50 border-b border-amber-100 space-y-1.5">
+          <div className="flex justify-between text-xs">
+            <span className="text-amber-700 font-semibold">Celková suma</span>
+            <span className="font-black text-secondary tabular-nums">{skEur(total)} €</span>
+          </div>
+          <div className="flex justify-between text-xs">
+            <span className="text-amber-700 font-semibold">💰 Záloha (odpočítaná)</span>
+            <span className="font-bold text-amber-700 tabular-nums">−{skEur(depositUsed)} €</span>
+          </div>
+          <div className="flex justify-between text-xs border-t border-amber-200 pt-1.5">
+            <span className="text-orange-700 font-black">Doplatok k úhrade</span>
+            <span className="font-black text-orange-700 tabular-nums">{skEur(doplatokTotal)} €</span>
+          </div>
         </div>
-        {/* Zoznam úhrad */}
-        <div className="flex-1 overflow-y-auto max-h-52 px-5 py-3 space-y-2">
+        {/* Zoznam úhrad doplatku */}
+        <div className="flex-1 overflow-y-auto max-h-40 px-5 py-3 space-y-2">
           {payments.length === 0 && (
-            <div className="text-xs text-gray-400 italic text-center py-4">Žiadne úhrady</div>
+            <div className="text-xs text-gray-400 italic text-center py-3">Žiadne záznamy o úhrade doplatku</div>
           )}
           {payments.map(p => (
             <div key={p.id} className="flex items-center gap-2">
               <span className="text-gray-400 text-xs tabular-nums shrink-0 w-20">{fmtD(p.at)}</span>
-              <span className="text-gray-600 text-xs truncate flex-1">{PAY_METHODS.find(m => m.key === p.method)?.label ?? p.method}</span>
+              <span className="text-gray-600 text-xs truncate flex-1">Hotovosť</span>
               <span className="font-black text-teal-600 tabular-nums shrink-0 text-sm">{skEur(p.amount)} €</span>
               {!readOnly && (
                 <button onClick={() => onDelete(p.id)}
@@ -136,45 +143,44 @@ function PaymentsModal({ order, onClose, onAdd, onDelete, readOnly }: {
             </div>
           ))}
         </div>
-        {/* Súhrn */}
+        {/* Zostatok doplatku */}
         <div className="px-5 py-3 border-t border-gray-100 bg-gray-50 space-y-1.5">
-          <div className="flex justify-between text-xs">
-            <span className="text-gray-500">Zaplatené</span>
-            <span className="font-bold text-teal-600 tabular-nums">{skEur(payTotal)} €</span>
-          </div>
+          {doplatokPaid > 0.01 && (
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-500">Uhradené v hotovosti</span>
+              <span className="font-bold text-teal-600 tabular-nums">{skEur(doplatokPaid)} €</span>
+            </div>
+          )}
           <div className="flex justify-between text-sm font-black border-t border-gray-200 pt-1.5">
-            <span className={isFullyPaid ? "text-teal-600" : "text-orange-600"}>Zostatok</span>
+            <span className={isFullyPaid ? "text-teal-600" : "text-orange-600"}>Zostatok doplatku</span>
             <span className={`tabular-nums ${isFullyPaid ? "text-teal-600" : "text-orange-600"}`}>
-              {isFullyPaid ? "✓ Uhradené" : `${skEur(outstanding)} €`}
+              {isFullyPaid ? "✓ Doplatok uhradený" : `${skEur(outstanding)} €`}
             </span>
           </div>
         </div>
-        {/* Form — pridanie */}
-        {!readOnly && (
+        {/* Form — pridanie úhrady doplatku (vždy hotovosť) */}
+        {!readOnly && !isFullyPaid && (
           <div className="px-5 py-4 border-t border-gray-100 space-y-3">
-            <div className="text-[10px] font-black uppercase tracking-wider text-gray-400">Pridať úhradu</div>
+            <div className="text-[10px] font-black uppercase tracking-wider text-gray-400">Zaznamenať príjem hotovosti</div>
             <div className="flex gap-2">
               <input type="date" value={date} onChange={e => setDate(e.target.value)}
                 className="flex-1 px-2.5 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-400" />
-              <select value={method} onChange={e => setMethod(e.target.value as PaymentEntry["method"])}
-                className="flex-1 px-2 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-400 bg-white">
-                {PAY_METHODS.map(m => <option key={m.key} value={m.key}>{m.label}</option>)}
-              </select>
+              <div className="flex-1 flex items-center px-2.5 text-xs text-gray-500 border border-gray-200 rounded-md bg-gray-50">
+                Hotovosť
+              </div>
             </div>
             <div className="flex gap-2">
               <input type="number" step="0.01" min="0.01"
-                placeholder={outstanding > 0.01 ? `${skEur(outstanding)} (zostatok)` : "Suma v €"}
+                placeholder={`${skEur(outstanding)} (zostatok)`}
                 value={amount} onChange={e => setAmount(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter") submit(); if (e.key === "Escape") onClose(); }}
                 className="flex-1 px-2.5 py-1.5 text-sm font-bold border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-400"
               />
-              {outstanding > 0.01 && (
-                <button onClick={() => setAmount(outstanding.toFixed(2))}
-                  title="Vyplň zostatok"
-                  className="px-2.5 py-1.5 text-xs font-bold text-teal-700 border border-teal-200 rounded-md hover:bg-teal-50 transition-colors cursor-pointer whitespace-nowrap">
-                  Zostatok
-                </button>
-              )}
+              <button onClick={() => setAmount(outstanding.toFixed(2))}
+                title="Vyplň zostatok"
+                className="px-2.5 py-1.5 text-xs font-bold text-teal-700 border border-teal-200 rounded-md hover:bg-teal-50 transition-colors cursor-pointer whitespace-nowrap">
+                Plný
+              </button>
             </div>
             {err && <div className="text-xs text-red-500 font-bold">{err}</div>}
           </div>
@@ -185,9 +191,9 @@ function PaymentsModal({ order, onClose, onAdd, onDelete, readOnly }: {
             className="flex-1 px-3 py-2 text-xs font-bold text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors cursor-pointer">
             Zavrieť
           </button>
-          {!readOnly && (
+          {!readOnly && !isFullyPaid && (
             <button onClick={submit}
-              className="flex-1 px-3 py-2 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 rounded-md transition-colors cursor-pointer">
+              className="flex-1 px-3 py-2 text-xs font-bold text-white bg-secondary hover:bg-secondary/80 rounded-md transition-colors cursor-pointer">
               + Pridať úhradu
             </button>
           )}
@@ -1285,8 +1291,16 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
     .filter(o => filterChannel   === "vsetky" || (filterChannel === "sms" ? !!o.viaSms : !o.viaSms))
     .filter(o => filterZaloha    === "vsetky" || (
       filterZaloha === "zaloha"     ? (o.depositUsed !== undefined && o.depositUsed > 0) :
-      filterZaloha === "doplatok"   ? (o.depositUsed !== undefined && o.depositUsed > 0 && o.paidAmount !== undefined && o.paidAmount - o.depositUsed > 0.01) :
-      /* nedoplatok */ (() => { const pt = (o.payments ?? []).reduce((s,p) => s+p.amount,0); return pt > 0.01 && pt < (o.totalSDph ?? 0) - 0.01; })()
+      filterZaloha === "doplatok"   ? (o.depositUsed !== undefined && o.depositUsed > 0 && (o.totalSDph ?? 0) - o.depositUsed > 0.01) :
+      /* nedoplatok = záloha bola čiastočná a doplatok nebol plne uhradený */
+      (() => {
+        const dep = o.depositUsed ?? 0;
+        if (dep <= 0) return false;
+        const doplatokTotal = Math.max(0, (o.totalSDph ?? 0) - dep);
+        if (doplatokTotal < 0.01) return false;
+        const payTotal = (o.payments ?? []).reduce((s: number, p: { amount: number }) => s + p.amount, 0);
+        return payTotal < doplatokTotal - 0.01;
+      })()
     ))
     .filter(o => !clientIdActive || o.clientId === clientIdActive)
     .filter(o => {
@@ -1660,12 +1674,19 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                     <button onClick={() => setFilterZaloha("doplatok")}
                       className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-sm border transition-all ${filterZaloha === "doplatok" ? "bg-orange-500 text-white border-orange-500" : "bg-white text-gray-500 border-gray-200 hover:border-orange-300"}`}>
                       ⚠ Doplatok
-                      <span className="text-[10px] opacity-70 ml-0.5">{orders.filter(o => o.depositUsed !== undefined && o.depositUsed > 0 && o.paidAmount !== undefined && o.paidAmount - o.depositUsed > 0.01).length}</span>
+                      <span className="text-[10px] opacity-70 ml-0.5">{orders.filter(o => (o.depositUsed ?? 0) > 0 && (o.totalSDph ?? 0) - (o.depositUsed ?? 0) > 0.01).length}</span>
                     </button>
                     <button onClick={() => setFilterZaloha("nedoplatok")}
                       className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-sm border transition-all ${filterZaloha === "nedoplatok" ? "bg-red-500 text-white border-red-500" : "bg-white text-gray-500 border-gray-200 hover:border-red-300"}`}>
                       ❗ Nedoplatky
-                      <span className="text-[10px] opacity-70 ml-0.5">{orders.filter(o => { const pt = (o.payments ?? []).reduce((s,p) => s+p.amount,0); return pt > 0.01 && pt < (o.totalSDph ?? 0) - 0.01; }).length}</span>
+                      <span className="text-[10px] opacity-70 ml-0.5">{orders.filter(o => {
+                        const dep = o.depositUsed ?? 0;
+                        if (dep <= 0) return false;
+                        const doplatok = Math.max(0, (o.totalSDph ?? 0) - dep);
+                        if (doplatok < 0.01) return false;
+                        const pt = (o.payments ?? []).reduce((s: number, p: { amount: number }) => s + p.amount, 0);
+                        return pt < doplatok - 0.01;
+                      }).length}</span>
                     </button>
                   </div>
                 </div>
@@ -2003,25 +2024,37 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                             );
                           })()}
                     </div>
-                    {/* Čiastočne uhradená badge + Pridať úhradu */}
+                    {/* Doplatok k zálohe: badge + Pridať úhradu — iba keď záloha nestačila */}
                     {(() => {
-                      const payTotal = (o.payments ?? []).reduce((s, p) => s + p.amount, 0);
-                      const isCiastocne = payTotal > 0.01 && payTotal < (o.totalSDph ?? 0) - 0.01;
-                      const canAddPayment = !readOnly && (o.status === "vyuctovana" || o.status === "odoslana" || o.status === "vyplatena" || o.status === "potvrdena");
+                      const depUsed     = o.depositUsed ?? 0;
+                      const total       = o.totalSDph ?? 0;
+                      // Doplatok existuje: záloha bola čiastočná (paidAmount = celá suma, depositUsed < total)
+                      const hasDoplatokSituation = depUsed > 0 && total - depUsed > 0.01;
+                      if (!hasDoplatokSituation) return null;
+                      const doplatokTotal = total - depUsed;
+                      const payTotal  = (o.payments ?? []).reduce((s: number, p: { amount: number }) => s + p.amount, 0);
+                      const remaining = Math.max(0, doplatokTotal - payTotal);
+                      const isFullyPaid = remaining < 0.01;
+                      const canAddPayment = !readOnly && o.status !== "zrusena";
                       return (
                         <>
-                          {isCiastocne && (
-                            <div className="flex items-center gap-1 mt-0.5">
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-black rounded-sm bg-orange-100 text-orange-700 border border-orange-200">
-                                ❗ Čiastočne uhradené — zostatok {skEur((o.totalSDph ?? 0) - payTotal)} €
+                          {/* Badge: stav doplatku */}
+                          <div className="flex items-center gap-1 mt-0.5">
+                            {isFullyPaid ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-black rounded-sm bg-teal-100 text-teal-700 border border-teal-200">
+                                ✓ Doplatok uhradený ({skEur(payTotal)} €)
                               </span>
-                            </div>
-                          )}
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-black rounded-sm bg-orange-100 text-orange-700 border border-orange-200">
+                                ❗ Doplatok — zostatok {skEur(remaining)} €
+                              </span>
+                            )}
+                          </div>
                           {canAddPayment && (
                             <button onClick={e => { e.stopPropagation(); setPaymentsModal(o.id); }}
-                              title="Pridať úhradu"
+                              title="Zobraziť / pridať úhradu doplatku"
                               className="mt-0.5 inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-black bg-secondary text-white rounded-sm hover:bg-secondary/80 transition-all cursor-pointer shadow-sm">
-                              ▤ Pridať úhradu
+                              ▤ Doplatok
                               {(o.payments?.length ?? 0) > 0 && (
                                 <span className="ml-0.5 bg-white/20 rounded px-0.5">{o.payments!.length}×</span>
                               )}
