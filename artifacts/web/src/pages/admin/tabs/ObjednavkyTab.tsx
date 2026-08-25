@@ -827,7 +827,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [mapModalOrder]);
-  const [clientPhotoModal, setClientPhotoModal] = useState<string | null>(null); // client.id
+  const [clientPhotoModal, setClientPhotoModal] = useState<{ clientId: string; photoIdx: number } | null>(null);
   const plusCodeBackfilledRef = useRef<Set<string>>(new Set());
   const [ordersPage, setOrdersPage] = useState(0);
   const ORDERS_PAGE_SIZE = 30;
@@ -1141,16 +1141,6 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const sortedCountLabel = sortedCount === 1 ? "objednávka" : sortedCount >= 2 && sortedCount <= 4 ? "objednávky" : "objednávok";
   const totalPages = Math.ceil(sortedCount / ORDERS_PAGE_SIZE);
   const pagedOrders = sorted.slice(ordersPage * ORDERS_PAGE_SIZE, (ordersPage + 1) * ORDERS_PAGE_SIZE);
-  // Klienti s fotkou z aktuálnych filtrovaných objednávok — pre navigáciu v photo lightboxe
-  const clientsWithPhoto = useMemo(() => {
-    const seen = new Set<string>();
-    const result: { client: (typeof allClients)[number]; }[] = [];
-    for (const o of sorted) {
-      const c = clientMap.get(String(o.clientId));
-      if (c?.photos?.[0] && !seen.has(c.id)) { seen.add(c.id); result.push({ client: c }); }
-    }
-    return result;
-  }, [sorted, clientMap]);
   useEffect(() => { setOrdersPage(0); }, [filterStatus, filterTab, filterPriceMode, filterChannel, filterZaloha, clientIdActive, search, dateFrom, dateTo]);
 
   // ── Presence polling — zisti kto iný prezerá objednávky (každých 30s) ──
@@ -1614,7 +1604,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                       <TabBadge tab={o.tab} />
                       {/* Avatar klienta (smart) + biometria — foto ak existuje */}
                       <span className="relative shrink-0"
-                        onClick={linkedClient?.photos?.[0] ? e => { e.stopPropagation(); setClientPhotoModal(linkedClient.id); } : undefined}
+                        onClick={linkedClient?.photos?.[0] ? e => { e.stopPropagation(); setClientPhotoModal({ clientId: linkedClient.id, photoIdx: 0 }); } : undefined}
                         style={linkedClient?.photos?.[0] ? { cursor: "pointer" } : undefined}>
                         {linkedClient?.photos?.[0]
                           ? <img src={linkedClient.photos[0]} className="w-6 h-6 rounded-full object-cover object-top ring-1 ring-primary/30" alt="" />
@@ -2479,13 +2469,14 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
       )}
       {/* ── Client photo lightbox ── */}
       {clientPhotoModal && (() => {
-        const idx = clientsWithPhoto.findIndex(x => x.client.id === clientPhotoModal);
-        const cur = idx >= 0 ? clientsWithPhoto[idx] : null;
-        if (!cur) return null;
-        const c = cur.client;
+        const c = allClients.find(x => x.id === clientPhotoModal.clientId);
+        if (!c?.photos?.length) return null;
+        const photos = c.photos;
+        const photoIdx = Math.min(clientPhotoModal.photoIdx, photos.length - 1);
         const name = [c.firstName, c.lastName].filter(Boolean).join(" ") || c.company || c.loginId || "Klient";
-        const hasPrev = idx > 0;
-        const hasNext = idx < clientsWithPhoto.length - 1;
+        const loc = c.locationPhoto;
+        const hasGPS = loc?.lat != null && loc?.lng != null;
+        const mapsUrl = hasGPS ? `https://maps.apple.com/?q=${loc!.lat},${loc!.lng}` : null;
         return (
           <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/85 p-4"
             onClick={() => setClientPhotoModal(null)}>
@@ -2497,24 +2488,45 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                 <X className="w-5 h-5 text-white" />
               </button>
               {/* Photo */}
-              <img src={c.photos![0]} className="w-56 h-56 rounded-full object-cover object-top shadow-2xl ring-4 ring-primary/60" alt={name} />
+              <img src={photos[photoIdx]} className="w-56 h-56 rounded-full object-cover object-top shadow-2xl ring-4 ring-primary/60" alt={name} />
               {/* Name + login */}
               <div className="text-center">
                 <div className="font-black text-white text-lg leading-snug">{name}</div>
                 {c.loginId && <div className="text-white/50 text-xs font-mono mt-0.5">#{c.loginId}</div>}
               </div>
-              {/* Prev / Next */}
-              {clientsWithPhoto.length > 1 && (
+              {/* GPS + info */}
+              {(hasGPS || loc?.place) && (
+                <div className="flex items-center gap-2 flex-wrap justify-center">
+                  <span className="flex items-center gap-1 text-green-300 text-xs font-semibold">
+                    <MapPin className="w-3 h-3 shrink-0" />
+                    {loc!.place ?? `${loc!.lat?.toFixed(4)}, ${loc!.lng?.toFixed(4)}`}
+                  </span>
+                  {mapsUrl && (
+                    <a href={mapsUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                      className="flex items-center gap-1 px-2 py-1 bg-blue-500/80 hover:bg-blue-500 rounded-lg text-white text-[11px] font-bold transition-colors">
+                      <Navigation className="w-3 h-3" /> Navigovať
+                    </a>
+                  )}
+                  {c.phone && (
+                    <a href={`tel:${c.phone.replace(/\s/g,"")}`} onClick={e => e.stopPropagation()}
+                      className="flex items-center gap-1 px-2 py-1 bg-green-500/80 hover:bg-green-500 rounded-lg text-white text-[11px] font-bold transition-colors">
+                      <Phone className="w-3 h-3" /> Zavolať
+                    </a>
+                  )}
+                </div>
+              )}
+              {/* Prev / Next medzi fotkami toho istého klienta */}
+              {photos.length > 1 && (
                 <div className="flex items-center gap-4 mt-1">
-                  <button onClick={() => setClientPhotoModal(clientsWithPhoto[idx - 1].client.id)}
-                    disabled={!hasPrev}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors cursor-pointer ${hasPrev ? "bg-white/20 hover:bg-white/40 text-white" : "bg-white/5 text-white/20 cursor-not-allowed"}`}>
+                  <button onClick={() => setClientPhotoModal({ clientId: c.id, photoIdx: photoIdx - 1 })}
+                    disabled={photoIdx === 0}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors cursor-pointer ${photoIdx > 0 ? "bg-white/20 hover:bg-white/40 text-white" : "bg-white/5 text-white/20 cursor-not-allowed"}`}>
                     <ChevronLeft className="w-5 h-5" />
                   </button>
-                  <span className="text-white/40 text-xs tabular-nums">{idx + 1} / {clientsWithPhoto.length}</span>
-                  <button onClick={() => setClientPhotoModal(clientsWithPhoto[idx + 1].client.id)}
-                    disabled={!hasNext}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors cursor-pointer ${hasNext ? "bg-white/20 hover:bg-white/40 text-white" : "bg-white/5 text-white/20 cursor-not-allowed"}`}>
+                  <span className="text-white/40 text-xs tabular-nums">{photoIdx + 1} / {photos.length}</span>
+                  <button onClick={() => setClientPhotoModal({ clientId: c.id, photoIdx: photoIdx + 1 })}
+                    disabled={photoIdx >= photos.length - 1}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors cursor-pointer ${photoIdx < photos.length - 1 ? "bg-white/20 hover:bg-white/40 text-white" : "bg-white/5 text-white/20 cursor-not-allowed"}`}>
                     <ChevronRight className="w-5 h-5" />
                   </button>
                 </div>
