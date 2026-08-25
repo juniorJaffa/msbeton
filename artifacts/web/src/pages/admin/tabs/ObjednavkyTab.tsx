@@ -112,7 +112,7 @@ function PaymentsModal({ order, clientDepositBalance, onClose, onAdd, onDelete, 
   };
 
   const submit = () => {
-    const amt = parseFloat(amount.replace(",", "."));
+    const amt = Math.round(parseFloat(amount.replace(",", ".")) * 100) / 100; // zaokrúhli na 2 des.
     if (isNaN(amt) || amt <= 0) { setErr("Zadaj sumu > 0"); return; }
     if (method === "zaloha" && amt > availableDeposit + 0.001) {
       setErr(`Max ${skEur(availableDeposit)} € (zostatok zálohy)`);
@@ -130,11 +130,14 @@ function PaymentsModal({ order, clientDepositBalance, onClose, onAdd, onDelete, 
     <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/60" onClick={onClose}>
     <style>{`
       @keyframes pm-val-flash {
-        0%   { background: rgba(253,224,71,0.9); transform: scale(1.14); border-radius: 6px; padding: 0 5px; }
-        40%  { background: rgba(253,224,71,0.6); transform: scale(1.06); }
-        100% { background: transparent; transform: scale(1); padding: 0; }
+        0%   { background: rgba(253,224,71,0.9); transform: scale(1.14); border-radius: 6px; padding: 0 5px;
+               box-shadow: 0 0 0 3px rgba(234,179,8,0.8), 0 0 12px 4px rgba(253,224,71,0.6); }
+        35%  { background: rgba(253,224,71,0.55); transform: scale(1.06);
+               box-shadow: 0 0 0 2px rgba(234,179,8,0.5), 0 0 8px 2px rgba(253,224,71,0.35); }
+        70%  { box-shadow: 0 0 0 1px rgba(234,179,8,0.2); }
+        100% { background: transparent; transform: scale(1); padding: 0; box-shadow: none; }
       }
-      .pm-val-flash { animation: pm-val-flash 1.2s cubic-bezier(0.22,1,0.36,1) both; }
+      .pm-val-flash { animation: pm-val-flash 1.4s cubic-bezier(0.22,1,0.36,1) both; }
     `}</style>
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
         {/* Header */}
@@ -238,11 +241,15 @@ function PaymentsModal({ order, clientDepositBalance, onClose, onAdd, onDelete, 
 
             {/* Suma + Plný button */}
             <div className="flex gap-2">
-              <input type="number" step="0.01" min="0.01"
+              <input type="text" inputMode="decimal" autoComplete="off"
                 placeholder={canUseDeposit
                   ? `max ${skEur(Math.min(outstanding, availableDeposit))} €`
                   : `${skEur(outstanding)} (zostatok)`}
-                value={amount} onChange={e => setAmount(e.target.value)}
+                value={amount} onChange={e => {
+                  const v = e.target.value.replace(",", ".");
+                  // Len číslice + max 2 des. miesta — blokuj zvyšok
+                  if (v === "" || /^\d{0,6}(\.\d{0,2})?$/.test(v)) setAmount(v);
+                }}
                 onKeyDown={e => { if (e.key === "Enter") submit(); if (e.key === "Escape") onClose(); }}
                 className="flex-1 px-2.5 py-1.5 text-sm font-bold border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-400"
               />
