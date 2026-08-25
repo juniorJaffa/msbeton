@@ -717,10 +717,35 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
           ? { ...prevLoc, capturedAt }
           : { capturedAt };
       }
+      // Photo history log
+      const photoLogEntry: NonNullable<Client["photoHistory"]>[number] = {
+        type: "upload",
+        at: updates.updatedAt!,
+        note: gpsCoords
+          ? `GPS ${gpsCoords.lat.toFixed(5)},${gpsCoords.lng.toFixed(5)}${updates.locationPhoto?.place ? ` (${updates.locationPhoto.place})` : ""}`
+          : "Bez GPS",
+      };
+      updates.photoHistory = [...(freshClient?.photoHistory ?? []), photoLogEntry].slice(-30);
+
       // Uložíme priamo z freshClients (nie cez stale `update()` closure) → ochrana pred prepísaním
       save(freshClients.map(c => c.id === clientId ? { ...c, ...updates } : c));
       if (fromLightbox) setPhotoLightbox({ clientId, index: existing.length });
-    } catch (err) { console.error("Photo compress failed", err); }
+    } catch (err) {
+      console.error("Photo compress failed", err);
+      // Log chybu do photoHistory
+      const freshC = adminData.getClients();
+      const fc = freshC.find(c => c.id === clientId);
+      if (fc) {
+        const errEntry: NonNullable<Client["photoHistory"]>[number] = {
+          type: "error",
+          at: new Date().toISOString(),
+          note: err instanceof Error ? err.message : String(err),
+        };
+        save(freshC.map(c => c.id === clientId
+          ? { ...c, photoHistory: [...(c.photoHistory ?? []), errEntry].slice(-30), updatedAt: new Date().toISOString() }
+          : c));
+      }
+    }
   };
 
   const handleAddPhoto = async (clientId: string, e: React.ChangeEvent<HTMLInputElement>, fromLightbox?: boolean) => {
@@ -735,14 +760,25 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   };
 
   const handleDeletePhoto = (clientId: string, index: number) => {
-    const client = clients.find(c => c.id === clientId);
+    // Čítaj čerstvé dáta (nie closure) — ochrana pred stale state
+    const freshClients = adminData.getClients();
+    const client = freshClients.find(c => c.id === clientId);
     const photos = [...(client?.photos ?? [])];
     photos.splice(index, 1);
+    const isLast = photos.length === 0;
+    const deleteEntry: NonNullable<Client["photoHistory"]>[number] = {
+      type: "delete",
+      at: new Date().toISOString(),
+      note: `Fotka #${index + 1}${isLast ? " — posledná, GPS vymazané" : ""}`,
+    };
     // Keď sa vymaže posledná fotka, vymaž aj GPS/locationPhoto — GPS bez fotky je orphaned
-    update(clientId, {
-      photos: photos.length > 0 ? photos : undefined,
-      locationPhoto: photos.length > 0 ? client?.locationPhoto : undefined,
-    });
+    save(freshClients.map(c => c.id === clientId ? {
+      ...c,
+      photos: isLast ? undefined : photos,
+      locationPhoto: isLast ? undefined : client?.locationPhoto,
+      photoHistory: [...(c.photoHistory ?? []), deleteEntry].slice(-30),
+      updatedAt: new Date().toISOString(),
+    } : c));
     setPhotoLightbox(null);
   };
 
@@ -878,9 +914,14 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
       const orphaned = freshC.filter(c => c.locationPhoto && (!c.photos || c.photos.length === 0));
       if (orphaned.length > 0) {
         const now = new Date().toISOString();
+        const cleanupEntry: NonNullable<Client["photoHistory"]>[number] = {
+          type: "orphan-cleanup",
+          at: now,
+          note: `GPS ${orphaned[0].locationPhoto?.lat?.toFixed(5)},${orphaned[0].locationPhoto?.lng?.toFixed(5)} vymazané (foto chýbala)`,
+        };
         const fixed = freshC.map(c =>
           orphaned.some(o => o.id === c.id)
-            ? { ...c, locationPhoto: undefined, updatedAt: now }
+            ? { ...c, locationPhoto: undefined, photoHistory: [...(c.photoHistory ?? []), cleanupEntry].slice(-30), updatedAt: now }
             : c
         );
         adminData.saveClients(fixed);
@@ -1913,6 +1954,34 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                       );
                     })()}
                   </div>
+
+                  {/* Photo History Log */}
+                  {c.photoHistory && c.photoHistory.length > 0 && (
+                    <div className="px-4 py-2 bg-gray-50/60 border-b border-gray-100">
+                      <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Foto log</p>
+                      <div className="space-y-0.5">
+                        {[...c.photoHistory].reverse().slice(0, 10).map((entry, i) => {
+                          const d = new Date(entry.at);
+                          const ts = `${d.getDate()}.${d.getMonth()+1}. ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+                          const cfg = entry.type === "upload"
+                            ? { dot: "bg-green-400", text: "text-green-700", label: "Nahraná" }
+                            : entry.type === "delete"
+                            ? { dot: "bg-red-400", text: "text-red-600", label: "Vymazaná" }
+                            : entry.type === "error"
+                            ? { dot: "bg-red-500", text: "text-red-700", label: "Chyba" }
+                            : { dot: "bg-gray-300", text: "text-gray-500", label: "Cleanup GPS" };
+                          return (
+                            <div key={i} className="flex items-start gap-1.5 text-[9px]">
+                              <span className={`mt-1 w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dot}`} />
+                              <span className={`font-bold shrink-0 ${cfg.text}`}>{cfg.label}</span>
+                              <span className="text-gray-400 shrink-0">{ts}</span>
+                              {entry.note && <span className="text-gray-400 truncate">{entry.note}</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Zľavy klienta */}
                   <div className="px-4 py-4 bg-white border-b border-gray-100">
@@ -2965,7 +3034,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                   ) : lbGpsLabel ? (
                     <span className="text-green-300 text-xs font-semibold flex-1 truncate">{lbGpsLabel}</span>
                   ) : (
-                    <span className="text-white/40 text-xs tabular-nums flex-1">{gps.lat.toFixed(5)}, {gps.lng.toFixed(5)}</span>
+                    <span className="text-white/40 text-xs tabular-nums flex-1">{gps.lat?.toFixed(5) ?? "?"}, {gps.lng?.toFixed(5) ?? "?"}</span>
                   )}
                   {mapsUrl && (
                     <a href={mapsUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}

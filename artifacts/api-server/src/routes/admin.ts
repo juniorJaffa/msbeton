@@ -475,7 +475,7 @@ router.put("/clients", async (req, res) => {
     // Správca (manager) má obmedzenia — admin rolu nemení, klientov nemaže (server-enforced)
     const transform = actor.role === "manager" ? sanitizeClientsForManager : undefined;
     // deposit.transactions je append-only — union z oboch verzií pri súbežných zmenách (topup + platba)
-    const r = await mergeSaveArray(KEYS.clients, req.body, req.get("X-Base-Sync"), actor, transform, true, ["deposit.transactions"]);
+    const r = await mergeSaveArray(KEYS.clients, req.body, req.get("X-Base-Sync"), actor, transform, true, ["deposit.transactions", "photoHistory"]);
     invalidateClientCache();
     const logFields = {
       ev: "clients_saved",

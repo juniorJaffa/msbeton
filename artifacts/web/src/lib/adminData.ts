@@ -144,6 +144,11 @@ export interface Client {
   };
   photos?: string[];           // lokalizačné fotky (base64 JPEG, max 3, každá ~6-8KB po kompresii)
   locationPhoto?: { lat?: number; lng?: number; capturedAt?: string; place?: string }; // GPS extrahovaná z fotky (EXIF); lat/lng = null ak GPS chýba, capturedAt = EXIF DateTimeOriginal, place = Nominatim
+  photoHistory?: {             // audit log foto-udalostí per klient (max 30 záznamov, append-only na serveri)
+    type: "upload" | "delete" | "orphan-cleanup" | "error";
+    at: string;                // ISO timestamp
+    note?: string;             // detail: GPS súradnice, číslo fotky, error správa...
+  }[];
 }
 
 export interface DepositTx {
