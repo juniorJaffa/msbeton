@@ -1048,11 +1048,26 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
     // Auto-expand + highlight pri navigácii z Histórie
     setExpanded(focusOrderId);
     setHighlightedOrder(focusOrderId);
-    // Reset všetkých filtrov — objednávka môže byť skrytá aktívnym statusom alebo date filtrom
+    // Reset VŠETKÝCH filtrov — objednávka môže byť skrytá statusom, date filtrom alebo na inej STRANE
     setFilterStatus("vsetky");
+    setFilterTab("vsetky");
+    setFilterPriceMode("vsetky");
+    setFilterChannel("vsetky");
+    setFilterZaloha("vsetky");
+    setSearch("");
+    setClientIdActive(null);
     setQuickDate("");
     setDateFrom("");
     setDateTo("");
+
+    // Nájdi stránku kde je objednávka — sorted = all orders sorted by createdAt desc.
+    // Filtre sú práve resetnuté → sorted po re-renderi = all orders.
+    // Vypočítame stránku z raw orders (rovnaké triedenie) aby sme nemuseli čakať na re-render.
+    const allSorted = [...adminData.getOrders()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const idx = allSorted.findIndex(o => o.id === focusOrderId);
+    const page = idx >= 0 ? Math.floor(idx / ORDERS_PAGE_SIZE) : 0;
+    setOrdersPage(page);
+
     const scrollToOrder = (id: string) => {
       const container = document.getElementById("admin-content");
       const el = document.getElementById(`order-card-${id}`);
@@ -1066,8 +1081,8 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
       }
       return false;
     };
-    // 2 pokusy: 200ms (väčšina prípadov) + 500ms (fallback ak render pomalší)
-    const t1 = setTimeout(() => { if (!scrollToOrder(focusOrderId)) setTimeout(() => scrollToOrder(focusOrderId), 300); }, 200);
+    // 2 pokusy: 250ms (po React re-renderi + stránkovaní) + fallback 500ms
+    const t1 = setTimeout(() => { if (!scrollToOrder(focusOrderId)) setTimeout(() => scrollToOrder(focusOrderId), 350); }, 250);
     const t2 = setTimeout(() => setHighlightedOrder(null), 2800);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [focusOrderId]);
