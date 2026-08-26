@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { adminData, Client, DepositTx, Order, getKamenivoGroup, readerBlocked } from "@/lib/adminData";
-import { ChevronRight, ChevronLeft, TrendingUp, Minus, Smartphone, Monitor, Laptop, ChevronDown, Users, ShoppingCart, Mountain, Waves, X, MessageSquare, Check, AlertTriangle, MapPin, Navigation, Phone } from "lucide-react";
+import { ChevronRight, ChevronLeft, TrendingUp, Minus, Smartphone, Monitor, Laptop, ChevronDown, Users, ShoppingCart, Mountain, Waves, X, MessageSquare, Check, AlertTriangle, MapPin, Navigation, Phone, Search } from "lucide-react";
 
 type Sub = "zalohy" | "cashflow";
 
@@ -282,6 +282,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [onlyNedoplatok,   setOnlyNedoplatok]   = useState(false);
   const [cashExcelFilter,  setCashExcelFilter]  = useState<"vsetky" | "ok" | "chyba">("vsetky");
   const [cashStatusFilter, setCashStatusFilter] = useState<"vsetky" | typeof CASH_STATUSES[number]>("vsetky");
+  const [cashSearch,       setCashSearch]       = useState("");
   const [displayLimit,     setDisplayLimit]     = useState(100);
   const [flashDeletedId,   setFlashDeletedId]   = useState<string | null>(null);
   const [showDeleted,      setShowDeleted]      = useState(false);
@@ -551,7 +552,11 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const orderLastChanged = (o: Order): string =>
     o.statusHistory?.at(-1)?.changedAt ?? o.createdAt;
 
+  // Normalizácia pre vyhľadávanie — strip diacritiky, lowercase
+  const normH = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
   const filteredOrders = useMemo(() => {
+    const searchTerms = cashSearch.trim().split(/\s+/).filter(Boolean);
     const result = liveOrders
       .filter(o => {
         if (onlyDeposit && !(o.depositUsed && o.depositUsed > 0)) return false;
@@ -577,14 +582,26 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
         } else {
           if (!passesDate(ds, cashDateFilter)) return false;
         }
+        // Fulltext search — meno, firma, telefón, ID klienta, adresa, lokalita, typ betónu, poznámka, suma
+        if (searchTerms.length > 0) {
+          const c = o.clientId ? clientByLoginId.get(o.clientId) : undefined;
+          const haystack = [
+            o.clientName, o.company ?? "", o.phone ?? "", o.clientId ?? "",
+            o.address ?? "", o.mapLocality ?? "", o.note ?? "",
+            o.concreteType ?? "", o.concreteCategory ?? "",
+            o.totalSDph?.toFixed(2) ?? "", Math.round(o.totalSDph ?? 0).toString(),
+            c?.firstName ?? "", c?.lastName ?? "", c?.phone ?? "", c?.company ?? "", c?.loginId ?? "",
+          ].join(" ");
+          if (!searchTerms.every(t => normH(haystack).includes(normH(t)))) return false;
+        }
         return true;
       })
       .sort((a, b) => orderLastChanged(b).localeCompare(orderLastChanged(a)));
     return result;
-  }, [liveOrders, cashClientFilter, cashKtoFilters, cashDateFilter, cashDateFrom, cashDateTo, onlyDeposit, onlyNedoplatok, cashExcelFilter, cashStatusFilter, deviceToGroupKey]);
+  }, [liveOrders, cashClientFilter, cashKtoFilters, cashDateFilter, cashDateFrom, cashDateTo, onlyDeposit, onlyNedoplatok, cashExcelFilter, cashStatusFilter, cashSearch, deviceToGroupKey, clientByLoginId]);
 
   // Reset displayLimit pri každej zmene filtrov
-  useEffect(() => { setDisplayLimit(100); }, [cashClientFilter, cashKtoFilters, cashDateFilter, cashDateFrom, cashDateTo, onlyDeposit, onlyNedoplatok, cashExcelFilter, cashStatusFilter, showDeleted]);
+  useEffect(() => { setDisplayLimit(100); }, [cashClientFilter, cashKtoFilters, cashDateFilter, cashDateFrom, cashDateTo, onlyDeposit, onlyNedoplatok, cashExcelFilter, cashStatusFilter, cashSearch, showDeleted]);
 
   // Scroll listener — zmena farby column headera pri scrollovaní
   useEffect(() => {
@@ -1097,6 +1114,25 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
               <span className="text-[10px] font-bold text-gray-500">Záloha</span>
             </label>
           </div>{/* R2 */}
+
+          {/* R3: Fulltext search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              value={cashSearch}
+              onChange={e => setCashSearch(e.target.value)}
+              placeholder="Meno, firma, telefón, ID, adresa..."
+              className="w-full pl-8 pr-8 py-2 text-[13px] bg-white border border-gray-200 rounded-lg outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/20 placeholder:text-gray-400 transition-colors"
+            />
+            {cashSearch && (
+              <button
+                onClick={() => setCashSearch("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors cursor-pointer">
+                <X className="w-3 h-3 text-gray-600" />
+              </button>
+            )}
+          </div>
 
           {/* Nadpis sekcie + kompaktný súhrn v jednom riadku */}
           <div className="flex flex-col gap-1.5">
