@@ -345,9 +345,9 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     const doScroll = () => {
       const container = document.getElementById("admin-content");
       if (!container) { node.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
-      // Suma VŠETKÝCH sticky.top-0 elementov (filter bar + column header oba z-10/z-20).
-      // Berieme max bottom — tak pokryjeme aj prípad keď sa prekrývajú.
-      const stickyEls = Array.from(container.querySelectorAll<HTMLElement>(".sticky.top-0"));
+      // Iba z-20 sticky headery (column header) — nie z-10 day-separatory (sticky ale sú content, nie header).
+      // .sticky.top-0 by matchovalo aj DateGroupHeader (z-10), čo nafukuje stickyH.
+      const stickyEls = Array.from(container.querySelectorAll<HTMLElement>(".sticky.z-20"));
       const cR = container.getBoundingClientRect();
       const stickyBottom = stickyEls.reduce((max, el) => {
         const b = el.getBoundingClientRect().bottom;
