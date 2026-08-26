@@ -1377,8 +1377,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                   </>
                                 )}
                               </div>
-                              {/* pravá: zaplatené */}
-                              {(o.status === "vyplatena" || o.status === "vyuctovana") && o.paidAmount !== undefined && o.paidAmount > 0 && (
+                              {/* pravá: zaplatené — skryjeme keď paidAmount ≈ depositUsed (plná úhrada zálohou = duplicita) */}
+                              {(o.status === "vyplatena" || o.status === "vyuctovana") && o.paidAmount !== undefined && o.paidAmount > 0
+                                && !(o.depositUsed && o.depositUsed > 0 && Math.abs(o.paidAmount - o.depositUsed) < 1)
+                                && (
                                 <div className="flex items-center gap-1.5 shrink-0">
                                   <span className="text-[9px] text-gray-400 font-medium">zaplatené</span>
                                   <span className="text-teal-600 font-black tabular-nums text-base">{fmtEur(o.paidAmount)}</span>
@@ -1548,7 +1550,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             {/* CELKOM + paidAmount + diff pod ním */}
                             <div className="text-right flex flex-col gap-0.5 items-end">
                               <span className="font-black tabular-nums text-secondary text-sm whitespace-nowrap">{fmtEur(o.totalSDph ?? o.totalBezDph ?? 0)}</span>
-                              {(o.status === "vyplatena" || o.status === "vyuctovana") && o.paidAmount !== undefined && o.paidAmount > 0 && (
+                              {/* Skryť "zap." keď paidAmount ≈ depositUsed (plná úhrada zálohou = duplicita) */}
+                              {(o.status === "vyplatena" || o.status === "vyuctovana") && o.paidAmount !== undefined && o.paidAmount > 0
+                                && !(o.depositUsed && o.depositUsed > 0 && Math.abs(o.paidAmount - o.depositUsed) < 1)
+                                && (
                                 <div className="flex items-center gap-1 justify-end">
                                   <span className="text-[9px] text-gray-400">zap.</span>
                                   <span className="text-teal-600 font-black tabular-nums text-xs whitespace-nowrap">{fmtEur(o.paidAmount)}</span>
