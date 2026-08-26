@@ -337,9 +337,19 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [focusOrderId, setFocusOrderId] = useState<string | undefined>(initialOrderId);
   const [markedOrderId, setMarkedOrderId] = useState<string | undefined>(initialOrderId); // perzistentná zlatá bodka
   const scrollToFocused = useCallback((node: HTMLDivElement | null) => {
-    if (node) {
-      setTimeout(() => node.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
-    }
+    if (!node) return;
+    // Používame rovnaký pattern ako ObjednavkyTab — scroll do containera s offsetom pre sticky header.
+    // scrollIntoView({ block: "center" }) centruje element a admin fixed header ho môže prikryť.
+    const doScroll = () => {
+      const container = document.getElementById("admin-content");
+      if (!container) { node.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+      const filterEl = container.querySelector(".sticky.top-0");
+      const filterH = filterEl ? filterEl.getBoundingClientRect().height : 52;
+      const cR = container.getBoundingClientRect();
+      const nR = node.getBoundingClientRect();
+      container.scrollTo({ top: container.scrollTop + (nR.top - cR.top) - filterH - 8, behavior: "smooth" });
+    };
+    setTimeout(doScroll, 80);
   }, []);
   useEffect(() => {
     if (!focusOrderId) return;
@@ -1449,7 +1459,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                         {STATUS_LABEL[h.status] ?? h.status}
                                       </span>
                                       {h.paidAmount !== undefined && h.paidAmount > 0 && (
-                                        <span className="text-teal-600 tabular-nums font-semibold whitespace-nowrap">{fmtEur(h.paidAmount, 0)}</span>
+                                        <span className="text-teal-600 tabular-nums font-semibold whitespace-nowrap">{fmtEur(h.paidAmount)}</span>
                                       )}
                                     </>
                                   )}
@@ -1712,7 +1722,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                         {STATUS_LABEL[h.status] ?? h.status}
                                       </span>
                                       {h.paidAmount !== undefined && h.paidAmount > 0 && (
-                                        <span className="text-teal-600 tabular-nums font-semibold whitespace-nowrap">{fmtEur(h.paidAmount, 0)}</span>
+                                        <span className="text-teal-600 tabular-nums font-semibold whitespace-nowrap">{fmtEur(h.paidAmount)}</span>
                                       )}
                                     </>
                                   )}

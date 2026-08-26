@@ -1048,19 +1048,26 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
     // Auto-expand + highlight pri navigácii z Histórie
     setExpanded(focusOrderId);
     setHighlightedOrder(focusOrderId);
-    // Reset statusFilter aby objednávka nebola skrytá aktívnym filtrom
+    // Reset všetkých filtrov — objednávka môže byť skrytá aktívnym statusom alebo date filtrom
     setFilterStatus("vsetky");
-    const t1 = setTimeout(() => {
+    setQuickDate("");
+    setDateFrom("");
+    setDateTo("");
+    const scrollToOrder = (id: string) => {
       const container = document.getElementById("admin-content");
-      const el = document.getElementById(`order-card-${focusOrderId}`);
+      const el = document.getElementById(`order-card-${id}`);
       if (container && el) {
-        const filterEl = container.querySelector(".sticky.top-0");
+        const filterEl = container.querySelector(".sticky.top-0.z-20");
         const filterH = filterEl ? filterEl.getBoundingClientRect().height : 52;
         const cR = container.getBoundingClientRect();
         const eR = el.getBoundingClientRect();
         container.scrollTo({ top: container.scrollTop + (eR.top - cR.top) - filterH - 8, behavior: "smooth" });
+        return true;
       }
-    }, 120);
+      return false;
+    };
+    // 2 pokusy: 200ms (väčšina prípadov) + 500ms (fallback ak render pomalší)
+    const t1 = setTimeout(() => { if (!scrollToOrder(focusOrderId)) setTimeout(() => scrollToOrder(focusOrderId), 300); }, 200);
     const t2 = setTimeout(() => setHighlightedOrder(null), 2800);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [focusOrderId]);
