@@ -470,18 +470,32 @@ router.use((req, res, next) => {
   next();
 });
 
+// Generická ochrana pre položkové polia (categories, delivery, services, zones).
+// Rovnaký princíp ako preserveAllClients/Orders — chýbajúce položky z DB sa vždy doplnia.
+// Zabráni náhodnej strate betónov/zón/služieb pri stale PUT (PWA cache, race).
+function preserveAllItems(label: string): (incoming: Item[], current: Item[]) => Item[] {
+  return (incoming: Item[], current: Item[]): Item[] => {
+    const incIds = new Set(incoming.filter(i => i.id != null).map(i => String(i.id)));
+    const missing = current.filter(c => c.id != null && !incIds.has(String(c.id)));
+    if (missing.length > 0) {
+      console.warn(`[preserveAllItems:${label}] ${missing.length} položiek chýbalo v incoming, doplnené z DB`);
+    }
+    return missing.length > 0 ? [...incoming, ...missing] : incoming;
+  };
+}
+
 router.put("/categories", async (req, res) => {
-  try { const r = await mergeSaveArray(KEYS.categories, req.body, req.get("X-Base-Sync"), actorOf(req)); res.json({ ok: true, ...r }); }
+  try { const r = await mergeSaveArray(KEYS.categories, req.body, req.get("X-Base-Sync"), actorOf(req), preserveAllItems("categories")); res.json({ ok: true, ...r }); }
   catch (err) { req.log.error({ err }, "Failed to save categories"); res.status(500).json({ error: "Internal server error" }); }
 });
 
 router.put("/delivery", async (req, res) => {
-  try { const r = await mergeSaveArray(KEYS.delivery, req.body, req.get("X-Base-Sync"), actorOf(req)); res.json({ ok: true, ...r }); }
+  try { const r = await mergeSaveArray(KEYS.delivery, req.body, req.get("X-Base-Sync"), actorOf(req), preserveAllItems("delivery")); res.json({ ok: true, ...r }); }
   catch (err) { req.log.error({ err }, "Failed to save delivery"); res.status(500).json({ error: "Internal server error" }); }
 });
 
 router.put("/services", async (req, res) => {
-  try { const r = await mergeSaveArray(KEYS.services, req.body, req.get("X-Base-Sync"), actorOf(req)); res.json({ ok: true, ...r }); }
+  try { const r = await mergeSaveArray(KEYS.services, req.body, req.get("X-Base-Sync"), actorOf(req), preserveAllItems("services")); res.json({ ok: true, ...r }); }
   catch (err) { req.log.error({ err }, "Failed to save services"); res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -585,7 +599,7 @@ router.delete("/clients/:id/webauthn/:credId", requireSuper, async (req, res) =>
 });
 
 router.put("/transport-zones", async (req, res) => {
-  try { const r = await mergeSaveArray(KEYS.transportZones, req.body, req.get("X-Base-Sync"), actorOf(req)); res.json({ ok: true, ...r }); }
+  try { const r = await mergeSaveArray(KEYS.transportZones, req.body, req.get("X-Base-Sync"), actorOf(req), preserveAllItems("transport-zones")); res.json({ ok: true, ...r }); }
   catch (err) { req.log.error({ err }, "Failed to save transport zones"); res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -619,15 +633,23 @@ router.get("/orders", async (req, res) => {
   try { res.json({ data: await getConfig(KEYS.orders) ?? [] }); }
   catch (err) { req.log.error({ err }, "Failed to get orders"); res.status(500).json({ error: "Internal server error" }); }
 });
+// Ochrana objednávok pred náhodnou stratou — rovnaký princíp ako preserveAllClients.
+// Objednávky chýbajúce v incoming (stale admin list) sa vždy doplnia z DB.
+// Soft delete (deletedAt set) zostáva v poli → správne zachytené; hard delete objednávok neexistuje.
+function preserveAllOrders(incoming: Item[], current: Item[]): Item[] {
+  const incIds = new Set(incoming.filter(i => i.id != null).map(i => String(i.id)));
+  const missing = current.filter(c => c.id != null && !incIds.has(String(c.id)));
+  return missing.length > 0 ? [...incoming, ...missing] : incoming;
+}
+
 router.put("/orders", async (req, res) => {
   // Atomický item-level merge (rovnako ako klienti) — zabráni strate zmien (paid→nová, delete→návrat)
   // pri súbežných adminoch a stale polloch.
-  // preserveUnstamped=TRUE (zmenené z false): klientske objednávky (POST /api/client/order) nemajú updatedAt
-  //   → bez ochrany ich admin PUT zahodí ak jeho baseSyncMs > order.createdAt (bug Pallo 2026-08-23).
-  //   Soft delete a status zmeny majú updatedAt (stampArray) → správne mergovanie podľa času.
+  // preserveAllOrders: objednávky chýbajúce v incoming sa vždy doplnia z DB (rovnaký princíp ako clients).
+  // preserveUnstamped=TRUE: klientske objednávky (POST /api/client/order) nemajú updatedAt — záložná ochrana.
   // appendOnlyFields: statusHistory sa union-uje z oboch verziií — nikdy nestratí záznamy pri súbežných zmenách
   // stickyTrueFields: excelConfirmed — raz potvrdené nikdy nestratí pri concurrent edite
-  try { const r = await mergeSaveArray(KEYS.orders, req.body, req.get("X-Base-Sync"), null, undefined, true, ["statusHistory"], ["excelConfirmed"]); res.json({ ok: true, ...r }); }
+  try { const r = await mergeSaveArray(KEYS.orders, req.body, req.get("X-Base-Sync"), null, preserveAllOrders, true, ["statusHistory"], ["excelConfirmed"]); res.json({ ok: true, ...r }); }
   catch (err) { req.log.error({ err }, "Failed to save orders"); res.status(500).json({ error: "Internal server error" }); }
 });
 
