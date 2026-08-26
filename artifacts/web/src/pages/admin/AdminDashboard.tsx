@@ -59,6 +59,13 @@ export default function AdminDashboard() {
     return () => window.removeEventListener("bio-status-changed", onBio);
   }, []);
 
+  // Reset scroll pri každom prepnutí tabu — bez toho container drží scrollTop z predchádzajúceho tabu.
+  // Fokus-navigácia (focusOrderId, expandClientId) si robí vlastný scroll 250ms+ po mounte → override OK.
+  useEffect(() => {
+    const el = document.getElementById("admin-content");
+    if (el) el.scrollTop = 0;
+  }, [tab]);
+
   useEffect(() => {
     if (!isLoggedIn()) navigate("/admin/login");
   }, [navigate]);
