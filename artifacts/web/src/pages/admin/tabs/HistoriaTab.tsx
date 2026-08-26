@@ -267,6 +267,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [depExcelFilter,   setDepExcelFilter]   = useState<"vsetky" | "ok" | "chyba">("vsetky");
   const [depClientDrop,    setDepClientDrop]    = useState(false);
   const [depClientSearch,  setDepClientSearch]  = useState("");
+  const [depSearch,        setDepSearch]        = useState("");
   const depClientRef = useRef<HTMLDivElement>(null);
 
   // CASHFLOW filtre — ak príde navigácia s clientId/dateFilter, použi "vsetko" aby sa ukázali aj staré objednávky
@@ -437,6 +438,12 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     return rows.sort((a, b) => b.sortKey.localeCompare(a.sortKey));
   }, [liveClients, liveOrders]);
 
+  const clientByLoginId = useMemo(() => {
+    const map = new Map<string, Client>();
+    for (const c of liveClients) { if (c.loginId) map.set(c.loginId, c); map.set(c.id, c); }
+    return map;
+  }, [liveClients]);
+
   const depositClients = useMemo(() => {
     const seen = new Set<string>(); const list: { id: string; name: string }[] = [];
     for (const r of allDepositRows) {
@@ -445,8 +452,12 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     return list;
   }, [allDepositRows]);
 
-  const filteredDepRows = useMemo(() =>
-    allDepositRows.filter(r => {
+  // Normalizácia pre vyhľadávanie — strip diacritiky, lowercase (zdieľané zálohy + cashflow)
+  const normH = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+  const filteredDepRows = useMemo(() => {
+    const searchTerms = depSearch.trim().split(/\s+/).filter(Boolean);
+    return allDepositRows.filter(r => {
       if (depClientFilter !== "vsetci" && r.clientId !== depClientFilter) return false;
       if (!passesDate(toDateStr(r.sortKey), depDateFilter)) return false;
       if (depExcelFilter !== "vsetky") {
@@ -457,9 +468,20 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
         if (depExcelFilter === "ok"    && !isConfirmed) return false;
         if (depExcelFilter === "chyba" &&  isConfirmed) return false;
       }
+      if (searchTerms.length > 0) {
+        const c = r.clientId ? clientByLoginId.get(r.clientId) : undefined;
+        const txNote = r.kind === "tx" ? (r.tx.note ?? "") : "";
+        const haystack = [
+          r.clientName, r.loginId ?? "", r.clientId ?? "",
+          r.kind === "order" ? (r.orderLabel ?? "") : "",
+          txNote,
+          c?.firstName ?? "", c?.lastName ?? "", c?.phone ?? "", c?.company ?? "", c?.loginId ?? "",
+        ].join(" ");
+        if (!searchTerms.every(t => normH(haystack).includes(normH(t)))) return false;
+      }
       return true;
-    }),
-  [allDepositRows, depClientFilter, depDateFilter, depExcelFilter, liveOrders]);
+    });
+  }, [allDepositRows, depClientFilter, depDateFilter, depExcelFilter, liveOrders, depSearch, clientByLoginId]);
 
   const depSummary = useMemo(() => {
     let topup = 0, payment = 0;
@@ -475,12 +497,6 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   }, [filteredDepRows]);
 
   // ── CASHFLOW ─────────────────────────────────────────────────────────────
-  const clientByLoginId = useMemo(() => {
-    const map = new Map<string, Client>();
-    for (const c of liveClients) { if (c.loginId) map.set(c.loginId, c); map.set(c.id, c); }
-    return map;
-  }, [liveClients]);
-
   // Zariadenia — len tie aktívne v aktuálnom dátumovom rozsahu (nechceme staré nepoužívané)
   // MUSÍ byť pred filteredOrders — deviceToGroupKey je TDZ ak je deklarovaná neskôr
   const devicesSourceOrders = useMemo(() =>
@@ -557,9 +573,6 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   // Toto je sort/group kľúč — ZASADNÉ PRAVIDLO: posledná zmena VŽDY TOP
   const orderLastChanged = (o: Order): string =>
     o.statusHistory?.at(-1)?.changedAt ?? o.createdAt;
-
-  // Normalizácia pre vyhľadávanie — strip diacritiky, lowercase
-  const normH = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
   const filteredOrders = useMemo(() => {
     const searchTerms = cashSearch.trim().split(/\s+/).filter(Boolean);
@@ -864,6 +877,25 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
               }`}>EXCEL?</button>
           </div>
 
+          {/* Fulltext search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              value={depSearch}
+              onChange={e => setDepSearch(e.target.value)}
+              placeholder="Meno, firma, telefón, ID, poznámka..."
+              className="w-full pl-8 pr-8 py-2 text-[13px] bg-white border border-gray-200 rounded-lg outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/20 placeholder:text-gray-400 transition-colors"
+            />
+            {depSearch && (
+              <button
+                onClick={() => setDepSearch("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors cursor-pointer">
+                <X className="w-3 h-3 text-gray-600" />
+              </button>
+            )}
+          </div>
+
           {/* Súhrn — kompaktný inline bar */}
           <div className="flex items-center gap-2 flex-wrap bg-white/90 border border-gray-100 rounded-lg px-3 py-1.5 w-fit">
             <span className="text-teal-600 font-black tabular-nums text-sm shrink-0">+{fmtEur(depSummary.topup, 0)}</span>
@@ -896,7 +928,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     const amountCls = isTopup ? "text-teal-600" : "text-red-500";
                     const iconBg = isTopup ? "bg-teal-100 text-teal-600" : isOrderUse ? "bg-orange-100 text-orange-600" : "bg-red-100 text-red-500";
                     const rowIcon = isTopup ? <TrendingUp className="w-3 h-3" /> : isOrderUse ? <ShoppingCart className="w-3 h-3" /> : <Minus className="w-3 h-3" />;
-                    const typLabel = isTopup ? "Dobíjanie" : isOrderUse ? "Objednávka" : "Platba";
+                    const typLabel = isTopup ? "Záloha" : isOrderUse ? "Objednávka" : "Platba";
                     const typBg = isTopup ? "bg-teal-100 text-teal-700" : isOrderUse ? "bg-orange-100 text-orange-700" : "bg-red-100 text-red-600";
                     const note = r.kind === "tx" ? (r.tx.note ?? "—") : r.orderLabel;
                     const devLabel = r.kind === "tx" ? r.tx.createdBy : (r.orderDevice ?? "");
