@@ -1497,8 +1497,8 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const searchTerms = search.trim().split(/\s+/).filter(Boolean);
   const filtered = orders
-    .filter(o => showDeleted || o.status !== "zmazana")
-    .filter(o => filterStatus    === "vsetky" || o.status    === filterStatus)
+    .filter(o => showDeleted ? o.status === "zmazana" : o.status !== "zmazana")
+    .filter(o => showDeleted || filterStatus === "vsetky" || o.status === filterStatus)
     .filter(o => filterTab       === "vsetky" || o.tab       === filterTab)
     .filter(o => filterPriceMode === "vsetky" || o.priceMode === filterPriceMode)
     .filter(o => filterChannel   === "vsetky" || (filterChannel === "sms" ? !!o.viaSms : !o.viaSms))

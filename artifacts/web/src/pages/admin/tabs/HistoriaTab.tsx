@@ -632,9 +632,11 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   }, []);
 
 
-  // Visible orders — skryje zmazané keď showDeleted=false
+  // Visible orders — kôš: IBA zmazané; normálny pohľad: zmazané skryté
   const visibleOrders = useMemo(() =>
-    showDeleted ? filteredOrders : filteredOrders.filter(o => o.status !== "zmazana"),
+    showDeleted
+      ? filteredOrders.filter(o => o.status === "zmazana")
+      : filteredOrders.filter(o => o.status !== "zmazana"),
   [filteredOrders, showDeleted]);
 
   // Pre-computed date groups — eliminuje mutable lastDate v JSX renderi (crash risk)
