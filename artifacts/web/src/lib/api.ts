@@ -44,6 +44,7 @@ export const adminApi = {
 
   getClients: () => apiFetch<{ data: unknown }>(API_BASE, "/clients"),
   saveClients: (data: unknown) => apiFetch(API_BASE, "/clients", { method: "PUT", body: JSON.stringify(data), headers: baseSyncHeader() }),
+  hardDeleteClient: (id: string) => apiFetch(API_BASE, `/clients/${id}`, { method: "DELETE" }),
 
   getTransportZones: () => apiFetch<{ data: unknown }>(API_BASE, "/transport-zones"),
   saveTransportZones: (data: unknown) => apiFetch(API_BASE, "/transport-zones", { method: "PUT", body: JSON.stringify(data), headers: baseSyncHeader() }),

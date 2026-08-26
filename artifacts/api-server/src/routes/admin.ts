@@ -371,6 +371,20 @@ async function mergeSaveArray(key: string, body: unknown, baseSyncHeader: unknow
   return { kept: merged.length, preserved: merged.length - incoming.length, mergedFromOthers: diff.others.length };
 }
 
+// Ochrana klientov pred náhodným zmazaním cez PUT (stale localStorage race condition).
+// Klienti chýbajúci v incoming sa VŽDY doplnia z DB — nezávisle od baseSyncMs.
+// Zámer zmazania musí ísť cez DELETE /clients/:id (nie cez vypustenie z poľa).
+// Pozn.: klienti s permanentlyDeleted:true sú výnimka — tí sa NEdoplnia (hard delete cez DELETE endpoint).
+function preserveAllClients(incoming: Item[], current: Item[]): Item[] {
+  const incIds = new Set(incoming.filter(i => i.id != null).map(i => String(i.id)));
+  const missing = current.filter(c => c.id != null && !incIds.has(String(c.id)) && !c.permanentlyDeleted);
+  if (missing.length > 0) {
+    const names = missing.map(c => (c.firstName ?? c.loginId ?? c.id) as string).join(", ");
+    console.warn(`[preserveAllClients] ${missing.length} klientov chýbalo v incoming, doplnení z DB: ${names}`);
+  }
+  return missing.length > 0 ? [...incoming, ...missing] : incoming;
+}
+
 // Manager (Správca) sanitizácia klientov — bezpečnostná hranica (nedá sa obísť, beží vnútri zámku):
 //  1) NESMIE meniť admin rolu iných (adminRole/adminReader) → reštauruj z DB (zabráni privilege escalation)
 //  2) NESMIE mazať klientov → klienti chýbajúci v incoming sa doplnia z DB
@@ -382,7 +396,7 @@ function sanitizeClientsForManager(incoming: Item[], current: Item[]): Item[] {
     return { ...inc, adminRole: cur?.adminRole, adminReader: cur?.adminReader };
   });
   const incIds = new Set(incoming.filter(i => i.id != null).map(i => String(i.id)));
-  const missing = current.filter(c => c.id != null && !incIds.has(String(c.id)));
+  const missing = current.filter(c => c.id != null && !incIds.has(String(c.id)) && !c.permanentlyDeleted);
   return [...protectedIncoming, ...missing];
 }
 
@@ -478,8 +492,10 @@ router.get("/clients", async (req, res) => {
 router.put("/clients", async (req, res) => {
   try {
     const actor = actorOf(req);
-    // Správca (manager) má obmedzenia — admin rolu nemení, klientov nemaže (server-enforced)
-    const transform = actor.role === "manager" ? sanitizeClientsForManager : undefined;
+    // Všetky role: preserveAllClients zabraňuje náhodnej strate klientov cez stale PUT.
+    // Manager: navyše sanitizácia admin rolí (privilege escalation ochrana).
+    // Hard delete musí ísť cez DELETE /clients/:id (nie cez vypustenie z poľa).
+    const transform = actor.role === "manager" ? sanitizeClientsForManager : preserveAllClients;
     // deposit.transactions je append-only — union z oboch verzií pri súbežných zmenách (topup + platba)
     const r = await mergeSaveArray(KEYS.clients, req.body, req.get("X-Base-Sync"), actor, transform, true, ["deposit.transactions", "photoHistory"]);
     invalidateClientCache();
@@ -498,6 +514,34 @@ router.put("/clients", async (req, res) => {
     res.json({ ok: true, ...r });
   }
   catch (err) { req.log.error({ err }, "Failed to save clients"); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// Trvalé zmazanie klienta — iba superadmin, len pre už soft-deleted (isDeleted:true).
+// Toto je jediný správny spôsob hard delete — PUT array omission zachytí preserveAllClients.
+router.delete("/clients/:id", requireSuper, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const raw = await getConfig(KEYS.clients);
+    const clients = Array.isArray(raw) ? raw as Array<Record<string, unknown>> : [];
+    const target = clients.find(c => String(c.id) === id);
+    if (!target) return res.status(404).json({ error: "Client not found" });
+    if (!target.isDeleted) return res.status(400).json({ error: "Client must be soft-deleted (isDeleted:true) before permanent deletion" });
+    const updated = clients.filter(c => String(c.id) !== id);
+    await setConfig(KEYS.clients, updated);
+    invalidateClientCache();
+    const actor = actorOf(req);
+    try {
+      await appendAudit({
+        ts: new Date().toISOString(),
+        session: actor.session, device: actor.device, ip: actor.ip, role: actor.role,
+        key: KEYS.clients,
+        added: [], modified: [],
+        removed: [String(target.firstName ?? target.loginId ?? target.id)],
+      });
+    } catch { /* audit nesmie zlyhať save */ }
+    res.json({ ok: true });
+  }
+  catch (err) { req.log.error({ err }, "Failed to hard-delete client"); res.status(500).json({ error: "Internal server error" }); }
 });
 
 // Zrušenie všetkých WebAuthn credentials + logu klienta — iba superadmin

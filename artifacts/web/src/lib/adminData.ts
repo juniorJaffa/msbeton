@@ -587,7 +587,10 @@ export async function syncFromServer(): Promise<void> {
           // Ak by sme volali setLastSync() po skončení celého sync, baseSyncMs by bol vyšší ako
           // updatedAt klientov pridaných POČAS fetchu → server by ich zmazal pri ďalšom PUT.
           setLastSync(syncStartTs);
-        } else { const local = loadData<Client[]>("msbeton_clients", []); if (local.length > 0) adminApi.saveClients(local); }
+        }
+        // ZÁMERNÉ VYPUSTENIE: starý fallback "ak GET zlyhá → pushni local dáta" bol NEBEZPEČNÝ.
+        // Stale local list (bez nových klientov) + advanced baseSyncMs → server zahodil nových klientov.
+        // Ak GET zlyhá → iba ticho ignoruj, local localStorage zostane zachovaný.
         if (hasDataOrEmpty(orders?.data)) { saveData("msbeton_orders", orders!.data); updated = true; }
       }
     } catch {

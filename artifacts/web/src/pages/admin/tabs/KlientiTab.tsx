@@ -1003,9 +1003,15 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     ));
     setDeleteModal(null);
   };
-  const hardDelete = (id: string) => {
+  const hardDelete = async (id: string) => {
     if (!confirm("Trvalo vymazať? Táto akcia je NEVRATNÁ.")) return;
-    save(clients.filter(c => c.id !== id));
+    try {
+      await adminApi.hardDeleteClient(id);
+      // Sync zo servera aby lokálna lista reflektovala zmenu
+      syncFromServer();
+    } catch (e) {
+      alert("Chyba pri mazaní: " + (e instanceof Error ? e.message : String(e)));
+    }
   };
   const restore = (id: string) => {
     save(clients.map(c => c.id === id ? { ...c, isDeleted: false, deletedAt: undefined, deletedBy: undefined } : c));
