@@ -1060,13 +1060,18 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
     setDateFrom("");
     setDateTo("");
 
-    // Nájdi stránku kde je objednávka — sorted = all orders sorted by createdAt desc.
-    // Filtre sú práve resetnuté → sorted po re-renderi = all orders.
-    // Vypočítame stránku z raw orders (rovnaké triedenie) aby sme nemuseli čakať na re-render.
-    const allSorted = [...adminData.getOrders()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    // Nájdi stránku kde je objednávka — mirror filter pipeline: showDeleted=false (resetujeme),
+    // filterStatus="vsetky" → všetky nezmazané, sorted by createdAt desc.
+    // focusNavigatingRef zabraňuje page-reset efektu premazať stránku po zmene filtrov.
+    focusNavigatingRef.current = true;
+    const allSorted = [...adminData.getOrders()]
+      .filter(o => o.status !== "zmazana")  // mirror showDeleted=false
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     const idx = allSorted.findIndex(o => o.id === focusOrderId);
     const page = idx >= 0 ? Math.floor(idx / ORDERS_PAGE_SIZE) : 0;
     setOrdersPage(page);
+    // Uvolniť zámok po dostatočnej dobe (po batch re-renderi + filter efekte)
+    setTimeout(() => { focusNavigatingRef.current = false; }, 600);
 
     const scrollToOrder = (id: string) => {
       const container = document.getElementById("admin-content");
@@ -1103,6 +1108,8 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   }, [mapModalOrder]);
   const [clientPhotoModal, setClientPhotoModal] = useState<{ clientId: string; photoIdx: number } | null>(null);
   const plusCodeBackfilledRef = useRef<Set<string>>(new Set());
+  // focusNavigatingRef: zabraňuje page-reset efektu premazať stránku počas navigácie z Histórie
+  const focusNavigatingRef = useRef(false);
   const [ordersPage, setOrdersPage] = useState(0);
   const ORDERS_PAGE_SIZE = 30;
   const [scaleAlertDismissed, setScaleAlertDismissed] = useState(false);
@@ -1583,7 +1590,11 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const sortedCountLabel = sortedCount === 1 ? "objednávka" : sortedCount >= 2 && sortedCount <= 4 ? "objednávky" : "objednávok";
   const totalPages = Math.ceil(sortedCount / ORDERS_PAGE_SIZE);
   const pagedOrders = sorted.slice(ordersPage * ORDERS_PAGE_SIZE, (ordersPage + 1) * ORDERS_PAGE_SIZE);
-  useEffect(() => { setOrdersPage(0); }, [filterStatus, filterTab, filterPriceMode, filterChannel, filterZaloha, clientIdActive, search, dateFrom, dateTo]);
+  useEffect(() => {
+    // Počas navigácie z Histórie (focusNavigatingRef=true) neresetuj stránku — focusOrderId efekt ju nastaví správne
+    if (focusNavigatingRef.current) return;
+    setOrdersPage(0);
+  }, [filterStatus, filterTab, filterPriceMode, filterChannel, filterZaloha, clientIdActive, search, dateFrom, dateTo]);
 
   // ── Presence polling — zisti kto iný prezerá objednávky (každých 30s) ──
   useEffect(() => {
