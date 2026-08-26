@@ -271,9 +271,16 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const depClientRef = useRef<HTMLDivElement>(null);
 
   // CASHFLOW filtre — ak príde navigácia s clientId/dateFilter, použi "vsetko" aby sa ukázali aj staré objednávky
-  const [cashDateFilter,   setCashDateFilter]   = useState<DateFilter>(
-    initialDateFilter ?? (initialClientId ? "vsetko" : "tyzden")
-  );
+  // cashStatusFilter + cashDateFilter sa persistujú do localStorage (prežijú unmount pri prepnutí tabu)
+  const [cashDateFilter, setCashDateFilterRaw] = useState<DateFilter>(() => {
+    if (initialDateFilter) return initialDateFilter;
+    if (initialClientId) return "vsetko";
+    return (localStorage.getItem("msbeton_historia_cashDate") as DateFilter | null) ?? "tyzden";
+  });
+  const setCashDateFilter = (v: DateFilter) => {
+    setCashDateFilterRaw(v);
+    localStorage.setItem("msbeton_historia_cashDate", v);
+  };
   const [cashClientFilter, setCashClientFilter] = useState<string>("vsetci");
   const [cashClientDrop,   setCashClientDrop]   = useState(false);
   const [cashClientSearch, setCashClientSearch] = useState("");
@@ -282,7 +289,14 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [onlyDeposit,      setOnlyDeposit]      = useState(false);
   const [onlyNedoplatok,   setOnlyNedoplatok]   = useState(false);
   const [cashExcelFilter,  setCashExcelFilter]  = useState<"vsetky" | "ok" | "chyba">("vsetky");
-  const [cashStatusFilter, setCashStatusFilter] = useState<"vsetky" | typeof CASH_STATUSES[number]>("vsetky");
+  const [cashStatusFilter, setCashStatusFilterRaw] = useState<"vsetky" | typeof CASH_STATUSES[number]>(() => {
+    const saved = localStorage.getItem("msbeton_historia_cashStatus");
+    return (saved && [...CASH_STATUSES, "vsetky"].includes(saved)) ? saved as "vsetky" | typeof CASH_STATUSES[number] : "vsetky";
+  });
+  const setCashStatusFilter = (v: "vsetky" | typeof CASH_STATUSES[number]) => {
+    setCashStatusFilterRaw(v);
+    localStorage.setItem("msbeton_historia_cashStatus", v);
+  };
   const [cashSearch,       setCashSearch]       = useState("");
   const [displayLimit,     setDisplayLimit]     = useState(100);
   const [flashDeletedId,   setFlashDeletedId]   = useState<string | null>(null);
