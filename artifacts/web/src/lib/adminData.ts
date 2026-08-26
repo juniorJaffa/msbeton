@@ -478,8 +478,20 @@ let _clientsMemCache: Client[] | null = null;
 
 function saveData<T>(key: string, data: T): void {
   if (key === "msbeton_clients") _clientsMemCache = data as unknown as Client[];
+  // Fotky (base64 JPEG dataURLs) sú veľké — bežne 100-300 kB na klienta.
+  // Pri 15+ klientoch s fotkami → localStorage QuotaExceededError na Safari iOS (limit ~5 MB).
+  // Riešenie: fotky sa NEstorujú v localStorage — zostávajú len v _clientsMemCache + na serveri.
+  // Po reloade stránky syncFromServer() obnový fotky z API do _clientsMemCache (~1-2s).
+  const dataToStore =
+    key === "msbeton_clients"
+      ? (data as unknown as Client[]).map(c => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { photos: _ph, photoHistory: _hist, biometricAuthLog: _bio, ...rest } = c as Client & { photos?: unknown; photoHistory?: unknown; biometricAuthLog?: unknown };
+          return rest;
+        })
+      : data;
   try {
-    localStorage.setItem(key, JSON.stringify(data));
+    localStorage.setItem(key, JSON.stringify(dataToStore));
   } catch {
     // Safari iOS: QuotaExceededError alebo storage permission error — loguj, pokračuj.
     // Volajúci (saveClients atď.) pokračuje s PUT na server; syncFromServer neskôr obnoví localStorage.
@@ -512,7 +524,11 @@ function stripStamp<T extends Record<string, unknown>>(o: T): string {
 // Stampne updatedAt na zmenené/nové položky. Zachová starý stamp na nezmenených.
 // Rekurzívne aj na vnorené `types` (betóny → typy betónu).
 function stampArray<T extends { id: string; updatedAt?: string; types?: unknown[] }>(next: T[], prevKey: string): T[] {
-  const prev = loadData<T[]>(prevKey, []);
+  // Pre klientov: porovnávaj voči in-memory cache (má fotky) nie localStorage (fotky strippnuté).
+  // Bez toho by každý save detectoval "zmenu" (foto vs. bez foto) → zbytočný updatedAt na každom klientovi.
+  const prev = (prevKey === "msbeton_clients" && _clientsMemCache)
+    ? _clientsMemCache as unknown as T[]
+    : loadData<T[]>(prevKey, []);
   const prevById = new Map(prev.map(p => [p.id, p] as const));
   const now = new Date().toISOString();
   return next.map(item => {
