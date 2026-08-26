@@ -275,6 +275,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [cashDateFilter, setCashDateFilterRaw] = useState<DateFilter>(() => {
     if (initialDateFilter) return initialDateFilter;
     if (initialClientId) return "vsetko";
+    if (initialOrderId) return "vsetko"; // zobraziť všetky dátumy aby bola cieľová objednávka viditeľná
     return (localStorage.getItem("msbeton_historia_cashDate") as DateFilter | null) ?? "tyzden";
   });
   const setCashDateFilter = (v: DateFilter) => {
@@ -290,6 +291,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [onlyNedoplatok,   setOnlyNedoplatok]   = useState(false);
   const [cashExcelFilter,  setCashExcelFilter]  = useState<"vsetky" | "ok" | "chyba">("vsetky");
   const [cashStatusFilter, setCashStatusFilterRaw] = useState<"vsetky" | typeof CASH_STATUSES[number]>(() => {
+    if (initialOrderId) return "vsetky"; // zobraziť všetky statusy aby bola cieľová objednávka viditeľná
     const saved = localStorage.getItem("msbeton_historia_cashStatus");
     return (saved && [...CASH_STATUSES, "vsetky"].includes(saved)) ? saved as "vsetky" | typeof CASH_STATUSES[number] : "vsetky";
   });
