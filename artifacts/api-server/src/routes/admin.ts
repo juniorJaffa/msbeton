@@ -260,6 +260,21 @@ function mergeItems(incoming: Item[], current: Item[], baseSyncMs: number, prese
         merged = { ...merged, [parts[0]]: updated };
       }
     }
+    // paidAmount recompute (orders): ak merged má payments[], server prepočíta sumu zo zdroja pravdy.
+    // Zabraňuje stale paidAmount keď payments[] appendOnly merger pridal nové platby z losera.
+    // Bezpečné pre klientov — nemajú payments[], takže Array.isArray vráti false → no-op.
+    {
+      const mergedPayments = Array.isArray(merged.payments)
+        ? (merged.payments as Array<Record<string, unknown>>)
+        : null;
+      if (mergedPayments !== null) {
+        const computed = mergedPayments.reduce(
+          (s: number, p: Record<string, unknown>) => s + (typeof p.amount === "number" ? p.amount : 0),
+          0
+        );
+        merged = { ...merged, paidAmount: Math.round(computed * 100) / 100 };
+      }
+    }
     // Photo loss protection: ak winner (merged) prišiel bez fotiek ale loser (DB) mal fotky,
     // skontroluj či strata fotiek je vysvetlená explicitnými delete záznamami v photoHistory.
     // Bez tohto: orphan-cleanup s čerstvým updatedAt prepísal DB → fotky trvalo stratené.
