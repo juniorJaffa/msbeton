@@ -22,4 +22,6 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+  // PM2 wait_ready: signalizuje že process je ready pre traffic (graceful reload)
+  if (process.send) process.send("ready");
 });
