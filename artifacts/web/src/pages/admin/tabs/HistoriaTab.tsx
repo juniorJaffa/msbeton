@@ -366,8 +366,12 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       const cont = document.getElementById("admin-content");
       if (!cont) return;
       const cR = cont.getBoundingClientRect();
-      const els = Array.from(cont.querySelectorAll<HTMLElement>(".sticky.z-20"));
-      const stickyH = els.reduce((max, el) => Math.max(max, el.getBoundingClientRect().bottom), cR.top) - cR.top;
+      // Všetky sticky elementy (z-10 filter row + z-20 desktop header) — vezmeme najnižší bottom
+      const els = Array.from(cont.querySelectorAll<HTMLElement>(".sticky"));
+      const stickyH = els.reduce((max, el) => {
+        const b = el.getBoundingClientRect().bottom;
+        return b > cR.top && b < cR.bottom ? Math.max(max, b) : max;
+      }, cR.top) - cR.top;
       const nR = node.getBoundingClientRect();
       cont.scrollTo({ top: Math.max(0, cont.scrollTop + (nR.top - cR.top) - stickyH - 8), behavior: "smooth" });
     }, 300);
