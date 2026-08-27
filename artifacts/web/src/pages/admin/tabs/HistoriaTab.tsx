@@ -1449,38 +1449,38 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                           {/* R2d: Reálne zaplatené + záloha (oba v jednom bloku) */}
                           {((o.status === "vyplatena" || o.status === "vyuctovana") && o.paidAmount !== undefined && o.paidAmount > 0) || (o.depositUsed && o.depositUsed > 0) ? (
                             <div className="flex items-start justify-between gap-2">
-                              {/* ľavá: záloha chips */}
+                              {/* ľavá: záloha chip (len záloha — nedoplatok je vpravo pre lepší prehľad) */}
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 {o.depositUsed && o.depositUsed > 0 && (
-                                  <>
-                                    <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                                      záloha {fmtEur(o.depositUsed)}
-                                    </span>
-                                    {(() => {
-                                      const total = o.totalSDph ?? o.totalBezDph ?? 0;
-                                      const dep = o.depositUsed ?? 0;
-                                      const doplatokNeeded = Math.max(0, total - dep);
-                                      const payTotal = (o.payments ?? []).reduce((s, p) => s + p.amount, 0);
-                                      const isDoplatokPaid = doplatokNeeded < 0.01 || payTotal >= doplatokNeeded - 0.01;
-                                      const remaining = Math.max(0, doplatokNeeded - payTotal);
-                                      return doplatokNeeded > 0.5 && !isDoplatokPaid ? (
-                                        <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">
-                                          nedoplatok {fmtEur(remaining)}
-                                        </span>
-                                      ) : (
-                                        <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700">
-                                          uhradená zálohou ✓
-                                        </span>
-                                      );
-                                    })()}
-                                  </>
+                                  <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                                    💰 záloha {fmtEur(o.depositUsed)}
+                                  </span>
+                                )}
+                                {/* Keď plná úhrada zálohou (žiadny nedoplatok) — teal ✓ chip vľavo */}
+                                {o.depositUsed && o.depositUsed > 0 && hRemaining < 0.01 && hDoplatokNeeded < 0.01 && (
+                                  <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700">
+                                    uhradená zálohou ✓
+                                  </span>
                                 )}
                               </div>
-                              {/* pravá: zaplatené — skryjeme keď paidAmount ≈ depositUsed (plná úhrada zálohou = duplicita)
-                                   alebo keď je nedoplatok (hRemaining > 0.01) — info je už vľavo: záloha + nedoplatok chip */}
-                              {(o.status === "vyplatena" || o.status === "vyuctovana") && o.paidAmount !== undefined && o.paidAmount > 0
+                              {/* pravá: REÁLNE zaplatené
+                                  Prípad A — nedoplatok (hRemaining > 0.01): ukáž zálohou + nedoplatok červený — NIE paidAmount (total)
+                                  Prípad B — doplatok uhradený alebo žiadna záloha: ukáž paidAmount (plne zaplatené) */}
+                              {hRemaining > 0.01 && totalZalohaUsed > 0.01 ? (
+                                /* Prípad A: záloha zaplatená, nedoplatok ešte čaká */
+                                <div className="flex flex-col items-end gap-1 shrink-0">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-[9px] text-gray-400 font-medium">zálohou</span>
+                                    <span className="text-teal-600 font-black tabular-nums text-sm">{fmtEur(totalZalohaUsed)}</span>
+                                  </div>
+                                  <span className="inline-flex items-center text-[9px] font-black px-2 py-0.5 rounded-full bg-red-500 text-white">
+                                    ned. {fmtEur(hRemaining)}
+                                  </span>
+                                </div>
+                              ) : (
+                                /* Prípad B: plne zaplatené (hotovosť alebo záloha+doplatok) */
+                                (o.status === "vyplatena" || o.status === "vyuctovana") && o.paidAmount !== undefined && o.paidAmount > 0
                                 && !(o.depositUsed && o.depositUsed > 0 && Math.abs(o.paidAmount - o.depositUsed) < 1)
-                                && hRemaining < 0.01
                                 && (
                                 <div className="flex items-center gap-1.5 shrink-0">
                                   <span className="text-[9px] text-gray-400 font-medium">zaplatené</span>
@@ -1491,6 +1491,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                     </span>
                                   )}
                                 </div>
+                                )
                               )}
                             </div>
                           ) : null}
