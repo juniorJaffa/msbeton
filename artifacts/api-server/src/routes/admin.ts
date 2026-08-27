@@ -278,6 +278,22 @@ function mergeItems(incoming: Item[], current: Item[], baseSyncMs: number, prese
         }
       }
     }
+    // locationPhoto GPS protection: ak winner (merged) nemá GPS ale loser mal,
+    // obnov z losera — zábrán premazaniu GPS pri concurrent admin save s stale dátami.
+    // Výnimka: ak winner mal explicitné vymazanie GPS (loser.locationPhoto existoval ale winner.locationPhoto je undefined
+    // a updatedAt winnera > updatedAt losera) — vtedy neobnov (zámerné vymazanie).
+    {
+      const mergedLoc = merged.locationPhoto as Record<string, unknown> | undefined;
+      const loserLoc  = loser.locationPhoto  as Record<string, unknown> | undefined;
+      const mergedHasGps = mergedLoc && typeof mergedLoc.lat === "number";
+      const loserHasGps  = loserLoc  && typeof loserLoc.lat  === "number";
+      if (!mergedHasGps && loserHasGps) {
+        // Loser mal GPS, winner nemá — obnov GPS z losera (ochrana pred stale-data premazaním)
+        console.warn(`[mergeItems] GPS loss protection triggered for client ${String(merged.id ?? "?")}: restoring locationPhoto from loser`);
+        merged = { ...merged, locationPhoto: loserLoc };
+      }
+    }
+
     result.push(merged);
   }
   // 2) Položky len v DB (chýbajú v incoming):
