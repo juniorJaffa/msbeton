@@ -59,6 +59,17 @@ export default function AdminDashboard() {
     return () => window.removeEventListener("bio-status-changed", onBio);
   }, []);
 
+  // Hashchange listener — Browser Back/Forward tlačidlá synchronizujú tab state
+  useEffect(() => {
+    const VALID_TABS: Tab[] = ["betony", "sluzby", "doprava", "klienti", "objednavky", "historia", "statistiky", "seo", "server"];
+    const onHashChange = () => {
+      const hash = window.location.hash.slice(1) as Tab;
+      if (VALID_TABS.includes(hash)) setTab(hash);
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
   // Reset scroll pri každom prepnutí tabu — bez toho container drží scrollTop z predchádzajúceho tabu.
   // Fokus-navigácia (focusOrderId, expandClientId) si robí vlastný scroll 250ms+ po mounte → override OK.
   useEffect(() => {
