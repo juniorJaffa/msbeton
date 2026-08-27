@@ -31,9 +31,13 @@ jobs:
             chmod -R o+rX artifacts/web/public/videos/ 2>/dev/null || true
             DATABASE_URL=$(node -e "const c=require('./ecosystem.config.cjs');console.log(c.apps[0].env.DATABASE_URL)") \
               pnpm --filter @workspace/db run push
-            pm2 delete msbeton-api || true
-            pm2 start ecosystem.config.cjs
-            pm2 save
+            # Graceful reload — zero downtime (nový process startuje pred ukončením starého)
+            if pm2 describe msbeton-api > /dev/null 2>&1; then
+              pm2 reload ecosystem.config.cjs
+            else
+              pm2 start ecosystem.config.cjs
+              pm2 save
+            fi
             sleep 6
             API=$(curl -s http://localhost:3001/api/healthz | grep -c '"ok"' || true)
             if [ "$API" = "0" ]; then
