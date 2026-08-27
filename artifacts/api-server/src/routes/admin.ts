@@ -257,6 +257,27 @@ function mergeItems(incoming: Item[], current: Item[], baseSyncMs: number, prese
         merged = { ...merged, [parts[0]]: updated };
       }
     }
+    // Photo loss protection: ak winner (merged) prišiel bez fotiek ale loser (DB) mal fotky,
+    // skontroluj či strata fotiek je vysvetlená explicitnými delete záznamami v photoHistory.
+    // Bez tohto: orphan-cleanup s čerstvým updatedAt prepísal DB → fotky trvalo stratené.
+    {
+      const mergedPhotos = Array.isArray(merged.photos) ? (merged.photos as unknown[]) : [];
+      const loserPhotos = Array.isArray(loser.photos) ? (loser.photos as unknown[]) : [];
+      if (loserPhotos.length > mergedPhotos.length) {
+        // Koľko fotiek zmizlo? Porovnaj s počtom explicitných "delete" zápisov v photoHistory
+        // ktoré vznikli PO poslednom loser updatedAt (= po úmyselnom mazaní)
+        const loserTs = ts(loser.updatedAt);
+        const mergedHistory = Array.isArray(merged.photoHistory) ? (merged.photoHistory as Array<Record<string, unknown>>) : [];
+        const explicitDeletes = mergedHistory.filter(h => h.type === "delete" && ts(h.at) > loserTs).length;
+        const lostCount = loserPhotos.length - mergedPhotos.length;
+        if (lostCount > explicitDeletes) {
+          // Viac fotiek zmizlo ako je vysvetlené explicitnými delete zápismi → obnov z losera
+          console.warn(`[mergeItems] Photo loss protection triggered for client ${String(merged.id ?? "?")}:` +
+            ` lost ${lostCount} photos but only ${explicitDeletes} explicit deletes — restoring from loser`);
+          merged = { ...merged, photos: loserPhotos };
+        }
+      }
+    }
     result.push(merged);
   }
   // 2) Položky len v DB (chýbajú v incoming):
@@ -538,8 +559,8 @@ router.delete("/clients/:id", requireSuper, async (req, res) => {
     const raw = await getConfig(KEYS.clients);
     const clients = Array.isArray(raw) ? raw as Array<Record<string, unknown>> : [];
     const target = clients.find(c => String(c.id) === id);
-    if (!target) return res.status(404).json({ error: "Client not found" });
-    if (!target.isDeleted) return res.status(400).json({ error: "Client must be soft-deleted (isDeleted:true) before permanent deletion" });
+    if (!target) { res.status(404).json({ error: "Client not found" }); return; }
+    if (!target.isDeleted) { res.status(400).json({ error: "Client must be soft-deleted (isDeleted:true) before permanent deletion" }); return; }
     const updated = clients.filter(c => String(c.id) !== id);
     await setConfig(KEYS.clients, updated);
     invalidateClientCache();

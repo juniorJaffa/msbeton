@@ -912,6 +912,8 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     }).catch(() => {});
 
     // Auto-cleanup: klienti s locationPhoto ale bez fotky (orphaned GPS z blink bugu)
+    // DÔLEŽITÉ: NEstampujeme updatedAt — aby cleanup NEVYHRAL nad DB verziou ktorá môže mať fotky.
+    // Server-side photo loss protection (mergeItems) chráni fotky aj keby cleanup prebehol s fresh ts.
     {
       const freshC = adminData.getClients();
       const orphaned = freshC.filter(c => c.locationPhoto && (!c.photos || c.photos.length === 0));
@@ -924,7 +926,8 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
         };
         const fixed = freshC.map(c =>
           orphaned.some(o => o.id === c.id)
-            ? { ...c, locationPhoto: undefined, photoHistory: [...(c.photoHistory ?? []), cleanupEntry].slice(-30), updatedAt: now }
+            // Zachovaj pôvodný updatedAt — cleanup nesmie byť "winner" nad DB verziou s fotkami
+            ? { ...c, locationPhoto: undefined, photoHistory: [...(c.photoHistory ?? []), cleanupEntry].slice(-30) }
             : c
         );
         adminData.saveClients(fixed);
