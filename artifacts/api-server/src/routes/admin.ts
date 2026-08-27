@@ -211,12 +211,15 @@ function mergeItems(incoming: Item[], current: Item[], baseSyncMs: number, prese
     if (Array.isArray(inc.types) && Array.isArray(cur.types)) {
       merged = { ...merged, types: mergeItems(inc.types as Item[], cur.types as Item[], baseSyncMs, preserveUnstamped, appendOnlyFields, stickyTrueFields) };
     }
-    // stickyTrueFields: boolean polia ktoré raz nastavené na true nikdy stratia pri concurrent edite
-    // Ak loser mal true a winner nemá → zachovaj true (excelConfirmed, etc.)
+    // stickyTrueFields: polia ktoré raz nastavené na truthy hodnotu nikdy stratia pri concurrent edite
+    // boolean true → zachovaj true; string (napr. deletedAt ISO timestamp) → zachovaj string
+    // Ak loser mal truthy a winner nemá → zachovaj z losera (excelConfirmed, deletedAt, etc.)
     if (stickyTrueFields.length > 0) {
       const overrides: Record<string, unknown> = {};
       for (const field of stickyTrueFields) {
-        if (loser[field] === true && merged[field] !== true) overrides[field] = true;
+        const loserVal = loser[field];
+        const mergedVal = merged[field];
+        if (loserVal && !mergedVal) overrides[field] = loserVal;
       }
       if (Object.keys(overrides).length > 0) merged = { ...merged, ...overrides };
     }
@@ -291,6 +294,17 @@ function mergeItems(incoming: Item[], current: Item[], baseSyncMs: number, prese
         // Loser mal GPS, winner nemá — obnov GPS z losera (ochrana pred stale-data premazaním)
         console.warn(`[mergeItems] GPS loss protection triggered for client ${String(merged.id ?? "?")}: restoring locationPhoto from loser`);
         merged = { ...merged, locationPhoto: loserLoc };
+      }
+    }
+    // note protection (orders): ak winner nemá note ale loser mal → obnov loserovu note.
+    // Zabraňuje premazaniu poznámky pri concurrent status zmene.
+    // Ak winner mal note="" (zámerné vymazanie) → neprepíše (winner.note je falsy ale zámerné — OK, akceptujeme).
+    // Ak winner má novšiu note (existuje) → nemeň (winner wins podľa updatedAt).
+    {
+      const mergedNote = merged.note as string | undefined;
+      const loserNote  = loser.note  as string | undefined;
+      if (!mergedNote && loserNote) {
+        merged = { ...merged, note: loserNote };
       }
     }
 
@@ -687,7 +701,10 @@ router.put("/orders", async (req, res) => {
   // preserveUnstamped=TRUE: klientske objednávky (POST /api/client/order) nemajú updatedAt — záložná ochrana.
   // appendOnlyFields: statusHistory sa union-uje z oboch verziií — nikdy nestratí záznamy pri súbežných zmenách
   // stickyTrueFields: excelConfirmed — raz potvrdené nikdy nestratí pri concurrent edite
-  try { const r = await mergeSaveArray(KEYS.orders, req.body, req.get("X-Base-Sync"), null, preserveAllOrders, true, ["statusHistory"], ["excelConfirmed"]); res.json({ ok: true, ...r }); }
+  try { const r = await mergeSaveArray(KEYS.orders, req.body, req.get("X-Base-Sync"), null, preserveAllOrders, true,
+  ["statusHistory", "payments"],   // appendOnly: platby ani statusy sa nestratia pri concurrent save
+  ["excelConfirmed", "deletedAt"]  // stickyTrue: soft delete + excel confirm sú nevratné
+); res.json({ ok: true, ...r }); }
   catch (err) { req.log.error({ err }, "Failed to save orders"); res.status(500).json({ error: "Internal server error" }); }
 });
 
