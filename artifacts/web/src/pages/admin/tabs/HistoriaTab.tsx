@@ -356,22 +356,21 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [markedOrderId, setMarkedOrderId] = useState<string | undefined>(initialOrderId); // perzistentná zlatá bodka
   const scrollToFocused = useCallback((node: HTMLDivElement | null) => {
     if (!node) return;
-    // scrollMarginTop + scrollIntoView — browser natívne zarovná element pod sticky header.
-    // Spoľahlivejšie ako manuálny getBoundingClientRect výpočet (závisí od presného scrollTop v čase).
-    // 250ms: dá čas AdminDashboard scrollTop=0 efektu + React commit phase usadiť layout.
+    // scrollIntoView nefunguje na position:fixed scroll kontajneroch (browser scrolluje document, nie admin-content).
+    // Manuálny container.scrollTo je správny prístup — ale musí vedieť scrollTop pred výpočtom.
+    // Fix: okamžite force scrollTop=0 (synchronne v ref callback, pred AdminDashboard efektom),
+    // potom 300ms timeout dá Reactu čas usadiť layout, a výpočet je deterministický.
+    const container = document.getElementById("admin-content");
+    if (container) container.scrollTop = 0; // garantuj 0 pred výpočtom
     setTimeout(() => {
-      const container = document.getElementById("admin-content");
-      // Výška column headera (.sticky.z-20) — day-separatory (z-10) nie sú pravé headery
-      const stickyH = container
-        ? (() => {
-            const cR = container.getBoundingClientRect();
-            const els = Array.from(container.querySelectorAll<HTMLElement>(".sticky.z-20"));
-            return els.reduce((max, el) => Math.max(max, el.getBoundingClientRect().bottom), cR.top) - cR.top;
-          })()
-        : 0;
-      node.style.scrollMarginTop = `${stickyH + 8}px`;
-      node.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 250);
+      const cont = document.getElementById("admin-content");
+      if (!cont) return;
+      const cR = cont.getBoundingClientRect();
+      const els = Array.from(cont.querySelectorAll<HTMLElement>(".sticky.z-20"));
+      const stickyH = els.reduce((max, el) => Math.max(max, el.getBoundingClientRect().bottom), cR.top) - cR.top;
+      const nR = node.getBoundingClientRect();
+      cont.scrollTo({ top: Math.max(0, cont.scrollTop + (nR.top - cR.top) - stickyH - 8), behavior: "smooth" });
+    }, 300);
   }, []);
   useEffect(() => {
     if (!focusOrderId) return;
