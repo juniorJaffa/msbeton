@@ -2656,6 +2656,9 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                 const fmt2v = (v: number) => v.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                                 return (
                                   <>
+                                    {/* Skryť "Vyplatená suma" keď je nedoplatok (isPartialDep && !doplatokIsFullyPaid) —
+                                        paidAmount = total objednávky, nie reálne zaplatené; záloha blok pod ním má kompletné info */}
+                                    {(!isPartialDep || doplatokIsFullyPaid) && (
                                     <div className={`flex justify-between items-center rounded-sm px-3 py-2 mt-1.5 border ${isNeg ? "bg-red-50 border-red-200" : "bg-teal-50 border-teal-200"}`}>
                                       <div>
                                         <div className={`text-xs font-bold ${isNeg ? "text-red-700" : "text-teal-700"}`}>Vyplatená suma</div>
@@ -2667,6 +2670,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                       </div>
                                       <span className={`text-lg font-black ${isNeg ? "text-red-700" : "text-teal-700"}`}>{fmtEur(o.paidAmount)}</span>
                                     </div>
+                                    )}
                                     {depUsed !== undefined && (
                                       <div className={`rounded-md mt-1.5 border overflow-hidden ${isPartialDep && !doplatokIsFullyPaid ? "border-orange-300" : isPartialDep ? "border-green-300" : "border-amber-200"}`}>
                                         {/* Záloha riadok */}
