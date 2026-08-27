@@ -694,42 +694,47 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
         });
       }
 
-      // KRITICKÉ: čítaj čerstvé dáta z adminData (nie z closure `clients`) — počas async ops (geolocation
-      // 8s + Nominatim) môže syncFromServer prepísať `clients` state. Stale closure → stary updatedAt →
-      // server merge preferuje novšiu DB verziu → foto vymizne. Riešenie: vždy čítaj z localStorage
-      // a stamp updatedAt aby bol náš záznam winner v mergeItems.
-      const freshClients = adminData.getClients();
-      const freshClient = freshClients.find(c => c.id === clientId);
-      const existing = freshClient?.photos ?? [];
-      if (existing.length >= 3) return;
+      // Pre-Nominatim read: skontroluj capacity (limit 3 foto) + zber prevLoc pre no-GPS vetvu
+      const preNomClients = adminData.getClients();
+      const preNomClient = preNomClients.find(c => c.id === clientId);
+      const existingPre = preNomClient?.photos ?? [];
+      if (existingPre.length >= 3) return;
 
-      const updates: Partial<Client> = {
-        photos: [...existing, compressed],
-        // updatedAt sa nastaví AŽ po Nominatim awaite → winner timestamp vždy novší ako concurrent saves
-      };
+      const updates: Partial<Client> = {};
       if (gpsCoords) {
+        // DLHÝ AWAIT: Nominatim môže trvať 1-3s → počas toho môže delete / iný save zmeniť localStorage
         const place = await nominatimReverse(gpsCoords.lat, gpsCoords.lng);
         updates.locationPhoto = { lat: gpsCoords.lat, lng: gpsCoords.lng, capturedAt, place };
       } else {
-        // Bez GPS — uložíme aspoň dátum fotky; zachovaj existujúce GPS ak sú
-        const prevLoc = freshClient?.locationPhoto;
+        // No-GPS: zachovaj existujúce GPS (prevLoc z pre-Nom read — žiadny dlhý await pred tým)
+        const prevLoc = preNomClient?.locationPhoto;
         updates.locationPhoto = prevLoc?.lat !== undefined
           ? { ...prevLoc, capturedAt }
           : { capturedAt };
       }
-      // Stamp AFTER all awaits — zaručí že náš save je winner v mergeItems aj keď Nominatim trvá 2-3s
+
+      // KRITICKÉ: po Nominatim awaite znovu čítaj freshClients — delete / syncFromServer mohol
+      // zmeniť localStorage počas 1-3s čakania. Toto je druhé čítanie; prvé (preNom) bolo len pre
+      // capacity check. Stamp updatedAt AŽ tu → winner timestamp vždy novší ako concurrent saves.
+      const freshClients = adminData.getClients();
+      const freshClient = freshClients.find(c => c.id === clientId);
+      const freshExisting = freshClient?.photos ?? [];
+      // Double-check: Nominatim await mohol trvať dlho; iný upload (cez queue) mohol pridať foto medzitým
+      if (freshExisting.length >= 3) return;
+
+      updates.photos = [...freshExisting, compressed];
       updates.updatedAt = new Date().toISOString();
       // Photo history log
       const photoLogEntry: NonNullable<Client["photoHistory"]>[number] = {
         type: "upload",
         at: updates.updatedAt,
         note: gpsCoords
-          ? `GPS ${gpsCoords.lat.toFixed(5)},${gpsCoords.lng.toFixed(5)}${updates.locationPhoto?.place ? ` (${updates.locationPhoto.place})` : ""}`
+          ? `GPS ${gpsCoords.lat.toFixed(5)},${gpsCoords.lng.toFixed(5)}${updates.locationPhoto && "place" in updates.locationPhoto && updates.locationPhoto.place ? ` (${updates.locationPhoto.place})` : ""}`
           : "Bez GPS",
       };
       updates.photoHistory = [...(freshClient?.photoHistory ?? []), photoLogEntry].slice(-30);
 
-      // Uložíme priamo z freshClients (nie cez stale `update()` closure) → ochrana pred prepísaním
+      // Uložíme z čerstvých freshClients (po Nominatim) → žiadne stale closure prepísanie
       save(freshClients.map(c => c.id === clientId ? { ...c, ...updates } : c));
       if (fromLightbox) setPhotoLightbox({ clientId, index: existing.length });
     } catch (err) {
@@ -809,7 +814,12 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   const [depositTopupNote, setDepositTopupNote] = useState("");
 
   const readOnly = isReader(); // admin-čitateľ — žiadne mutácie
-  const save = (data: Client[]) => { if (readerBlocked()) return; setClients(data); adminData.saveClients(data); };
+  // patchPriceHistoryBy: keď je zadané, saveClients auto-diffuje zmeny cien/zliav a loguje do priceHistory
+  const save = (data: Client[], patchPriceHistoryBy?: string) => {
+    if (readerBlocked()) return;
+    setClients(data);
+    adminData.saveClients(data, patchPriceHistoryBy);
+  };
 
   // ── Sort + filter state ───────────────────────────────────────────────────
   type SortMode = "manual" | "date_desc" | "date_asc" | "name";
@@ -1019,7 +1029,9 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   const restore = (id: string) => {
     save(clients.map(c => c.id === id ? { ...c, isDeleted: false, deletedAt: undefined, deletedBy: undefined } : c));
   };
-  const update = (id: string, patch: Partial<Client>) => save(clients.map(c => c.id === id ? { ...c, ...patch } : c));
+  // Vždy odovzdaj deviceLabel → patchClientPriceHistory v saveClients auto-diffuje a loguje zmeny cien/zliav
+  const update = (id: string, patch: Partial<Client>) =>
+    save(clients.map(c => c.id === id ? { ...c, ...patch } : c), getAdminDeviceLabel() || "admin");
   const togglePassVis = (id: string) => setShowPass(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
 
   const add = async () => {

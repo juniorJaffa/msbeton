@@ -532,7 +532,8 @@ router.put("/clients", async (req, res) => {
     // Hard delete musí ísť cez DELETE /clients/:id (nie cez vypustenie z poľa).
     const transform = actor.role === "manager" ? sanitizeClientsForManager : preserveAllClients;
     // deposit.transactions je append-only — union z oboch verzií pri súbežných zmenách (topup + platba)
-    const r = await mergeSaveArray(KEYS.clients, req.body, req.get("X-Base-Sync"), actor, transform, true, ["deposit.transactions", "photoHistory"]);
+    // priceHistory = audit log zmien cien/zliav — append-only ako photoHistory (union pri concurrent PUT)
+    const r = await mergeSaveArray(KEYS.clients, req.body, req.get("X-Base-Sync"), actor, transform, true, ["deposit.transactions", "photoHistory", "priceHistory"]);
     invalidateClientCache();
     const logFields = {
       ev: "clients_saved",

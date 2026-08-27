@@ -1,6 +1,8 @@
 import { adminApi } from "./api";
 import { isLoggedIn, isReader } from "./adminAuth";
 import { toast } from "@/hooks/use-toast";
+import { patchClientPriceHistory } from "./clientPriceAudit";
+export { patchClientPriceHistory } from "./clientPriceAudit";
 export { adminApi };
 export type { PresenceSession, AuditEntry, SaveResult } from "./api";
 
@@ -149,6 +151,14 @@ export interface Client {
     at: string;                // ISO timestamp
     note?: string;             // detail: GPS súradnice, číslo fotky, error správa...
     by?: string;               // kto: adminDeviceLabel alebo "system-restore"
+  }[];
+  priceHistory?: {             // audit log zmien cien a zliav — append-only na serveri
+    type: "discount" | "manualPrice" | "reset";
+    at: string;                // ISO timestamp zmeny
+    by: string;                // device label admina (napr. "Peter Iphone")
+    field: string;             // napr. "discountBeton", "s1", "km_rate_nixd83u6"
+    oldValue: number | null;   // predchádzajúca hodnota (null = kľúč neexistoval)
+    newValue: number | null;   // nová hodnota (null = kľúč bol odstránený)
   }[];
 }
 
@@ -618,6 +628,7 @@ export async function syncFromServer(): Promise<void> {
   // klientov (T1–T4 počas fetchu) → baseSyncMs preskočil nových klientov → zmiznutie pri ďalšom PUT.
 }
 
+
 export const adminData = {
   getCategories: (): ConcreteCategory[] => {
     const cats = loadData("msbeton_categories", DEFAULT_CATEGORIES);
@@ -654,9 +665,14 @@ export const adminData = {
   // Čítaj z in-memory cache (ak existuje) — prežije QuotaExceededError, zaistí konzistentné
   // poradie fotiek pri rýchlom nahrávaní (photo 2 vždy vidí photo 1 aj bez localStorage).
   getClients: (): Client[] => ensureOwner(_clientsMemCache ?? loadData("msbeton_clients", DEFAULT_CLIENTS)),
-  saveClients: (data: Client[]) => {
+  saveClients: (data: Client[], patchPriceHistoryBy?: string) => {
+    // Ak caller poskytne `by` (device label admina), automaticky diff-uj zmeny cien/zliav a logguj do priceHistory.
+    // Toto zachytí KAŽDÚ zmenu discountBeton/Doprava/Sluzby/Celkovo aj manualPrices — append-only na serveri.
+    const toSave = patchPriceHistoryBy
+      ? patchClientPriceHistory(data, adminData.getClients(), patchPriceHistoryBy)
+      : data;
     if (readerBlocked()) return;
-    const safe = stampArray(ensureOwner(data), "msbeton_clients");
+    const safe = stampArray(ensureOwner(toSave), "msbeton_clients");
     saveData("msbeton_clients", safe);
     // Sync zo servera LEN ak save uspel — inak by syncFromServer prepísal localStorage
     // starým stavom a stratil by nové klienty (Tomáš Lutišan bug: save fail + sync = strata).
