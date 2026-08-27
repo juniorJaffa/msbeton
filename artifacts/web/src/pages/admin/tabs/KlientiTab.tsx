@@ -1942,7 +1942,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                         </p>
                       )}
                     </div>
-                    {/* GPS koordináty + dátum fotky + clear */}
+                    {/* GPS koordináty + dátum fotky + clear + restore z histórie */}
                     {(c.locationPhoto || (c.photos && c.photos.length > 0)) && (() => {
                       const loc = c.locationPhoto;
                       const hasGPS = loc?.lat !== undefined && loc?.lng !== undefined;
@@ -1954,6 +1954,16 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                             return `${d.getDate()}. ${d.getMonth()+1}. ${d.getFullYear()} ${hh}:${mm}`;
                           })()
                         : null;
+                      // Hľadaj GPS v photoHistory (pre restore po race condition strate)
+                      const histGPS = !hasGPS ? (() => {
+                        for (const h of [...(c.photoHistory ?? [])].reverse()) {
+                          if (h.type === "upload" && h.note) {
+                            const m = h.note.match(/GPS\s+([-\d.]+),([-\d.]+)/);
+                            if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+                          }
+                        }
+                        return null;
+                      })() : null;
                       return (
                         <div className="flex items-center gap-1.5 mt-1.5 pt-1.5 border-t border-gray-200 min-w-0">
                           <MapPin className={`w-3 h-3 shrink-0 ${hasGPS ? "text-green-500" : "text-gray-400"}`} />
@@ -1966,6 +1976,24 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                               <span className="ml-1.5 text-gray-400">· {photoDateStr}</span>
                             )}
                           </span>
+                          {/* Restore GPS z histórie — keď race condition zmazala GPS ale log ho má */}
+                          {histGPS && !readOnly && (
+                            <button type="button"
+                              title={`Obnoviť GPS z histórie: ${histGPS.lat.toFixed(5)}, ${histGPS.lng.toFixed(5)}`}
+                              className="text-[8px] font-bold px-1 py-0.5 rounded bg-green-50 text-green-600 border border-green-200 hover:bg-green-100 transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+                              onClick={async () => {
+                                const place = await nominatimReverse(histGPS.lat, histGPS.lng);
+                                const freshC = adminData.getClients();
+                                const freshClient = freshC.find(fc => fc.id === c.id);
+                                save(freshC.map(fc => fc.id === c.id ? {
+                                  ...fc,
+                                  locationPhoto: { lat: histGPS.lat, lng: histGPS.lng, place, capturedAt: freshClient?.locationPhoto?.capturedAt },
+                                  updatedAt: new Date().toISOString(),
+                                } : fc));
+                              }}>
+                              ↻ GPS z hist.
+                            </button>
+                          )}
                           {loc && !readOnly && (
                             <button type="button"
                               onClick={() => update(c.id, { locationPhoto: undefined })}
