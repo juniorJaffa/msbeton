@@ -14,12 +14,15 @@ const fM3 = (n?: number) => Math.round((n ?? 0) * 10) / 10;
 const extractAddrLocality = (address: string): string => {
   const ZIP = /^\d{3}\s?\d{2}$/;
   const COUNTRY = /^(Slovensko|Slovakia|Česká republika|Česko|Czech Republic|SR|SK)$/i;
+  // Plus Code prefix napr. "6R3G+FH " alebo "6R3G+FH" (bez medzery ak posledná časť)
+  const PLUS_CODE_PREFIX = /^[A-Z0-9]{4,8}\+[A-Z0-9]{2,}\s*/;
   const parts = address.split(",").map(p => p.trim()).filter(p => p && !COUNTRY.test(p) && !ZIP.test(p));
   if (!parts.length) return address;
   const candidate = parts[parts.length - 1];
   return candidate
     .replace(/^\d{3}\s?\d{2}\s+/, "")  // strip ZIP prefix: "013 04 Dolná Tižina"
     .replace(/\s+\d{3}\s?\d{2}$/, "")  // strip ZIP suffix: "Dolná Tižina 013 04"
+    .replace(PLUS_CODE_PREFIX, "")      // strip Plus Code prefix: "6R3G+FH Mojš" → "Mojš"
     .trim();
 };
 
@@ -1191,8 +1194,9 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
           if (cancelled) return;
           const d = await r.json();
           const a = d.address ?? {};
-          const loc = (a.village ?? a.town ?? a.city ?? a.municipality ?? "") as string;
-          const dist = (a.county ?? "") as string;
+          // Kompletný reťazec sídiel SK — rovnaký ako reverseGeocode v Calculator.tsx
+          const loc = (a.village ?? a.hamlet ?? a.town ?? a.city ?? a.city_district ?? a.suburb ?? a.municipality ?? a.neighbourhood ?? a.locality ?? "") as string;
+          const dist = (a.county ?? a.state_district ?? "") as string;
           const mapLocality = [loc, dist].filter(Boolean).join(", ");
           if (!mapLocality || cancelled) return;
           setOrders(prev => {
