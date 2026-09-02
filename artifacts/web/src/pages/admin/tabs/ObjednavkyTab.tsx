@@ -1226,6 +1226,27 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
     return () => { cancelled = true; timeoutIds.forEach(clearTimeout); };
   }, [orders]);
 
+  // Backfill mapPlusCode pre staré objednávky s GPS adresou ("49.xxx, 18.xxx") bez uloženého Plus Code
+  // Bez API volania — okamžitý výpočet. Textové adresy preskočíme (Nominatim forward je nepresný).
+  useEffect(() => {
+    const toFill = orders.filter(o => !o.mapPlusCode && GPS_RE.test(o.address ?? ""));
+    if (toFill.length === 0) return;
+    setOrders(prev => {
+      let changed = false;
+      const updated = prev.map(o => {
+        if (o.mapPlusCode || !GPS_RE.test(o.address ?? "")) return o;
+        const code = getEffectivePlusCode(o.mapPlusCode, o.address);
+        if (!code) return o;
+        changed = true;
+        return { ...o, mapPlusCode: code };
+      });
+      if (!changed) return prev;
+      adminData.saveOrders(updated);
+      return updated;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Raz pri mount — stačí
+
   const readOnly = isReader(); // admin-čitateľ — žiadne zmeny objednávok
   const save = (data: Order[]) => { if (readerBlocked()) return; setOrders(data); adminData.saveOrders(data); };
   // Soft delete — zachová objednávku v DB pre História, len zmení status + history entry
