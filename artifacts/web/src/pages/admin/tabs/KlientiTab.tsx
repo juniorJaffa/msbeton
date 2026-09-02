@@ -2484,7 +2484,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                                       </div>
                                     </div>
                                     {onGoToOrders && (
-                                      <button onClick={() => onGoToOrders(c.loginId ?? c.id, last?.id)} title="Zobraziť objednávky klienta" className="shrink-0 text-primary hover:text-secondary transition-colors cursor-pointer">
+                                      <button onClick={() => onGoToOrders(c.loginId ?? c.id)} title="Zobraziť všetky objednávky klienta" className="shrink-0 text-primary hover:text-secondary transition-colors cursor-pointer">
                                         <ExternalLink className="w-4 h-4" />
                                       </button>
                                     )}
