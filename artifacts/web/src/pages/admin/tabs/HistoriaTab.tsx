@@ -303,6 +303,9 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [cashSearch,       setCashSearch]       = useState("");
   const [displayLimit,     setDisplayLimit]     = useState(100);
   const [flashDeletedId,   setFlashDeletedId]   = useState<string | null>(null);
+  // 2-step Excel confirm: id čakajúci na potvrdenie
+  const [excelPending,     setExcelPending]     = useState<string | null>(null);
+  const excelPendingTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showDeleted,      setShowDeleted]      = useState(false);
   const [colHeaderScrolled, setColHeaderScrolled] = useState(false);
   const [cashDateFrom,     setCashDateFrom]     = useState("");
@@ -350,6 +353,12 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       };
     });
     adminData.saveClients(updated);
+  };
+
+  const clearExcelPending = () => {
+    if (excelPendingTimer.current) clearTimeout(excelPendingTimer.current);
+    excelPendingTimer.current = null;
+    setExcelPending(null);
   };
 
   // Focus + scroll na konkrétnu objednávku (navigácia z ObjednavkyTab)
@@ -981,14 +990,31 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     const isExcelOk = r.kind === "order"
                       ? !!(liveOrders.find(o => o.id === r.orderId)?.excelConfirmed)
                       : !!r.tx.excelConfirmed;
+                    // Disabled pre non-vyplatená order riadky; tx riadky vždy enabled
+                    const depOrderStatus = liveOrders.find(o => o.id === r.orderId)?.status;
+                    const isExcelEnabled = r.kind === "tx" || depOrderStatus === "vyplatena";
+                    const excelPendingKey = r.kind === "order" ? r.orderId : (r.kind === "tx" ? r.tx.id : r.orderId);
+                    const isDepPending = excelPending === excelPendingKey;
                     const handleExcel = (e: React.MouseEvent) => {
                       e.stopPropagation();
-                      if (r.kind === "order") toggleExcelConfirmed(e, r.orderId);
-                      else toggleDepTxExcel(e, r.clientId, r.tx.id);
+                      if (!isExcelEnabled) return;
+                      if (isDepPending) {
+                        clearExcelPending();
+                        if (r.kind === "order") toggleExcelConfirmed(e, r.orderId);
+                        else toggleDepTxExcel(e, r.clientId, r.tx.id);
+                      } else {
+                        clearExcelPending();
+                        setExcelPending(excelPendingKey);
+                        excelPendingTimer.current = setTimeout(clearExcelPending, 3000);
+                      }
                     };
-                    const excelBtnCls = isExcelOk
-                      ? "bg-green-100 text-green-700 border-green-500 hover:bg-red-50 hover:text-red-500 hover:border-red-300"
-                      : "bg-gray-50 text-gray-400 border-gray-200 hover:bg-green-50 hover:text-green-600 hover:border-green-400";
+                    const excelBtnCls = !isExcelEnabled
+                      ? "bg-gray-50 text-gray-200 border-gray-100 cursor-not-allowed opacity-40"
+                      : isDepPending
+                        ? "bg-yellow-100 text-yellow-700 border-yellow-400 hover:bg-green-100 hover:text-green-700 hover:border-green-500 cursor-pointer animate-pulse"
+                        : isExcelOk
+                          ? "bg-green-100 text-green-700 border-green-500 hover:bg-red-50 hover:text-red-500 hover:border-red-300 cursor-pointer"
+                          : "bg-gray-50 text-gray-400 border-gray-200 hover:bg-green-50 hover:text-green-600 hover:border-green-400 cursor-pointer";
                     return (
                       <div key={rowKey}
                         onClick={handleClick}
@@ -1012,7 +1038,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             <span className="flex-1" />
                             <button onClick={handleExcel}
                               className={`inline-flex items-center gap-0.5 text-[8px] font-black px-1.5 py-0.5 rounded border transition-all cursor-pointer shrink-0 ${excelBtnCls}`}>
-                              <Check className="w-2.5 h-2.5 shrink-0" />{isExcelOk ? "EXCEL OK" : "EXCEL?"}
+                              <Check className="w-2.5 h-2.5 shrink-0" />{isDepPending ? "Potvrdiť?" : isExcelOk ? "EXCEL OK" : "EXCEL?"}
                             </button>
                           </div>
                         </div>
@@ -1033,7 +1059,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                           <div className="flex justify-center">
                             <button onClick={handleExcel}
                               className={`inline-flex items-center gap-0.5 text-[8px] font-black px-1.5 py-0.5 rounded border transition-all cursor-pointer ${excelBtnCls}`}>
-                              <Check className="w-2.5 h-2.5 shrink-0" />{isExcelOk ? "EXCEL OK" : "EXCEL?"}
+                              <Check className="w-2.5 h-2.5 shrink-0" />{isDepPending ? "Potvrdiť?" : isExcelOk ? "EXCEL OK" : "EXCEL?"}
                             </button>
                           </div>
                         </div>
@@ -1610,16 +1636,29 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             <span className="text-gray-400 shrink-0">Vytvorené</span>
                             <span className="tabular-nums text-gray-500 font-medium shrink-0 ml-0.5">{fmtDate(o.createdAt)}</span>
                             <span className="flex-1" />
-                            <button
-                              onClick={e => toggleExcelConfirmed(e, o.id)}
-                              className={`inline-flex items-center gap-0.5 text-[8px] font-black px-1.5 py-0.5 rounded border transition-all cursor-pointer ${
-                                o.excelConfirmed
-                                  ? "bg-green-100 text-green-700 border-green-500 hover:bg-red-50 hover:text-red-500 hover:border-red-300"
-                                  : "bg-gray-50 text-gray-400 border-gray-200 hover:bg-green-50 hover:text-green-600 hover:border-green-400"
-                              }`}>
-                              <Check className="w-2.5 h-2.5 shrink-0" />
-                              {o.excelConfirmed ? "EXCEL OK" : "EXCEL?"}
-                            </button>
+                            {(() => {
+                              const isEnabled = o.status === "vyplatena";
+                              const isPend = excelPending === o.id;
+                              const cls = !isEnabled
+                                ? "bg-gray-50 text-gray-200 border-gray-100 cursor-not-allowed opacity-40"
+                                : isPend
+                                  ? "bg-yellow-100 text-yellow-700 border-yellow-400 hover:bg-green-100 hover:text-green-700 hover:border-green-500 cursor-pointer animate-pulse"
+                                  : o.excelConfirmed
+                                    ? "bg-green-100 text-green-700 border-green-500 hover:bg-red-50 hover:text-red-500 hover:border-red-300 cursor-pointer"
+                                    : "bg-gray-50 text-gray-400 border-gray-200 hover:bg-green-50 hover:text-green-600 hover:border-green-400 cursor-pointer";
+                              const label = isPend ? "Potvrdiť?" : o.excelConfirmed ? "EXCEL OK" : "EXCEL?";
+                              return (
+                                <button onClick={e => {
+                                  e.stopPropagation();
+                                  if (!isEnabled) return;
+                                  if (isPend) { clearExcelPending(); toggleExcelConfirmed(e, o.id); }
+                                  else { clearExcelPending(); setExcelPending(o.id); excelPendingTimer.current = setTimeout(clearExcelPending, 3000); }
+                                }} className={`inline-flex items-center gap-0.5 text-[8px] font-black px-1.5 py-0.5 rounded border transition-all ${cls}`}
+                                  title={!isEnabled ? "Len pre objednávky so statusom Vyplatená" : undefined}>
+                                  <Check className="w-2.5 h-2.5 shrink-0" />{label}
+                                </button>
+                              );
+                            })()}
                           </div>
                         </div>
 
@@ -1793,16 +1832,29 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                           )}
                           {/* Excel confirm — desktop */}
                           <div className="flex justify-end">
-                            <button
-                              onClick={e => toggleExcelConfirmed(e, o.id)}
-                              className={`inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded border transition-all cursor-pointer ${
-                                o.excelConfirmed
-                                  ? "bg-green-100 text-green-700 border-green-500 hover:bg-red-50 hover:text-red-500 hover:border-red-300"
-                                  : "bg-gray-50 text-gray-400 border-gray-200 hover:bg-green-50 hover:text-green-600 hover:border-green-400"
-                              }`}>
-                              <Check className="w-2.5 h-2.5 shrink-0" />
-                              {o.excelConfirmed ? "EXCEL OK" : "EXCEL?"}
-                            </button>
+                            {(() => {
+                              const isEnabled = o.status === "vyplatena";
+                              const isPend = excelPending === o.id;
+                              const cls = !isEnabled
+                                ? "bg-gray-50 text-gray-200 border-gray-100 cursor-not-allowed opacity-40"
+                                : isPend
+                                  ? "bg-yellow-100 text-yellow-700 border-yellow-400 hover:bg-green-100 hover:text-green-700 hover:border-green-500 cursor-pointer animate-pulse"
+                                  : o.excelConfirmed
+                                    ? "bg-green-100 text-green-700 border-green-500 hover:bg-red-50 hover:text-red-500 hover:border-red-300 cursor-pointer"
+                                    : "bg-gray-50 text-gray-400 border-gray-200 hover:bg-green-50 hover:text-green-600 hover:border-green-400 cursor-pointer";
+                              const label = isPend ? "Potvrdiť?" : o.excelConfirmed ? "EXCEL OK" : "EXCEL?";
+                              return (
+                                <button onClick={e => {
+                                  e.stopPropagation();
+                                  if (!isEnabled) return;
+                                  if (isPend) { clearExcelPending(); toggleExcelConfirmed(e, o.id); }
+                                  else { clearExcelPending(); setExcelPending(o.id); excelPendingTimer.current = setTimeout(clearExcelPending, 3000); }
+                                }} className={`inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded border transition-all ${cls}`}
+                                  title={!isEnabled ? "Len pre objednávky so statusom Vyplatená" : undefined}>
+                                  <Check className="w-2.5 h-2.5 shrink-0" />{label}
+                                </button>
+                              );
+                            })()}
                           </div>
                           {/* Status timeline desktop — newest first, vertical */}
                           {hist.length > 0 && (
