@@ -63,6 +63,7 @@ interface ExtraItemServices {
   waitPiecesPumpa: number;
   hoseMeters: number;
   washing: boolean;
+  chem: boolean;   // Rozbehová chémia — pre extra položky voliteľná (default true)
   waitHour: string;
   waitMin: string;
 }
@@ -1092,6 +1093,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       svcPumpHrs: number; svcPumpMs: number; svcPumpCost: number;
       svcHoseMeters: number; svcHoseCost: number;
       svcWashing: boolean; svcWashCost: number;
+      svcChem: boolean; svcChemCost: number;
       svcWaitIntervals: number; svcWaitCost: number; svcWaitLabel: string;
     };
     const concreteBreakdown: BreakdownItem[] = [];
@@ -1124,6 +1126,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       svcPumpHrs: 0, svcPumpMs: 0, svcPumpCost: 0,
       svcHoseMeters: 0, svcHoseCost: 0,
       svcWashing: false, svcWashCost: 0,
+      svcChem: false, svcChemCost: 0,
       svcWaitIntervals: 0, svcWaitCost: 0, svcWaitLabel: "",
     });
     for (const item of extraItems) {
@@ -1137,6 +1140,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         let svcPumpHrs = 0, svcPumpMs = 0, svcPumpCost = 0;
         let svcHoseMeters = 0, svcHoseCost = 0;
         let svcWashing = false, svcWashCost = 0;
+        let svcChem = false, svcChemCost = 0;
         let svcWaitIntervals = 0, svcWaitCost = 0, svcWaitLabel = "";
         if (item.svc) {
           const s = item.svc;
@@ -1148,6 +1152,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
             svcHoseCost = s.hoseMeters * hoseServicePrice;
             svcWashing = s.washing;
             svcWashCost = s.washing ? washServicePrice : 0;
+            svcChem = s.chem ?? true; // default true pre staré záznamy bez chem poľa
+            svcChemCost = svcChem ? chemServicePrice : 0;
             svcWaitIntervals = s.waitPiecesPumpa;
             svcWaitCost = s.waitPiecesPumpa * waitServicePricePumpa;
             svcWaitLabel = `${s.waitPiecesPumpa} ks`;
@@ -1177,6 +1183,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
           svcPumpHrs, svcPumpMs, svcPumpCost,
           svcHoseMeters, svcHoseCost,
           svcWashing, svcWashCost,
+          svcChem, svcChemCost,
           svcWaitIntervals, svcWaitCost, svcWaitLabel,
         });
       }
@@ -1256,6 +1263,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     const extraSvcPumpCost  = concreteBreakdown.slice(1).reduce((s, ci) => s + ci.svcPumpCost, 0);
     const extraSvcHoseCost  = concreteBreakdown.slice(1).reduce((s, ci) => s + ci.svcHoseCost, 0);
     const extraSvcWashCost  = concreteBreakdown.slice(1).reduce((s, ci) => s + ci.svcWashCost, 0);
+    const extraSvcChemCost  = concreteBreakdown.slice(1).reduce((s, ci) => s + ci.svcChemCost, 0);
     const extraSvcWaitCost  = concreteBreakdown.slice(1).reduce((s, ci) => s + ci.svcWaitCost, 0);
 
     const items = {
@@ -1265,7 +1273,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       pump: tab === "pumpa" ? pumpCost + extraSvcPumpCost : 0,
       hoses: tab === "pumpa" ? (hoseMeters > 0 ? hoseMeters * hoseServicePrice : 0) + extraSvcHoseCost : 0,
       washing: tab === "pumpa" ? (washing ? washServicePrice : 0) + extraSvcWashCost : 0,
-      chem: tab === "pumpa" ? chemServicePrice : 0,
+      chem: tab === "pumpa" ? chemServicePrice + extraSvcChemCost : 0,
       waiting: tab === "pumpa"
         ? waitIntervals * waitServicePricePumpa + extraSvcWaitCost
         : (tab === "mix" ? waitIntervals * waitServicePriceMix + extraSvcWaitCost : 0),
@@ -1612,7 +1620,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         </td></tr>`;
       }
       rows += trow(`Doťaženie do&nbsp;${ci.transportFillupTarget}&nbsp;m³`, `${ci.transportFillupM3}&nbsp;m³`, transRateStr(fillupOrig, ci.transportFillupM3, result.fFillup), fillupOrig, fillupDisc);
-      const hasExtraSvc = ci.svcPumpCost > 0 || ci.svcHoseCost > 0 || ci.svcWashCost > 0 || ci.svcWaitCost > 0;
+      const hasExtraSvc = ci.svcPumpCost > 0 || ci.svcHoseCost > 0 || ci.svcWashCost > 0 || ci.svcChemCost > 0 || ci.svcWaitCost > 0;
       if (hasExtraSvc) rows += subSectionRow(svcLabel);
       if (ci.svcPumpCost > 0) {
         const pumpTimeStr = ci.svcPumpMs > 0 ? `${ci.svcPumpHrs}&nbsp;h&nbsp;${ci.svcPumpMs}&nbsp;min` : `${ci.svcPumpHrs}&nbsp;h`;
@@ -1620,6 +1628,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       }
       if (ci.svcHoseCost > 0) {
         rows += trow(`Prídavné hadice`, `${ci.svcHoseMeters}&nbsp;m`, svcRateStr(hoseServicePrice, "€/m", fHose), ci.svcHoseCost, ci.svcHoseCost * fHose);
+      }
+      if (ci.svcChemCost > 0) {
+        rows += trow("Rozbehová chémia", "1&nbsp;ks", svcRateStr(chemServicePrice, "€", fChem), ci.svcChemCost, ci.svcChemCost * fChem);
       }
       if (ci.svcWashCost > 0) {
         rows += trow("Umývanie mimo stavby", "1&nbsp;ks", svcRateStr(washServicePrice, "€", fWash), ci.svcWashCost, ci.svcWashCost * fWash);
@@ -2129,6 +2140,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       } else {
         if (ci.svcPumpCost > 0) { svcRows.push({ l: `Čerpanie betónu – ${ci.svcPumpHrs} h${ci.svcPumpMs > 0 ? ` ${ci.svcPumpMs} min` : ""}`, q: `${ci.svcPumpHrs} h${ci.svcPumpMs > 0 ? ` ${ci.svcPumpMs} min` : ""}`, v: fmt2(ci.svcPumpCost * fPump), ...(fPump < 1 ? { o: fmt2(ci.svcPumpCost) } : {}), u: fmt2(pumpServicePrice * fPump), uSuffix: "€/h", ...(fPump < 1 ? { uOrig: pumpServicePrice } : {}) }); }
         if (ci.svcHoseCost > 0) { svcRows.push({ l: `Prídavné hadice – ${ci.svcHoseMeters} m`, q: `${ci.svcHoseMeters} m`, v: fmt2(ci.svcHoseCost * fHose), ...(fHose < 1 ? { o: fmt2(ci.svcHoseCost) } : {}), u: fmt2(hoseServicePrice * fHose), uSuffix: "€/m", ...(fHose < 1 ? { uOrig: hoseServicePrice } : {}) }); }
+        if (ci.svcChemCost > 0) { svcRows.push({ l: "Rozbehová chémia", q: "1 ks", v: fmt2(ci.svcChemCost * fChem), ...(fChem < 1 ? { o: fmt2(ci.svcChemCost) } : {}), u: fmt2(chemServicePrice * fChem), uSuffix: "€", ...(fChem < 1 ? { uOrig: chemServicePrice } : {}) }); }
         if (ci.svcWashCost > 0) { svcRows.push({ l: "Umývanie mimo stavby", q: "1 ks", v: fmt2(ci.svcWashCost * fWash), ...(fWash < 1 ? { o: fmt2(ci.svcWashCost) } : {}), u: fmt2(washServicePrice * fWash), uSuffix: "€", ...(fWash < 1 ? { uOrig: washServicePrice } : {}) }); }
         if (ci.svcWaitCost > 0) { const wfExtra = tab === "pumpa" ? fWaitP : fWaitM; const wRateExtra = tab === "pumpa" ? waitServicePricePumpa : waitServicePriceMix; svcRows.push({ l: `Čakačky – ${ci.svcWaitLabel}`, v: fmt2(ci.svcWaitCost * wfExtra), ...(wfExtra < 1 ? { o: fmt2(ci.svcWaitCost) } : {}), u: fmt2(wRateExtra * wfExtra), uSuffix: "€/int.", ...(wfExtra < 1 ? { uOrig: wRateExtra } : {}) }); }
       }
@@ -3004,7 +3016,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                 {!item.svc && tab !== "vlastnadoprava" && !itemCat?.noDoprava && (
                   <button type="button"
                     onClick={() => {
-                      const defaults: ExtraItemServices = { pumpHour: "0 h", pumpMin: "0 min", waitPiecesPumpa: 0, hoseMeters: 0, washing: false, waitHour: "0 h", waitMin: "0 min" };
+                      const defaults: ExtraItemServices = { pumpHour: "0 h", pumpMin: "0 min", waitPiecesPumpa: 0, hoseMeters: 0, washing: false, chem: true, waitHour: "0 h", waitMin: "0 min" };
                       setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, svc: defaults, showSvc: true } : i));
                       setShowResult(false);
                     }}
@@ -3052,6 +3064,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                             </div>
                           </div>
                         </div>
+                        <label className="flex items-center gap-2 cursor-pointer group">
+                          <input type="checkbox" checked={item.svc.chem ?? true}
+                            onChange={(e) => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, svc: { ...i.svc!, chem: e.target.checked } } : i)); setShowResult(false); }}
+                            className="w-4 h-4 accent-primary cursor-pointer" />
+                          <span className={cn("text-xs transition-colors", (item.svc.chem ?? true) ? "text-primary font-semibold" : "text-white/50 group-hover:text-white/70")}>Rozbehová chémia</span>
+                        </label>
                         <label className="flex items-center gap-2 cursor-pointer group">
                           <input type="checkbox" checked={item.svc.washing}
                             onChange={(e) => { setExtraItems(extraItems.map((i) => i.id === item.id ? { ...i, svc: { ...i.svc!, washing: e.target.checked } } : i)); setShowResult(false); }}
@@ -3757,7 +3775,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                         const isAddToMain = isExtra && extraItems[idx - 1]?.transportMode === "addToMain";
                         const itemHasSvc = idx === 0
                           ? mainHasServices
-                          : (ci.svcPumpCost > 0 || ci.svcHoseCost > 0 || ci.svcWashCost > 0 || ci.svcWaitCost > 0);
+                          : (ci.svcPumpCost > 0 || ci.svcHoseCost > 0 || ci.svcChemCost > 0 || ci.svcWashCost > 0 || ci.svcWaitCost > 0);
 
                         const itemCatName = ci.categoryName || (idx === 0 ? categoryName : null) || null;
                         return (
@@ -3889,6 +3907,8 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                                       original={ci.svcPumpCost} discounted={ci.svcPumpCost * fPump} hasDiscount={hasDiscount} />}
                                     {ci.svcHoseCost > 0 && <PriceRow label={`Prídavné hadice – ${ci.svcHoseMeters} m`}
                                       original={ci.svcHoseCost} discounted={ci.svcHoseCost * fHose} hasDiscount={hasDiscount} />}
+                                    {ci.svcChemCost > 0 && <PriceRow label="Rozbehová chémia"
+                                      original={ci.svcChemCost} discounted={ci.svcChemCost * fChem} hasDiscount={hasDiscount} />}
                                     {ci.svcWashCost > 0 && <PriceRow label="Umývanie mimo stavby"
                                       original={ci.svcWashCost} discounted={ci.svcWashCost * fWash} hasDiscount={hasDiscount} />}
                                     {ci.svcWaitCost > 0 && <PriceRow
