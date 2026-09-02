@@ -584,11 +584,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
         const place = acInst.getPlace();
         if (!place?.formatted_address) return;
         setAddress(place.formatted_address);
-        // Uloží lat/lng pre okamžité umiestnenie pinu pri prepnutí na mapu
+        // Uloží lat/lng pre okamžité umiestnenie pinu pri prepnutí na mapu + generuje Plus Code
         if (place.geometry?.location) {
           const lat = place.geometry.location.lat(), lng = place.geometry.location.lng();
           pendingGeocodePlaceRef.current = { lat, lng };
           lastResolvedAddressRef.current = { address: place.formatted_address, lat, lng };
+          setMapPlusCode(encodeOLC(lat, lng));
         }
         setAddressLoading(true);
         setShowResult(false);
@@ -2534,7 +2535,7 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
                     ref={addressInputRef}
                     type="text"
                     defaultValue={address}
-                    onChange={(e) => { setAddress(e.target.value); setAddressKm(null); setShowResult(false); }}
+                    onChange={(e) => { setAddress(e.target.value); setAddressKm(null); setShowResult(false); setMapPlusCode(""); }}
                     onKeyUp={(e) => {
                       if (e.key === "Enter" && deliveryMode === "map") {
                         const val = addressInputRef.current?.value.trim();
