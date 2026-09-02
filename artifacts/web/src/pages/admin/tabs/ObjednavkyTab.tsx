@@ -766,12 +766,14 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
 
   const a5Html = `<!DOCTYPE html><html lang="sk"><head>
 <meta charset="utf-8">
+<meta name="format-detection" content="telephone=no">
 <title>Objednávka A5 – ${o.clientName || "klient"}</title>
 <style>
   @page { size: A5; margin: 0; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #222; }
   table { border-collapse: collapse; width: 100%; }
+  a { color: inherit; text-decoration: none; }
   @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 </style>
 </head><body>
@@ -847,12 +849,14 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
 
   const a4Html = `<!DOCTYPE html><html lang="sk"><head>
 <meta charset="utf-8">
+<meta name="format-detection" content="telephone=no">
 <title>Objednávka – ${o.clientName || "klient"}</title>
 <style>
   @page { size: A4; margin: 0; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: Arial, Helvetica, sans-serif; font-size: 9pt; color: #222; position: relative; }
   table { border-collapse: collapse; width: 100%; }
+  a { color: inherit; text-decoration: none; }
   @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 </style>
 </head><body>

@@ -1692,12 +1692,14 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
     const html = `<!DOCTYPE html><html lang="sk"><head>
 <meta charset="utf-8">
+<meta name="format-detection" content="telephone=no">
 <title>Cenová ponuka – MS-BETON</title>
 <style>
   @page { size: A4; margin: 0; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: Arial, Helvetica, sans-serif; font-size: 9pt; color: #222; position:relative; }
   table { border-collapse: collapse; width: 100%; }
+  a { color: inherit; text-decoration: none; }
   @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 </style>
 </head><body>
