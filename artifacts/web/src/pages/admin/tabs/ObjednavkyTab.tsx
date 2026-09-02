@@ -2502,17 +2502,29 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                               {o.address && <span className="block text-gray-500 text-xs">{o.address}</span>}
                               {(() => {
                                 const effCode = getEffectivePlusCode(o.mapPlusCode, o.address);
-                                if (!effCode) return null;
-                                const txt = `${effCode}${o.mapLocality ? " " + o.mapLocality : ""}`;
-                                return (
-                                  <span className="flex items-center gap-1 mt-0.5">
-                                    <span className="text-gray-400 text-[10px] font-mono">{effCode}</span>
-                                    <button onClick={e => { e.stopPropagation(); navigator.clipboard?.writeText(txt); setCopiedPlusCode(o.id); setTimeout(() => setCopiedPlusCode(null), 1500); }}
-                                      className="text-gray-300 hover:text-blue-500 transition-colors" title="Kopírovať Plus Code">
+                                if (effCode) {
+                                  // Máme Plus Code (uložený alebo odvodený z GPS)
+                                  const txt = `${effCode}${o.mapLocality ? " " + o.mapLocality : ""}`;
+                                  return (
+                                    <span className="flex items-center gap-1 mt-0.5">
+                                      <span className="text-gray-400 text-[10px] font-mono">{effCode}</span>
+                                      <button onClick={e => { e.stopPropagation(); navigator.clipboard?.writeText(txt); setCopiedPlusCode(o.id); setTimeout(() => setCopiedPlusCode(null), 1500); }}
+                                        className="text-gray-300 hover:text-blue-500 transition-colors" title="Kopírovať Plus Code">
+                                        {copiedPlusCode === o.id ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                                      </button>
+                                    </span>
+                                  );
+                                }
+                                // Textová adresa — copy button pre adresu
+                                if (o.address) {
+                                  return (
+                                    <button onClick={e => { e.stopPropagation(); navigator.clipboard?.writeText(o.address!); setCopiedPlusCode(o.id); setTimeout(() => setCopiedPlusCode(null), 1500); }}
+                                      className="text-gray-300 hover:text-blue-500 transition-colors mt-0.5 inline-flex" title="Kopírovať adresu">
                                       {copiedPlusCode === o.id ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
                                     </button>
-                                  </span>
-                                );
+                                  );
+                                }
+                                return null;
                               })()}
                             </span>
                             {(o.mapPlusCode || o.address || o.mapLocality) && (
@@ -3091,9 +3103,19 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                 <MapPin className="w-4 h-4 text-primary shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="font-black text-sm uppercase tracking-widest">Poloha doručenia</div>
-                  {/* 1. Human address (non-GPS) */}
-                  {humanAddr && <div className="text-white/80 text-xs truncate">{humanAddr}</div>}
-                  {/* 2. Plus Code + locality — vždy zobrazený ak je coords (uložený alebo odvodený z GPS) */}
+                  {/* 1. Human address (non-GPS) + copy button (keď nemáme Plus Code) */}
+                  {humanAddr && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-white/80 text-xs truncate flex-1">{humanAddr}</span>
+                      {!effCode && (
+                        <button onClick={() => { navigator.clipboard?.writeText(humanAddr); setCopiedPlusCode(mapModalOrder.id); setTimeout(() => setCopiedPlusCode(null), 1500); }}
+                          className="shrink-0 text-white/30 hover:text-primary transition-colors" title="Kopírovať adresu">
+                          {copiedPlusCode === mapModalOrder.id ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {/* 2. Plus Code + locality — vždy ak máme coords (uložený alebo odvodený z GPS) */}
                   {effCode && (
                     <div className="flex items-center gap-1.5">
                       <span className="flex items-center gap-1 flex-1 min-w-0">
