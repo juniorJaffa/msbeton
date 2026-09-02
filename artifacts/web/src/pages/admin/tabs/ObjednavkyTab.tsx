@@ -1,6 +1,17 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { SlidersHorizontal, ShoppingCart, MessageSquare, MapPin, Navigation, Copy, Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, AlertTriangle, FileText, Calculator, Users, Mountain, Waves, Phone, Mail, Truck, Fingerprint, Crown, Percent, ShieldCheck, Eye, Globe, Smartphone, Laptop, Monitor, BarChart2 } from "lucide-react";
+import { OpenLocationCode } from "open-location-code";
+const _olc = new OpenLocationCode();
+// GPS_RE: "49.16720, 18.69756" alebo "49.16720,18.69756"
+const GPS_RE = /^\s*(-?\d{1,3}\.\d+),\s*(-?\d{1,3}\.\d+)\s*$/;
+/** Vráti Plus Code — buď uložený, alebo odvodený z GPS adresného stringu */
+function getEffectivePlusCode(mapPlusCode: string | undefined, address: string | undefined): string | null {
+  if (mapPlusCode) return mapPlusCode;
+  const m = GPS_RE.exec(address ?? "");
+  if (!m) return null;
+  try { return _olc.encode(parseFloat(m[1]), parseFloat(m[2]), 10); } catch { return null; }
+}
 
 // Kto objednávku vytvoril — vizuálna identita.
 // "anonym" = neprihlásený návštevník cez verejný košík (bežný web tok) → viditeľný "web" chip.
@@ -2489,15 +2500,20 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                 ) : null;
                               })()}
                               {o.address && <span className="block text-gray-500 text-xs">{o.address}</span>}
-                              {o.mapPlusCode && (
-                                <span className="flex items-center gap-1 mt-0.5">
-                                  <span className="text-gray-400 text-[10px] font-mono">{o.mapPlusCode}</span>
-                                  <button onClick={e => { e.stopPropagation(); const txt = `${o.mapPlusCode}${o.mapLocality ? " " + o.mapLocality : ""}`; navigator.clipboard?.writeText(txt); setCopiedPlusCode(o.id); setTimeout(() => setCopiedPlusCode(null), 1500); }}
-                                    className="text-gray-300 hover:text-blue-500 transition-colors" title="Kopírovať Plus Code">
-                                    {copiedPlusCode === o.id ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
-                                  </button>
-                                </span>
-                              )}
+                              {(() => {
+                                const effCode = getEffectivePlusCode(o.mapPlusCode, o.address);
+                                if (!effCode) return null;
+                                const txt = `${effCode}${o.mapLocality ? " " + o.mapLocality : ""}`;
+                                return (
+                                  <span className="flex items-center gap-1 mt-0.5">
+                                    <span className="text-gray-400 text-[10px] font-mono">{effCode}</span>
+                                    <button onClick={e => { e.stopPropagation(); navigator.clipboard?.writeText(txt); setCopiedPlusCode(o.id); setTimeout(() => setCopiedPlusCode(null), 1500); }}
+                                      className="text-gray-300 hover:text-blue-500 transition-colors" title="Kopírovať Plus Code">
+                                      {copiedPlusCode === o.id ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                                    </button>
+                                  </span>
+                                );
+                              })()}
                             </span>
                             {(o.mapPlusCode || o.address || o.mapLocality) && (
                               <button onClick={e => { e.stopPropagation(); setMapModalOrder(o); }}
@@ -3058,14 +3074,14 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
 
       {/* ── Map modal ── */}
       {mapModalOrder && (() => {
-        const query = mapModalOrder.mapPlusCode
-          ? `${mapModalOrder.mapPlusCode}${mapModalOrder.mapLocality ? " " + mapModalOrder.mapLocality : ""}`
+        const effCode = getEffectivePlusCode(mapModalOrder.mapPlusCode, mapModalOrder.address);
+        const query = effCode
+          ? `${effCode}${mapModalOrder.mapLocality ? " " + mapModalOrder.mapLocality : ""}`
           : mapModalOrder.address ?? "";
         const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=17&t=h&output=embed`;
         const mapsUrl  = `https://maps.google.com/?q=${encodeURIComponent(query)}`;
-        const isGpsAddr = /^\s*-?\d{1,3}\.\d+,\s*-?\d{1,3}\.\d+\s*$/.test(mapModalOrder.address ?? "");
+        const isGpsAddr = GPS_RE.test(mapModalOrder.address ?? "");
         const humanAddr = !isGpsAddr ? (mapModalOrder.address ?? "") : "";
-        const gpsAddr   = isGpsAddr  ? (mapModalOrder.address ?? "") : "";
         return (
           <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
             onClick={() => setMapModalOrder(null)}>
@@ -3077,21 +3093,19 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                   <div className="font-black text-sm uppercase tracking-widest">Poloha doručenia</div>
                   {/* 1. Human address (non-GPS) */}
                   {humanAddr && <div className="text-white/80 text-xs truncate">{humanAddr}</div>}
-                  {/* 2. Plus Code + locality */}
-                  {mapModalOrder.mapPlusCode && (
+                  {/* 2. Plus Code + locality — vždy zobrazený ak je coords (uložený alebo odvodený z GPS) */}
+                  {effCode && (
                     <div className="flex items-center gap-1.5">
                       <span className="flex items-center gap-1 flex-1 min-w-0">
-                        <span className="text-white/40 text-[10px] font-mono shrink-0">{mapModalOrder.mapPlusCode}</span>
+                        <span className="text-white/40 text-[10px] font-mono shrink-0">{effCode}</span>
                         {mapModalOrder.mapLocality && <span className="text-white font-bold text-xs truncate">· {mapModalOrder.mapLocality}</span>}
                       </span>
-                      <button onClick={() => { const txt = `${mapModalOrder.mapPlusCode}${mapModalOrder.mapLocality ? " " + mapModalOrder.mapLocality : ""}`; navigator.clipboard?.writeText(txt); setCopiedPlusCode(mapModalOrder.id); setTimeout(() => setCopiedPlusCode(null), 1500); }}
+                      <button onClick={() => { const txt = `${effCode}${mapModalOrder.mapLocality ? " " + mapModalOrder.mapLocality : ""}`; navigator.clipboard?.writeText(txt); setCopiedPlusCode(mapModalOrder.id); setTimeout(() => setCopiedPlusCode(null), 1500); }}
                         className="shrink-0 text-white/30 hover:text-primary transition-colors" title="Kopírovať Plus Code">
                         {copiedPlusCode === mapModalOrder.id ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
                       </button>
                     </div>
                   )}
-                  {/* 3. GPS fallback — only if no human address */}
-                  {!humanAddr && gpsAddr && <div className="text-white/30 text-[10px] font-mono truncate">{gpsAddr}</div>}
                 </div>
                 <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-secondary text-xs font-black rounded-lg hover:bg-primary/80 transition-colors shrink-0">
