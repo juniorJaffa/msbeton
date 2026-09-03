@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { adminData, Client, DepositTx, Order, getKamenivoGroup, readerBlocked } from "@/lib/adminData";
-import { ChevronRight, ChevronLeft, TrendingUp, Minus, Smartphone, Monitor, Laptop, ChevronDown, Users, ShoppingCart, Mountain, Waves, X, MessageSquare, Check, AlertTriangle, MapPin, Navigation, Phone, Search } from "lucide-react";
+import { ChevronRight, ChevronLeft, TrendingUp, Minus, Smartphone, Monitor, Laptop, ChevronDown, Users, ShoppingCart, Mountain, Waves, X, MessageSquare, Check, AlertTriangle, MapPin, Navigation, Phone, Search, SlidersHorizontal } from "lucide-react";
 
 type Sub = "zalohy" | "cashflow";
 
@@ -312,6 +312,15 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [cashDateTo,       setCashDateTo]       = useState("");
   const cashClientRef = useRef<HTMLDivElement>(null);
   const ktoRef        = useRef<HTMLDivElement>(null);
+
+  // Filter panel open/collapse state — vzor Objednávky
+  const [cashFilterOpen,   setCashFilterOpen]   = useState(false);
+  const [depFilterOpen,    setDepFilterOpen]     = useState(false);
+  const [secCashStavOpen,  setSecCashStavOpen]   = useState(true);
+  const [secCashDateOpen,  setSecCashDateOpen]   = useState(true);
+  const [secCashExtraOpen, setSecCashExtraOpen]  = useState(false);
+  const [secDepDateOpen,   setSecDepDateOpen]    = useState(true);
+  const [secDepExtraOpen,  setSecDepExtraOpen]   = useState(false);
 
   // Photo lightbox — foto klienta z objednávky — { clientId, photoIdx } naviguje len cez fotky daného klienta
   const [clientPhotoModal, setClientPhotoModal] = useState<{ clientId: string; photoIdx: number } | null>(null);
@@ -838,6 +847,26 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     );
   }
 
+  // Počty aktívnych filtrov — pre badge v hlavičke
+  const activeCash = [
+    cashStatusFilter !== "vsetky",
+    cashDateFilter !== "tyzden" || !!cashDateFrom || !!cashDateTo,
+    cashKtoFilters.length > 0,
+    cashClientFilter !== "vsetci",
+    onlyDeposit,
+    onlyNedoplatok,
+    cashExcelFilter !== "vsetky",
+    cashSearch.trim().length > 0,
+  ].filter(Boolean).length;
+
+  const activeDep = [
+    depDateFilter !== "tyzden",
+    depClientFilter !== "vsetci",
+    depOnlyTopup,
+    depExcelFilter !== "vsetky",
+    depSearch.trim().length > 0,
+  ].filter(Boolean).length;
+
   return (
     <div className="space-y-4">
       <style>{`
@@ -878,64 +907,94 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
 
       {/* ─── ZÁLOHY ─────────────────────────────────────────────────── */}
       {sub === "zalohy" && (
-        <div className="space-y-3">
-          {/* Filtre — riadok 1: dátum */}
-          <div className="flex flex-wrap gap-1.5 items-center">
-            {DATE_BTNS.map(f => (
-              <button key={f.id} onClick={() => setDepDateFilter(f.id)} className={dateBtnCls(depDateFilter === f.id)}>{f.label}</button>
-            ))}
-          </div>
-          {/* Filtre — riadok 2: klient dropdown */}
-          {depositClients.length > 0 && (
-            <ClientDropdown clients={depositClients} value={depClientFilter} onChange={setDepClientFilter}
-              dropRef={depClientRef} open={depClientDrop} setOpen={setDepClientDrop}
-              search={depClientSearch} setSearch={setDepClientSearch} align="left" />
-          )}
-          {/* Filtre — riadok 3: EXCEL filter + Prijaté toggle */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[9px] font-black uppercase tracking-wide text-green-700 bg-green-50 border border-green-400 rounded px-1.5 py-0.5 shrink-0">EXCEL</span>
-            <button onClick={() => setDepExcelFilter("vsetky")}
-              className={`px-2.5 py-1 text-xs font-bold rounded-sm border transition-all cursor-pointer ${
-                depExcelFilter === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-green-300 hover:border-green-400"
-              }`}>Všetky</button>
-            <button onClick={() => setDepExcelFilter("ok")}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-sm border transition-all cursor-pointer ${
-                depExcelFilter === "ok" ? "bg-green-100 text-green-700 border-green-500" : "bg-white text-gray-600 border-green-300 hover:bg-green-50 hover:text-green-600 hover:border-green-400"
-              }`}><Check className="w-2.5 h-2.5 shrink-0" />EXCEL OK</button>
-            <button onClick={() => setDepExcelFilter("chyba")}
-              className={`px-2.5 py-1 text-xs font-bold rounded-sm border transition-all cursor-pointer ${
-                depExcelFilter === "chyba" ? "bg-gray-100 text-gray-700 border-gray-400" : "bg-white text-gray-600 border-green-300 hover:border-green-400"
-              }`}>EXCEL?</button>
-            <span className="text-gray-200 mx-0.5">|</span>
-            <button onClick={() => setDepOnlyTopup(v => !v)}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-sm border transition-all cursor-pointer ${
-                depOnlyTopup
-                  ? "bg-teal-100 text-teal-700 border-teal-500"
-                  : "bg-white text-gray-500 border-gray-200 hover:border-teal-400 hover:text-teal-600"
-              }`}>
-              <TrendingUp className="w-3 h-3 shrink-0" />Prijaté
+        <div>
+          {/* Filtre — sticky collapsible panel (vzor Objednávky) */}
+          <div className="sticky top-0 z-10 bg-white border border-gray-200 shadow-sm">
+            <button onClick={() => setDepFilterOpen(o => !o)}
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-gray-50 transition-colors cursor-pointer">
+              <SlidersHorizontal className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Filter</span>
+              {activeDep > 0 && (
+                <span className="bg-secondary text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">{activeDep}</span>
+              )}
+              <span className="ml-auto text-xs font-bold text-secondary shrink-0">{filteredDepRows.length} záz.</span>
+              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${depFilterOpen ? "rotate-180" : ""}`} />
             </button>
-          </div>
-
-          {/* Fulltext search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
-              value={depSearch}
-              onChange={e => setDepSearch(e.target.value)}
-              placeholder="Meno, firma, telefón, ID, poznámka..."
-              className="w-full pl-8 pr-8 py-2 text-[13px] bg-white border border-gray-200 rounded-lg outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/20 placeholder:text-gray-400 transition-colors"
-            />
-            {depSearch && (
-              <button
-                onClick={() => setDepSearch("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors cursor-pointer">
-                <X className="w-3 h-3 text-gray-600" />
-              </button>
+            {depFilterOpen && (
+              <div className="border-t border-gray-200">
+                {/* HĽADAJ */}
+                <div className="border-b border-gray-200 px-4 py-2 flex items-center gap-1.5">
+                  <Search className="w-3.5 h-3.5 text-gray-400 shrink-0 pointer-events-none" />
+                  <input
+                    type="text" value={depSearch} onChange={e => setDepSearch(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Escape") setDepSearch(""); }}
+                    placeholder="Meno, firma, telefón, ID, poznámka..."
+                    className="flex-1 border border-gray-200 px-3 py-1.5 text-xs focus:outline-none focus:border-secondary rounded-sm"
+                    autoComplete="off"
+                  />
+                  {depSearch && (
+                    <button onClick={() => setDepSearch("")} className="text-gray-400 hover:text-red-500 transition-colors p-1 shrink-0 cursor-pointer">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+                {/* DÁTUM */}
+                <div className="border-b border-gray-200">
+                  <button type="button" onClick={() => setSecDepDateOpen(o => !o)}
+                    className="w-full bg-gray-50 border-b border-gray-100 px-4 py-1.5 flex items-center gap-2 hover:bg-gray-100 transition-colors cursor-pointer">
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">Dátum</span>
+                    {depDateFilter !== "tyzden" && (
+                      <span className="bg-secondary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
+                        {DATE_BTNS.find(f => f.id === depDateFilter)?.label}
+                      </span>
+                    )}
+                    <ChevronDown className={`w-3.5 h-3.5 text-gray-400 ml-auto transition-transform duration-150 ${secDepDateOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  {secDepDateOpen && (
+                    <div className="px-4 py-2.5 flex flex-wrap gap-1.5">
+                      {DATE_BTNS.map(f => (
+                        <button key={f.id} onClick={() => setDepDateFilter(f.id)} className={`${dateBtnCls(depDateFilter === f.id)} whitespace-nowrap`}>{f.label}</button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {/* KLIENT · EXCEL · PRIJATÉ */}
+                <div>
+                  <button type="button" onClick={() => setSecDepExtraOpen(o => !o)}
+                    className="w-full bg-gray-50 border-b border-gray-100 px-4 py-1.5 flex items-center gap-2 hover:bg-gray-100 transition-colors cursor-pointer">
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">Klient · Excel · Typ</span>
+                    {(depClientFilter !== "vsetci" || depExcelFilter !== "vsetky" || depOnlyTopup) && (
+                      <span className="bg-secondary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
+                        {[depClientFilter !== "vsetci", depExcelFilter !== "vsetky", depOnlyTopup].filter(Boolean).length}
+                      </span>
+                    )}
+                    <ChevronDown className={`w-3.5 h-3.5 text-gray-400 ml-auto transition-transform duration-150 ${secDepExtraOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  {secDepExtraOpen && (
+                    <div className="px-4 py-2.5 space-y-2">
+                      {depositClients.length > 0 && (
+                        <ClientDropdown clients={depositClients} value={depClientFilter} onChange={setDepClientFilter}
+                          dropRef={depClientRef} open={depClientDrop} setOpen={setDepClientDrop}
+                          search={depClientSearch} setSearch={setDepClientSearch} align="left" />
+                      )}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[9px] font-black uppercase tracking-wide text-green-700 bg-green-50 border border-green-400 rounded px-1.5 py-0.5 shrink-0">EXCEL</span>
+                        <button onClick={() => setDepExcelFilter("vsetky")} className={`px-2.5 py-1 text-xs font-bold rounded-sm border transition-all cursor-pointer ${depExcelFilter === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-green-300 hover:border-green-400"}`}>Všetky</button>
+                        <button onClick={() => setDepExcelFilter("ok")} className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-sm border transition-all cursor-pointer ${depExcelFilter === "ok" ? "bg-green-100 text-green-700 border-green-500" : "bg-white text-gray-600 border-green-300 hover:bg-green-50 hover:text-green-600 hover:border-green-400"}`}><Check className="w-2.5 h-2.5 shrink-0" />EXCEL OK</button>
+                        <button onClick={() => setDepExcelFilter("chyba")} className={`px-2.5 py-1 text-xs font-bold rounded-sm border transition-all cursor-pointer ${depExcelFilter === "chyba" ? "bg-gray-100 text-gray-700 border-gray-400" : "bg-white text-gray-600 border-green-300 hover:border-green-400"}`}>EXCEL?</button>
+                        <span className="text-gray-200 mx-0.5">|</span>
+                        <button onClick={() => setDepOnlyTopup(v => !v)} className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-sm border transition-all cursor-pointer ${depOnlyTopup ? "bg-teal-100 text-teal-700 border-teal-500" : "bg-white text-gray-500 border-gray-200 hover:border-teal-400 hover:text-teal-600"}`}>
+                          <TrendingUp className="w-3 h-3 shrink-0" />Prijaté
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
           </div>
-
+          {/* Zálohy obsah */}
+          <div className="space-y-3 mt-3">
           {/* Súhrn — kompaktný inline bar */}
           <div className="flex items-center gap-2 flex-wrap bg-white/90 border border-gray-100 rounded-lg px-3 py-1.5 w-fit">
             <span className="text-teal-600 font-black tabular-nums text-sm shrink-0">+{fmtEur(depSummary.topup, 0)}</span>
@@ -1057,177 +1116,201 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
               </div>
             </div>
           )}
+          </div>{/* /space-y-3 zálohy obsah */}
         </div>
       )}
 
       {/* ─── CASHFLOW ────────────────────────────────────────────────── */}
       {sub === "cashflow" && (
-        <div className="space-y-3">
-          {/* R0: Status filter — flex-wrap grid (žiadny scroll, všetky viditeľné naraz) */}
-          <div className="flex flex-wrap gap-1">
-            <button
-              onClick={() => setCashStatusFilter("vsetky")}
-              className={`px-2.5 py-1.5 text-[10px] font-bold rounded border transition-all cursor-pointer whitespace-nowrap ${cashStatusFilter === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"}`}>
-              Všetky <span className="ml-0.5 opacity-60 text-[9px]">{liveOrders.length}</span>
+        <div>
+          {/* Filtre — sticky collapsible panel (vzor Objednávky) */}
+          <div className="sticky top-0 z-20 bg-white border border-gray-200 shadow-sm">
+            <button onClick={() => setCashFilterOpen(o => !o)}
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-gray-50 transition-colors cursor-pointer">
+              <SlidersHorizontal className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Filter</span>
+              {activeCash > 0 && (
+                <span className="bg-secondary text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">{activeCash}</span>
+              )}
+              <span className="ml-auto text-xs font-bold text-secondary shrink-0">{cashSummary.count} obj.</span>
+              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${cashFilterOpen ? "rotate-180" : ""}`} />
             </button>
-            {CASH_STATUSES.map(s => {
-              const cnt = liveOrders.filter(o => o.status === s).length;
-              const isActive = cashStatusFilter === s;
-              return (
-                <button key={s} onClick={() => setCashStatusFilter(isActive ? "vsetky" : s)}
-                  className={`px-2.5 py-1.5 text-[10px] font-bold rounded border transition-all cursor-pointer whitespace-nowrap ${
-                    isActive ? STATUS_ACTIVE[s] ?? "bg-secondary text-white border-secondary"
-                             : `bg-white border-gray-200 ${STATUS_COLOR[s] ?? ""} opacity-80 hover:opacity-100`
-                  }`}>
-                  {STATUS_LABEL[s]} <span className="ml-0.5 opacity-70 text-[9px]">{cnt}</span>
-                </button>
-              );
-            })}
-            {/* 🗑 Kôš — zmazané objednávky, v tom istom riadku ako statusy */}
-            {cashSummary.deletedCount > 0 && (
-              <button
-                onClick={() => setShowDeleted(v => !v)}
-                title={showDeleted ? "Skryť zmazané" : "Zobraziť zmazané"}
-                className={`px-2.5 py-1.5 text-[10px] font-bold rounded border transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${
-                  showDeleted
-                    ? "bg-red-100 border-red-300 text-red-600"
-                    : "bg-white border-gray-200 text-gray-400 hover:border-red-200 hover:text-red-400"
-                }`}>
-                🗑 <span className="opacity-70">{cashSummary.deletedCount}</span>
-              </button>
-            )}
-          </div>
-
-          {/* R1: Dátumové filtre */}
-          <div className="flex flex-wrap gap-1.5">
-            {DATE_BTNS.map(f => (
-              <button key={f.id} onClick={() => setCashDateFilter(f.id)}
-                className={`${dateBtnCls(cashDateFilter === f.id)} whitespace-nowrap`}>{f.label}</button>
-            ))}
-          </div>
-
-          {/* R1b: EXCEL filter — pod dátumovým riadkom, identický štýl ako EXCEL btn na karte */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-[9px] font-black uppercase tracking-wide text-green-700 bg-green-50 border border-green-400 rounded px-1.5 py-0.5 shrink-0">EXCEL</span>
-            <button onClick={() => setCashExcelFilter("vsetky")}
-              className={`inline-flex items-center gap-0.5 text-[10px] font-black px-2.5 py-1 rounded border transition-all cursor-pointer whitespace-nowrap ${
-                cashExcelFilter === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-green-300 hover:border-green-400"
-              }`}>Všetky</button>
-            <button onClick={() => setCashExcelFilter("ok")}
-              className={`inline-flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded border transition-all cursor-pointer whitespace-nowrap ${
-                cashExcelFilter === "ok" ? "bg-green-100 text-green-700 border-green-500" : "bg-white text-gray-600 border-green-300 hover:bg-green-50 hover:text-green-600 hover:border-green-400"
-              }`}><Check className="w-2.5 h-2.5 shrink-0" />EXCEL OK</button>
-            <button onClick={() => setCashExcelFilter("chyba")}
-              className={`inline-flex items-center gap-0.5 text-[10px] font-black px-2.5 py-1 rounded border transition-all cursor-pointer whitespace-nowrap ${
-                cashExcelFilter === "chyba" ? "bg-gray-100 text-gray-700 border-gray-400" : "bg-white text-gray-600 border-green-300 hover:border-green-400"
-              }`}>EXCEL?</button>
-          </div>
-
-          {/* R2: KTO vľavo ··· Klient + Záloha vpravo */}
-          <div className="flex items-center gap-2">
-            {/* KTO dropdown */}
-            {deviceGroups.length > 1 && (
-              <div ref={ktoRef} className="relative inline-flex items-center gap-1 shrink-0">
-                <button
-                  onClick={() => setKtoDropOpen(o => !o)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold rounded-full transition-colors cursor-pointer border ${
-                    cashKtoFilters.length > 0
-                      ? "bg-secondary border-secondary text-white"
-                      : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
-                  }`}>
-                  <Users className="w-3 h-3 shrink-0" />
-                  KTO
-                  {cashKtoFilters.length > 0 && (
-                    <span className="bg-white/30 text-white text-[9px] font-black px-1 rounded-full leading-tight">
-                      {cashKtoFilters.length}
-                    </span>
-                  )}
-                  <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-150 ${ktoDropOpen ? "rotate-180" : ""}`} />
-                </button>
-                {cashKtoFilters.length > 0 && (
-                  <button
-                    onClick={() => setCashKtoFilters([])}
-                    className="w-5 h-5 rounded-full bg-primary flex items-center justify-center cursor-pointer hover:bg-primary/80 transition-colors shrink-0"
-                    title="Zrušiť KTO filter">
-                    <X className="w-3 h-3 text-white" />
-                  </button>
-                )}
-                {ktoDropOpen && (
-                  <div className="absolute left-0 top-full mt-1.5 z-50 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden w-[220px] max-h-[60vh] overflow-y-auto">
-                    <button
-                      onClick={() => { setCashKtoFilters([]); setKtoDropOpen(false); }}
-                      className="w-full flex items-center gap-2 px-4 py-3 text-[11px] font-bold text-gray-500 hover:bg-gray-50 border-b border-gray-100 cursor-pointer transition-colors text-left">
-                      Všetci (zrušiť filter)
+            {cashFilterOpen && (
+              <div className="border-t border-gray-200">
+                {/* HĽADAJ */}
+                <div className="border-b border-gray-200 px-4 py-2 flex items-center gap-1.5">
+                  <Search className="w-3.5 h-3.5 text-gray-400 shrink-0 pointer-events-none" />
+                  <input
+                    type="text" value={cashSearch} onChange={e => setCashSearch(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Escape") setCashSearch(""); }}
+                    placeholder="Meno, firma, telefón, ID, adresa..."
+                    className="flex-1 border border-gray-200 px-3 py-1.5 text-xs focus:outline-none focus:border-secondary rounded-sm"
+                    autoComplete="off"
+                  />
+                  {cashSearch && (
+                    <button onClick={() => setCashSearch("")} className="text-gray-400 hover:text-red-500 transition-colors p-1 shrink-0 cursor-pointer">
+                      <X className="w-3.5 h-3.5" />
                     </button>
-                    {deviceGroups.map(g => {
-                      const checked = cashKtoFilters.includes(g.key);
-                      return (
-                        <label key={g.key}
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors min-h-[44px]">
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => setCashKtoFilters(prev =>
-                              prev.includes(g.key) ? prev.filter(x => x !== g.key) : [...prev, g.key]
+                  )}
+                </div>
+                {/* STAV — collapsible */}
+                <div className="border-b border-gray-200">
+                  <button type="button" onClick={() => setSecCashStavOpen(o => !o)}
+                    className="w-full bg-gray-50 border-b border-gray-100 px-4 py-1.5 flex items-center gap-2 hover:bg-gray-100 transition-colors cursor-pointer">
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">Stav</span>
+                    {cashStatusFilter !== "vsetky" && (
+                      <span className="bg-secondary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
+                        {STATUS_LABEL[cashStatusFilter] ?? cashStatusFilter}
+                      </span>
+                    )}
+                    <ChevronDown className={`w-3.5 h-3.5 text-gray-400 ml-auto transition-transform duration-150 ${secCashStavOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  {secCashStavOpen && (
+                    <div className="px-4 py-2.5 flex flex-wrap gap-1">
+                      <button onClick={() => setCashStatusFilter("vsetky")}
+                        className={`px-2.5 py-1.5 text-[10px] font-bold rounded border transition-all cursor-pointer whitespace-nowrap ${cashStatusFilter === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"}`}>
+                        Všetky <span className="ml-0.5 opacity-60 text-[9px]">{liveOrders.length}</span>
+                      </button>
+                      {CASH_STATUSES.map(s => {
+                        const cnt = liveOrders.filter(o => o.status === s).length;
+                        const isActive = cashStatusFilter === s;
+                        return (
+                          <button key={s} onClick={() => setCashStatusFilter(isActive ? "vsetky" : s)}
+                            className={`px-2.5 py-1.5 text-[10px] font-bold rounded border transition-all cursor-pointer whitespace-nowrap ${
+                              isActive ? STATUS_ACTIVE[s] ?? "bg-secondary text-white border-secondary"
+                                       : `bg-white border-gray-200 ${STATUS_COLOR[s] ?? ""} opacity-80 hover:opacity-100`
+                            }`}>
+                            {STATUS_LABEL[s]} <span className="ml-0.5 opacity-70 text-[9px]">{cnt}</span>
+                          </button>
+                        );
+                      })}
+                      {cashSummary.deletedCount > 0 && (
+                        <button onClick={() => setShowDeleted(v => !v)}
+                          title={showDeleted ? "Skryť zmazané" : "Zobraziť zmazané"}
+                          className={`px-2.5 py-1.5 text-[10px] font-bold rounded border transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${showDeleted ? "bg-red-100 border-red-300 text-red-600" : "bg-white border-gray-200 text-gray-400 hover:border-red-200 hover:text-red-400"}`}>
+                          🗑 <span className="opacity-70">{cashSummary.deletedCount}</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {/* DÁTUM + EXCEL — collapsible */}
+                <div className="border-b border-gray-200">
+                  <button type="button" onClick={() => setSecCashDateOpen(o => !o)}
+                    className="w-full bg-gray-50 border-b border-gray-100 px-4 py-1.5 flex items-center gap-2 hover:bg-gray-100 transition-colors cursor-pointer">
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">Dátum · Excel</span>
+                    {(cashDateFilter !== "tyzden" || cashExcelFilter !== "vsetky") && (
+                      <span className="bg-secondary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
+                        {[cashDateFilter !== "tyzden", cashExcelFilter !== "vsetky"].filter(Boolean).length}
+                      </span>
+                    )}
+                    <ChevronDown className={`w-3.5 h-3.5 text-gray-400 ml-auto transition-transform duration-150 ${secCashDateOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  {secCashDateOpen && (
+                    <div className="px-4 py-2.5 space-y-2">
+                      <div className="flex flex-wrap gap-1.5">
+                        {DATE_BTNS.map(f => (
+                          <button key={f.id} onClick={() => setCashDateFilter(f.id)}
+                            className={`${dateBtnCls(cashDateFilter === f.id)} whitespace-nowrap`}>{f.label}</button>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[9px] font-black uppercase tracking-wide text-green-700 bg-green-50 border border-green-400 rounded px-1.5 py-0.5 shrink-0">EXCEL</span>
+                        <button onClick={() => setCashExcelFilter("vsetky")} className={`inline-flex items-center gap-0.5 text-[10px] font-black px-2.5 py-1 rounded border transition-all cursor-pointer whitespace-nowrap ${cashExcelFilter === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-green-300 hover:border-green-400"}`}>Všetky</button>
+                        <button onClick={() => setCashExcelFilter("ok")} className={`inline-flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded border transition-all cursor-pointer whitespace-nowrap ${cashExcelFilter === "ok" ? "bg-green-100 text-green-700 border-green-500" : "bg-white text-gray-600 border-green-300 hover:bg-green-50 hover:text-green-600 hover:border-green-400"}`}><Check className="w-2.5 h-2.5 shrink-0" />EXCEL OK</button>
+                        <button onClick={() => setCashExcelFilter("chyba")} className={`inline-flex items-center gap-0.5 text-[10px] font-black px-2.5 py-1 rounded border transition-all cursor-pointer whitespace-nowrap ${cashExcelFilter === "chyba" ? "bg-gray-100 text-gray-700 border-gray-400" : "bg-white text-gray-600 border-green-300 hover:border-green-400"}`}>EXCEL?</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {/* KTO + KLIENT + ZÁLOHA — collapsible */}
+                <div>
+                  <button type="button" onClick={() => setSecCashExtraOpen(o => !o)}
+                    className="w-full bg-gray-50 border-b border-gray-100 px-4 py-1.5 flex items-center gap-2 hover:bg-gray-100 transition-colors cursor-pointer">
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">KTO · Klient · Záloha</span>
+                    {(cashKtoFilters.length > 0 || cashClientFilter !== "vsetci" || onlyDeposit) && (
+                      <span className="bg-secondary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
+                        {[cashKtoFilters.length > 0, cashClientFilter !== "vsetci", onlyDeposit].filter(Boolean).length}
+                      </span>
+                    )}
+                    <ChevronDown className={`w-3.5 h-3.5 text-gray-400 ml-auto transition-transform duration-150 ${secCashExtraOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  {secCashExtraOpen && (
+                    <div className="px-4 py-2.5 space-y-2">
+                      {/* KTO dropdown */}
+                      {deviceGroups.length > 1 && (
+                        <div ref={ktoRef} className="relative inline-flex items-center gap-1">
+                          <button onClick={() => setKtoDropOpen(o => !o)}
+                            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold rounded-full transition-colors cursor-pointer border ${cashKtoFilters.length > 0 ? "bg-secondary border-secondary text-white" : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"}`}>
+                            <Users className="w-3 h-3 shrink-0" />
+                            KTO
+                            {cashKtoFilters.length > 0 && (
+                              <span className="bg-white/30 text-white text-[9px] font-black px-1 rounded-full leading-tight">{cashKtoFilters.length}</span>
                             )}
-                            className="w-4 h-4 accent-secondary shrink-0"
-                          />
-                          <DeviceIconSmall label={g.devices[0]} className="w-4 h-4 text-gray-400 shrink-0" />
-                          <span className="flex-1 min-w-0">
-                            {g.isPerson ? (
-                              <>
-                                <span className="text-[12px] font-bold text-gray-800">{g.label}</span>
-                                {g.subInfo && <span className="ml-1.5 text-[10px] text-gray-400">{g.subInfo}</span>}
-                                {g.devices.length > 1 && (
-                                  <span className="ml-1.5 text-[9px] font-black text-secondary bg-secondary/10 px-1 py-px rounded">
-                                    {g.devices.length}×
-                                  </span>
-                                )}
-                              </>
-                            ) : (
-                              <span className="text-[11px] text-gray-600">{g.label}</span>
-                            )}
-                          </span>
+                            <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-150 ${ktoDropOpen ? "rotate-180" : ""}`} />
+                          </button>
+                          {cashKtoFilters.length > 0 && (
+                            <button onClick={() => setCashKtoFilters([])}
+                              className="w-5 h-5 rounded-full bg-primary flex items-center justify-center cursor-pointer hover:bg-primary/80 transition-colors shrink-0"
+                              title="Zrušiť KTO filter">
+                              <X className="w-3 h-3 text-white" />
+                            </button>
+                          )}
+                          {ktoDropOpen && (
+                            <div className="absolute left-0 top-full mt-1.5 z-50 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden w-[220px] max-h-[60vh] overflow-y-auto">
+                              <button onClick={() => { setCashKtoFilters([]); setKtoDropOpen(false); }}
+                                className="w-full flex items-center gap-2 px-4 py-3 text-[11px] font-bold text-gray-500 hover:bg-gray-50 border-b border-gray-100 cursor-pointer transition-colors text-left">
+                                Všetci (zrušiť filter)
+                              </button>
+                              {deviceGroups.map(g => {
+                                const checked = cashKtoFilters.includes(g.key);
+                                return (
+                                  <label key={g.key} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors min-h-[44px]">
+                                    <input type="checkbox" checked={checked}
+                                      onChange={() => setCashKtoFilters(prev => prev.includes(g.key) ? prev.filter(x => x !== g.key) : [...prev, g.key])}
+                                      className="w-4 h-4 accent-secondary shrink-0" />
+                                    <DeviceIconSmall label={g.devices[0]} className="w-4 h-4 text-gray-400 shrink-0" />
+                                    <span className="flex-1 min-w-0">
+                                      {g.isPerson ? (
+                                        <>
+                                          <span className="text-[12px] font-bold text-gray-800">{g.label}</span>
+                                          {g.subInfo && <span className="ml-1.5 text-[10px] text-gray-400">{g.subInfo}</span>}
+                                          {g.devices.length > 1 && (
+                                            <span className="ml-1.5 text-[9px] font-black text-secondary bg-secondary/10 px-1 py-px rounded">{g.devices.length}×</span>
+                                          )}
+                                        </>
+                                      ) : (
+                                        <span className="text-[11px] text-gray-600">{g.label}</span>
+                                      )}
+                                    </span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Klient dropdown */}
+                        {orderClients.length > 0 && (
+                          <ClientDropdown clients={orderClients} value={cashClientFilter} onChange={setCashClientFilter}
+                            dropRef={cashClientRef} open={cashClientDrop} setOpen={setCashClientDrop}
+                            search={cashClientSearch} setSearch={setCashClientSearch} />
+                        )}
+                        {/* Záloha checkbox */}
+                        <label className="flex items-center gap-1.5 cursor-pointer bg-white border border-gray-200 rounded-full px-2.5 py-1.5 shrink-0">
+                          <input type="checkbox" checked={onlyDeposit} onChange={e => setOnlyDeposit(e.target.checked)} className="w-3.5 h-3.5 accent-amber-500" />
+                          <span className="text-[10px] font-bold text-gray-500">Záloha</span>
                         </label>
-                      );
-                    })}
-                  </div>
-                )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
-            {/* Spacer */}
-            <div className="flex-1" />
-            {/* Klient dropdown */}
-            {orderClients.length > 0 && (
-              <ClientDropdown clients={orderClients} value={cashClientFilter} onChange={setCashClientFilter}
-                dropRef={cashClientRef} open={cashClientDrop} setOpen={setCashClientDrop}
-                search={cashClientSearch} setSearch={setCashClientSearch} />
-            )}
-            {/* Záloha checkbox */}
-            <label className="flex items-center gap-1.5 cursor-pointer bg-white border border-gray-200 rounded-full px-2.5 py-1.5 shrink-0">
-              <input type="checkbox" checked={onlyDeposit} onChange={e => setOnlyDeposit(e.target.checked)} className="w-3.5 h-3.5 accent-amber-500" />
-              <span className="text-[10px] font-bold text-gray-500">Záloha</span>
-            </label>
-          </div>{/* R2 */}
-
-          {/* R3: Fulltext search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
-              value={cashSearch}
-              onChange={e => setCashSearch(e.target.value)}
-              placeholder="Meno, firma, telefón, ID, adresa..."
-              className="w-full pl-8 pr-8 py-2 text-[13px] bg-white border border-gray-200 rounded-lg outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/20 placeholder:text-gray-400 transition-colors"
-            />
-            {cashSearch && (
-              <button
-                onClick={() => setCashSearch("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors cursor-pointer">
-                <X className="w-3 h-3 text-gray-600" />
-              </button>
-            )}
           </div>
+          {/* Cashflow obsah */}
+          <div className="space-y-3 mt-3">
 
           {/* Nadpis sekcie + kompaktný súhrn v jednom riadku */}
           <div className="flex flex-col gap-1.5">
@@ -1349,7 +1432,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
             <div className="bg-white border border-gray-100 rounded-lg text-center text-gray-400 py-10 text-sm">Žiadne objednávky</div>
           ) : (
             <div className="bg-white border border-gray-100 rounded-lg overflow-clip">
-              <div className="hidden sm:grid grid-cols-[90px_1fr_1fr_70px_70px_120px_110px_20px] gap-2 px-3 py-2 bg-secondary border-b border-secondary/80 text-[9px] font-black uppercase tracking-widest text-white/70 sticky top-0 z-20">
+              <div className="hidden sm:grid grid-cols-[90px_1fr_1fr_70px_70px_120px_110px_20px] gap-2 px-3 py-2 bg-secondary border-b border-secondary/80 text-[9px] font-black uppercase tracking-widest text-white/70">
                 <span>Dátum</span><span>Klient</span><span>Betón</span><span className="text-right">Celkom</span><span className="text-right">Záloha</span><span>Stav</span><span>KTO</span><span />
               </div>
               <div className="">
@@ -1933,6 +2016,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                 )}
               </div>
           )}
+          </div>{/* /space-y-3 cashflow obsah */}
         </div>
       )}
 
