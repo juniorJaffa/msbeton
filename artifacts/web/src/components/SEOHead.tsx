@@ -233,7 +233,7 @@ export function LocalBusinessSchema() {
     ],
     "contactPoint": {
       "@type": "ContactPoint",
-      "telephone": "+421944069305",
+      "telephone": "+421909205205",
       "contactType": "customer service",
       "areaServed": "SK",
       "availableLanguage": "Slovak"

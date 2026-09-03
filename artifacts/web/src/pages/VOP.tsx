@@ -23,7 +23,7 @@ export default function VOP() {
               <strong>MS-BETON, spol. s r.o.</strong><br />
               Turie 468, 013 12 Turie, Slovenská republika<br />
               IČO: 55747591 | DIČ: 2122074603 | IČ DPH: SK2122074603<br />
-              Kontakt: <a href="mailto:info@msbeton.sk" className="text-primary underline">info@msbeton.sk</a> | 0944 069 305
+              Kontakt: <a href="mailto:info@msbeton.sk" className="text-primary underline">info@msbeton.sk</a> | 0909 205 205
             </p>
           </div>
 

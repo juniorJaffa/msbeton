@@ -792,7 +792,7 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
 <div style="background:#001D3D;color:#fff;padding:4mm 8mm 3.5mm;display:flex;justify-content:space-between;align-items:flex-end">
   <div>
     <div style="font-size:13pt;font-weight:bold;letter-spacing:-0.3px">MS-BETON</div>
-    <div style="font-size:6.5pt;opacity:0.65;margin-top:1px">Turie 468, 013 12 Turie · IČO 55747591 · 0944 069 305</div>
+    <div style="font-size:6.5pt;opacity:0.65;margin-top:1px">Turie 468, 013 12 Turie · IČO 55747591 · 0909 205 205</div>
   </div>
   <div style="text-align:right">
     <div style="color:#EDC531;font-size:11pt;font-weight:bold;letter-spacing:0.5px">OBJEDNÁVKA</div>
@@ -878,7 +878,7 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
     <div>
       <div style="font-size:20pt;font-weight:bold;letter-spacing:-0.5px;margin-bottom:2px">MS-BETON, spol. s r.o.</div>
       <div style="font-size:8pt;opacity:0.7;margin-bottom:1px">Turie 468, 013 12 Turie &nbsp;|&nbsp; Slovenská republika</div>
-      <div style="font-size:8pt;opacity:0.6">+421&nbsp;944&nbsp;069&nbsp;305 &nbsp;|&nbsp; info@msbeton.sk &nbsp;|&nbsp; msbeton.sk</div>
+      <div style="font-size:8pt;opacity:0.6">+421&nbsp;909&nbsp;205&nbsp;205 &nbsp;|&nbsp; info@msbeton.sk &nbsp;|&nbsp; msbeton.sk</div>
     </div>
     <div style="text-align:right;font-size:8pt;opacity:0.65;line-height:1.8">
       IČO: 55747591<br>DIČ: 2122074603<br>IČ DPH: SK2122074603
@@ -992,7 +992,7 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
   <!-- Footer -->
   <div style="padding-top:4mm;border-top:1px solid #ddd;font-size:7.5pt;color:#888;line-height:1.7">
     MS-BETON, spol. s r.o. &nbsp;|&nbsp; IČO: 55747591 &nbsp;|&nbsp; DIČ: 2122074603 &nbsp;|&nbsp; IČ DPH: SK2122074603 &nbsp;|&nbsp;
-    Turie 468, 013 12 Turie &nbsp;|&nbsp; +421&nbsp;944&nbsp;069&nbsp;305 &nbsp;|&nbsp; info@msbeton.sk
+    Turie 468, 013 12 Turie &nbsp;|&nbsp; +421&nbsp;909&nbsp;205&nbsp;205 &nbsp;|&nbsp; info@msbeton.sk
   </div>
 
 </div>
