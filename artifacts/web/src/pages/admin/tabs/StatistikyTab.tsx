@@ -157,10 +157,10 @@ export default function StatistikyTab() {
               </button>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div><p className="text-[10px] text-gray-400 uppercase">Bez DPH</p><p className="text-xl font-black text-secondary">{fmtEur(totalBezDph)}</p></div>
-            <div><p className="text-[10px] text-gray-400 uppercase">S DPH</p><p className="text-xl font-black text-secondary">{fmtEur(totalSDph)}</p></div>
-            <div><p className="text-[10px] text-gray-400 uppercase">Priemerná</p><p className="text-xl font-black text-secondary">{fmtEur(avgValue)}</p></div>
+          <div className="grid grid-cols-3 gap-2 sm:gap-4">
+            <div><p className="text-[10px] text-gray-400 uppercase">Bez DPH</p><p className="text-sm sm:text-xl font-black text-secondary tabular-nums">{fmtEur(totalBezDph)}</p></div>
+            <div><p className="text-[10px] text-gray-400 uppercase">S DPH</p><p className="text-sm sm:text-xl font-black text-secondary tabular-nums">{fmtEur(totalSDph)}</p></div>
+            <div><p className="text-[10px] text-gray-400 uppercase">Priemerná</p><p className="text-sm sm:text-xl font-black text-secondary tabular-nums">{fmtEur(avgValue)}</p></div>
           </div>
           {/* Nova warning — zobrazí sa len v realized mode */}
           {statsMode === "realized" && totalNovaCount > 0 && (
