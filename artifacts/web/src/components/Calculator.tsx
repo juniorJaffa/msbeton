@@ -2024,7 +2024,10 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
     // Opustenie mapy → reset map stavu (nie km ak Map→Adresa)
     if (deliveryMode === "map") {
-      setMapPin(null); setMapPlusCode(""); setMapKmConfirmed(false); setMapError(""); setMapLocality(""); setMapGeocodedAddress("");
+      setMapPin(null); setMapPlusCode(""); setMapKmConfirmed(false); setMapError(""); setMapGeocodedAddress("");
+      // map→distance: zachovaj mapLocality (Peto: "dal špendlík, potom upravil km manuálne")
+      // map→address: nová adresa si nastaví vlastnú lokalitu — locality resetuj
+      if (newMode !== "distance") setMapLocality("");
     }
     // Reset km + výpočtu len keď prechádza cez "distance" alebo z "distance"
     const preserveKm = isAddrToMap || isMapToAddr;
