@@ -1812,8 +1812,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
     const lines: string[] = [];
     lines.push(div, "    MS-BETON, spol. s r.o.", "      Cenová ponuka", div);
-    if (mapPlusCode) lines.push(`${mapPlusCode}${mapLocality ? " · " + mapLocality : ""} – ${result.km}km`);
-    else if (address) lines.push(`${address} – ${result.km}km`);
+    // Adresa má prednosť pred Plus Code — Plus Code len keď nie je text adresa (map mode)
+    if (address) lines.push(`${address} – ${result.km}km`);
+    else if (mapPlusCode) lines.push(`${mapPlusCode}${mapLocality ? " · " + mapLocality : ""} – ${result.km}km`);
     else if (result.km > 0) lines.push(`${result.km}km`);
     if (result.isOwn) lines.push("Vlastná doprava – odber na prevádzke");
     lines.push(div);
