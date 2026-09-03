@@ -800,11 +800,15 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     useEffect(() => {
       if (open && btnRef.current) {
         const rect = btnRef.current.getBoundingClientRect();
-        if (align === "left") {
-          setDropPos({ top: rect.bottom + 6, left: rect.left });
-        } else {
-          setDropPos({ top: rect.bottom + 6, right: window.innerWidth - rect.right });
-        }
+        const PANEL_W = 220;
+        // align="right": pravý okraj dropdownu = pravý okraj buttonu
+        // align="left": ľavý okraj dropdownu = ľavý okraj buttonu
+        let left = align === "right"
+          ? rect.right - PANEL_W
+          : rect.left;
+        // Clamp: nesmie ísť mimo viewport (ľavý/pravý okraj)
+        left = Math.max(4, Math.min(left, window.innerWidth - PANEL_W - 4));
+        setDropPos({ top: rect.bottom + 6, left });
       } else {
         setDropPos(null);
       }
@@ -813,7 +817,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       <div style={{
         position: "fixed",
         top: dropPos.top,
-        ...(dropPos.left !== undefined ? { left: dropPos.left } : { right: dropPos.right }),
+        left: dropPos.left,
         zIndex: 9999,
         width: "220px",
       }} className="bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
