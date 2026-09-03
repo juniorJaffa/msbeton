@@ -1320,7 +1320,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                 <ShoppingCart className="w-3.5 h-3.5 text-primary" />
               </div>
               <div className="leading-tight">
-                <div className="text-[8px] font-black uppercase tracking-[0.18em] text-gray-400">Cashflow</div>
+                <div className="text-[8px] font-black uppercase tracking-[0.18em] text-gray-500">Cashflow</div>
                 <div className="text-sm font-black text-secondary">Objednávky</div>
               </div>
             </div>
