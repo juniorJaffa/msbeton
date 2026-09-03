@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { adminData, Client, DepositTx, Order, getKamenivoGroup, readerBlocked } from "@/lib/adminData";
-import { ChevronRight, ChevronLeft, TrendingUp, Minus, Smartphone, Monitor, Laptop, ChevronDown, Users, ShoppingCart, Mountain, Waves, X, MessageSquare, Check, AlertTriangle, MapPin, Navigation, Phone, Search, SlidersHorizontal } from "lucide-react";
+import { ChevronRight, ChevronLeft, TrendingUp, TrendingDown, Minus, Smartphone, Monitor, Laptop, ChevronDown, Users, ShoppingCart, Mountain, Waves, X, MessageSquare, Check, AlertTriangle, MapPin, Navigation, Phone, Search, SlidersHorizontal, Landmark } from "lucide-react";
 
 type Sub = "zalohy" | "cashflow";
 
@@ -1312,56 +1312,64 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
           {/* Cashflow obsah */}
           <div className="space-y-3 mt-3">
 
-          {/* Nadpis sekcie + kompaktný súhrn v jednom riadku */}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-black text-secondary uppercase tracking-wide shrink-0">Objednávky</span>
-              <span className="text-[9px] font-bold bg-white/90 text-gray-600 px-1.5 py-0.5 rounded border border-gray-100 shrink-0">[cashflow]</span>
-              <div className="flex-1" />
-              {/* Súhrn — kompaktný inline bar */}
-              <div className="flex items-center gap-1.5 bg-white/90 border border-gray-100 rounded-lg px-2 py-1.5">
-                <span className="text-[8px] font-black uppercase tracking-widest text-gray-400 shrink-0">Spolu</span>
-                <span className="font-black tabular-nums text-xs text-gray-800 shrink-0">{cashSummary.count}</span>
-                {cashSummary.total > 0 && (
-                  <>
-                    <span className="text-gray-200 shrink-0">|</span>
-                    <span className="font-black tabular-nums text-xs text-gray-900 shrink-0">{fmtEur(cashSummary.total, 0)}</span>
-                  </>
-                )}
-                {cashSummary.dep > 0 && (
-                  <>
-                    <span className="text-gray-200 shrink-0">|</span>
-                    <span className="text-[8px] font-black text-gray-400 shrink-0">záloha</span>
-                    <span className="font-black tabular-nums text-xs text-amber-600 shrink-0">{fmtEur(cashSummary.dep, 0)}</span>
-                  </>
-                )}
-                {/* Pohľadávky FA — odoslaná + faktura */}
-                {cashflowExtras.pohladavky > 0 && (
-                  <>
-                    <span className="text-gray-200 shrink-0">|</span>
-                    <span className="text-[8px] font-black text-gray-400 shrink-0" title={`${cashflowExtras.pohladavkyCount} faktúr čaká na platbu`}>pohľ.</span>
-                    <span className="font-black tabular-nums text-xs text-orange-600 shrink-0">{fmtEur(cashflowExtras.pohladavky, 0)}</span>
-                  </>
-                )}
+          {/* Nadpis sekcie + súhrn — jeden riadok s chipmi */}
+          <div className="flex items-center gap-2.5 flex-wrap">
+            {/* Identita sekcie */}
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                <ShoppingCart className="w-3.5 h-3.5 text-primary" />
+              </div>
+              <div className="leading-tight">
+                <div className="text-[8px] font-black uppercase tracking-[0.18em] text-gray-400">Cashflow</div>
+                <div className="text-sm font-black text-secondary">Objednávky</div>
               </div>
             </div>
-            {/* Sekundárny riadok: zálohy klientov (viazané) + payout trend */}
-            {(cashflowExtras.totalDeposits > 0 || cashflowExtras.trendPct !== null) && (
-              <div className="flex items-center gap-2 justify-end flex-wrap">
-                {cashflowExtras.totalDeposits > 0 && (
-                  <span className="inline-flex items-center gap-1 text-[9px] bg-white/90 border border-gray-200 rounded-full px-2.5 py-1 font-medium text-gray-500" title="Celkový zostatok zálohy všetkých klientov (viazané peniaze)">
-                    🏦 <span className="font-black text-amber-600 tabular-nums">{fmtEur(cashflowExtras.totalDeposits, 0)}</span>
-                    <span className="text-gray-400">viazané</span>
-                  </span>
-                )}
-                {cashflowExtras.trendPct !== null && cashflowExtras.todayPay > 0 && (
-                  <span className={`inline-flex items-center gap-1 text-[9px] font-black bg-white/90 border border-gray-200 rounded-full px-2.5 py-1 ${cashflowExtras.trendPct >= 0 ? "text-teal-600" : "text-red-500"}`}
-                    title={`Dnes vyplatené vs. rovnaký deň minulý týždeň (${fmtEur(cashflowExtras.weekAgoPay, 0)})`}>
-                    {cashflowExtras.trendPct >= 0 ? "↑" : "↓"}{Math.abs(cashflowExtras.trendPct)}% vs. −7d
-                  </span>
-                )}
-              </div>
-            )}
+            <div className="w-px h-7 bg-gray-200 shrink-0 hidden sm:block" />
+            {/* Stat chips */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {/* Count */}
+              <span className="inline-flex items-center gap-1 bg-secondary text-white text-[10px] font-black px-2 py-1 rounded-md tabular-nums shrink-0">
+                {cashSummary.count} <span className="opacity-50 font-normal text-[9px]">obj.</span>
+              </span>
+              {/* Celková suma */}
+              {cashSummary.total > 0 && (
+                <span className="inline-flex items-center bg-white border border-gray-200 text-gray-800 text-xs font-black px-2 py-1 rounded-md tabular-nums shrink-0">
+                  {fmtEur(cashSummary.total, 0)}
+                </span>
+              )}
+              {/* Záloha */}
+              {cashSummary.dep > 0 && (
+                <span className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-black px-2 py-1 rounded-md tabular-nums shrink-0">
+                  <span className="opacity-60 font-normal">záloha</span> {fmtEur(cashSummary.dep, 0)}
+                </span>
+              )}
+              {/* Pohľadávky */}
+              {cashflowExtras.pohladavky > 0 && (
+                <span className="inline-flex items-center gap-1 bg-orange-50 border border-orange-200 text-orange-700 text-[10px] font-black px-2 py-1 rounded-md tabular-nums shrink-0"
+                  title={`${cashflowExtras.pohladavkyCount} faktúr čaká na platbu`}>
+                  <span className="opacity-60 font-normal">pohľ.</span> {fmtEur(cashflowExtras.pohladavky, 0)}
+                </span>
+              )}
+              {/* Viazané zálohy klientov */}
+              {cashflowExtras.totalDeposits > 0 && (
+                <span className="inline-flex items-center gap-1 bg-white border border-gray-200 text-[10px] px-2 py-1 rounded-md tabular-nums shrink-0"
+                  title="Celkový zostatok zálohy všetkých klientov (viazané peniaze)">
+                  <Landmark className="w-3 h-3 text-gray-400 shrink-0" />
+                  <span className="font-black text-amber-600">{fmtEur(cashflowExtras.totalDeposits, 0)}</span>
+                  <span className="text-gray-400 font-normal">viaz.</span>
+                </span>
+              )}
+              {/* Trend vs. −7d */}
+              {cashflowExtras.trendPct !== null && cashflowExtras.todayPay > 0 && (
+                <span className={`inline-flex items-center gap-0.5 text-[10px] font-black bg-white border border-gray-200 px-2 py-1 rounded-md shrink-0 ${cashflowExtras.trendPct >= 0 ? "text-teal-600 border-teal-200" : "text-red-500 border-red-200"}`}
+                  title={`Dnes vyplatené vs. rovnaký deň minulý týždeň (${fmtEur(cashflowExtras.weekAgoPay, 0)})`}>
+                  {cashflowExtras.trendPct >= 0
+                    ? <TrendingUp className="w-3 h-3 shrink-0" />
+                    : <TrendingDown className="w-3 h-3 shrink-0" />}
+                  {Math.abs(cashflowExtras.trendPct)}% vs. −7d
+                </span>
+              )}
+            </div>
           </div>
 
           {/* ── PAYOUT INSIGHT BANNER (A) ────────────────────────────────────────────
