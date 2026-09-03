@@ -1180,7 +1180,12 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
 
   // Backfill mapLocality via Nominatim (OpenStreetMap) — bez Google Geocoding API
   useEffect(() => {
-    const toFill = orders.filter(o => o.mapPlusCode && !o.mapLocality && !plusCodeBackfilledRef.current.has(o.id));
+    // Zahŕňa: uložený mapPlusCode ALEBO GPS adresa ("49.xxx, 18.xxx") bez mapLocality
+    const toFill = orders.filter(o =>
+      !o.mapLocality &&
+      !plusCodeBackfilledRef.current.has(o.id) &&
+      (o.mapPlusCode || GPS_RE.test(o.address ?? ""))
+    );
     if (toFill.length === 0) return;
     // Inline OLC (Plus Code) decoder
     const decodePlusCode = (code: string): { lat: number; lng: number } => {
@@ -1197,11 +1202,18 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
     let cancelled = false;
     const timeoutIds: ReturnType<typeof setTimeout>[] = [];
     toFill.forEach((o, idx) => {
-      plusCodeBackfilledRef.current.add(o.id);
+      // Označíme ako spracované AŽ pri neúspechu — pri úspechu sa mapLocality nastaví a filter !o.mapLocality vylúči ďalší pokus
       const tid = setTimeout(async () => {
         if (cancelled) return;
         try {
-          const { lat, lng } = decodePlusCode(o.mapPlusCode!);
+          // GPS adresa ("49.xxx, 18.xxx") → priamo lat/lon; inak dekóduj Plus Code
+          let lat: number, lng: number;
+          const gpsM = GPS_RE.exec(o.address ?? "");
+          if (gpsM && !o.mapPlusCode) {
+            lat = parseFloat(gpsM[1]); lng = parseFloat(gpsM[2]);
+          } else {
+            ({ lat, lng } = decodePlusCode(o.mapPlusCode!));
+          }
           const r = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=sk`,
             { headers: { "User-Agent": "msbeton-admin/1.0" } }
@@ -1213,13 +1225,18 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
           const loc = (a.village ?? a.hamlet ?? a.town ?? a.city ?? a.city_district ?? a.suburb ?? a.municipality ?? a.neighbourhood ?? a.locality ?? "") as string;
           const dist = (a.county ?? a.state_district ?? "") as string;
           const mapLocality = [loc, dist].filter(Boolean).join(", ");
-          if (!mapLocality || cancelled) return;
+          if (!mapLocality || cancelled) {
+            plusCodeBackfilledRef.current.add(o.id); // Nominatim nevrátil lokalitu — skip retry v tejto session
+            return;
+          }
           setOrders(prev => {
             const updated = prev.map(p => p.id === o.id ? { ...p, mapLocality } : p);
             adminData.saveOrders(updated);
             return updated;
           });
-        } catch { /* silent */ }
+        } catch {
+          plusCodeBackfilledRef.current.add(o.id); // Chyba siete — skip retry v tejto session
+        }
       }, idx * 1100); // Nominatim rate limit: 1 req/s
       timeoutIds.push(tid);
     });
