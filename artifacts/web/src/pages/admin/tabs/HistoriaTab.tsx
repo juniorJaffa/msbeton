@@ -316,10 +316,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   // Filter panel open/collapse state — vzor Objednávky
   const [cashFilterOpen,   setCashFilterOpen]   = useState(false);
   const [depFilterOpen,    setDepFilterOpen]     = useState(false);
-  const [secCashStavOpen,  setSecCashStavOpen]   = useState(true);
-  const [secCashDateOpen,  setSecCashDateOpen]   = useState(true);
+  const [secCashStavOpen,  setSecCashStavOpen]   = useState(false);
+  const [secCashDateOpen,  setSecCashDateOpen]   = useState(false);
   const [secCashExtraOpen, setSecCashExtraOpen]  = useState(false);
-  const [secDepDateOpen,   setSecDepDateOpen]    = useState(true);
+  const [secDepDateOpen,   setSecDepDateOpen]    = useState(false);
   const [secDepExtraOpen,  setSecDepExtraOpen]   = useState(false);
 
   // Photo lightbox — foto klienta z objednávky — { clientId, photoIdx } naviguje len cez fotky daného klienta
@@ -783,10 +783,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const dateBtnCls  = (a: boolean) => `px-2.5 py-1.5 text-[10px] font-bold rounded-full transition-colors cursor-pointer ${a ? "bg-secondary text-white" : "bg-white text-gray-500 border border-gray-200 hover:border-gray-300"}`;
 
   // Kompaktný dropdown pre výber klienta — skaluje na 100+ klientov
-  function ClientDropdown({ clients, value, onChange, dropRef, open, setOpen, search, setSearch, align = "right" }:
+  function ClientDropdown({ clients, value, onChange, dropRef, open, setOpen, search, setSearch, align = "right", direction = "down" }:
     { clients: {id: string; name: string}[]; value: string; onChange: (id: string) => void;
       dropRef: React.RefObject<HTMLDivElement | null>; open: boolean; setOpen: (v: boolean) => void;
-      search: string; setSearch: (v: string) => void; align?: "left" | "right"; }) {
+      search: string; setSearch: (v: string) => void; align?: "left" | "right"; direction?: "up" | "down"; }) {
     const selected = clients.find(c => c.id === value);
     // Multi-word search: každé slovo musí byť v mene alebo clientId (telefóne)
     const filtered = search ? clients.filter(c => {
@@ -806,7 +806,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
             <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
           </button>
           {open && (
-          <div className={`absolute ${align === "left" ? "left-0" : "right-0"} top-full mt-1.5 z-30 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden w-[220px]`}>
+          <div className={`absolute ${align === "left" ? "left-0" : "right-0"} ${direction === "up" ? "bottom-full mb-1.5" : "top-full mt-1.5"} z-30 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden w-[220px]`}>
             {/* Search — vždy viditeľný */}
             <div className="px-3 py-2 border-b border-gray-100">
               <input autoFocus type="text" value={search} onChange={e => setSearch(e.target.value)}
@@ -975,7 +975,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                       {depositClients.length > 0 && (
                         <ClientDropdown clients={depositClients} value={depClientFilter} onChange={setDepClientFilter}
                           dropRef={depClientRef} open={depClientDrop} setOpen={setDepClientDrop}
-                          search={depClientSearch} setSearch={setDepClientSearch} align="left" />
+                          search={depClientSearch} setSearch={setDepClientSearch} align="left" direction="up" />
                       )}
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="text-[9px] font-black uppercase tracking-wide text-green-700 bg-green-50 border border-green-400 rounded px-1.5 py-0.5 shrink-0">EXCEL</span>
@@ -1295,13 +1295,17 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                         {orderClients.length > 0 && (
                           <ClientDropdown clients={orderClients} value={cashClientFilter} onChange={setCashClientFilter}
                             dropRef={cashClientRef} open={cashClientDrop} setOpen={setCashClientDrop}
-                            search={cashClientSearch} setSearch={setCashClientSearch} />
+                            search={cashClientSearch} setSearch={setCashClientSearch} direction="up" />
                         )}
-                        {/* Záloha checkbox */}
-                        <label className="flex items-center gap-1.5 cursor-pointer bg-white border border-gray-200 rounded-full px-2.5 py-1.5 shrink-0">
-                          <input type="checkbox" checked={onlyDeposit} onChange={e => setOnlyDeposit(e.target.checked)} className="w-3.5 h-3.5 accent-amber-500" />
-                          <span className="text-[10px] font-bold text-gray-500">Záloha</span>
-                        </label>
+                        {/* Záloha pill toggle */}
+                        <button onClick={() => setOnlyDeposit(v => !v)}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold rounded-full border transition-all cursor-pointer shrink-0 ${
+                            onlyDeposit
+                              ? "bg-amber-100 text-amber-700 border-amber-400"
+                              : "bg-white text-gray-500 border-gray-200 hover:border-amber-300 hover:text-amber-600"
+                          }`}>
+                          💰 Záloha
+                        </button>
                       </div>
                     </div>
                   )}
