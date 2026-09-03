@@ -265,7 +265,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [depClientFilter,      setDepClientFilter]      = useState<string>(initialClientId ?? "vsetci");
   const [depDateFilter,        setDepDateFilter]        = useState<DateFilter>("tyzden");
   const [depExcelFilter,       setDepExcelFilter]       = useState<"vsetky" | "ok" | "chyba">("vsetky");
-  const [depOrderStatusFilter, setDepOrderStatusFilter] = useState<"vsetky" | "nova" | "potvrdena" | "odoslana" | "vyuctovana" | "vyplatena" | "zrusena">("vsetky");
+  const [depOnlyTopup,         setDepOnlyTopup]         = useState(false); // filter: len prijaté (zelené) zálohy
   const [depClientDrop,        setDepClientDrop]        = useState(false);
   const [depClientSearch,      setDepClientSearch]      = useState("");
   const [depSearch,            setDepSearch]            = useState("");
@@ -487,12 +487,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     return allDepositRows.filter(r => {
       if (depClientFilter !== "vsetci" && r.clientId !== depClientFilter) return false;
       if (!passesDate(toDateStr(r.sortKey), depDateFilter)) return false;
-      // Status filter — platí len pre "order" riadky; keď aktívny, "tx" riadky skryjeme
-      if (depOrderStatusFilter !== "vsetky") {
-        if (r.kind === "tx") return false; // dobíjacie transakcie nemajú stav objednávky
-        const orderStatus = liveOrders.find(o => o.id === r.orderId)?.status;
-        if (orderStatus !== depOrderStatusFilter) return false;
-      }
+      // Len prijaté (zelené topup transakcie)
+      if (depOnlyTopup && !(r.kind === "tx" && r.tx.type === "topup")) return false;
       if (depExcelFilter !== "vsetky") {
         // Pre "tx" riadky: tx.excelConfirmed; pre "order" riadky: order.excelConfirmed z liveOrders
         const isConfirmed = r.kind === "tx"
@@ -514,7 +510,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       }
       return true;
     });
-  }, [allDepositRows, depClientFilter, depDateFilter, depExcelFilter, depOrderStatusFilter, liveOrders, depSearch, clientByLoginId]);
+  }, [allDepositRows, depClientFilter, depDateFilter, depExcelFilter, depOnlyTopup, liveOrders, depSearch, clientByLoginId]);
 
   const depSummary = useMemo(() => {
     let topup = 0, payment = 0;
@@ -895,25 +891,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
               dropRef={depClientRef} open={depClientDrop} setOpen={setDepClientDrop}
               search={depClientSearch} setSearch={setDepClientSearch} align="left" />
           )}
-          {/* Filtre — riadok 3: STAV objednávky (kde bola záloha použitá) */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[9px] font-black uppercase tracking-wide text-blue-700 bg-blue-50 border border-blue-300 rounded px-1.5 py-0.5 shrink-0">STAV</span>
-            {([
-              { v: "vsetky",     label: "Všetky",      cls: "bg-secondary text-white border-secondary", inact: "bg-white text-gray-500 border-gray-200 hover:border-secondary/50" },
-              { v: "nova",       label: "Nová",         cls: "bg-blue-500 text-white border-blue-500",   inact: "bg-white text-gray-600 border-gray-200 hover:border-blue-400" },
-              { v: "potvrdena",  label: "Potvrdená",    cls: "bg-yellow-400 text-secondary border-yellow-400", inact: "bg-white text-gray-600 border-gray-200 hover:border-yellow-300" },
-              { v: "odoslana",   label: "Odoslaná",     cls: "bg-green-600 text-white border-green-600", inact: "bg-white text-gray-600 border-gray-200 hover:border-green-400" },
-              { v: "vyuctovana", label: "Vyúčtovaná",   cls: "bg-purple-500 text-white border-purple-500", inact: "bg-white text-gray-600 border-gray-200 hover:border-purple-400" },
-              { v: "vyplatena",  label: "Vyplatená",    cls: "bg-teal-500 text-white border-teal-500",   inact: "bg-white text-gray-600 border-gray-200 hover:border-teal-400" },
-              { v: "zrusena",    label: "Zrušená",      cls: "bg-gray-400 text-white border-gray-400",   inact: "bg-white text-gray-600 border-gray-200 hover:border-gray-400" },
-            ] as const).map(({ v, label, cls, inact }) => (
-              <button key={v} onClick={() => setDepOrderStatusFilter(v)}
-                className={`px-2.5 py-1 text-xs font-bold rounded-sm border transition-all cursor-pointer ${depOrderStatusFilter === v ? cls : inact}`}>
-                {label}
-              </button>
-            ))}
-          </div>
-          {/* Filtre — riadok 4: EXCEL filter (identický štýl ako cashflow) */}
+          {/* Filtre — riadok 3: EXCEL filter + Prijaté toggle */}
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-[9px] font-black uppercase tracking-wide text-green-700 bg-green-50 border border-green-400 rounded px-1.5 py-0.5 shrink-0">EXCEL</span>
             <button onClick={() => setDepExcelFilter("vsetky")}
@@ -928,6 +906,15 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
               className={`px-2.5 py-1 text-xs font-bold rounded-sm border transition-all cursor-pointer ${
                 depExcelFilter === "chyba" ? "bg-gray-100 text-gray-700 border-gray-400" : "bg-white text-gray-600 border-green-300 hover:border-green-400"
               }`}>EXCEL?</button>
+            <span className="text-gray-200 mx-0.5">|</span>
+            <button onClick={() => setDepOnlyTopup(v => !v)}
+              className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-sm border transition-all cursor-pointer ${
+                depOnlyTopup
+                  ? "bg-teal-100 text-teal-700 border-teal-500"
+                  : "bg-white text-gray-500 border-gray-200 hover:border-teal-400 hover:text-teal-600"
+              }`}>
+              <TrendingUp className="w-3 h-3 shrink-0" />Prijaté
+            </button>
           </div>
 
           {/* Fulltext search */}
