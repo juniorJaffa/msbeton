@@ -1824,9 +1824,9 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
             <span className="bg-secondary text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">{activeFilters}</span>
           )}
           {clientIdActive && (
-            <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
-              Klient: {clientIdActive}
-              <button onClick={e => { e.stopPropagation(); setClientIdActive(null); }} className="hover:text-red-500 transition-colors leading-none">
+            <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0 max-w-[140px]">
+              <span className="truncate">Klient: {clientIdActive}</span>
+              <button onClick={e => { e.stopPropagation(); setClientIdActive(null); }} className="hover:text-red-500 transition-colors leading-none shrink-0">
                 <X className="w-2.5 h-2.5" />
               </button>
             </span>
