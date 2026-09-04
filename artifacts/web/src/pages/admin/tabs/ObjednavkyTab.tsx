@@ -2115,28 +2115,30 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                   <span className={`text-xs font-bold ${quickDate === "ndni" ? "text-secondary" : "text-gray-500"}`}>dní</span>
                 </div>
               </div>
-              {/* Od–do row — vylepšený dizajn */}
+              {/* Od–do row — stacked labels, grid 2-col (mobile fit) */}
               <div className="px-4 pb-3">
-                <div className="flex items-center gap-2">
-                  {/* Od */}
-                  <label className={`flex-1 flex items-center gap-1.5 border rounded-lg px-3 py-2 cursor-pointer transition-colors ${dateFrom ? "border-secondary bg-secondary/5" : "border-gray-200 bg-white hover:border-gray-300"} focus-within:border-secondary focus-within:ring-1 focus-within:ring-secondary/20`}>
-                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider shrink-0">Od</span>
-                    <input type="date" value={dateFrom}
-                      onChange={e => { setDateFrom(e.target.value); setQuickDate(""); }}
-                      className="flex-1 text-xs font-semibold text-secondary focus:outline-none bg-transparent min-w-0 cursor-pointer" />
-                  </label>
-                  <span className="text-gray-300 font-bold shrink-0">—</span>
-                  {/* Do */}
-                  <label className={`flex-1 flex items-center gap-1.5 border rounded-lg px-3 py-2 cursor-pointer transition-colors ${dateTo ? "border-secondary bg-secondary/5" : "border-gray-200 bg-white hover:border-gray-300"} focus-within:border-secondary focus-within:ring-1 focus-within:ring-secondary/20`}>
-                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider shrink-0">Do</span>
-                    <input type="date" value={dateTo}
-                      onChange={e => { setDateTo(e.target.value); setQuickDate(""); }}
-                      className="flex-1 text-xs font-semibold text-secondary focus:outline-none bg-transparent min-w-0 cursor-pointer" />
-                  </label>
+                <div className="flex items-start gap-1.5">
+                  {/* Grid Od/Do — každé pole dostane celú šírku celly bez súťaženia */}
+                  <div className="flex-1 grid grid-cols-2 gap-1.5">
+                    {/* Od */}
+                    <label className={`flex flex-col gap-0.5 border rounded-lg px-2.5 py-1.5 cursor-pointer transition-colors ${dateFrom ? "border-secondary bg-secondary/5" : "border-gray-200 bg-white hover:border-gray-300"} focus-within:border-secondary focus-within:ring-1 focus-within:ring-secondary/20`}>
+                      <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">Od</span>
+                      <input type="date" value={dateFrom}
+                        onChange={e => { setDateFrom(e.target.value); setQuickDate(""); }}
+                        className="text-xs font-semibold text-secondary focus:outline-none bg-transparent w-full cursor-pointer" />
+                    </label>
+                    {/* Do */}
+                    <label className={`flex flex-col gap-0.5 border rounded-lg px-2.5 py-1.5 cursor-pointer transition-colors ${dateTo ? "border-secondary bg-secondary/5" : "border-gray-200 bg-white hover:border-gray-300"} focus-within:border-secondary focus-within:ring-1 focus-within:ring-secondary/20`}>
+                      <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">Do</span>
+                      <input type="date" value={dateTo}
+                        onChange={e => { setDateTo(e.target.value); setQuickDate(""); }}
+                        className="text-xs font-semibold text-secondary focus:outline-none bg-transparent w-full cursor-pointer" />
+                    </label>
+                  </div>
                   {/* Clear */}
                   {(dateFrom || dateTo) && (
                     <button onClick={() => { setDateFrom(""); setDateTo(""); setQuickDate(""); }}
-                      className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0 cursor-pointer">
+                      className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0 cursor-pointer mt-0.5">
                       <X className="w-4 h-4" />
                     </button>
                   )}
