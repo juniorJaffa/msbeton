@@ -421,7 +421,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     if (initialDateFilter) return initialDateFilter;
     if (initialClientId) return "vsetko";
     if (initialOrderId) return "vsetko"; // zobraziť všetky dátumy aby bola cieľová objednávka viditeľná
-    return (localStorage.getItem("msbeton_historia_cashDate") as DateFilter | null) ?? "vsetko";
+    return (localStorage.getItem("msbeton_historia_cashDate") as DateFilter | null) ?? "tyzden";
   });
   const setCashDateFilter = (v: DateFilter) => {
     setCashDateFilterRaw(v);
@@ -924,7 +924,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   // Počty aktívnych filtrov — pre badge v hlavičke
   const activeCash = [
     cashStatusFilter !== "vsetky",
-    cashDateFilter !== "vsetko" || !!cashDateFrom || !!cashDateTo,
+    cashDateFilter !== "tyzden" || !!cashDateFrom || !!cashDateTo,
     cashKtoFilters.length > 0,
     cashClientFilter !== "vsetci",
     onlyDeposit,
@@ -1017,7 +1017,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   <button type="button" onClick={() => setSecDepDateOpen(o => !o)}
                     className="w-full bg-gray-50 border-b border-gray-100 px-4 py-1.5 flex items-center gap-2 hover:bg-gray-100 transition-colors cursor-pointer">
                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">Dátum</span>
-                    {depDateFilter !== "vsetko" && (
+                    {depDateFilter !== "tyzden" && (
                       <span className="bg-secondary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
                         {DATE_BTNS.find(f => f.id === depDateFilter)?.label}
                       </span>
@@ -1283,14 +1283,14 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   <button type="button" onClick={() => setSecCashDateOpen(o => !o)}
                     className="w-full bg-gray-50 border-b border-gray-100 px-4 py-1.5 flex items-center gap-2 hover:bg-gray-100 transition-colors cursor-pointer">
                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">Dátum · Excel</span>
-                    {(cashDateFilter !== "vsetko" || cashExcelFilter !== "vsetky") && (
+                    {(cashDateFilter !== "tyzden" || cashExcelFilter !== "vsetky") && (
                       <span className="bg-secondary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
-                        {[cashDateFilter !== "vsetko", cashExcelFilter !== "vsetky"].filter(Boolean).length}
+                        {[cashDateFilter !== "tyzden", cashExcelFilter !== "vsetky"].filter(Boolean).length}
                       </span>
                     )}
                     <div className="ml-auto flex items-center gap-2">
-                      {(cashDateFilter !== "vsetko" || !!cashDateFrom || !!cashDateTo || cashExcelFilter !== "vsetky") && (
-                        <button type="button" onClick={e => { e.stopPropagation(); setCashDateFilter("vsetko"); setCashDateFrom(""); setCashDateTo(""); setCashExcelFilter("vsetky"); }}
+                      {(cashDateFilter !== "tyzden" || !!cashDateFrom || !!cashDateTo || cashExcelFilter !== "vsetky") && (
+                        <button type="button" onClick={e => { e.stopPropagation(); setCashDateFilter("tyzden"); setCashDateFrom(""); setCashDateTo(""); setCashExcelFilter("vsetky"); }}
                           className="w-5 h-5 rounded-full bg-white border border-gray-300 text-gray-400 hover:border-red-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors cursor-pointer shrink-0">
                           <X className="w-2.5 h-2.5" />
                         </button>
