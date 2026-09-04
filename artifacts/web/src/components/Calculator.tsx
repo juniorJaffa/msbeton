@@ -591,6 +591,18 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
           pendingGeocodePlaceRef.current = { lat, lng };
           lastResolvedAddressRef.current = { address: place.formatted_address, lat, lng };
           setMapPlusCode(encodeOLC(lat, lng));
+          // Extrahuj lokalitu z Places address_components — rovnaký vzor ako mapGeocodeAddrFnRef
+          // Dôvod: address→map alebo address→distance prechod → SMS nesmie zobraziť Plus Code
+          const comps: google.maps.GeocoderAddressComponent[] = (place.address_components ?? []) as google.maps.GeocoderAddressComponent[];
+          const village = comps.find(c => c.types.includes("locality"))?.long_name
+            ?? comps.find(c => c.types.includes("postal_town"))?.long_name
+            ?? comps.find(c => c.types.includes("administrative_area_level_3"))?.long_name
+            ?? comps.find(c => c.types.includes("administrative_area_level_4"))?.long_name
+            ?? comps.find(c => c.types.includes("sublocality_level_1"))?.long_name
+            ?? comps.find(c => c.types.includes("neighborhood"))?.long_name
+            ?? "";
+          const addrDistrict = comps.find(c => c.types.includes("administrative_area_level_2"))?.long_name ?? "";
+          setMapLocality([village, addrDistrict].filter(Boolean).join(", "));
         }
         setAddressLoading(true);
         setShowResult(false);
@@ -1816,10 +1828,17 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     // Vždy musí byť zobrazená nejaká poloha (nikdy prázdny riadok pri mape)
     if (deliveryMode === "address" && address) {
       lines.push(`${address} – ${result.km}km`);
-    } else if (deliveryMode === "map" || deliveryMode === "distance") {
-      const locLabel = mapLocality
+    } else if (deliveryMode === "map") {
+      // map mode: priorita mapLocality (Nominatim), potom mapGeocodedAddress/address, až posledná záchrana mapPlusCode
+      const locLabel = mapLocality || mapGeocodedAddress || address
         || mapPlusCode
         || (mapPin ? `${mapPin.lat.toFixed(5)}, ${mapPin.lng.toFixed(5)}` : "");
+      if (locLabel) lines.push(`${locLabel} – ${result.km}km`);
+      else if (result.km > 0) lines.push(`– ${result.km}km`);
+    } else if (deliveryMode === "distance") {
+      // distance mode: NIKDY nepoužívaj mapPlusCode — Plus Code bez vizuálnej mapy je nezmyselný
+      // mapLocality môže byť nastavená z predchádzajúceho address autocomplete alebo map pinu
+      const locLabel = mapLocality || address || "";
       if (locLabel) lines.push(`${locLabel} – ${result.km}km`);
       else if (result.km > 0) lines.push(`– ${result.km}km`);
     }
@@ -2035,6 +2054,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       // map→distance: zachovaj mapLocality (Peto: "dal špendlík, potom upravil km manuálne")
       // map→address: nová adresa si nastaví vlastnú lokalitu — locality resetuj
       if (newMode !== "distance") setMapLocality("");
+    }
+    // Opustenie adresného režimu (nie smer na mapu) → vymaž mapPlusCode nastavený autocomplete
+    // Dôvod: mapPlusCode z autocomplete je iba pre address→map transition, nesmie vytiecť do SMS
+    if (deliveryMode === "address" && newMode !== "map") {
+      setMapPlusCode("");
     }
     // Reset km + výpočtu len keď prechádza cez "distance" alebo z "distance"
     const preserveKm = isAddrToMap || isMapToAddr;
