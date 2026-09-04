@@ -1835,7 +1835,15 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                 </span>
               )}
               {newBadge > 0 && <span className="bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">{newBadge} nových</span>}
-              <ChevronDown className={`w-3.5 h-3.5 text-gray-400 ml-auto transition-transform duration-150 ${secStavOpen ? "rotate-180" : ""}`} />
+              <div className="ml-auto flex items-center gap-2">
+                {filterStatus !== "vsetky" && (
+                  <button type="button" onClick={e => { e.stopPropagation(); setFilterStatus("vsetky"); setNewBadge(0); }}
+                    className="w-5 h-5 rounded-full bg-white border border-gray-300 text-gray-400 hover:border-red-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors cursor-pointer shrink-0">
+                    <X className="w-2.5 h-2.5" />
+                  </button>
+                )}
+                <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-150 ${secStavOpen ? "rotate-180" : ""}`} />
+              </div>
             </button>
             {secStavOpen && (
               <div className="px-4 py-2.5 flex flex-wrap gap-1.5">
@@ -1872,7 +1880,15 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                   {[filterTab !== "vsetky" && TAB_STYLES[filterTab]?.label, filterPriceMode !== "vsetky" && (filterPriceMode === "faktura" ? "FA" : "HOT"), filterChannel !== "vsetky" && (filterChannel === "sms" ? "SMS" : "Košík"), filterZaloha !== "vsetky" && (filterZaloha === "doplatok" ? "⚠ Doplatok" : filterZaloha === "nedoplatok" ? "❗ Nedoplatok" : "💰 Záloha")].filter(Boolean).join(" · ")}
                 </span>
               )}
-              <ChevronDown className={`w-3.5 h-3.5 text-gray-400 ml-auto transition-transform duration-150 ${secTypOpen ? "rotate-180" : ""}`} />
+              <div className="ml-auto flex items-center gap-2">
+                {(filterTab !== "vsetky" || filterPriceMode !== "vsetky" || filterChannel !== "vsetky" || filterZaloha !== "vsetky") && (
+                  <button type="button" onClick={e => { e.stopPropagation(); setFilterTab("vsetky"); setFilterPriceMode("vsetky"); setFilterChannel("vsetky"); setFilterZaloha("vsetky"); }}
+                    className="w-5 h-5 rounded-full bg-white border border-gray-300 text-gray-400 hover:border-red-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors cursor-pointer shrink-0">
+                    <X className="w-2.5 h-2.5" />
+                  </button>
+                )}
+                <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-150 ${secTypOpen ? "rotate-180" : ""}`} />
+              </div>
             </button>
             {secTypOpen && (
               <div className="divide-y divide-gray-100">
@@ -1985,7 +2001,15 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                   {quickDate === "dnes" ? "Dnes" : quickDate === "vcera" ? "Včera" : quickDate === "tyzden" ? "Týždeň" : quickDate === "mesiac" ? `${SK_MONTHS[quickMY.m - 1]} ${quickMY.y}` : quickDate === "ndni" ? `–${quickDays}d` : dateFrom || dateTo ? "Vlastný" : ""}
                 </span>
               )}
-              <ChevronDown className={`w-3.5 h-3.5 text-gray-400 ml-auto transition-transform duration-150 ${secDateOpen ? "rotate-180" : ""}`} />
+              <div className="ml-auto flex items-center gap-2">
+                {(quickDate || dateFrom || dateTo) && (
+                  <button type="button" onClick={e => { e.stopPropagation(); setQuickDate(""); setDateFrom(""); setDateTo(""); }}
+                    className="w-5 h-5 rounded-full bg-white border border-gray-300 text-gray-400 hover:border-red-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors cursor-pointer shrink-0">
+                    <X className="w-2.5 h-2.5" />
+                  </button>
+                )}
+                <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-150 ${secDateOpen ? "rotate-180" : ""}`} />
+              </div>
             </button>
             {secDateOpen && (<>
               {/* Rýchle filtry */}

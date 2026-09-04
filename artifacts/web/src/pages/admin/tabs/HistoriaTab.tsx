@@ -1188,11 +1188,11 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                         {STATUS_LABEL[cashStatusFilter] ?? cashStatusFilter}
                       </span>
                     )}
-                    <div className="ml-auto flex items-center gap-1">
+                    <div className="ml-auto flex items-center gap-2">
                       {cashStatusFilter !== "vsetky" && (
                         <button type="button" onClick={e => { e.stopPropagation(); setCashStatusFilter("vsetky"); }}
-                          className="w-4 h-4 rounded-full bg-gray-300 hover:bg-red-400 flex items-center justify-center transition-colors cursor-pointer shrink-0">
-                          <X className="w-2.5 h-2.5 text-white" />
+                          className="w-5 h-5 rounded-full bg-white border border-gray-300 text-gray-400 hover:border-red-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors cursor-pointer shrink-0">
+                          <X className="w-2.5 h-2.5" />
                         </button>
                       )}
                       <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-150 ${secCashStavOpen ? "rotate-180" : ""}`} />
@@ -1237,11 +1237,11 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                         {[cashDateFilter !== "vsetko", cashExcelFilter !== "vsetky"].filter(Boolean).length}
                       </span>
                     )}
-                    <div className="ml-auto flex items-center gap-1">
+                    <div className="ml-auto flex items-center gap-2">
                       {(cashDateFilter !== "vsetko" || !!cashDateFrom || !!cashDateTo || cashExcelFilter !== "vsetky") && (
                         <button type="button" onClick={e => { e.stopPropagation(); setCashDateFilter("vsetko"); setCashDateFrom(""); setCashDateTo(""); setCashExcelFilter("vsetky"); }}
-                          className="w-4 h-4 rounded-full bg-gray-300 hover:bg-red-400 flex items-center justify-center transition-colors cursor-pointer shrink-0">
-                          <X className="w-2.5 h-2.5 text-white" />
+                          className="w-5 h-5 rounded-full bg-white border border-gray-300 text-gray-400 hover:border-red-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors cursor-pointer shrink-0">
+                          <X className="w-2.5 h-2.5" />
                         </button>
                       )}
                       <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-150 ${secCashDateOpen ? "rotate-180" : ""}`} />
@@ -1274,11 +1274,11 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                         {[cashKtoFilters.length > 0, cashClientFilter !== "vsetci", onlyDeposit].filter(Boolean).length}
                       </span>
                     )}
-                    <div className="ml-auto flex items-center gap-1">
+                    <div className="ml-auto flex items-center gap-2">
                       {(cashKtoFilters.length > 0 || cashClientFilter !== "vsetci" || onlyDeposit) && (
                         <button type="button" onClick={e => { e.stopPropagation(); setCashKtoFilters([]); setCashClientFilter("vsetci"); setCashClientSearch(""); setOnlyDeposit(false); }}
-                          className="w-4 h-4 rounded-full bg-gray-300 hover:bg-red-400 flex items-center justify-center transition-colors cursor-pointer shrink-0">
-                          <X className="w-2.5 h-2.5 text-white" />
+                          className="w-5 h-5 rounded-full bg-white border border-gray-300 text-gray-400 hover:border-red-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors cursor-pointer shrink-0">
+                          <X className="w-2.5 h-2.5" />
                         </button>
                       )}
                       <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-150 ${secCashExtraOpen ? "rotate-180" : ""}`} />
