@@ -1812,10 +1812,16 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
 
     const lines: string[] = [];
     lines.push(div, "    MS-BETON, spol. s r.o.", "      Cenová ponuka", div);
-    // Adresa má prednosť pred Plus Code — Plus Code len keď nie je text adresa (map mode)
-    if (address) lines.push(`${address} – ${result.km}km`);
-    else if (mapPlusCode) lines.push(`${mapPlusCode}${mapLocality ? " · " + mapLocality : ""} – ${result.km}km`);
-    else if (result.km > 0) lines.push(`${result.km}km`);
+    // Adresa riadok: v address mode → text adresa; v map mode → mapLocality (nie address! — môže byť GPS coords fallback)
+    if (deliveryMode === "address" && address) {
+      lines.push(`${address} – ${result.km}km`);
+    } else if (mapLocality) {
+      lines.push(`${mapLocality} – ${result.km}km`);
+    } else if (mapPlusCode) {
+      lines.push(`${mapPlusCode} – ${result.km}km`);
+    } else if (result.km > 0) {
+      lines.push(`– ${result.km}km`);
+    }
     if (result.isOwn) lines.push("Vlastná doprava – odber na prevádzke");
     lines.push(div);
     lines.push(`Dátum vystavenia - ${fmtDate}`);
