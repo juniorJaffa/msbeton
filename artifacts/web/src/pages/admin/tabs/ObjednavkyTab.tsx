@@ -1055,9 +1055,18 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const [filterZaloha, setFilterZaloha] = useState<"vsetky" | "zaloha" | "doplatok" | "nedoplatok">("vsetky");
   const [search, setSearch] = useState(initialSearch ?? "");
   const [clientIdActive, setClientIdActive] = useState<string | null>(initialClientId ?? null);
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [quickDate, setQuickDate] = useState("");
+  // Default: aktuálny týždeň (Mon–Sun), rovnako ako HistoriaTab
+  const initWeekBounds = () => {
+    const now = new Date();
+    const dow = (now.getDay() + 6) % 7;
+    const mon = new Date(now); mon.setDate(now.getDate() - dow); mon.setHours(0,0,0,0);
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    return { from: fmt(mon), to: fmt(sun) };
+  };
+  const [dateFrom, setDateFrom] = useState(() => initWeekBounds().from);
+  const [dateTo, setDateTo] = useState(() => initWeekBounds().to);
+  const [quickDate, setQuickDate] = useState("tyzden");
   const [quickDays, setQuickDays] = useState("7");
   const [quickMY, setQuickMY] = useState({ m: new Date().getMonth() + 1, y: new Date().getFullYear() });
   const [tyzdenOffset, setTyzdenOffset] = useState(0);
@@ -2023,14 +2032,14 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
             <button type="button" onClick={() => setSecDateOpen(o => !o)}
               className="w-full bg-gray-50 border-b border-gray-100 px-4 py-1.5 flex items-center gap-2 hover:bg-gray-100 transition-colors cursor-pointer">
               <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">Dátum</span>
-              {(quickDate || dateFrom || dateTo) && (
+              {(quickDate !== "tyzden" || tyzdenOffset !== 0) && (quickDate || dateFrom || dateTo) && (
                 <span className="bg-secondary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
-                  {quickDate === "dnes" ? "Dnes" : quickDate === "vcera" ? "Včera" : quickDate === "tyzden" ? "Týždeň" : quickDate === "mesiac" ? `${SK_MONTHS[quickMY.m - 1]} ${quickMY.y}` : quickDate === "ndni" ? `–${quickDays}d` : dateFrom || dateTo ? "Vlastný" : ""}
+                  {quickDate === "dnes" ? "Dnes" : quickDate === "vcera" ? "Včera" : quickDate === "tyzden" ? weekLabelObjed(tyzdenOffset) : quickDate === "mesiac" ? `${SK_MONTHS_SHORT[quickMY.m - 1]} ${quickMY.y}` : quickDate === "ndni" ? `–${quickDays}d` : dateFrom || dateTo ? "Vlastný" : ""}
                 </span>
               )}
               <div className="ml-auto flex items-center gap-2">
-                {(quickDate || dateFrom || dateTo) && (
-                  <button type="button" onClick={e => { e.stopPropagation(); setQuickDate(""); setDateFrom(""); setDateTo(""); }}
+                {(quickDate !== "tyzden" || tyzdenOffset !== 0) && (quickDate || dateFrom || dateTo) && (
+                  <button type="button" onClick={e => { e.stopPropagation(); setQuickDate("tyzden"); setTyzdenOffset(0); const wb = initWeekBounds(); setDateFrom(wb.from); setDateTo(wb.to); }}
                     className="w-5 h-5 rounded-full bg-white border border-gray-300 text-gray-400 hover:border-red-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors cursor-pointer shrink-0">
                     <X className="w-2.5 h-2.5" />
                   </button>
