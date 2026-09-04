@@ -254,6 +254,105 @@ const STATUS_ACTIVE: Record<string, string> = {
 };
 const CASH_STATUSES = ["nova","potvrdena","odoslana","vyuctovana","vyplatena","zrusena"] as const;
 
+// ── ClientDropdown — module-level komponent (nie vnorený v HistoriaTab!) ─────────────────
+// KRITICKÉ: musí byť mimo HistoriaTab aby React nezmazal a neprerenderoval inštanciu
+// pri každej zmene search state → inak strácame focus po prvom znaku (Safari mobile bug)
+function ClientDropdown({ clients, value, onChange, dropRef, open, setOpen, search, setSearch, align = "right" }:
+  { clients: {id: string; name: string}[]; value: string; onChange: (id: string) => void;
+    dropRef: React.RefObject<HTMLDivElement | null>; open: boolean; setOpen: (v: boolean) => void;
+    search: string; setSearch: (v: string) => void; align?: "left" | "right"; }) {
+  const selected = clients.find(c => c.id === value);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [dropPos, setDropPos] = useState<{top: number; left: number} | null>(null);
+  const filtered = search ? clients.filter(c => {
+    const words = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const haystack = `${c.name} ${c.id}`.toLowerCase();
+    return words.every(w => haystack.includes(w));
+  }) : clients;
+  useEffect(() => {
+    if (open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      const PANEL_W = 220;
+      let left = align === "right" ? rect.right - PANEL_W : rect.left;
+      left = Math.max(4, Math.min(left, window.innerWidth - PANEL_W - 4));
+      setDropPos({ top: rect.bottom + 6, left });
+    } else {
+      setDropPos(null);
+    }
+  }, [open, align]);
+  // Click-outside: kontroluje button aj portal panel (panel nie je v dropRef!)
+  // touchstart + mousedown — Safari mobile generuje touchstart pred mousedown
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent | TouchEvent) => {
+      const target = "touches" in e ? e.touches[0]?.target as Node | null : (e as MouseEvent).target as Node | null;
+      if (!target) return;
+      if (btnRef.current?.contains(target)) return;
+      if (panelRef.current?.contains(target)) return;
+      setOpen(false);
+      setSearch("");
+    };
+    document.addEventListener("mousedown", handler, true);
+    document.addEventListener("touchstart", handler, true);
+    return () => {
+      document.removeEventListener("mousedown", handler, true);
+      document.removeEventListener("touchstart", handler, true);
+    };
+  }, [open, setOpen, setSearch]);
+  const dropPanel = open && dropPos ? (
+    <div ref={panelRef} style={{ position: "fixed", top: dropPos.top, left: dropPos.left, zIndex: 9999, width: "220px" }}
+      className="bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+      <div className="px-3 py-2 border-b border-gray-100">
+        <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+          onKeyDown={e => { if (e.key === "Escape") { setSearch(""); setOpen(false); } }}
+          placeholder="Meno, telefón, ID…"
+          className="w-full text-[11px] px-2 py-1 border border-gray-200 rounded-lg outline-none focus:border-secondary" />
+      </div>
+      <div className="max-h-[55vh] overflow-y-auto">
+        <button onClick={() => { onChange("vsetci"); setOpen(false); setSearch(""); }}
+          className={`w-full px-4 py-2.5 text-left text-[11px] font-bold border-b border-gray-50 cursor-pointer transition-colors hover:bg-gray-50 ${value === "vsetci" ? "text-amber-600 bg-amber-50" : "text-gray-500"}`}>
+          Všetci klienti
+        </button>
+        {filtered.map(c => (
+          <button key={c.id} onClick={() => { onChange(c.id); setOpen(false); setSearch(""); }}
+            className={`w-full px-4 py-2.5 text-left text-[12px] cursor-pointer transition-colors hover:bg-gray-50 min-h-[44px] flex items-center ${
+              value === c.id ? "font-bold text-amber-600 bg-amber-50" : "text-gray-700"
+            }`}>
+            {c.name}
+          </button>
+        ))}
+        {filtered.length === 0 && (
+          <div className="px-4 py-3 text-[11px] text-gray-400 text-center">Žiadny výsledok</div>
+        )}
+      </div>
+    </div>
+  ) : null;
+  return (
+    <div className="flex items-center gap-1">
+      <div ref={dropRef} className="relative inline-block shrink-0">
+        <button ref={btnRef} onClick={() => setOpen(!open)}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold rounded-full border cursor-pointer transition-colors ${
+            value !== "vsetci" ? "bg-amber-500 border-amber-500 text-white" : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
+          }`}>
+          <Users className="w-3 h-3 shrink-0" />
+          <span className="max-w-[100px] truncate">{selected ? selected.name : "Klient"}</span>
+          <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
+        </button>
+        {dropPanel && createPortal(dropPanel, document.body)}
+      </div>
+      {value !== "vsetci" && (
+        <button onClick={() => { onChange("vsetci"); setSearch(""); setOpen(false); }}
+          title="Zrušiť filter klienta"
+          className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 text-amber-600 hover:bg-red-100 hover:text-red-500 border border-amber-300 hover:border-red-300 transition-colors cursor-pointer shrink-0">
+          <X className="w-2.5 h-2.5" />
+        </button>
+      )}
+    </div>
+  );
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function HistoriaTab({ initialSub, initialClientId, initialDate, initialDateFilter, initialOrderId, onGoToClient, onGoToOrder }: Props) {
   const [sub, setSub] = useState<Sub>(() => {
     if (initialSub) return initialSub;
@@ -773,113 +872,6 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const dateBtnCls  = (a: boolean) => `px-2.5 py-1.5 text-[10px] font-bold rounded-full transition-colors cursor-pointer ${a ? "bg-secondary text-white" : "bg-white text-gray-500 border border-gray-200 hover:border-gray-300"}`;
 
   // Kompaktný dropdown pre výber klienta — skaluje na 100+ klientov
-  function ClientDropdown({ clients, value, onChange, dropRef, open, setOpen, search, setSearch, align = "right" }:
-    { clients: {id: string; name: string}[]; value: string; onChange: (id: string) => void;
-      dropRef: React.RefObject<HTMLDivElement | null>; open: boolean; setOpen: (v: boolean) => void;
-      search: string; setSearch: (v: string) => void; align?: "left" | "right"; }) {
-    const selected = clients.find(c => c.id === value);
-    const btnRef = useRef<HTMLButtonElement>(null);
-    const panelRef = useRef<HTMLDivElement>(null);
-    const [dropPos, setDropPos] = useState<{top: number; left?: number; right?: number} | null>(null);
-    // Multi-word search: každé slovo musí byť v mene alebo clientId (telefóne)
-    const filtered = search ? clients.filter(c => {
-      const words = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
-      const haystack = `${c.name} ${c.id}`.toLowerCase();
-      return words.every(w => haystack.includes(w));
-    }) : clients;
-    // Vypočítaj pozíciu dropdown pri otvorení
-    useEffect(() => {
-      if (open && btnRef.current) {
-        const rect = btnRef.current.getBoundingClientRect();
-        const PANEL_W = 220;
-        let left = align === "right"
-          ? rect.right - PANEL_W
-          : rect.left;
-        left = Math.max(4, Math.min(left, window.innerWidth - PANEL_W - 4));
-        setDropPos({ top: rect.bottom + 6, left });
-      } else {
-        setDropPos(null);
-      }
-    }, [open, align]);
-    // Click-outside — kontroluje OBIDVA: button + portal panel (panel nie je v dropRef!)
-    useEffect(() => {
-      if (!open) return;
-      const handler = (e: MouseEvent | TouchEvent) => {
-        const target = (e as TouchEvent).touches ? (e as TouchEvent).touches[0]?.target as Node : (e as MouseEvent).target as Node;
-        if (!target) return;
-        if (btnRef.current?.contains(target)) return;
-        if (panelRef.current?.contains(target)) return;
-        setOpen(false);
-        setSearch("");
-      };
-      // mousedown + touchstart — Safari mobile generuje touchstart pred mousedown
-      document.addEventListener("mousedown", handler, true);
-      document.addEventListener("touchstart", handler, true);
-      return () => {
-        document.removeEventListener("mousedown", handler, true);
-        document.removeEventListener("touchstart", handler, true);
-      };
-    }, [open, setOpen, setSearch]);
-    const dropPanel = open && dropPos ? (
-      <div ref={panelRef} style={{
-        position: "fixed",
-        top: dropPos.top,
-        left: dropPos.left,
-        zIndex: 9999,
-        width: "220px",
-      }} className="bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-        {/* Search — vždy viditeľný */}
-        <div className="px-3 py-2 border-b border-gray-100">
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-            onKeyDown={e => { if (e.key === "Escape") { setSearch(""); setOpen(false); } }}
-            placeholder="Meno, telefón, ID…"
-            className="w-full text-[11px] px-2 py-1 border border-gray-200 rounded-lg outline-none focus:border-secondary" />
-        </div>
-        <div className="max-h-[55vh] overflow-y-auto">
-          <button onClick={() => { onChange("vsetci"); setOpen(false); setSearch(""); }}
-            className={`w-full px-4 py-2.5 text-left text-[11px] font-bold border-b border-gray-50 cursor-pointer transition-colors hover:bg-gray-50 ${value === "vsetci" ? "text-amber-600 bg-amber-50" : "text-gray-500"}`}>
-            Všetci klienti
-          </button>
-          {filtered.map(c => (
-            <button key={c.id} onClick={() => { onChange(c.id); setOpen(false); setSearch(""); }}
-              className={`w-full px-4 py-2.5 text-left text-[12px] cursor-pointer transition-colors hover:bg-gray-50 min-h-[44px] flex items-center ${
-                value === c.id ? "font-bold text-amber-600 bg-amber-50" : "text-gray-700"
-              }`}>
-              {c.name}
-            </button>
-          ))}
-          {filtered.length === 0 && (
-            <div className="px-4 py-3 text-[11px] text-gray-400 text-center">Žiadny výsledok</div>
-          )}
-        </div>
-      </div>
-    ) : null;
-    return (
-      <div className="flex items-center gap-1">
-        <div ref={dropRef} className="relative inline-block shrink-0">
-          <button ref={btnRef} onClick={() => setOpen(!open)}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold rounded-full border cursor-pointer transition-colors ${
-              value !== "vsetci" ? "bg-amber-500 border-amber-500 text-white" : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
-            }`}>
-            <Users className="w-3 h-3 shrink-0" />
-            <span className="max-w-[100px] truncate">{selected ? selected.name : "Klient"}</span>
-            <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
-          </button>
-          {dropPanel && createPortal(dropPanel, document.body)}
-        </div>
-        {/* X — zrušiť filter klienta, vždy viditeľné keď filter aktívny */}
-        {value !== "vsetci" && (
-          <button
-            onClick={() => { onChange("vsetci"); setSearch(""); setOpen(false); }}
-            title="Zrušiť filter klienta"
-            className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 text-amber-600 hover:bg-red-100 hover:text-red-500 border border-amber-300 hover:border-red-300 transition-colors cursor-pointer shrink-0">
-            <X className="w-2.5 h-2.5" />
-          </button>
-        )}
-      </div>
-    );
-  }
-
   // Počty aktívnych filtrov — pre badge v hlavičke
   const activeCash = [
     cashStatusFilter !== "vsetky",
@@ -1270,9 +1262,9 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   </button>
                   {secCashExtraOpen && (
                     <div className="px-4 py-2.5">
-                      {/* KTO · Klient · Záloha — jeden riadok */}
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {/* KTO dropdown */}
+                      {/* KTO · Klient · Záloha — jeden riadok; Klient+Záloha zarovnané vpravo */}
+                      <div className="flex items-center gap-2 flex-wrap justify-between">
+                        {/* KTO dropdown — vľavo */}
                         {deviceGroups.length > 1 && (
                           <div ref={ktoRef} className="relative inline-flex items-center gap-1 shrink-0">
                             <button onClick={() => setKtoDropOpen(o => !o)}
@@ -1325,21 +1317,22 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             )}
                           </div>
                         )}
-                        {/* Klient dropdown */}
-                        {orderClients.length > 0 && (
-                          <ClientDropdown clients={orderClients} value={cashClientFilter} onChange={setCashClientFilter}
-                            dropRef={cashClientRef} open={cashClientDrop} setOpen={setCashClientDrop}
-                            search={cashClientSearch} setSearch={setCashClientSearch} />
-                        )}
-                        {/* Záloha pill toggle */}
-                        <button onClick={() => setOnlyDeposit(v => !v)}
-                          className={`inline-flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold rounded-full border transition-all cursor-pointer shrink-0 ${
-                            onlyDeposit
-                              ? "bg-amber-100 text-amber-700 border-amber-400"
-                              : "bg-white text-gray-500 border-gray-200 hover:border-amber-300 hover:text-amber-600"
-                          }`}>
-                          💰 Záloha
-                        </button>
+                        {/* Klient + Záloha — vpravo */}
+                        <div className="flex items-center gap-2 ml-auto">
+                          {orderClients.length > 0 && (
+                            <ClientDropdown clients={orderClients} value={cashClientFilter} onChange={setCashClientFilter}
+                              dropRef={cashClientRef} open={cashClientDrop} setOpen={setCashClientDrop}
+                              search={cashClientSearch} setSearch={setCashClientSearch} />
+                          )}
+                          <button onClick={() => setOnlyDeposit(v => !v)}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold rounded-full border transition-all cursor-pointer shrink-0 ${
+                              onlyDeposit
+                                ? "bg-amber-100 text-amber-700 border-amber-400"
+                                : "bg-white text-gray-500 border-gray-200 hover:border-amber-300 hover:text-amber-600"
+                            }`}>
+                            💰 Záloha
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
