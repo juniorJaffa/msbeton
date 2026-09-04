@@ -42,6 +42,7 @@ function localDateStr(offsetDays = 0): string {
 }
 
 const SK_MONTHS = ["januára","februára","marca","apríla","mája","júna","júla","augusta","septembra","októbra","novembra","decembra"];
+const SK_MONTHS_SHORT = ["Jan","Feb","Mar","Apr","Máj","Jún","Júl","Aug","Sep","Okt","Nov","Dec"];
 const SK_DAYS   = ["Nedeľa","Pondelok","Utorok","Streda","Štvrtok","Piatok","Sobota"];
 function fmtGroupDate(dateStr: string): { label: string; sub: string | null } {
   const d = new Date(dateStr + "T00:00:00");
@@ -54,12 +55,20 @@ function fmtGroupDate(dateStr: string): { label: string; sub: string | null } {
 
 function toDateStr(iso: string) { return iso.slice(0, 10); }
 
-function passesDate(dateStr: string, filter: DateFilter): boolean {
+function passesDate(dateStr: string, filter: DateFilter, mesiacYM?: { year: number; month: number }): boolean {
   if (filter === "vsetko") return true;
   if (filter === "dnes")   return dateStr === localDateStr(0);
   if (filter === "vcera")  return dateStr === localDateStr(-1);
   if (filter === "tyzden") return dateStr >= localDateStr(-7);
-  if (filter === "mesiac") return dateStr >= localDateStr(-30);
+  if (filter === "mesiac") {
+    const now = new Date();
+    const y = mesiacYM?.year  ?? now.getFullYear();
+    const m = mesiacYM?.month ?? (now.getMonth() + 1);
+    const from = `${y}-${String(m).padStart(2, "0")}-01`;
+    const last = new Date(y, m, 0).getDate(); // posledný deň mesiaca
+    const to   = `${y}-${String(m).padStart(2, "0")}-${String(last).padStart(2, "0")}`;
+    return dateStr >= from && dateStr <= to;
+  }
   return true;
 }
 
@@ -353,6 +362,42 @@ function ClientDropdown({ clients, value, onChange, dropRef, open, setOpen, sear
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
+// MesiacStepper — ← Sep 2026 → inline v DATE_BTNS keď mesiac aktívny
+function MesiacStepper({ ym, onChange, onDeselect, btnCls }: {
+  ym: { year: number; month: number };
+  onChange: (ym: { year: number; month: number }) => void;
+  onDeselect: () => void;
+  btnCls: string; // aktívny button štýl (bg-secondary text-white …)
+}) {
+  const now = new Date();
+  const isCurrentMonth = ym.year === now.getFullYear() && ym.month === (now.getMonth() + 1);
+  const label = `${SK_MONTHS_SHORT[ym.month - 1]} ${ym.year}`;
+  const goPrev = () => {
+    onChange(ym.month === 1
+      ? { year: ym.year - 1, month: 12 }
+      : { year: ym.year, month: ym.month - 1 });
+  };
+  const goNext = () => {
+    if (isCurrentMonth) return;
+    onChange(ym.month === 12
+      ? { year: ym.year + 1, month: 1 }
+      : { year: ym.year, month: ym.month + 1 });
+  };
+  return (
+    <div className="flex items-center rounded-full overflow-hidden border border-secondary shrink-0">
+      <button onClick={goPrev} title="Predošlý mesiac"
+        className="px-2 py-1.5 text-[11px] font-black text-secondary hover:bg-secondary/10 transition-colors cursor-pointer">‹</button>
+      <button onClick={onDeselect}
+        className="px-2.5 py-1.5 text-[10px] font-black bg-secondary text-white cursor-pointer whitespace-nowrap">
+        {label}
+      </button>
+      <button onClick={goNext} title="Nasledujúci mesiac"
+        className={`px-2 py-1.5 text-[11px] font-black transition-colors ${isCurrentMonth ? "text-gray-300 cursor-not-allowed" : "text-secondary hover:bg-secondary/10 cursor-pointer"}`}
+        disabled={isCurrentMonth}>›</button>
+    </div>
+  );
+}
+
 export default function HistoriaTab({ initialSub, initialClientId, initialDate, initialDateFilter, initialOrderId, onGoToClient, onGoToOrder }: Props) {
   const [sub, setSub] = useState<Sub>(() => {
     if (initialSub) return initialSub;
@@ -409,6 +454,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [colHeaderScrolled, setColHeaderScrolled] = useState(false);
   const [cashDateFrom,     setCashDateFrom]     = useState("");
   const [cashDateTo,       setCashDateTo]       = useState("");
+  // Month stepper — {year, month} pre cashflow + zálohy mesiac filter
+  const nowYM = () => { const n = new Date(); return { year: n.getFullYear(), month: n.getMonth() + 1 }; };
+  const [cashMesiacYM,  setCashMesiacYM]  = useState(nowYM);
+  const [depMesiacYM,   setDepMesiacYM]   = useState(nowYM);
   const cashClientRef = useRef<HTMLDivElement>(null);
   const ktoRef        = useRef<HTMLDivElement>(null);
 
@@ -584,7 +633,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     const searchTerms = depSearch.trim().split(/\s+/).filter(Boolean);
     return allDepositRows.filter(r => {
       if (depClientFilter !== "vsetci" && r.clientId !== depClientFilter) return false;
-      if (!passesDate(toDateStr(r.sortKey), depDateFilter)) return false;
+      if (!passesDate(toDateStr(r.sortKey), depDateFilter, depMesiacYM)) return false;
       // Len prijaté (zelené topup transakcie)
       if (depOnlyTopup && !(r.kind === "tx" && r.tx.type === "topup")) return false;
       if (depExcelFilter !== "vsetky") {
@@ -608,7 +657,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       }
       return true;
     });
-  }, [allDepositRows, depClientFilter, depDateFilter, depExcelFilter, depOnlyTopup, liveOrders, depSearch, clientByLoginId]);
+  }, [allDepositRows, depClientFilter, depDateFilter, depMesiacYM, depExcelFilter, depOnlyTopup, liveOrders, depSearch, clientByLoginId]);
 
   const depSummary = useMemo(() => {
     let topup = 0, payment = 0;
@@ -627,7 +676,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   // Zariadenia — len tie aktívne v aktuálnom dátumovom rozsahu (nechceme staré nepoužívané)
   // MUSÍ byť pred filteredOrders — deviceToGroupKey je TDZ ak je deklarovaná neskôr
   const devicesSourceOrders = useMemo(() =>
-    liveOrders.filter(o => passesDate(toDateStr(o.createdAt), cashDateFilter)),
+    liveOrders.filter(o => passesDate(toDateStr(o.createdAt), cashDateFilter, cashMesiacYM)),
   [liveOrders, cashDateFilter]);
 
   // KTO skupiny — named osoby = group, unnamed auto-labels = individual s plným labelom
@@ -726,7 +775,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
           if (cashDateFrom && ds < cashDateFrom) return false;
           if (cashDateTo   && ds > cashDateTo)   return false;
         } else {
-          if (!passesDate(ds, cashDateFilter)) return false;
+          if (!passesDate(ds, cashDateFilter, cashMesiacYM)) return false;
         }
         // Fulltext search — meno, firma, telefón, ID klienta, adresa, lokalita, typ betónu, poznámka, suma
         if (searchTerms.length > 0) {
@@ -744,10 +793,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       })
       .sort((a, b) => orderLastChanged(b).localeCompare(orderLastChanged(a)));
     return result;
-  }, [liveOrders, cashClientFilter, cashKtoFilters, cashDateFilter, cashDateFrom, cashDateTo, onlyDeposit, onlyNedoplatok, cashExcelFilter, cashStatusFilter, cashSearch, deviceToGroupKey, clientByLoginId]);
+  }, [liveOrders, cashClientFilter, cashKtoFilters, cashDateFilter, cashDateFrom, cashDateTo, cashMesiacYM, onlyDeposit, onlyNedoplatok, cashExcelFilter, cashStatusFilter, cashSearch, deviceToGroupKey, clientByLoginId]);
 
   // Reset displayLimit pri každej zmene filtrov
-  useEffect(() => { setDisplayLimit(100); }, [cashClientFilter, cashKtoFilters, cashDateFilter, cashDateFrom, cashDateTo, onlyDeposit, onlyNedoplatok, cashExcelFilter, cashStatusFilter, cashSearch, showDeleted]);
+  useEffect(() => { setDisplayLimit(100); }, [cashClientFilter, cashKtoFilters, cashDateFilter, cashDateFrom, cashDateTo, cashMesiacYM, onlyDeposit, onlyNedoplatok, cashExcelFilter, cashStatusFilter, cashSearch, showDeleted]);
 
   // Scroll listener — zmena farby column headera pri scrollovaní
   useEffect(() => {
@@ -968,7 +1017,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   <button type="button" onClick={() => setSecDepDateOpen(o => !o)}
                     className="w-full bg-gray-50 border-b border-gray-100 px-4 py-1.5 flex items-center gap-2 hover:bg-gray-100 transition-colors cursor-pointer">
                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">Dátum</span>
-                    {depDateFilter !== "tyzden" && (
+                    {depDateFilter !== "vsetko" && (
                       <span className="bg-secondary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
                         {DATE_BTNS.find(f => f.id === depDateFilter)?.label}
                       </span>
@@ -976,10 +1025,13 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     <ChevronDown className={`w-3.5 h-3.5 text-gray-400 ml-auto transition-transform duration-150 ${secDepDateOpen ? "rotate-180" : ""}`} />
                   </button>
                   {secDepDateOpen && (
-                    <div className="px-4 py-2.5 flex flex-wrap gap-1.5">
-                      {DATE_BTNS.map(f => (
-                        <button key={f.id} onClick={() => setDepDateFilter(f.id)} className={`${dateBtnCls(depDateFilter === f.id)} whitespace-nowrap`}>{f.label}</button>
-                      ))}
+                    <div className="px-4 py-2.5 flex flex-wrap gap-1.5 items-center">
+                      {DATE_BTNS.map(f => f.id === "mesiac" && depDateFilter === "mesiac"
+                        ? <MesiacStepper key="mesiac" ym={depMesiacYM} onChange={ym => setDepMesiacYM(ym)}
+                            onDeselect={() => setDepDateFilter("vsetko")} btnCls={dateBtnCls(true)} />
+                        : <button key={f.id} onClick={() => { setDepDateFilter(f.id); if (f.id === "mesiac") setDepMesiacYM(nowYM()); }}
+                            className={`${dateBtnCls(depDateFilter === f.id)} whitespace-nowrap`}>{f.label}</button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1249,11 +1301,13 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   </button>
                   {secCashDateOpen && (
                     <div className="px-4 py-2.5 space-y-2">
-                      <div className="flex flex-wrap gap-1.5">
-                        {DATE_BTNS.map(f => (
-                          <button key={f.id} onClick={() => setCashDateFilter(f.id)}
-                            className={`${dateBtnCls(cashDateFilter === f.id)} whitespace-nowrap`}>{f.label}</button>
-                        ))}
+                      <div className="flex flex-wrap gap-1.5 items-center">
+                        {DATE_BTNS.map(f => f.id === "mesiac" && cashDateFilter === "mesiac"
+                          ? <MesiacStepper key="mesiac" ym={cashMesiacYM} onChange={ym => setCashMesiacYM(ym)}
+                              onDeselect={() => setCashDateFilter("vsetko")} btnCls={dateBtnCls(true)} />
+                          : <button key={f.id} onClick={() => { setCashDateFilter(f.id); if (f.id === "mesiac") setCashMesiacYM(nowYM()); }}
+                              className={`${dateBtnCls(cashDateFilter === f.id)} whitespace-nowrap`}>{f.label}</button>
+                        )}
                       </div>
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="text-[9px] font-black uppercase tracking-wide text-green-700 bg-green-50 border border-green-400 rounded px-1.5 py-0.5 shrink-0">EXCEL</span>
