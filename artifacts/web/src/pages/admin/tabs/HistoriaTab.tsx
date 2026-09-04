@@ -1188,7 +1188,15 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                         {STATUS_LABEL[cashStatusFilter] ?? cashStatusFilter}
                       </span>
                     )}
-                    <ChevronDown className={`w-3.5 h-3.5 text-gray-400 ml-auto transition-transform duration-150 ${secCashStavOpen ? "rotate-180" : ""}`} />
+                    <div className="ml-auto flex items-center gap-1">
+                      {cashStatusFilter !== "vsetky" && (
+                        <button type="button" onClick={e => { e.stopPropagation(); setCashStatusFilter("vsetky"); }}
+                          className="w-4 h-4 rounded-full bg-gray-300 hover:bg-red-400 flex items-center justify-center transition-colors cursor-pointer shrink-0">
+                          <X className="w-2.5 h-2.5 text-white" />
+                        </button>
+                      )}
+                      <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-150 ${secCashStavOpen ? "rotate-180" : ""}`} />
+                    </div>
                   </button>
                   {secCashStavOpen && (
                     <div className="px-4 py-2.5 flex flex-wrap gap-1">
@@ -1229,7 +1237,15 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                         {[cashDateFilter !== "vsetko", cashExcelFilter !== "vsetky"].filter(Boolean).length}
                       </span>
                     )}
-                    <ChevronDown className={`w-3.5 h-3.5 text-gray-400 ml-auto transition-transform duration-150 ${secCashDateOpen ? "rotate-180" : ""}`} />
+                    <div className="ml-auto flex items-center gap-1">
+                      {(cashDateFilter !== "vsetko" || !!cashDateFrom || !!cashDateTo || cashExcelFilter !== "vsetky") && (
+                        <button type="button" onClick={e => { e.stopPropagation(); setCashDateFilter("vsetko"); setCashDateFrom(""); setCashDateTo(""); setCashExcelFilter("vsetky"); }}
+                          className="w-4 h-4 rounded-full bg-gray-300 hover:bg-red-400 flex items-center justify-center transition-colors cursor-pointer shrink-0">
+                          <X className="w-2.5 h-2.5 text-white" />
+                        </button>
+                      )}
+                      <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-150 ${secCashDateOpen ? "rotate-180" : ""}`} />
+                    </div>
                   </button>
                   {secCashDateOpen && (
                     <div className="px-4 py-2.5 space-y-2">
@@ -1258,7 +1274,15 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                         {[cashKtoFilters.length > 0, cashClientFilter !== "vsetci", onlyDeposit].filter(Boolean).length}
                       </span>
                     )}
-                    <ChevronDown className={`w-3.5 h-3.5 text-gray-400 ml-auto transition-transform duration-150 ${secCashExtraOpen ? "rotate-180" : ""}`} />
+                    <div className="ml-auto flex items-center gap-1">
+                      {(cashKtoFilters.length > 0 || cashClientFilter !== "vsetci" || onlyDeposit) && (
+                        <button type="button" onClick={e => { e.stopPropagation(); setCashKtoFilters([]); setCashClientFilter("vsetci"); setCashClientSearch(""); setOnlyDeposit(false); }}
+                          className="w-4 h-4 rounded-full bg-gray-300 hover:bg-red-400 flex items-center justify-center transition-colors cursor-pointer shrink-0">
+                          <X className="w-2.5 h-2.5 text-white" />
+                        </button>
+                      )}
+                      <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-150 ${secCashExtraOpen ? "rotate-180" : ""}`} />
+                    </div>
                   </button>
                   {secCashExtraOpen && (
                     <div className="px-4 py-2.5">
