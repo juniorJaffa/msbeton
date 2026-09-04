@@ -1527,6 +1527,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   };
 
   const SK_MONTHS = ["Január","Február","Marec","Apríl","Máj","Jún","Júl","August","September","Október","November","December"];
+  const SK_MONTHS_SHORT = ["Jan","Feb","Mar","Apr","Máj","Jún","Júl","Aug","Sep","Okt","Nov","Dec"];
 
   const applyMonthFilter = (m: number, y: number) => {
     const pad = (n: number) => String(n).padStart(2, "0");
@@ -2025,22 +2026,29 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                     )}
                   </button>
                 ))}
-                <button onClick={() => applyQuickDate("mesiac")}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
-                    quickDate === "mesiac" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
-                  }`}>
-                  Mesiac
-                </button>
-                {quickDate === "mesiac" && (
-                  <div className="inline-flex items-center gap-0.5 border border-secondary/30 rounded-sm bg-secondary/5 px-1 py-0.5">
-                    <button onClick={() => stepMonth(-1)} className="p-1 text-secondary hover:bg-secondary/10 rounded-sm transition-colors"><ChevronLeft className="w-3.5 h-3.5" /></button>
-                    <span className="text-xs font-bold text-secondary w-20 text-center select-none">{SK_MONTHS[quickMY.m - 1]}</span>
-                    <button onClick={() => stepMonth(1)} className="p-1 text-secondary hover:bg-secondary/10 rounded-sm transition-colors"><ChevronRight className="w-3.5 h-3.5" /></button>
-                    <div className="w-px h-4 bg-secondary/20 mx-0.5" />
-                    <button onClick={() => applyMonthFilter(quickMY.m, quickMY.y - 1)} className="p-1 text-secondary hover:bg-secondary/10 rounded-sm transition-colors"><ChevronLeft className="w-3.5 h-3.5" /></button>
-                    <span className="text-xs font-bold text-secondary w-10 text-center select-none">{quickMY.y}</span>
-                    <button onClick={() => applyMonthFilter(quickMY.m, quickMY.y + 1)} className="p-1 text-secondary hover:bg-secondary/10 rounded-sm transition-colors"><ChevronRight className="w-3.5 h-3.5" /></button>
+                {quickDate === "mesiac" ? (
+                  <div className="inline-flex items-center rounded-full overflow-hidden border border-secondary shrink-0">
+                    <button onClick={() => stepMonth(-1)} title="Predošlý mesiac"
+                      className="px-2 py-1.5 text-[11px] font-black text-secondary hover:bg-secondary/10 transition-colors cursor-pointer">‹</button>
+                    <button onClick={() => { setQuickDate(""); setDateFrom(""); setDateTo(""); }}
+                      className="px-2.5 py-1.5 text-[10px] font-black bg-secondary text-white cursor-pointer whitespace-nowrap">
+                      {SK_MONTHS_SHORT[quickMY.m - 1]} {quickMY.y}
+                    </button>
+                    {(() => {
+                      const now = new Date();
+                      const isCurrent = quickMY.m === now.getMonth() + 1 && quickMY.y === now.getFullYear();
+                      return (
+                        <button onClick={() => !isCurrent && stepMonth(1)} title="Nasledujúci mesiac"
+                          disabled={isCurrent}
+                          className={`px-2 py-1.5 text-[11px] font-black transition-colors ${isCurrent ? "text-gray-300 cursor-not-allowed" : "text-secondary hover:bg-secondary/10 cursor-pointer"}`}>›</button>
+                      );
+                    })()}
                   </div>
+                ) : (
+                  <button onClick={() => applyQuickDate("mesiac")}
+                    className="px-3 py-1.5 text-xs font-bold rounded-sm border transition-all bg-white text-gray-500 border-gray-200 hover:border-gray-400">
+                    Mesiac
+                  </button>
                 )}
                 <div className={`inline-flex items-center gap-1 px-2.5 py-1.5 border rounded-sm cursor-pointer transition-all ${
                   quickDate === "ndni" ? "border-secondary bg-secondary/5" : "border-gray-200 bg-white hover:border-gray-400"
