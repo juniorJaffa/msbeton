@@ -1060,6 +1060,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const [quickDate, setQuickDate] = useState("");
   const [quickDays, setQuickDays] = useState("7");
   const [quickMY, setQuickMY] = useState({ m: new Date().getMonth() + 1, y: new Date().getFullYear() });
+  const [tyzdenOffset, setTyzdenOffset] = useState(0);
   const [newBadge, setNewBadge] = useState(0);
   useEffect(() => {
     if (!focusOrderId) return;
@@ -1547,13 +1548,38 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
     applyMonthFilter(m, y);
   };
 
+  const applyWeekFilter = (offset: number) => {
+    const now = new Date();
+    const dow = (now.getDay() + 6) % 7;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - dow + offset * 7);
+    monday.setHours(0, 0, 0, 0);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    const fmtLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    setDateFrom(fmtLocal(monday));
+    setDateTo(fmtLocal(sunday));
+    setQuickDate("tyzden");
+    setTyzdenOffset(offset);
+  };
+  const stepWeek = (delta: number) => applyWeekFilter(tyzdenOffset + delta);
+  const weekLabelObjed = (offset: number): string => {
+    const now = new Date();
+    const dow = (now.getDay() + 6) % 7;
+    const mon = new Date(now); mon.setDate(now.getDate() - dow + offset * 7); mon.setHours(0,0,0,0);
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    const fm = mon.getMonth(), fd = mon.getDate(), tm = sun.getMonth(), td = sun.getDate();
+    if (fm === tm) return `${fd}–${td} ${SK_MONTHS_SHORT[fm]}`;
+    return `${fd} ${SK_MONTHS_SHORT[fm]}–${td} ${SK_MONTHS_SHORT[tm]}`;
+  };
+
   const applyQuickDate = (preset: string, nDays?: number) => {
     const now = new Date();
     const fmt = (d: Date) => d.toISOString().slice(0, 10);
     const today = fmt(now);
     if (preset === "dnes") { setDateFrom(today); setDateTo(today); }
     else if (preset === "vcera") { const y = new Date(now); y.setDate(y.getDate() - 1); const yd = fmt(y); setDateFrom(yd); setDateTo(yd); }
-    else if (preset === "tyzden") { const m = new Date(now); m.setDate(now.getDate() - ((now.getDay() + 6) % 7)); setDateFrom(fmt(m)); setDateTo(today); }
+    else if (preset === "tyzden") { applyWeekFilter(0); return; }
     else if (preset === "mesiac") { applyMonthFilter(quickMY.m, quickMY.y); return; }
     else if (preset === "ndni" && nDays && nDays > 0) { const d = new Date(now); d.setDate(d.getDate() - nDays); setDateFrom(fmt(d)); setDateTo(today); }
     setQuickDate(preset);
@@ -2014,18 +2040,35 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
             </button>
             {secDateOpen && (<>
               {/* Rýchle filtry */}
-              <div className="px-4 pt-2.5 pb-1.5 flex flex-wrap gap-1.5">
-                {(["dnes", "vcera", "tyzden"] as const).map((preset, i) => (
+              <div className="px-4 pt-2.5 pb-1.5 flex flex-wrap gap-1.5 items-center">
+                {(["dnes", "vcera"] as const).map((preset, i) => (
                   <button key={preset} onClick={() => applyQuickDate(preset)}
                     className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
                       quickDate === preset ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
                     }`}>
-                    {["Dnes", "Včera", "Týždeň"][i]}
+                    {["Dnes", "Včera"][i]}
                     {preset === "dnes" && quickDate === "dnes" && (
                       <span className="ml-1 font-normal opacity-80">{new Date().toLocaleDateString("sk-SK", { day: "numeric", month: "numeric", year: "numeric" })}</span>
                     )}
                   </button>
                 ))}
+                {quickDate === "tyzden" ? (
+                  <div className="inline-flex items-center rounded-full overflow-hidden border border-secondary shrink-0">
+                    <button onClick={() => stepWeek(-1)} title="Predošlý týždeň"
+                      className="px-2 py-1.5 text-[11px] font-black text-secondary hover:bg-secondary/10 transition-colors cursor-pointer">‹</button>
+                    <button onClick={() => { setQuickDate(""); setDateFrom(""); setDateTo(""); setTyzdenOffset(0); }}
+                      className="px-2.5 py-1.5 text-[10px] font-black bg-secondary text-white cursor-pointer whitespace-nowrap">
+                      {weekLabelObjed(tyzdenOffset)}
+                    </button>
+                    <button onClick={() => tyzdenOffset < 0 && stepWeek(1)} disabled={tyzdenOffset >= 0}
+                      className={`px-2 py-1.5 text-[11px] font-black transition-colors ${tyzdenOffset >= 0 ? "text-gray-300 cursor-not-allowed" : "text-secondary hover:bg-secondary/10 cursor-pointer"}`}>›</button>
+                  </div>
+                ) : (
+                  <button onClick={() => applyQuickDate("tyzden")}
+                    className="px-3 py-1.5 text-xs font-bold rounded-sm border transition-all bg-white text-gray-500 border-gray-200 hover:border-gray-400">
+                    Týždeň
+                  </button>
+                )}
                 {quickDate === "mesiac" ? (
                   <div className="inline-flex items-center rounded-full overflow-hidden border border-secondary shrink-0">
                     <button onClick={() => stepMonth(-1)} title="Predošlý mesiac"
