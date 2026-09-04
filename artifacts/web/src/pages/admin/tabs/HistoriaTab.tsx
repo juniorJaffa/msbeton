@@ -277,7 +277,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     if (initialDateFilter) return initialDateFilter;
     if (initialClientId) return "vsetko";
     if (initialOrderId) return "vsetko"; // zobraziť všetky dátumy aby bola cieľová objednávka viditeľná
-    return (localStorage.getItem("msbeton_historia_cashDate") as DateFilter | null) ?? "tyzden";
+    return (localStorage.getItem("msbeton_historia_cashDate") as DateFilter | null) ?? "vsetko";
   });
   const setCashDateFilter = (v: DateFilter) => {
     setCashDateFilterRaw(v);
@@ -401,23 +401,13 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     return () => clearTimeout(t);
   }, [focusOrderId]);
 
-  // Zatvor dropdowny pri kliknutí mimo
+  // Zatvor KTO dropdown pri kliknutí mimo (ClientDropdown si riadi sám)
   useEffect(() => {
-    const makeHandler = (open: boolean, ref: React.RefObject<HTMLDivElement | null>, close: () => void) => {
-      if (!open) return undefined;
-      const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) close(); };
-      document.addEventListener("mousedown", h, true);
-      return h;
-    };
-    const h1 = makeHandler(depClientDrop,  depClientRef,  () => { setDepClientDrop(false);  setDepClientSearch("");  });
-    const h2 = makeHandler(cashClientDrop, cashClientRef, () => { setCashClientDrop(false); setCashClientSearch(""); });
-    const h3 = makeHandler(ktoDropOpen,    ktoRef,        () => setKtoDropOpen(false));
-    return () => {
-      if (h1) document.removeEventListener("mousedown", h1, true);
-      if (h2) document.removeEventListener("mousedown", h2, true);
-      if (h3) document.removeEventListener("mousedown", h3, true);
-    };
-  }, [depClientDrop, cashClientDrop, ktoDropOpen]);
+    if (!ktoDropOpen) return;
+    const h = (e: MouseEvent) => { if (ktoRef.current && !ktoRef.current.contains(e.target as Node)) setKtoDropOpen(false); };
+    document.addEventListener("mousedown", h, true);
+    return () => document.removeEventListener("mousedown", h, true);
+  }, [ktoDropOpen]);
 
   useEffect(() => {
     if (!initialDate || initialDateFilter) return; // initialDateFilter má prednosť
@@ -789,6 +779,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       search: string; setSearch: (v: string) => void; align?: "left" | "right"; }) {
     const selected = clients.find(c => c.id === value);
     const btnRef = useRef<HTMLButtonElement>(null);
+    const panelRef = useRef<HTMLDivElement>(null);
     const [dropPos, setDropPos] = useState<{top: number; left?: number; right?: number} | null>(null);
     // Multi-word search: každé slovo musí byť v mene alebo clientId (telefóne)
     const filtered = search ? clients.filter(c => {
@@ -801,20 +792,36 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       if (open && btnRef.current) {
         const rect = btnRef.current.getBoundingClientRect();
         const PANEL_W = 220;
-        // align="right": pravý okraj dropdownu = pravý okraj buttonu
-        // align="left": ľavý okraj dropdownu = ľavý okraj buttonu
         let left = align === "right"
           ? rect.right - PANEL_W
           : rect.left;
-        // Clamp: nesmie ísť mimo viewport (ľavý/pravý okraj)
         left = Math.max(4, Math.min(left, window.innerWidth - PANEL_W - 4));
         setDropPos({ top: rect.bottom + 6, left });
       } else {
         setDropPos(null);
       }
     }, [open, align]);
+    // Click-outside — kontroluje OBIDVA: button + portal panel (panel nie je v dropRef!)
+    useEffect(() => {
+      if (!open) return;
+      const handler = (e: MouseEvent | TouchEvent) => {
+        const target = (e as TouchEvent).touches ? (e as TouchEvent).touches[0]?.target as Node : (e as MouseEvent).target as Node;
+        if (!target) return;
+        if (btnRef.current?.contains(target)) return;
+        if (panelRef.current?.contains(target)) return;
+        setOpen(false);
+        setSearch("");
+      };
+      // mousedown + touchstart — Safari mobile generuje touchstart pred mousedown
+      document.addEventListener("mousedown", handler, true);
+      document.addEventListener("touchstart", handler, true);
+      return () => {
+        document.removeEventListener("mousedown", handler, true);
+        document.removeEventListener("touchstart", handler, true);
+      };
+    }, [open, setOpen, setSearch]);
     const dropPanel = open && dropPos ? (
-      <div style={{
+      <div ref={panelRef} style={{
         position: "fixed",
         top: dropPos.top,
         left: dropPos.left,
@@ -823,7 +830,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       }} className="bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
         {/* Search — vždy viditeľný */}
         <div className="px-3 py-2 border-b border-gray-100">
-          <input autoFocus type="text" value={search} onChange={e => setSearch(e.target.value)}
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)}
             onKeyDown={e => { if (e.key === "Escape") { setSearch(""); setOpen(false); } }}
             placeholder="Meno, telefón, ID…"
             className="w-full text-[11px] px-2 py-1 border border-gray-200 rounded-lg outline-none focus:border-secondary" />
@@ -876,7 +883,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   // Počty aktívnych filtrov — pre badge v hlavičke
   const activeCash = [
     cashStatusFilter !== "vsetky",
-    cashDateFilter !== "tyzden" || !!cashDateFrom || !!cashDateTo,
+    cashDateFilter !== "vsetko" || !!cashDateFrom || !!cashDateTo,
     cashKtoFilters.length > 0,
     cashClientFilter !== "vsetci",
     onlyDeposit,
@@ -1225,9 +1232,9 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   <button type="button" onClick={() => setSecCashDateOpen(o => !o)}
                     className="w-full bg-gray-50 border-b border-gray-100 px-4 py-1.5 flex items-center gap-2 hover:bg-gray-100 transition-colors cursor-pointer">
                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">Dátum · Excel</span>
-                    {(cashDateFilter !== "tyzden" || cashExcelFilter !== "vsetky") && (
+                    {(cashDateFilter !== "vsetko" || cashExcelFilter !== "vsetky") && (
                       <span className="bg-secondary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
-                        {[cashDateFilter !== "tyzden", cashExcelFilter !== "vsetky"].filter(Boolean).length}
+                        {[cashDateFilter !== "vsetko", cashExcelFilter !== "vsetky"].filter(Boolean).length}
                       </span>
                     )}
                     <ChevronDown className={`w-3.5 h-3.5 text-gray-400 ml-auto transition-transform duration-150 ${secCashDateOpen ? "rotate-180" : ""}`} />
@@ -1262,61 +1269,62 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     <ChevronDown className={`w-3.5 h-3.5 text-gray-400 ml-auto transition-transform duration-150 ${secCashExtraOpen ? "rotate-180" : ""}`} />
                   </button>
                   {secCashExtraOpen && (
-                    <div className="px-4 py-2.5 space-y-2">
-                      {/* KTO dropdown */}
-                      {deviceGroups.length > 1 && (
-                        <div ref={ktoRef} className="relative inline-flex items-center gap-1">
-                          <button onClick={() => setKtoDropOpen(o => !o)}
-                            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold rounded-full transition-colors cursor-pointer border ${cashKtoFilters.length > 0 ? "bg-secondary border-secondary text-white" : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"}`}>
-                            <Users className="w-3 h-3 shrink-0" />
-                            KTO
-                            {cashKtoFilters.length > 0 && (
-                              <span className="bg-white/30 text-white text-[9px] font-black px-1 rounded-full leading-tight">{cashKtoFilters.length}</span>
-                            )}
-                            <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-150 ${ktoDropOpen ? "rotate-180" : ""}`} />
-                          </button>
-                          {cashKtoFilters.length > 0 && (
-                            <button onClick={() => setCashKtoFilters([])}
-                              className="w-5 h-5 rounded-full bg-primary flex items-center justify-center cursor-pointer hover:bg-primary/80 transition-colors shrink-0"
-                              title="Zrušiť KTO filter">
-                              <X className="w-3 h-3 text-white" />
-                            </button>
-                          )}
-                          {ktoDropOpen && (
-                            <div className="absolute left-0 top-full mt-1.5 z-50 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden w-[220px] max-h-[60vh] overflow-y-auto">
-                              <button onClick={() => { setCashKtoFilters([]); setKtoDropOpen(false); }}
-                                className="w-full flex items-center gap-2 px-4 py-3 text-[11px] font-bold text-gray-500 hover:bg-gray-50 border-b border-gray-100 cursor-pointer transition-colors text-left">
-                                Všetci (zrušiť filter)
-                              </button>
-                              {deviceGroups.map(g => {
-                                const checked = cashKtoFilters.includes(g.key);
-                                return (
-                                  <label key={g.key} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors min-h-[44px]">
-                                    <input type="checkbox" checked={checked}
-                                      onChange={() => setCashKtoFilters(prev => prev.includes(g.key) ? prev.filter(x => x !== g.key) : [...prev, g.key])}
-                                      className="w-4 h-4 accent-secondary shrink-0" />
-                                    <DeviceIconSmall label={g.devices[0]} className="w-4 h-4 text-gray-400 shrink-0" />
-                                    <span className="flex-1 min-w-0">
-                                      {g.isPerson ? (
-                                        <>
-                                          <span className="text-[12px] font-bold text-gray-800">{g.label}</span>
-                                          {g.subInfo && <span className="ml-1.5 text-[10px] text-gray-400">{g.subInfo}</span>}
-                                          {g.devices.length > 1 && (
-                                            <span className="ml-1.5 text-[9px] font-black text-secondary bg-secondary/10 px-1 py-px rounded">{g.devices.length}×</span>
-                                          )}
-                                        </>
-                                      ) : (
-                                        <span className="text-[11px] text-gray-600">{g.label}</span>
-                                      )}
-                                    </span>
-                                  </label>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      )}
+                    <div className="px-4 py-2.5">
+                      {/* KTO · Klient · Záloha — jeden riadok */}
                       <div className="flex items-center gap-2 flex-wrap">
+                        {/* KTO dropdown */}
+                        {deviceGroups.length > 1 && (
+                          <div ref={ktoRef} className="relative inline-flex items-center gap-1 shrink-0">
+                            <button onClick={() => setKtoDropOpen(o => !o)}
+                              className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold rounded-full transition-colors cursor-pointer border ${cashKtoFilters.length > 0 ? "bg-secondary border-secondary text-white" : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"}`}>
+                              <Users className="w-3 h-3 shrink-0" />
+                              KTO
+                              {cashKtoFilters.length > 0 && (
+                                <span className="bg-white/30 text-white text-[9px] font-black px-1 rounded-full leading-tight">{cashKtoFilters.length}</span>
+                              )}
+                              <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-150 ${ktoDropOpen ? "rotate-180" : ""}`} />
+                            </button>
+                            {cashKtoFilters.length > 0 && (
+                              <button onClick={() => setCashKtoFilters([])}
+                                className="w-5 h-5 rounded-full bg-primary flex items-center justify-center cursor-pointer hover:bg-primary/80 transition-colors shrink-0"
+                                title="Zrušiť KTO filter">
+                                <X className="w-3 h-3 text-white" />
+                              </button>
+                            )}
+                            {ktoDropOpen && (
+                              <div className="absolute left-0 top-full mt-1.5 z-50 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden w-[220px] max-h-[60vh] overflow-y-auto">
+                                <button onClick={() => { setCashKtoFilters([]); setKtoDropOpen(false); }}
+                                  className="w-full flex items-center gap-2 px-4 py-3 text-[11px] font-bold text-gray-500 hover:bg-gray-50 border-b border-gray-100 cursor-pointer transition-colors text-left">
+                                  Všetci (zrušiť filter)
+                                </button>
+                                {deviceGroups.map(g => {
+                                  const checked = cashKtoFilters.includes(g.key);
+                                  return (
+                                    <label key={g.key} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors min-h-[44px]">
+                                      <input type="checkbox" checked={checked}
+                                        onChange={() => setCashKtoFilters(prev => prev.includes(g.key) ? prev.filter(x => x !== g.key) : [...prev, g.key])}
+                                        className="w-4 h-4 accent-secondary shrink-0" />
+                                      <DeviceIconSmall label={g.devices[0]} className="w-4 h-4 text-gray-400 shrink-0" />
+                                      <span className="flex-1 min-w-0">
+                                        {g.isPerson ? (
+                                          <>
+                                            <span className="text-[12px] font-bold text-gray-800">{g.label}</span>
+                                            {g.subInfo && <span className="ml-1.5 text-[10px] text-gray-400">{g.subInfo}</span>}
+                                            {g.devices.length > 1 && (
+                                              <span className="ml-1.5 text-[9px] font-black text-secondary bg-secondary/10 px-1 py-px rounded">{g.devices.length}×</span>
+                                            )}
+                                          </>
+                                        ) : (
+                                          <span className="text-[11px] text-gray-600">{g.label}</span>
+                                        )}
+                                      </span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )}
                         {/* Klient dropdown */}
                         {orderClients.length > 0 && (
                           <ClientDropdown clients={orderClients} value={cashClientFilter} onChange={setCashClientFilter}
