@@ -313,7 +313,7 @@ const ORDER_STATUSES: { key: Order["status"]; label: string; color: string }[] =
   { key: "zrusena",     label: "Zrušená",     color: "bg-red-100 text-red-500" },
 ];
 
-function OrderStatusBadge({ status, onChange, orderTotal, depositBalance, depositEnabled, onDepositPay, existingDepositUsed }: {
+function OrderStatusBadge({ status, onChange, orderTotal, depositBalance, depositEnabled, onDepositPay, existingDepositUsed, onOpenPaymentsModal }: {
   status: Order["status"];
   onChange: (s: Order["status"], paidAmount?: number) => void;
   orderTotal?: number;
