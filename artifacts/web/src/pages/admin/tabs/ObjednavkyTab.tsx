@@ -1148,6 +1148,46 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const [secStavOpen, setSecStavOpen] = useState(true);
   const [secTypOpen, setSecTypOpen] = useState(false);
   const [secDateOpen, setSecDateOpen] = useState(false);
+
+  // ── Filter persistence (sessionStorage, 15-min TTL) ──────────────────
+  const OBJ_FILTER_KEY = "msbeton_filter_objednavky";
+  const FILTER_TTL_MS = 15 * 60 * 1000;
+  // Restore on mount — len keď nie je context-specific navigácia (initialClientId/initialSearch)
+  useEffect(() => {
+    if (initialClientId || initialSearch) return; // parent poskytol context → nereštaurovať
+    try {
+      const raw = sessionStorage.getItem(OBJ_FILTER_KEY);
+      if (!raw) return;
+      const s = JSON.parse(raw) as Record<string, unknown>;
+      if (typeof s.savedAt !== "number" || Date.now() - s.savedAt > FILTER_TTL_MS) {
+        sessionStorage.removeItem(OBJ_FILTER_KEY); return;
+      }
+      if (s.filterStatus && s.filterStatus !== "vsetky") setFilterStatus(s.filterStatus as string);
+      if (s.filterTab && s.filterTab !== "vsetky") setFilterTab(s.filterTab as string);
+      if (s.filterPriceMode && s.filterPriceMode !== "vsetky") setFilterPriceMode(s.filterPriceMode as string);
+      if (s.filterChannel && s.filterChannel !== "vsetky") setFilterChannel(s.filterChannel as string);
+      if (s.filterZaloha && s.filterZaloha !== "vsetky") setFilterZaloha(s.filterZaloha as string);
+      if (s.search) setSearch(s.search as string);
+      if (s.clientIdActive) setClientIdActive(s.clientIdActive as string);
+      if (s.dateFrom) setDateFrom(s.dateFrom as string);
+      if (s.dateTo) setDateTo(s.dateTo as string);
+      if (s.quickDate) setQuickDate(s.quickDate as string);
+    } catch { /* ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // only on mount
+
+  // Save on any filter change
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(OBJ_FILTER_KEY, JSON.stringify({
+        savedAt: Date.now(),
+        filterStatus, filterTab, filterPriceMode, filterChannel, filterZaloha,
+        search, clientIdActive, dateFrom, dateTo, quickDate,
+      }));
+    } catch { /* ignore */ }
+  }, [filterStatus, filterTab, filterPriceMode, filterChannel, filterZaloha, search, clientIdActive, dateFrom, dateTo, quickDate]);
+  // ─────────────────────────────────────────────────────────────────────
+
   const [copiedPlusCode, setCopiedPlusCode] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [ts, setTs] = useState<TransportSettings>(adminData.getTransportSettings());

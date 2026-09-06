@@ -512,6 +512,42 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [secCashStavOpen,  setSecCashStavOpen]   = useState(false);
   const [secCashDateOpen,  setSecCashDateOpen]   = useState(false);
   const [secCashExtraOpen, setSecCashExtraOpen]  = useState(false);
+
+  // ── Cashflow filter persistence (sessionStorage, 15-min TTL) ─────────
+  const HIST_FILTER_KEY = "msbeton_filter_historia";
+  const FILTER_TTL_MS = 15 * 60 * 1000;
+  // Restore on mount
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(HIST_FILTER_KEY);
+      if (!raw) return;
+      const s = JSON.parse(raw) as Record<string, unknown>;
+      if (typeof s.savedAt !== "number" || Date.now() - s.savedAt > FILTER_TTL_MS) {
+        sessionStorage.removeItem(HIST_FILTER_KEY); return;
+      }
+      if (s.cashStatusFilter && s.cashStatusFilter !== "vsetky") setCashStatusFilter(s.cashStatusFilter as string);
+      if (s.cashDateFilter) setCashDateFilter(s.cashDateFilter as string);
+      if (s.cashClientFilter && s.cashClientFilter !== "vsetci") setCashClientFilter(s.cashClientFilter as string);
+      if (Array.isArray(s.cashKtoFilters) && s.cashKtoFilters.length > 0) setCashKtoFilters(new Set(s.cashKtoFilters as string[]));
+      if (s.onlyDeposit) setOnlyDeposit(true);
+      if (s.onlyNedoplatok) setOnlyNedoplatok(true);
+    } catch { /* ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // only on mount
+
+  // Save on any cashflow filter change
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(HIST_FILTER_KEY, JSON.stringify({
+        savedAt: Date.now(),
+        cashStatusFilter, cashDateFilter, cashClientFilter,
+        cashKtoFilters: [...cashKtoFilters],
+        onlyDeposit, onlyNedoplatok,
+      }));
+    } catch { /* ignore */ }
+  }, [cashStatusFilter, cashDateFilter, cashClientFilter, cashKtoFilters, onlyDeposit, onlyNedoplatok]);
+  // ─────────────────────────────────────────────────────────────────────
+
   const [secDepDateOpen,   setSecDepDateOpen]    = useState(false);
   const [secDepExtraOpen,  setSecDepExtraOpen]   = useState(false);
 

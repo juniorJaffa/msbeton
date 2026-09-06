@@ -1014,12 +1014,17 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
       ? { ...c, isDeleted: true, deletedAt: new Date().toISOString(), deletedBy: deviceLabel }
       : c
     ));
+    // Vyčistiť expanded + floatingClient ak sa vymazaný klient zobrazoval v sticky headeri
+    if (expanded === deleteModal.id) setExpanded(null);
+    setFloatingClient(prev => prev?.id === deleteModal.id ? null : prev);
     setDeleteModal(null);
   };
   const hardDelete = async (id: string) => {
     if (!confirm("Trvalo vymazať? Táto akcia je NEVRATNÁ.")) return;
     try {
       await adminApi.hardDeleteClient(id);
+      if (expanded === id) setExpanded(null);
+      setFloatingClient(prev => prev?.id === id ? null : prev);
       // Sync zo servera aby lokálna lista reflektovala zmenu
       syncFromServer();
     } catch (e) {
