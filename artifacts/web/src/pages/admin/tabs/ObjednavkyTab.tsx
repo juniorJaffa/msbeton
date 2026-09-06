@@ -321,6 +321,7 @@ function OrderStatusBadge({ status, onChange, orderTotal, depositBalance, deposi
   depositEnabled?: boolean;        // záloha on/off pre tohto klienta
   onDepositPay?: (amount: number) => void; // callback: odpočítať zo zálohy + zmeniť stav
   existingDepositUsed?: number;    // > 0 = záloha už bola odpočítaná — chrániť pred dvojitým odpočtom
+  onOpenPaymentsModal?: () => void; // otvoriť PaymentsModal (keď klikne Vyplatená a má zostatok)
 }) {
   const [open, setOpen] = useState(false);
   // right = vzdialenosť od pravého okraja viewportu; zarovná pravý okraj dropdownu k pravému okraju buttona
@@ -332,6 +333,9 @@ function OrderStatusBadge({ status, onChange, orderTotal, depositBalance, deposi
   const canUseDeposit = depositEnabled === true && depositBalance !== undefined && depositBalance > 0 && !!onDepositPay;
   // Záloha má zostatok ale je vypnutá (enabled=false) → zobraziť info banner
   const depositOffButHasBalance = depositEnabled === false && depositBalance !== undefined && depositBalance > 0;
+  // Záloha bola čiastočná — stále čaká doplatok (existingDepositUsed < orderTotal)
+  const hasPendingDoplatok = (existingDepositUsed ?? 0) > 0
+    && orderTotal !== undefined && orderTotal - (existingDepositUsed ?? 0) > 0.01;
   const btnRef = useRef<HTMLButtonElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
   const cur = ORDER_STATUSES.find(s => s.key === status) ?? ORDER_STATUSES.find(s => s.key === "odoslana")!;
@@ -368,6 +372,12 @@ function OrderStatusBadge({ status, onChange, orderTotal, depositBalance, deposi
   }, [open]);
 
   const openPayModal = () => {
+    // Ak záloha bola čiastočná a zostáva doplatok → otvoriť PaymentsModal (nie simple modal)
+    if (hasPendingDoplatok && onOpenPaymentsModal) {
+      onOpenPaymentsModal();
+      setOpen(false);
+      return;
+    }
     setPayInput(orderTotal !== undefined ? orderTotal.toFixed(2) : "");
     // Ak záloha je zapnutá a má dostatok → predvolene vybrať zálohu
     setPayTab(canUseDeposit ? "deposit" : "cash");
@@ -393,6 +403,9 @@ function OrderStatusBadge({ status, onChange, orderTotal, depositBalance, deposi
     <>
       <div className="relative">
         <button ref={btnRef} onClick={e => { e.stopPropagation(); openDrop(); }} className={`px-2 py-1 text-xs font-bold rounded-sm cursor-pointer border border-current/30 shadow-sm ${cur.color}`}>{cur.label} ▾</button>
+        {hasPendingDoplatok && (
+          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-orange-400 rounded-full border-2 border-white animate-pulse pointer-events-none" title="Čaká doplatok — klikni pre pridanie úhrady" />
+        )}
         {open && createPortal(
           <div ref={dropRef} className="fixed z-[500] bg-white border border-gray-200 shadow-lg rounded-sm min-w-[110px]" style={{ top: dropPos.top, bottom: dropPos.bottom, right: dropPos.right }} onClick={e => e.stopPropagation()}>
             {ORDER_STATUSES.map(s => (
@@ -2390,6 +2403,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                                 depositEnabled={depEnabled}
                                 onDepositPay={oc && depEnabled ? (amt) => handleDepositPay(o.id, amt, oc.loginId) : undefined}
                                 existingDepositUsed={o.depositUsed}
+                                onOpenPaymentsModal={() => setPaymentsModal(o.id)}
                               />
                             );
                           })()}
@@ -2429,7 +2443,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                               </div>
                               <button onClick={e => { e.stopPropagation(); setPaymentsModal(o.id); }}
                                 title="Pridať úhradu doplatku"
-                                className="mt-0.5 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-black bg-secondary text-white rounded hover:bg-secondary/80 transition-all cursor-pointer shadow-sm">
+                                className="mt-0.5 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-black bg-green-600 text-white rounded hover:bg-green-700 transition-all cursor-pointer shadow-sm">
                                 + Pridať doplatok
                                 {(o.payments?.length ?? 0) > 0 && (
                                   <span className="ml-0.5 bg-white/20 rounded px-1 text-[10px]">{o.payments!.length}×</span>
