@@ -475,8 +475,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [cashClientSearch, setCashClientSearch] = useState("");
   const [cashKtoFilters,   setCashKtoFilters]   = useState<string[]>([]);
   const [ktoDropOpen,      setKtoDropOpen]      = useState(false);
-  const [onlyDeposit,      setOnlyDeposit]      = useState(false);
-  const [onlyNedoplatok,   setOnlyNedoplatok]   = useState(false);
+  const [cashZalohaFilter, setCashZalohaFilter] = useState<"vsetky" | "zaloha" | "doplatok" | "nedoplatok">("vsetky");
   const [cashExcelFilter,  setCashExcelFilter]  = useState<"vsetky" | "ok" | "chyba">("vsetky");
   const [cashStatusFilter, setCashStatusFilterRaw] = useState<"vsetky" | typeof CASH_STATUSES[number]>(() => {
     if (initialOrderId) return "vsetky"; // zobraziť všetky statusy aby bola cieľová objednávka viditeľná
@@ -511,7 +510,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [depFilterOpen,    setDepFilterOpen]     = useState(false);
   const [secCashStavOpen,  setSecCashStavOpen]   = useState(false);
   const [secCashDateOpen,  setSecCashDateOpen]   = useState(false);
-  const [secCashExtraOpen, setSecCashExtraOpen]  = useState(false);
+  const [secCashExtraOpen,  setSecCashExtraOpen]  = useState(false);
+  const [secCashZalohaOpen, setSecCashZalohaOpen] = useState(false);
 
   // ── Cashflow filter persistence (sessionStorage, 15-min TTL) ─────────
   const HIST_FILTER_KEY = "msbeton_filter_historia";
@@ -529,8 +529,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       if (s.cashDateFilter) setCashDateFilter(s.cashDateFilter as string);
       if (s.cashClientFilter && s.cashClientFilter !== "vsetci") setCashClientFilter(s.cashClientFilter as string);
       if (Array.isArray(s.cashKtoFilters) && s.cashKtoFilters.length > 0) setCashKtoFilters(new Set(s.cashKtoFilters as string[]));
-      if (s.onlyDeposit) setOnlyDeposit(true);
-      if (s.onlyNedoplatok) setOnlyNedoplatok(true);
+      // Migrate old booleans → cashZalohaFilter
+      if (s.cashZalohaFilter && ["zaloha","doplatok","nedoplatok"].includes(s.cashZalohaFilter as string)) setCashZalohaFilter(s.cashZalohaFilter as "zaloha"|"doplatok"|"nedoplatok");
+      else if (s.onlyNedoplatok) setCashZalohaFilter("nedoplatok");
+      else if (s.onlyDeposit)    setCashZalohaFilter("zaloha");
     } catch { /* ignore */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // only on mount
@@ -542,10 +544,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
         savedAt: Date.now(),
         cashStatusFilter, cashDateFilter, cashClientFilter,
         cashKtoFilters: [...cashKtoFilters],
-        onlyDeposit, onlyNedoplatok,
+        cashZalohaFilter,
       }));
     } catch { /* ignore */ }
-  }, [cashStatusFilter, cashDateFilter, cashClientFilter, cashKtoFilters, onlyDeposit, onlyNedoplatok]);
+  }, [cashStatusFilter, cashDateFilter, cashClientFilter, cashKtoFilters, cashZalohaFilter]);
   // ─────────────────────────────────────────────────────────────────────
 
   const [secDepDateOpen,   setSecDepDateOpen]    = useState(false);
@@ -835,15 +837,25 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     const searchTerms = cashSearch.trim().split(/\s+/).filter(Boolean);
     const result = liveOrders
       .filter(o => {
-        if (onlyDeposit && !(o.depositUsed && o.depositUsed > 0)) return false;
-        if (onlyNedoplatok) {
-          // nedoplatok = záloha čiastočná a doplatok nebol plne uhradený cez payments[]
+        if (cashZalohaFilter !== "vsetky") {
           const dep = o.depositUsed ?? 0;
-          if (dep <= 0) return false;
-          const doplatokTotal = Math.max(0, (o.totalSDph ?? 0) - dep);
-          if (doplatokTotal < 0.01) return false;
-          const payTotal = (o.payments ?? []).reduce((s: number, p: { amount: number }) => s + p.amount, 0);
-          if (payTotal >= doplatokTotal - 0.01) return false;
+          const zalohaPaymentsSum = (o.payments ?? []).filter((p: { method?: string }) => p.method === "zaloha").reduce((s: number, p: { amount: number }) => s + p.amount, 0);
+          const totalZaloha = dep + zalohaPaymentsSum;
+          if (cashZalohaFilter === "zaloha") {
+            if (totalZaloha <= 0) return false;
+          } else if (cashZalohaFilter === "doplatok") {
+            // má zálohu A zostatok doplatok > 0 (ale nemusí byť nedoplatok — len existuje doplatok)
+            if (totalZaloha <= 0) return false;
+            const doplatokNeed = Math.max(0, (o.totalSDph ?? 0) - totalZaloha);
+            if (doplatokNeed < 0.01) return false;
+          } else if (cashZalohaFilter === "nedoplatok") {
+            // nedoplatok = záloha čiastočná a doplatok nebol plne uhradený cez payments[]
+            if (dep <= 0) return false;
+            const doplatokTotal = Math.max(0, (o.totalSDph ?? 0) - dep);
+            if (doplatokTotal < 0.01) return false;
+            const payTotal = (o.payments ?? []).filter((p: { method?: string }) => p.method !== "zaloha").reduce((s: number, p: { amount: number }) => s + p.amount, 0);
+            if (payTotal >= doplatokTotal - 0.01) return false;
+          }
         }
         if (cashExcelFilter === "ok" && !o.excelConfirmed) return false;
         if (cashExcelFilter === "chyba" && o.excelConfirmed) return false;
@@ -874,10 +886,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       })
       .sort((a, b) => orderLastChanged(b).localeCompare(orderLastChanged(a)));
     return result;
-  }, [liveOrders, cashClientFilter, cashKtoFilters, cashDateFilter, cashDateFrom, cashDateTo, cashMesiacYM, cashTyzdenOffset, onlyDeposit, onlyNedoplatok, cashExcelFilter, cashStatusFilter, cashSearch, deviceToGroupKey, clientByLoginId]);
+  }, [liveOrders, cashClientFilter, cashKtoFilters, cashDateFilter, cashDateFrom, cashDateTo, cashMesiacYM, cashTyzdenOffset, cashZalohaFilter, cashExcelFilter, cashStatusFilter, cashSearch, deviceToGroupKey, clientByLoginId]);
 
   // Reset displayLimit pri každej zmene filtrov
-  useEffect(() => { setDisplayLimit(100); }, [cashClientFilter, cashKtoFilters, cashDateFilter, cashDateFrom, cashDateTo, cashMesiacYM, cashTyzdenOffset, onlyDeposit, onlyNedoplatok, cashExcelFilter, cashStatusFilter, cashSearch, showDeleted]);
+  useEffect(() => { setDisplayLimit(100); }, [cashClientFilter, cashKtoFilters, cashDateFilter, cashDateFrom, cashDateTo, cashMesiacYM, cashTyzdenOffset, cashZalohaFilter, cashExcelFilter, cashStatusFilter, cashSearch, showDeleted]);
 
   // Scroll listener — zmena farby column headera pri scrollovaní
   useEffect(() => {
@@ -1008,8 +1020,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     cashDateFilter !== "tyzden" || !!cashDateFrom || !!cashDateTo,
     cashKtoFilters.length > 0,
     cashClientFilter !== "vsetci",
-    onlyDeposit,
-    onlyNedoplatok,
+    cashZalohaFilter !== "vsetky",
     cashExcelFilter !== "vsetky",
     cashSearch.trim().length > 0,
   ].filter(Boolean).length;
@@ -1289,7 +1300,18 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
               <SlidersHorizontal className="w-3.5 h-3.5 text-gray-400 shrink-0" />
               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Filter</span>
               {activeCash > 0 && (
-                <span className="bg-secondary text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">{activeCash}</span>
+                <span className="inline-flex items-center gap-1 bg-secondary text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">
+                  {activeCash}
+                  <button type="button" onClick={e => {
+                    e.stopPropagation();
+                    setCashStatusFilter("vsetky"); setCashDateFilter("tyzden"); setCashTyzdenOffset(0);
+                    setCashDateFrom(""); setCashDateTo(""); setCashSearch("");
+                    setCashKtoFilters([]); setCashClientFilter("vsetci"); setCashClientSearch("");
+                    setCashZalohaFilter("vsetky"); setCashExcelFilter("vsetky");
+                  }} className="hover:text-red-300 transition-colors leading-none shrink-0 cursor-pointer" title="Vymazať všetky filtre">
+                    <X className="w-2.5 h-2.5" />
+                  </button>
+                </span>
               )}
               <span className="ml-auto text-xs font-bold text-secondary shrink-0">{cashSummary.count} obj.</span>
               <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${cashFilterOpen ? "rotate-180" : ""}`} />
@@ -1402,19 +1424,19 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     </div>
                   )}
                 </div>
-                {/* KTO + KLIENT + ZÁLOHA — collapsible */}
-                <div>
+                {/* KTO + KLIENT — collapsible */}
+                <div className="border-t border-gray-100">
                   <button type="button" onClick={() => setSecCashExtraOpen(o => !o)}
                     className="w-full bg-gray-50 border-b border-gray-100 px-4 py-1.5 flex items-center gap-2 hover:bg-gray-100 transition-colors cursor-pointer">
-                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">KTO · Klient · Záloha · Dlžníci</span>
-                    {(cashKtoFilters.length > 0 || cashClientFilter !== "vsetci" || onlyDeposit || onlyNedoplatok) && (
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">KTO · Klient</span>
+                    {(cashKtoFilters.length > 0 || cashClientFilter !== "vsetci") && (
                       <span className="bg-secondary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
-                        {[cashKtoFilters.length > 0, cashClientFilter !== "vsetci", onlyDeposit, onlyNedoplatok].filter(Boolean).length}
+                        {[cashKtoFilters.length > 0, cashClientFilter !== "vsetci"].filter(Boolean).length}
                       </span>
                     )}
                     <div className="ml-auto flex items-center gap-2">
-                      {(cashKtoFilters.length > 0 || cashClientFilter !== "vsetci" || onlyDeposit || onlyNedoplatok) && (
-                        <button type="button" onClick={e => { e.stopPropagation(); setCashKtoFilters([]); setCashClientFilter("vsetci"); setCashClientSearch(""); setOnlyDeposit(false); setOnlyNedoplatok(false); }}
+                      {(cashKtoFilters.length > 0 || cashClientFilter !== "vsetci") && (
+                        <button type="button" onClick={e => { e.stopPropagation(); setCashKtoFilters([]); setCashClientFilter("vsetci"); setCashClientSearch(""); }}
                           className="w-5 h-5 rounded-full bg-white border border-gray-300 text-gray-400 hover:border-red-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors cursor-pointer shrink-0">
                           <X className="w-2.5 h-2.5" />
                         </button>
@@ -1424,9 +1446,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   </button>
                   {secCashExtraOpen && (
                     <div className="px-4 py-2.5">
-                      {/* KTO · Klient · Záloha — jeden riadok; Klient+Záloha zarovnané vpravo */}
-                      <div className="flex items-center gap-2 flex-wrap justify-between">
-                        {/* KTO dropdown — vľavo */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* KTO dropdown */}
                         {deviceGroups.length > 1 && (
                           <div ref={ktoRef} className="relative inline-flex items-center gap-1 shrink-0">
                             <button onClick={() => setKtoDropOpen(o => !o)}
@@ -1479,27 +1500,59 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                             )}
                           </div>
                         )}
-                        {/* Klient + Záloha — vpravo */}
-                        <div className="flex items-center gap-2 ml-auto">
-                          {orderClients.length > 0 && (
-                            <ClientDropdown clients={orderClients} value={cashClientFilter} onChange={setCashClientFilter}
-                              dropRef={cashClientRef} open={cashClientDrop} setOpen={setCashClientDrop}
-                              search={cashClientSearch} setSearch={setCashClientSearch} />
-                          )}
-                          <button onClick={() => setOnlyDeposit(v => !v)}
-                            className={`inline-flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold rounded-full border transition-all cursor-pointer shrink-0 ${
-                              onlyDeposit
-                                ? "bg-amber-100 text-amber-700 border-amber-400"
-                                : "bg-white text-gray-500 border-gray-200 hover:border-amber-300 hover:text-amber-600"
-                            }`}>
-                            💰 Záloha
-                          </button>
-                          <button
-                            onClick={() => { setCashClientFilter(""); setOnlyNedoplatok(v => !v); setOnlyDeposit(false); }}
-                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border transition-colors cursor-pointer ${onlyNedoplatok ? "bg-red-500 text-white border-red-500" : "bg-white text-red-600 border-red-200 hover:bg-red-50"}`}>
-                            ❗ Nedoplatky
-                          </button>
-                        </div>
+                        {/* Klient dropdown */}
+                        {orderClients.length > 0 && (
+                          <ClientDropdown clients={orderClients} value={cashClientFilter} onChange={setCashClientFilter}
+                            dropRef={cashClientRef} open={cashClientDrop} setOpen={setCashClientDrop}
+                            search={cashClientSearch} setSearch={setCashClientSearch} />
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* ZÁLOHA / DOPLATKY — collapsible */}
+                <div className="border-t border-gray-100">
+                  <button type="button" onClick={() => setSecCashZalohaOpen(o => !o)}
+                    className="w-full bg-gray-50 border-b border-gray-100 px-4 py-1.5 flex items-center gap-2 hover:bg-gray-100 transition-colors cursor-pointer">
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">Záloha / Doplatky</span>
+                    {cashZalohaFilter !== "vsetky" && (
+                      <span className="bg-secondary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
+                        {cashZalohaFilter === "zaloha" ? "💰 Zo zálohy" : cashZalohaFilter === "doplatok" ? "⚠ Doplatok" : "❗ Nedoplatky"}
+                      </span>
+                    )}
+                    <div className="ml-auto flex items-center gap-2">
+                      {cashZalohaFilter !== "vsetky" && (
+                        <button type="button" onClick={e => { e.stopPropagation(); setCashZalohaFilter("vsetky"); }}
+                          className="w-5 h-5 rounded-full bg-white border border-gray-300 text-gray-400 hover:border-red-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors cursor-pointer shrink-0">
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      )}
+                      <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-150 ${secCashZalohaOpen ? "rotate-180" : ""}`} />
+                    </div>
+                  </button>
+                  {secCashZalohaOpen && (
+                    <div className="px-4 py-2.5">
+                      <div className="flex flex-wrap gap-1.5">
+                        <button onClick={() => setCashZalohaFilter("vsetky")}
+                          className={`px-2.5 py-1 text-xs font-bold rounded-sm border transition-all ${cashZalohaFilter === "vsetky" ? "bg-gray-700 text-white border-gray-700" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"}`}>
+                          Všetky
+                        </button>
+                        <button onClick={() => setCashZalohaFilter(v => v === "zaloha" ? "vsetky" : "zaloha")}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-sm border transition-all ${cashZalohaFilter === "zaloha" ? "bg-amber-500 text-white border-amber-500" : "bg-white text-gray-500 border-gray-200 hover:border-amber-300"}`}>
+                          💰 Zo zálohy
+                          <span className="text-[10px] opacity-70">{liveOrders.filter(o => { const d = o.depositUsed ?? 0; const z = (o.payments ?? []).filter((p: {method?:string}) => p.method === "zaloha").reduce((s:number, p:{amount:number}) => s + p.amount, 0); return d + z > 0; }).length}</span>
+                        </button>
+                        <button onClick={() => setCashZalohaFilter(v => v === "doplatok" ? "vsetky" : "doplatok")}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-sm border transition-all ${cashZalohaFilter === "doplatok" ? "bg-orange-500 text-white border-orange-500" : "bg-white text-gray-500 border-gray-200 hover:border-orange-300"}`}>
+                          ⚠ Doplatok
+                          <span className="text-[10px] opacity-70">{liveOrders.filter(o => { const dep = o.depositUsed ?? 0; if (dep <= 0) return false; return Math.max(0, (o.totalSDph ?? 0) - dep) > 0.01; }).length}</span>
+                        </button>
+                        <button onClick={() => setCashZalohaFilter(v => v === "nedoplatok" ? "vsetky" : "nedoplatok")}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-sm border transition-all ${cashZalohaFilter === "nedoplatok" ? "bg-red-500 text-white border-red-500" : "bg-white text-gray-500 border-gray-200 hover:border-red-300"}`}>
+                          ❗ Nedoplatky
+                          <span className="text-[10px] opacity-70">{liveOrders.filter(o => { const dep = o.depositUsed ?? 0; if (dep <= 0) return false; const dt = Math.max(0, (o.totalSDph ?? 0) - dep); if (dt < 0.01) return false; const pt = (o.payments ?? []).filter((p:{method?:string}) => p.method !== "zaloha").reduce((s:number, p:{amount:number}) => s + p.amount, 0); return pt < dt - 0.01; }).length}</span>
+                        </button>
                       </div>
                     </div>
                   )}

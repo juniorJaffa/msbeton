@@ -1743,7 +1743,9 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   };
   const fmtEur = (n: number) => n.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
   const tabLabel: Record<Order["tab"], string> = { pumpa: "Pumpa", mix: "Mix", vlastnadoprava: "Vl. doprava" };
-  const activeFilters = [filterStatus !== "vsetky", filterTab !== "vsetky", filterPriceMode !== "vsetky", filterChannel !== "vsetky", filterZaloha !== "vsetky", !!clientIdActive, !!search, !!(dateFrom || dateTo)].filter(Boolean).length;
+  // Dátum je "aktívny filter" len keď user zmenil z defaultu (TÝŽDEŇ offset 0 = nie aktívny)
+  const dateIsFiltered = quickDate === "dnes" || quickDate === "vcera" || quickDate === "ndni" || quickDate === "mesiac" || (quickDate === "tyzden" && tyzdenOffset !== 0) || (!quickDate && !!(dateFrom || dateTo));
+  const activeFilters = [filterStatus !== "vsetky", filterTab !== "vsetky", filterPriceMode !== "vsetky", filterChannel !== "vsetky", filterZaloha !== "vsetky", !!clientIdActive, !!search, dateIsFiltered].filter(Boolean).length;
   const sortedCount = sorted.length;
   const sortedCountLabel = sortedCount === 1 ? "objednávka" : sortedCount >= 2 && sortedCount <= 4 ? "objednávky" : "objednávok";
   const totalPages = Math.ceil(sortedCount / ORDERS_PAGE_SIZE);
@@ -1886,7 +1888,20 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
           <SlidersHorizontal className="w-3.5 h-3.5 text-gray-400 shrink-0" />
           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Filter</span>
           {activeFilters > 0 && (
-            <span className="bg-secondary text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">{activeFilters}</span>
+            <span className="inline-flex items-center gap-1 bg-secondary text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">
+              {activeFilters}
+              <button type="button" onClick={e => {
+                e.stopPropagation();
+                setFilterStatus("vsetky"); setFilterTab("vsetky"); setFilterPriceMode("vsetky");
+                setFilterChannel("vsetky"); setFilterZaloha("vsetky");
+                setSearch(""); setClientIdActive(null);
+                setQuickDate("tyzden"); setTyzdenOffset(0);
+                const wb = initWeekBounds(); setDateFrom(wb.from); setDateTo(wb.to);
+                setNewBadge(0);
+              }} className="hover:text-red-300 transition-colors leading-none shrink-0 cursor-pointer" title="Vymazať všetky filtre">
+                <X className="w-2.5 h-2.5" />
+              </button>
+            </span>
           )}
           {clientIdActive && (
             <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0 max-w-[140px]">
@@ -2097,13 +2112,13 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
             <button type="button" onClick={() => setSecDateOpen(o => !o)}
               className="w-full bg-gray-50 border-b border-gray-100 px-4 py-1.5 flex items-center gap-2 hover:bg-gray-100 transition-colors cursor-pointer">
               <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">Dátum</span>
-              {(quickDate !== "tyzden" || tyzdenOffset !== 0) && (quickDate || dateFrom || dateTo) && (
+              {(quickDate || dateFrom || dateTo) && (
                 <span className="bg-secondary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
                   {quickDate === "dnes" ? "Dnes" : quickDate === "vcera" ? "Včera" : quickDate === "tyzden" ? weekLabelObjed(tyzdenOffset) : quickDate === "mesiac" ? `${SK_MONTHS_SHORT[quickMY.m - 1]} ${quickMY.y}` : quickDate === "ndni" ? `–${quickDays}d` : dateFrom || dateTo ? "Vlastný" : ""}
                 </span>
               )}
               <div className="ml-auto flex items-center gap-2">
-                {(quickDate !== "tyzden" || tyzdenOffset !== 0) && (quickDate || dateFrom || dateTo) && (
+                {(quickDate || dateFrom || dateTo) && (
                   <button type="button" onClick={e => { e.stopPropagation(); setQuickDate("tyzden"); setTyzdenOffset(0); const wb = initWeekBounds(); setDateFrom(wb.from); setDateTo(wb.to); }}
                     className="w-5 h-5 rounded-full bg-white border border-gray-300 text-gray-400 hover:border-red-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors cursor-pointer shrink-0">
                     <X className="w-2.5 h-2.5" />
