@@ -329,6 +329,7 @@ function OrderStatusBadge({ status, onChange, orderTotal, depositBalance, deposi
   const [payModal, setPayModal] = useState(false);
   const [payInput, setPayInput] = useState("");
   const [payTab, setPayTab] = useState<"cash" | "deposit">("cash");
+  const [payNote, setPayNote] = useState<string | null>(null);
   // Auto-select deposit tab keď je záloha zapnutá a má balance
   const canUseDeposit = depositEnabled === true && depositBalance !== undefined && depositBalance > 0 && !!onDepositPay;
   // Záloha má zostatok ale je vypnutá (enabled=false) → zobraziť info banner
@@ -381,6 +382,10 @@ function OrderStatusBadge({ status, onChange, orderTotal, depositBalance, deposi
     setPayInput(orderTotal !== undefined ? orderTotal.toFixed(2) : "");
     // Ak záloha je zapnutá a má dostatok → predvolene vybrať zálohu
     setPayTab(canUseDeposit ? "deposit" : "cash");
+    // Kontextová poznámka keď klikne znova na "Vyplatená" bez pending doplatku
+    setPayNote(existingDepositUsed && existingDepositUsed > 0
+      ? "Doplatok je uhradený. Môžeš upraviť sumu (tringelt)."
+      : null);
     setPayModal(true);
     setOpen(false);
   };
@@ -439,6 +444,13 @@ function OrderStatusBadge({ status, onChange, orderTotal, depositBalance, deposi
               </div>
             </div>
 
+            {/* Kontextová nápoveda — prečo sa otvoril tento modal */}
+            {payNote && (
+              <div className="mb-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-md flex items-start gap-2">
+                <span className="text-base shrink-0 leading-none mt-0.5">ℹ️</span>
+                <div className="text-xs text-blue-700 font-semibold">{payNote}</div>
+              </div>
+            )}
             {/* Info: záloha má zostatok ale je OFF — treba aktivovať */}
             {depositOffButHasBalance && (
               <div className="mb-3 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-md flex items-start gap-2.5">
@@ -1923,7 +1935,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
           <div className="border-b border-gray-200">
             <button type="button" onClick={() => setSecTypOpen(o => !o)}
               className="w-full bg-gray-50 border-b border-gray-100 px-4 py-1.5 flex items-center gap-2 hover:bg-gray-100 transition-colors cursor-pointer">
-              <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">Typ / Platba / Zdroj</span>
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">Typ / Platba / Zdroj / Záloha</span>
               {(filterTab !== "vsetky" || filterPriceMode !== "vsetky" || filterChannel !== "vsetky" || filterZaloha !== "vsetky") && (
                 <span className="bg-secondary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
                   {[filterTab !== "vsetky" && TAB_STYLES[filterTab]?.label, filterPriceMode !== "vsetky" && (filterPriceMode === "faktura" ? "FA" : "HOT"), filterChannel !== "vsetky" && (filterChannel === "sms" ? "SMS" : "Košík"), filterZaloha !== "vsetky" && (filterZaloha === "doplatok" ? "⚠ Doplatok" : filterZaloha === "nedoplatok" ? "❗ Nedoplatok" : "💰 Záloha")].filter(Boolean).join(" · ")}

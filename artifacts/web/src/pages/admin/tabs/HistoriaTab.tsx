@@ -1370,15 +1370,15 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                 <div>
                   <button type="button" onClick={() => setSecCashExtraOpen(o => !o)}
                     className="w-full bg-gray-50 border-b border-gray-100 px-4 py-1.5 flex items-center gap-2 hover:bg-gray-100 transition-colors cursor-pointer">
-                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">KTO · Klient · Záloha</span>
-                    {(cashKtoFilters.length > 0 || cashClientFilter !== "vsetci" || onlyDeposit) && (
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">KTO · Klient · Záloha · Dlžníci</span>
+                    {(cashKtoFilters.length > 0 || cashClientFilter !== "vsetci" || onlyDeposit || onlyNedoplatok) && (
                       <span className="bg-secondary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
-                        {[cashKtoFilters.length > 0, cashClientFilter !== "vsetci", onlyDeposit].filter(Boolean).length}
+                        {[cashKtoFilters.length > 0, cashClientFilter !== "vsetci", onlyDeposit, onlyNedoplatok].filter(Boolean).length}
                       </span>
                     )}
                     <div className="ml-auto flex items-center gap-2">
-                      {(cashKtoFilters.length > 0 || cashClientFilter !== "vsetci" || onlyDeposit) && (
-                        <button type="button" onClick={e => { e.stopPropagation(); setCashKtoFilters([]); setCashClientFilter("vsetci"); setCashClientSearch(""); setOnlyDeposit(false); }}
+                      {(cashKtoFilters.length > 0 || cashClientFilter !== "vsetci" || onlyDeposit || onlyNedoplatok) && (
+                        <button type="button" onClick={e => { e.stopPropagation(); setCashKtoFilters([]); setCashClientFilter("vsetci"); setCashClientSearch(""); setOnlyDeposit(false); setOnlyNedoplatok(false); }}
                           className="w-5 h-5 rounded-full bg-white border border-gray-300 text-gray-400 hover:border-red-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors cursor-pointer shrink-0">
                           <X className="w-2.5 h-2.5" />
                         </button>
@@ -1457,6 +1457,11 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                                 : "bg-white text-gray-500 border-gray-200 hover:border-amber-300 hover:text-amber-600"
                             }`}>
                             💰 Záloha
+                          </button>
+                          <button
+                            onClick={() => { setCashClientFilter(""); setOnlyNedoplatok(v => !v); setOnlyDeposit(false); }}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border transition-colors cursor-pointer ${onlyNedoplatok ? "bg-red-500 text-white border-red-500" : "bg-white text-red-600 border-red-200 hover:bg-red-50"}`}>
+                            ❗ Nedoplatky
                           </button>
                         </div>
                       </div>

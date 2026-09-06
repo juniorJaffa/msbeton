@@ -961,9 +961,9 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
       const cR = container.getBoundingClientRect();
       const sticky = document.getElementById("klienti-sticky");
       const stickyH = sticky ? sticky.getBoundingClientRect().height : 82;
-      const targetEl = toTabs
-        ? (document.getElementById(`client-tabs-${id}`) ?? document.getElementById(`client-card-${id}`))
-        : document.getElementById(`client-card-${id}`);
+      // Vždy scrolluj na top of card (client-card), nie na tabs row —
+      // tabs row je vnútri karty, scrollovanie na ňu skryje meno klienta za sticky header
+      const targetEl = document.getElementById(`client-card-${id}`);
       if (!targetEl) return;
       const eR = targetEl.getBoundingClientRect();
       container.scrollTo({ top: container.scrollTop + (eR.top - cR.top) - stickyH - 4, behavior: "smooth" });
