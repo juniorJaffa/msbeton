@@ -1,6 +1,6 @@
 # MS-BETON — Audit stav projektu
 
-> Aktualizované: 2026-08-25 (iterácia #8)
+> Aktualizované: 2026-09-06 (iterácia #9)
 > Prostredie: msbeton.sk (VPS 178.105.242.17) — DNS migrácia dokončená 2026-05-29
 
 **Legenda:** ✅ Hotovo | ⏳ Čaká (externá podmienka) | ❌ Plánované | ⚠ Čiastočne
@@ -155,6 +155,14 @@
 
 ## Changelog
 
+### Iterácia #9 — 2026-09-06
+- Feat: Calculator GPS — error handler (bol prázdny `{}`), `mapLog` utility (localStorage max 100), `mapKmConfirmedRef` race fix (Nominatim nemaže potvrdený pin), DM callback + reverseGeocode logging
+- Feat: ServerTab — `MapGpsLog` proper sub-komponent (nie IIFE/Rules of Hooks violation), čítá `msbeton_map_log`, farebné eventy
+- Feat: ObjednavkyTab filter — global X (vymaže všetky filtre), DÁTUM X vždy viditeľný, `dateIsFiltered` nepočíta default TÝŽDEŇ
+- Feat: AdminDashboard — `onGoToClient` zachová loginId → návrat na Objednávky = filter aktívny
+- Feat: HistoriaTab — `cashZalohaFilter` (nahrádza onlyDeposit+onlyNedoplatok), split sekcia KTO·Klient / Záloha·Doplatky, ⚠ Doplatok button, global X, sessionStorage migrácia
+- Monitoring: `[mergeItems] Photo loss protection triggered` sa opakuje pre všetkých klientov pri každom sync — foto stále v JSONB, PUT clients posiela stale data bez fotiek; server protection zachytáva ale generuje stovky error log riadkov/deň → priorita: foto endpoint
+
 ### Iterácia #8 — 2026-08-25
 - Fix: HistoriaTab cashflow — payment_add záloha vs doplatok: `method=zaloha` → 💰 amber, inak → ● zelená (mobile + desktop timeline)
 - Fix: ObjednavkyTab lokálna história — `isZalohaPayment` → amber "💰 Záloha" label/bg namiesto "Doplatok"
@@ -243,12 +251,12 @@
 
 ## Ďalšie priority (odporúčané poradie)
 
-1. **#71 fail2ban HTTP jail** — WP skenery zapĺňajú logy (~30min)
-2. **#69 Reviews stratégia** — QR kód + review link na stránke — priamy vplyv na GBP ranking (~1h)
+1. **Foto PUT endpoint** — server error log spam (stovky riadkov/deň `Photo loss protection triggered`); foto v JSONB 5.5MB pri každom PUT; dedikovaný endpoint oddelí fotky od bežného sync (~4-6h)
+2. **#71 fail2ban HTTP jail** — WP skenery zapĺňajú logy (~30min)
 3. **#50 CSV export objednávok** — accounting need (~1h)
-4. **#66 Code splitting Admin tabov** — initial bundle -40%, mobile FCP 7.3s → ~4s (~2-3h)
-5. **#68 Sociálne siete** — FB page minimálne, pre sameAs + GBP prepojenie (~2h)
-6. **#16 GDPR consent banner (rozšírený)** — právna povinnosť (~3h)
-7. **#11 HttpOnly session cookie** — bezpečnosť (~2h)
+4. **#69 Reviews stratégia** — QR kód + review link na stránke (~1h)
+5. **#66 Code splitting Admin tabov** — initial bundle -40%, mobile FCP 7.3s → ~4s (~2-3h)
+6. **#11 HttpOnly session cookie** — bezpečnosť (~2h)
+7. **#98 eKasa** — overiť s Petrom či má fyzickú pokladnicu; právne riziko 3320€
 8. **#10, 24 Cloudflare** — čaká na NS prepnutie (externé)
 9. **#72 Remote DB backup** — single point of failure (~1h)
