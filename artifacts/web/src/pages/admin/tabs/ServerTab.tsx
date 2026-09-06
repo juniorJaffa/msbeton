@@ -148,6 +148,63 @@ function fmtEventDate(ts: string): string {
   return `${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}`;
 }
 
+// ── MapGpsLog — Map GPS/DM debug log z localStorage ─────────────────────────
+const EVENT_COLORS: Record<string, string> = {
+  gps_success: "text-green-600", gps_error: "text-red-600", gps_requested: "text-blue-500",
+  dm_ok: "text-green-600", dm_fallback_haversine: "text-amber-600",
+  nominatim_ok: "text-green-600", nominatim_non_sk: "text-red-600",
+  nominatim_http_error: "text-red-500", nominatim_exception: "text-red-700",
+  nominatim_stale: "text-gray-400", nominatim_stale_post_json: "text-gray-400",
+  nominatim_start: "text-gray-500",
+};
+function MapGpsLog() {
+  const [mapLogs, setMapLogs] = useState<Array<{ ts: string; event: string; data?: unknown }>>([]);
+  const [mapLogOpen, setMapLogOpen] = useState(false);
+  const loadMapLogs = () => {
+    try {
+      const raw = localStorage.getItem("msbeton_map_log");
+      setMapLogs(raw ? (JSON.parse(raw) as Array<{ ts: string; event: string; data?: unknown }>).reverse() : []);
+    } catch { setMapLogs([]); }
+  };
+  useEffect(() => { if (mapLogOpen) loadMapLogs(); }, [mapLogOpen]);
+  const clearLogs = () => { localStorage.removeItem("msbeton_map_log"); setMapLogs([]); };
+  return (
+    <div className="mt-4 bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+      <button onClick={() => setMapLogOpen(o => !o)} className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer">
+        <div className="flex items-center gap-2">
+          <Activity className="w-4 h-4 text-blue-500" />
+          <span className="text-xs font-black text-secondary uppercase tracking-wide">Map GPS / DM Log</span>
+          <span className="text-[10px] text-gray-400">({mapLogs.length > 0 ? `${mapLogs.length} záznamov` : "prázdny"})</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {mapLogOpen && mapLogs.length > 0 && (
+            <button onClick={e => { e.stopPropagation(); clearLogs(); }} className="text-[10px] text-red-400 hover:text-red-600 border border-red-200 rounded px-1.5 py-0.5 cursor-pointer transition-colors">Vymazať</button>
+          )}
+          {mapLogOpen && (
+            <button onClick={e => { e.stopPropagation(); loadMapLogs(); }} className="text-[10px] text-blue-400 hover:text-blue-600 border border-blue-200 rounded px-1.5 py-0.5 cursor-pointer transition-colors">Obnoviť</button>
+          )}
+          <span className="text-gray-400 text-xs">{mapLogOpen ? "▲" : "▼"}</span>
+        </div>
+      </button>
+      {mapLogOpen && (
+        <div className="border-t border-gray-100 max-h-72 overflow-y-auto">
+          {mapLogs.length === 0 ? (
+            <div className="px-4 py-6 text-center text-xs text-gray-400">Žiadne záznamy. Log sa plní pri použití GPS/mapy v kalkulačke.</div>
+          ) : mapLogs.map((e, i) => (
+            <div key={i} className="flex items-start gap-2 px-3 py-1.5 border-b border-gray-50 text-[11px] hover:bg-gray-50">
+              <span className="text-gray-300 shrink-0 font-mono text-[9px] mt-0.5 w-14">{new Date(e.ts).toLocaleTimeString("sk-SK")}</span>
+              <span className={`font-black shrink-0 w-36 truncate ${EVENT_COLORS[e.event] ?? "text-gray-600"}`}>{e.event}</span>
+              {e.data && <span className="text-gray-500 font-mono text-[9px] break-all">{JSON.stringify(e.data)}</span>}
+            </div>
+          ))}
+          <div className="px-3 py-1.5 bg-gray-50/40 text-[9px] text-gray-400 text-center">localStorage · zachová sa medzi reštartmi PM2 · max 100 záznamov</div>
+        </div>
+      )}
+    </div>
+  );
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function ServerTab({ onOpenClient, bioFocus }: { onOpenClient?: (loginId: string) => void; bioFocus?: { loginId?: string; nonce: number } | null }) {
   const [data, setData] = useState<ServerStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -669,6 +726,9 @@ export default function ServerTab({ onOpenClient, bioFocus }: { onOpenClient?: (
           In-memory · maže sa pri PM2 reštarte · max 500 udalostí
         </div>
       </div>
+
+      {/* ── Map GPS/DM Debug Log ── */}
+      <MapGpsLog />
 
     </div>
   );

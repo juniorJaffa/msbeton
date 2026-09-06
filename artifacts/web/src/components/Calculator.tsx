@@ -54,6 +54,19 @@ import {
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { PriceModeToggle } from "@/components/PriceModeToggle";
 
+// ── Map diagnostický log (localStorage, posledných 100 záznamov) ────────
+const mapLog = (event: string, data?: unknown) => {
+  try {
+    const KEY = "msbeton_map_log";
+    const logs: Array<{ ts: string; event: string; data?: unknown }> =
+      JSON.parse(localStorage.getItem(KEY) || "[]");
+    logs.push({ ts: new Date().toISOString(), event, data });
+    if (logs.length > 100) logs.splice(0, logs.length - 100);
+    localStorage.setItem(KEY, JSON.stringify(logs));
+  } catch { /* ignore */ }
+};
+// ────────────────────────────────────────────────────────────────────────
+
 type Tab = "pumpa" | "mix" | "vlastnadoprava";
 type PriceMode = "faktura" | "hotovost";
 
@@ -359,6 +372,9 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
   const [mapLocality, setMapLocality] = useState("");
   const [mapGeocodedAddress, setMapGeocodedAddress] = useState("");
   const [mapKmConfirmed, setMapKmConfirmed] = useState(false);
+  const mapKmConfirmedRef = useRef(false);
+  // Sync ref so async reverseGeocode callbacks can read confirmed state
+  mapKmConfirmedRef.current = mapKmConfirmed;
   const [mapCopied, setMapCopied] = useState(false);
   const [mapError, setMapError] = useState("");
   const mapLocateFnRef = useRef<(() => void) | null>(null);
@@ -699,13 +715,16 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
               const el = response.rows[0]?.elements[0];
               if (el?.status === "OK") {
                 const oneWayKm = el.distance.value / 1000;
+                mapLog("dm_ok", { oneWayKm, km: Math.round((oneWayKm * 2 + 2) * 10) / 10 });
                 setAddressKm(oneWayKm);
                 setDistance(String(Math.round((oneWayKm * 2 + 2) * 10) / 10));
                 if (autoConfirmAfterDM) setMapKmConfirmed(true);
                 return;
               }
             }
+            // Distance Matrix zlyhala → Haversine fallback
             const fallback = haversineKm(ORIGIN.lat, ORIGIN.lng, lat, lng);
+            mapLog("dm_fallback_haversine", { status, elStatus: (response?.rows[0]?.elements[0] as {status?: string} | undefined)?.status, fallbackKm: fallback });
             setAddressKm(fallback);
             setDistance(String(Math.round((fallback * 2 + 2) * 10) / 10));
             if (autoConfirmAfterDM) setMapKmConfirmed(true);
@@ -719,21 +738,30 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
       // Reverse geocode via Nominatim (OpenStreetMap) — Google Geocoding API nie je aktivovaná
       const reverseGeocode = async (lat: number, lng: number) => {
         const myReqId = ++reverseGeocodeReqIdRef.current;
+        mapLog("nominatim_start", { lat, lng });
         try {
           const r = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=sk`,
             { headers: { "User-Agent": "msbeton-app/1.0" } }
           );
-          if (myReqId !== reverseGeocodeReqIdRef.current) return; // stale — user klikol znova
-          if (!r.ok) { setMapLocality(""); setMapGeocodedAddress(""); return; }
+          if (myReqId !== reverseGeocodeReqIdRef.current) { mapLog("nominatim_stale"); return; }
+          if (!r.ok) {
+            mapLog("nominatim_http_error", { status: r.status });
+            setMapLocality(""); setMapGeocodedAddress(""); return;
+          }
           const d = await r.json();
-          if (myReqId !== reverseGeocodeReqIdRef.current) return; // stale po JSON parse
+          if (myReqId !== reverseGeocodeReqIdRef.current) { mapLog("nominatim_stale_post_json"); return; }
           const a = d.address ?? {};
-          // SK validácia
+          mapLog("nominatim_ok", { country_code: a.country_code, village: a.village, town: a.town, city: a.city });
+          // SK validácia — ak user už potvrdil polohu (mapKmConfirmedRef), nezmazávaj pin (race condition)
           if (a.country_code && a.country_code !== "sk") {
-            setMapError("Dodávky betónu sú dostupné iba na území Slovenska.");
-            if (marker) { marker.setMap(null); marker = null; mapMarkerRef.current = null; }
-            setMapPin(null); setMapPlusCode(""); setMapLocality(""); setMapGeocodedAddress(""); setDistance("");
+            mapLog("nominatim_non_sk", { country_code: a.country_code, confirmed: mapKmConfirmedRef.current });
+            setMapError("Poloha je mimo Slovenska. Betón dodávame iba v SR.");
+            if (!mapKmConfirmedRef.current) {
+              // User ešte nepotvrdil — bezpečne zmazať pin
+              if (marker) { marker.setMap(null); marker = null; mapMarkerRef.current = null; }
+              setMapPin(null); setMapPlusCode(""); setMapLocality(""); setMapGeocodedAddress(""); setDistance("");
+            }
             return;
           }
           // Pokrytie všetkých typov sídiel (osada, dedina, obec, mesto, mestská štvrť)
@@ -748,22 +776,32 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
           setMapGeocodedAddress(addr);
           setAddress(addr);
           if (addressInputRef.current) addressInputRef.current.value = addr;
-        } catch {
+        } catch (err) {
           if (myReqId === reverseGeocodeReqIdRef.current) {
+            mapLog("nominatim_exception", { error: String(err) });
             setMapLocality(""); setMapGeocodedAddress("");
           }
         }
       };
 
       mapLocateFnRef.current = () => {
+        mapLog("gps_requested");
         navigator.geolocation?.getCurrentPosition(
           pos => {
             const lat = pos.coords.latitude, lng = pos.coords.longitude;
+            mapLog("gps_success", { lat, lng, accuracy: pos.coords.accuracy });
             map.setCenter({ lat, lng }); map.setZoom(15);
             setPinAt(lat, lng);
             reverseGeocode(lat, lng);
           },
-          () => {}
+          (err) => {
+            const reason = err.code === 1 ? "prístup zamietnutý"
+              : err.code === 2 ? "poloha nedostupná"
+              : "časový limit";
+            mapLog("gps_error", { code: err.code, message: err.message });
+            setMapError(`GPS nedostupná (${reason}). Kliknite na mapu alebo napíšte adresu.`);
+          },
+          { timeout: 12000, maximumAge: 60000, enableHighAccuracy: false }
         );
       };
 
