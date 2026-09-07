@@ -1005,6 +1005,9 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
           el = el.offsetParent as HTMLElement | null;
         }
         container.scrollTop = Math.max(0, offset - stickyH);
+        // Floating indicator: nastav na scrollovaného klienta (inak by ukazoval klienta tesne NAD ním)
+        const scrolledClient = filteredRef.current.find(c => c.id === id);
+        if (scrolledClient) setFloatingClient(scrolledClient);
       }));
     };
     setTimeout(() => doScroll(5), 80);
