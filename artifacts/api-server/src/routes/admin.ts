@@ -290,8 +290,9 @@ function mergeItems(incoming: Item[], current: Item[], baseSyncMs: number, prese
         const lostCount = loserPhotos.length - mergedPhotos.length;
         if (lostCount > explicitDeletes) {
           // Viac fotiek zmizlo ako je vysvetlené explicitnými delete zápismi → obnov z losera
-          console.warn(`[mergeItems] Photo loss protection triggered for client ${String(merged.id ?? "?")}:` +
-            ` lost ${lostCount} photos but only ${explicitDeletes} explicit deletes — restoring from loser`);
+          // console.log (nie warn) aby nešlo do pm2 error log — bežný prípad pri stale localStorage
+          console.log(`[mergeItems] Photo loss protection: client ${String(merged.id ?? "?")}` +
+            ` restored ${lostCount} photos (${explicitDeletes} explicit deletes)`);
           merged = { ...merged, photos: loserPhotos };
         }
       }
@@ -307,7 +308,8 @@ function mergeItems(incoming: Item[], current: Item[], baseSyncMs: number, prese
       const loserHasGps  = loserLoc  && typeof loserLoc.lat  === "number";
       if (!mergedHasGps && loserHasGps) {
         // Loser mal GPS, winner nemá — obnov GPS z losera (ochrana pred stale-data premazaním)
-        console.warn(`[mergeItems] GPS loss protection triggered for client ${String(merged.id ?? "?")}: restoring locationPhoto from loser`);
+        // console.log (nie warn) — bežný prípad pri stale localStorage, nesmie spamovať error log
+        console.log(`[mergeItems] GPS loss protection: client ${String(merged.id ?? "?")} restored locationPhoto from loser`);
         merged = { ...merged, locationPhoto: loserLoc };
       }
     }
@@ -595,6 +597,76 @@ router.put("/clients", async (req, res) => {
     res.json({ ok: true, ...r });
   }
   catch (err) { req.log.error({ err }, "Failed to save clients"); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// Dedikovaný foto endpoint — aktualizuje IBA photos/locationPhoto/photoHistory na jednom klientovi.
+// Zabraňuje [mergeItems] Photo loss protection triggered spam:
+//   → processPhotoFile posiela fotky cez tento endpoint (nie full clients array PUT)
+//   → Atomický SELECT FOR UPDATE → žiadny race condition s paralelným PUT /clients
+//   → photoHistory je append-only union (nikdy nestratíme záznamy)
+router.put("/clients/:id/photo", async (req, res) => {
+  try {
+    const actor = actorOf(req);
+    const id = req.params.id;
+    const body = req.body as {
+      photos?: unknown[];
+      locationPhoto?: unknown;
+      photoHistory?: Array<Record<string, unknown>>;
+      updatedAt?: string;
+    };
+
+    const updatedClient = await db.transaction(async (tx) => {
+      // SELECT FOR UPDATE — čaká kým iný concurrent PUT /clients skončí
+      const rows = await tx.select().from(adminConfig).where(eq(adminConfig.key, KEYS.clients)).for("update").limit(1);
+      const clients = (rows[0]?.data as Array<Record<string, unknown>> | null) ?? [];
+      const idx = clients.findIndex(c => String(c.id ?? "") === id);
+      if (idx === -1) return null;
+
+      const cur = clients[idx];
+
+      // Photos: dôveruj incoming (volateľ prečítal freshClients po Nominatim awaite)
+      const photos = Array.isArray(body.photos) ? body.photos : (Array.isArray(cur.photos) ? cur.photos : []);
+
+      // locationPhoto: ak je v body (vrátane undefined = zámerné vymazanie), inak zachovaj
+      const locationPhoto = "locationPhoto" in body ? body.locationPhoto : cur.locationPhoto;
+
+      // photoHistory: append-only union — zachovaj existujúce, pridaj iba nové entries podľa `at`
+      const incomingHistory = Array.isArray(body.photoHistory) ? body.photoHistory as Array<Record<string, unknown>> : [];
+      const curHistory = Array.isArray(cur.photoHistory) ? cur.photoHistory as Array<Record<string, unknown>> : [];
+      const curHistTs = new Set(curHistory.map(h => String(h.at ?? "")));
+      const newEntries = incomingHistory.filter(h => !curHistTs.has(String(h.at ?? "")));
+      const mergedHistory = [...curHistory, ...newEntries].slice(-30);
+
+      const updated = {
+        ...cur,
+        photos,
+        locationPhoto,
+        photoHistory: mergedHistory,
+        updatedAt: body.updatedAt ?? new Date().toISOString(),
+      };
+
+      const newClients = [...clients];
+      newClients[idx] = updated;
+      await tx.insert(adminConfig)
+        .values({ key: KEYS.clients, data: newClients })
+        .onConflictDoUpdate({ target: adminConfig.key, set: { data: newClients, updatedAt: new Date() } });
+
+      return updated;
+    });
+
+    if (!updatedClient) { res.status(404).json({ error: "Client not found" }); return; }
+
+    invalidateClientCache();
+    req.log.info({
+      ev: "photo_saved", clientId: id,
+      photoCount: Array.isArray(updatedClient.photos) ? (updatedClient.photos as unknown[]).length : 0,
+      device: actor.device,
+    }, "Photo saved OK");
+    res.json({ ok: true, client: updatedClient });
+  } catch (err) {
+    req.log.error({ err }, "Failed to save client photo");
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 // Trvalé zmazanie klienta — iba superadmin, len pre už soft-deleted (isDeleted:true).

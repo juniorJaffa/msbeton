@@ -734,8 +734,35 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
       };
       updates.photoHistory = [...(freshClient?.photoHistory ?? []), photoLogEntry].slice(-30);
 
-      // Uložíme z čerstvých freshClients (po Nominatim) → žiadne stale closure prepísanie
-      save(freshClients.map(c => c.id === clientId ? { ...c, ...updates } : c));
+      // Dedikovaný foto endpoint — len photo polia, bez full clients array.
+      // Zabraňuje [mergeItems] Photo loss protection triggered spam (bolo stovky/deň).
+      // Fallback na full save ak endpoint zlyhá (zachová existujúcu funkcionalitu).
+      let savedViaDedicated = false;
+      try {
+        const photoPayload = {
+          photos: updates.photos,
+          locationPhoto: updates.locationPhoto,
+          photoHistory: updates.photoHistory,
+          updatedAt: updates.updatedAt,
+        };
+        const r = await authFetch(`/api/admin/clients/${clientId}/photo`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(photoPayload),
+        });
+        const data = await r.json() as { ok?: boolean; client?: Client };
+        if (data.ok && data.client) {
+          // Okamžitá aktualizácia localStorage aj server (DB má rovnaké fotky → ochrana nespustí)
+          const postSave = adminData.getClients();
+          save(postSave.map(c => c.id === clientId ? { ...c, ...(data.client as Client) } as Client : c));
+          savedViaDedicated = true;
+        }
+      } catch { /* dedicated endpoint zlyhalo → fallback */ }
+
+      if (!savedViaDedicated) {
+        // Fallback: klasický full-clients save (pôvodné správanie)
+        save(freshClients.map(c => c.id === clientId ? { ...c, ...updates } : c));
+      }
       if (fromLightbox) setPhotoLightbox({ clientId, index: existing.length });
     } catch (err) {
       console.error("Photo compress failed", err);
@@ -955,19 +982,25 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   // Biometria klientov + admin telemetria → presunuté do SERVER tabu (ClientBiometriaPanel / AdminAccessPanel)
 
   const scrollToClientCard = (id: string, toTabs = false) => {
+    // Safari/iOS fix: getBoundingClientRect() môže vrátiť stale hodnoty ak element bol
+    // práve pridaný (nový klient). Dvojité requestAnimationFrame čaká na paint cycle.
     setTimeout(() => {
-      const container = document.getElementById("admin-content");
-      if (!container) return;
-      const cR = container.getBoundingClientRect();
-      const sticky = document.getElementById("klienti-sticky");
-      const stickyH = sticky ? sticky.getBoundingClientRect().height : 82;
-      // Vždy scrolluj na top of card (client-card), nie na tabs row —
-      // tabs row je vnútri karty, scrollovanie na ňu skryje meno klienta za sticky header
-      const targetEl = document.getElementById(`client-card-${id}`);
-      if (!targetEl) return;
-      const eR = targetEl.getBoundingClientRect();
-      container.scrollTo({ top: container.scrollTop + (eR.top - cR.top) - stickyH - 4, behavior: "smooth" });
-    }, 350);
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const container = document.getElementById("admin-content");
+        if (!container) return;
+        const cR = container.getBoundingClientRect();
+        const sticky = document.getElementById("klienti-sticky");
+        const stickyH = sticky ? sticky.getBoundingClientRect().height : 82;
+        // Vždy scrolluj na top of card (client-card), nie na tabs row —
+        // tabs row je vnútri karty, scrollovanie na ňu skryje meno klienta za sticky header
+        const targetEl = document.getElementById(`client-card-${id}`);
+        if (!targetEl) return;
+        const eR = targetEl.getBoundingClientRect();
+        const newTop = Math.max(0, container.scrollTop + (eR.top - cR.top) - stickyH - 4);
+        container.scrollTo({ top: newTop, behavior: "smooth" });
+      }));
+    }, 200);
+    void toTabs; // parameter zachovaný pre API kompatibilitu
   };
 
   useEffect(() => {
@@ -1088,7 +1121,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     setForm(emptyForm); setAdding(false);
     setAddSuccessMsg(clientName);
     setExpanded(newId);
-    setTimeout(() => scrollToClientCard(newId, true), 120);
+    setTimeout(() => scrollToClientCard(newId, true), 50);
     setTimeout(() => setAddSuccessMsg(null), 5000);
   };
 
