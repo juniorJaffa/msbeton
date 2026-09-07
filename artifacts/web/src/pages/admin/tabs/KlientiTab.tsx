@@ -982,21 +982,29 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   // Biometria klientov + admin telemetria → presunuté do SERVER tabu (ClientBiometriaPanel / AdminAccessPanel)
 
   const scrollToClientCard = (id: string, _toTabs = false) => {
-    // iOS Safari: scrollIntoView je spoľahlivejší ako scrollTo/scrollTop v fixed overflow kontajneri.
-    // scroll-margin-top posunie zastavenie pod sticky header (karta nie je skrytá za ním).
-    // Retry: nový klient sa renderuje asynchrónne — skúša až kým element existuje v DOM (max 5×).
+    // iOS Safari: scrollTo/scrollIntoView{block:start} ignorované v fixed overflow kontajneri.
+    // Riešenie: container.scrollTop = offsetTop (absolútna pozícia, nie viewport-relatívna).
+    // offsetTop = vzdialenosť od vrchu scroll kontajnera — stabilná, nezávisí od scroll stavu.
+    // Retry: nový klient sa renderuje asynchrónne — skúša až kým element existuje v DOM.
     const doScroll = (attemptsLeft: number) => {
       requestAnimationFrame(() => requestAnimationFrame(() => {
+        const container = document.getElementById("admin-content");
         const targetEl = document.getElementById(`client-card-${id}`);
-        if (!targetEl) {
+        if (!container || !targetEl) {
           if (attemptsLeft > 0) setTimeout(() => doScroll(attemptsLeft - 1), 120);
           return;
         }
         const sticky = document.getElementById("klienti-sticky");
-        const stickyH = (sticky ? sticky.getBoundingClientRect().height : 82) + 8;
-        // scroll-margin-top: zastaví scrollIntoView s offsetom pre sticky header
-        targetEl.style.scrollMarginTop = `${stickyH}px`;
-        targetEl.scrollIntoView({ block: "start", behavior: "smooth" });
+        const stickyH = (sticky?.offsetHeight ?? 82) + 8;
+        // Prejdi DOM nahor od targetEl po container, sčítaj offsetTop-y
+        // → bezpečné aj keď offsetParent nie je priamo container (intermediate positioned divs)
+        let offset = 0;
+        let el: HTMLElement | null = targetEl;
+        while (el && el !== container) {
+          offset += el.offsetTop;
+          el = el.offsetParent as HTMLElement | null;
+        }
+        container.scrollTop = Math.max(0, offset - stickyH);
       }));
     };
     setTimeout(() => doScroll(5), 80);
