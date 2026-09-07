@@ -982,30 +982,24 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   // Biometria klientov + admin telemetria → presunuté do SERVER tabu (ClientBiometriaPanel / AdminAccessPanel)
 
   const scrollToClientCard = (id: string, _toTabs = false) => {
-    // iOS Safari: scrollTo({behavior:'smooth'}) je ignorované na fixed overflow-y-auto kontajneri.
-    // Riešenie: priame container.scrollTop = newTop (vždy funguje) + CSS scroll-behavior smooth.
-    // Retry mechanizmus: nový klient nemusí byť ihneď v DOM (React async render).
+    // iOS Safari: scrollIntoView je spoľahlivejší ako scrollTo/scrollTop v fixed overflow kontajneri.
+    // scroll-margin-top posunie zastavenie pod sticky header (karta nie je skrytá za ním).
+    // Retry: nový klient sa renderuje asynchrónne — skúša až kým element existuje v DOM (max 5×).
     const doScroll = (attemptsLeft: number) => {
       requestAnimationFrame(() => requestAnimationFrame(() => {
-        const container = document.getElementById("admin-content");
-        if (!container) return;
         const targetEl = document.getElementById(`client-card-${id}`);
         if (!targetEl) {
-          // Karta ešte nie je v DOM — skús znova (max 4× každých 100ms)
-          if (attemptsLeft > 0) setTimeout(() => doScroll(attemptsLeft - 1), 100);
+          if (attemptsLeft > 0) setTimeout(() => doScroll(attemptsLeft - 1), 120);
           return;
         }
         const sticky = document.getElementById("klienti-sticky");
-        const stickyH = sticky ? sticky.getBoundingClientRect().height : 82;
-        const cR = container.getBoundingClientRect();
-        const eR = targetEl.getBoundingClientRect();
-        const newTop = Math.max(0, container.scrollTop + (eR.top - cR.top) - stickyH - 4);
-        // Priame scrollTop — Safari-safe, funguje aj v fixed overflow kontajneri
-        // Plynulý efekt cez CSS scroll-behavior:smooth na #admin-content
-        container.scrollTop = newTop;
+        const stickyH = (sticky ? sticky.getBoundingClientRect().height : 82) + 8;
+        // scroll-margin-top: zastaví scrollIntoView s offsetom pre sticky header
+        targetEl.style.scrollMarginTop = `${stickyH}px`;
+        targetEl.scrollIntoView({ block: "start", behavior: "smooth" });
       }));
     };
-    setTimeout(() => doScroll(4), 80);
+    setTimeout(() => doScroll(5), 80);
   };
 
   useEffect(() => {
