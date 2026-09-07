@@ -981,26 +981,31 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
 
   // Biometria klientov + admin telemetria → presunuté do SERVER tabu (ClientBiometriaPanel / AdminAccessPanel)
 
-  const scrollToClientCard = (id: string, toTabs = false) => {
-    // Safari/iOS fix: getBoundingClientRect() môže vrátiť stale hodnoty ak element bol
-    // práve pridaný (nový klient). Dvojité requestAnimationFrame čaká na paint cycle.
-    setTimeout(() => {
+  const scrollToClientCard = (id: string, _toTabs = false) => {
+    // iOS Safari: scrollTo({behavior:'smooth'}) je ignorované na fixed overflow-y-auto kontajneri.
+    // Riešenie: priame container.scrollTop = newTop (vždy funguje) + CSS scroll-behavior smooth.
+    // Retry mechanizmus: nový klient nemusí byť ihneď v DOM (React async render).
+    const doScroll = (attemptsLeft: number) => {
       requestAnimationFrame(() => requestAnimationFrame(() => {
         const container = document.getElementById("admin-content");
         if (!container) return;
-        const cR = container.getBoundingClientRect();
+        const targetEl = document.getElementById(`client-card-${id}`);
+        if (!targetEl) {
+          // Karta ešte nie je v DOM — skús znova (max 4× každých 100ms)
+          if (attemptsLeft > 0) setTimeout(() => doScroll(attemptsLeft - 1), 100);
+          return;
+        }
         const sticky = document.getElementById("klienti-sticky");
         const stickyH = sticky ? sticky.getBoundingClientRect().height : 82;
-        // Vždy scrolluj na top of card (client-card), nie na tabs row —
-        // tabs row je vnútri karty, scrollovanie na ňu skryje meno klienta za sticky header
-        const targetEl = document.getElementById(`client-card-${id}`);
-        if (!targetEl) return;
+        const cR = container.getBoundingClientRect();
         const eR = targetEl.getBoundingClientRect();
         const newTop = Math.max(0, container.scrollTop + (eR.top - cR.top) - stickyH - 4);
-        container.scrollTo({ top: newTop, behavior: "smooth" });
+        // Priame scrollTop — Safari-safe, funguje aj v fixed overflow kontajneri
+        // Plynulý efekt cez CSS scroll-behavior:smooth na #admin-content
+        container.scrollTop = newTop;
       }));
-    }, 200);
-    void toTabs; // parameter zachovaný pre API kompatibilitu
+    };
+    setTimeout(() => doScroll(4), 80);
   };
 
   useEffect(() => {
@@ -1121,7 +1126,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     setForm(emptyForm); setAdding(false);
     setAddSuccessMsg(clientName);
     setExpanded(newId);
-    setTimeout(() => scrollToClientCard(newId, true), 50);
+    setTimeout(() => scrollToClientCard(newId, true), 80);
     setTimeout(() => setAddSuccessMsg(null), 5000);
   };
 

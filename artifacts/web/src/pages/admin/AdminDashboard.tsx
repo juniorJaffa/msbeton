@@ -357,7 +357,8 @@ export default function AdminDashboard() {
       />
 
       {/* Scroll container — fills viewport below fixed header */}
-      <div id="admin-content" className="fixed top-[86px] sm:top-20 left-0 right-0 bottom-0 overflow-y-auto">
+      {/* scroll-smooth: plynulý scroll na iOS aj desktop (container.scrollTop = x priamo) */}
+      <div id="admin-content" className="fixed top-[86px] sm:top-20 left-0 right-0 bottom-0 overflow-y-auto scroll-smooth">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 pb-8">
           <Suspense fallback={<TabSpinner />}>
             {tab === "betony" && <BetonTab key={syncKey} />}
