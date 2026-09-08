@@ -986,35 +986,62 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   // Biometria klientov + admin telemetria → presunuté do SERVER tabu (ClientBiometriaPanel / AdminAccessPanel)
 
   const scrollToClientCard = (id: string, _toTabs = false) => {
-    // iOS Safari: scrollTo/scrollIntoView{block:start} ignorované v fixed overflow kontajneri.
-    // Riešenie: container.scrollTop = offsetTop (absolútna pozícia, nie viewport-relatívna).
-    // offsetTop = vzdialenosť od vrchu scroll kontajnera — stabilná, nezávisí od scroll stavu.
-    // Retry: nový klient sa renderuje asynchrónne — skúša až kým element existuje v DOM.
-    const doScroll = (attemptsLeft: number) => {
-      requestAnimationFrame(() => requestAnimationFrame(() => {
+    const container = document.getElementById("admin-content");
+    const targetEl = document.getElementById(`client-card-${id}`);
+    if (!container || !targetEl) return;
+    const sticky = document.getElementById("klienti-sticky");
+    const stickyH = (sticky?.offsetHeight ?? 82) + 8;
+    // getBoundingClientRect: viewport-relative pozícia → prepočítaj na scrollTop
+    // Stabilnejšie ako offsetTop walk na iOS Safari v position:fixed kontajneri
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = targetEl.getBoundingClientRect();
+    const targetTop = Math.max(0, container.scrollTop + (targetRect.top - containerRect.top) - stickyH);
+    container.scrollTop = targetTop;
+    const scrolledClient = filteredRef.current.find(c => c.id === id);
+    if (scrolledClient) setFloatingClient(scrolledClient);
+  };
+
+  // scrollAndLock: nastav scrollTop + drž ho rAF loopm 1.2s (cancel na touchstart)
+  // rAF loop zachytí akýkoľvek reset (iOS Safari, syncFromServer re-render) v ďalšom frame (≤16ms)
+  const scrollAndLock = (id: string) => {
+    // Počkaj kým element existuje v DOM (nový klient sa renderuje asynchrónne)
+    const tryStart = (left: number) => {
+      requestAnimationFrame(() => {
         const container = document.getElementById("admin-content");
         const targetEl = document.getElementById(`client-card-${id}`);
         if (!container || !targetEl) {
-          if (attemptsLeft > 0) setTimeout(() => doScroll(attemptsLeft - 1), 120);
+          if (left > 0) setTimeout(() => tryStart(left - 1), 100);
           return;
         }
         const sticky = document.getElementById("klienti-sticky");
         const stickyH = (sticky?.offsetHeight ?? 82) + 8;
-        // Prejdi DOM nahor od targetEl po container, sčítaj offsetTop-y
-        // → bezpečné aj keď offsetParent nie je priamo container (intermediate positioned divs)
-        let offset = 0;
-        let el: HTMLElement | null = targetEl;
-        while (el && el !== container) {
-          offset += el.offsetTop;
-          el = el.offsetParent as HTMLElement | null;
-        }
-        container.scrollTop = Math.max(0, offset - stickyH);
-        // Floating indicator: nastav na scrollovaného klienta (inak by ukazoval klienta tesne NAD ním)
+        const containerRect = container.getBoundingClientRect();
+        const targetRect = targetEl.getBoundingClientRect();
+        const targetTop = Math.max(0, container.scrollTop + (targetRect.top - containerRect.top) - stickyH);
+
+        container.scrollTop = targetTop;
+
+        // rAF lock: každý frame opraví scrollTop ak bol resetnutý
+        let locked = true;
+        const unlock = () => { locked = false; };
+        container.addEventListener("touchstart", unlock, { once: true, passive: true });
+        const endTime = Date.now() + 1200;
+        const frame = () => {
+          if (!locked || Date.now() > endTime) { locked = false; return; }
+          if (Math.abs(container.scrollTop - targetTop) > 5) {
+            container.scrollTop = targetTop;
+          }
+          requestAnimationFrame(frame);
+        };
+        requestAnimationFrame(frame);
+        setTimeout(() => { locked = false; container.removeEventListener("touchstart", unlock); }, 1300);
+
+        // Floating indicator
         const scrolledClient = filteredRef.current.find(c => c.id === id);
         if (scrolledClient) setFloatingClient(scrolledClient);
-      }));
+      });
     };
-    setTimeout(() => doScroll(5), 80);
+    tryStart(10); // až 10 pokusov × 100ms = 1s čakania na element
   };
 
   useEffect(() => {
@@ -1146,27 +1173,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     setForm(emptyForm); setAdding(false);
     setAddSuccessMsg(clientName);
     setExpanded(newId);
-    // Retry-loop: scroll na nového klienta opakovane počas 1.2s.
-    // Dôvod: syncFromServer (t≈400ms po save) aktualizuje clients state → React re-render →
-    // iOS Safari resetuje scrollTop. Opakované scrollovanie zachytí reset a opraví ho.
-    // scroll-smooth CSS ODSTRÁNENÉ z #admin-content → scrollTop assignment je okamžitý (bez animácie),
-    // takže reset nemôže prerušiť animáciu.
-    // Stops: keď user dotkne obrazovky (touchstart) = chce scrollovať sám.
-    {
-      const id = newId;
-      const container = document.getElementById("admin-content");
-      let stopped = false;
-      const stop = () => { stopped = true; };
-      container?.addEventListener("touchstart", stop, { once: true, passive: true });
-      // Pokusy: 80ms (okamžite po render), 350ms (pred syncFromServer), 750ms (po syncFromServer), 1200ms (safety)
-      [80, 350, 750, 1200].forEach(ms => {
-        setTimeout(() => {
-          if (stopped) return;
-          scrollToClientCard(id, true);
-        }, ms);
-      });
-      setTimeout(() => container?.removeEventListener("touchstart", stop), 1500);
-    }
+    scrollAndLock(newId);
     setTimeout(() => setAddSuccessMsg(null), 5000);
   };
 
@@ -1452,7 +1459,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                       className={cn("px-2.5 py-1.5 rounded text-[11px] sm:text-xs font-bold transition-colors", !showDeleted ? "bg-secondary text-white" : "bg-gray-100 text-gray-500 active:bg-gray-200")}>
                       Aktívni
                     </button>
-                    <button onClick={() => setShowDeleted(true)}
+                    <button onClick={() => { setShowDeleted(true); setAdding(false); }}
                       className={cn("inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-[11px] sm:text-xs font-bold transition-colors", showDeleted ? "bg-red-600 text-white" : "bg-gray-100 text-gray-500 active:bg-gray-200")}>
                       <Trash2 className="w-3 h-3" /> Koš
                       <span className="text-[9px] opacity-70">{clients.filter(c => c.isDeleted).length}</span>
@@ -1483,7 +1490,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
           </div>
           <div className="flex items-center justify-end gap-2 w-40 shrink-0">
             {isSuper() && (
-              <button onClick={() => setShowDeleted(v => !v)} title={showDeleted ? "Zobraziť aktívnych" : "Koš — zmazaní klienti"}
+              <button onClick={() => { setShowDeleted(v => !v); setAdding(false); }} title={showDeleted ? "Zobraziť aktívnych" : "Koš — zmazaní klienti"}
                 className={`flex items-center gap-1 px-2 py-1.5 text-[10px] font-black uppercase tracking-wide border transition-colors ${showDeleted ? "bg-red-600 text-white border-red-600" : "border-red-300 text-red-400 hover:border-red-500 hover:text-red-600"}`}>
                 <Trash2 className="w-3.5 h-3.5" />
                 {showDeleted && <span>KOŠ</span>}
@@ -2987,11 +2994,11 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                       )}
                       {c.isDeleted && isSuper() && (
                         <div className="ml-auto flex items-center gap-1.5">
-                          <button onClick={() => restore(c.id)} title="Obnoviť klienta"
+                          <button type="button" onClick={() => restore(c.id)} title="Obnoviť klienta"
                             className="flex items-center gap-1 px-2 py-1.5 text-[10px] font-black uppercase tracking-wide border border-green-300 text-green-600 hover:bg-green-50 rounded transition-colors">
                             <RefreshCw className="w-3 h-3" /> Obnoviť
                           </button>
-                          <button onClick={() => hardDelete(c.id)} title="Trvalo vymazať"
+                          <button type="button" onClick={() => hardDelete(c.id)} title="Trvalo vymazať"
                             className="flex items-center gap-1 px-2 py-1.5 text-[10px] font-black uppercase tracking-wide border border-red-400 text-red-600 hover:bg-red-50 rounded transition-colors">
                             <X className="w-3 h-3" /> Vymazať
                           </button>
