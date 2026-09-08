@@ -1187,12 +1187,16 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   const [floatingClient, setFloatingClient] = useState<Client | null>(null);
   const filteredRef = useRef(filtered);
   filteredRef.current = filtered;
+  // expandedRef: ref pre onScroll handler (closures nechytajú state, len ref)
+  const expandedRef = useRef(expanded);
+  expandedRef.current = expanded;
   useEffect(() => {
     const container = document.getElementById("admin-content");
     if (!container) return;
     const onScroll = () => {
       const sticky = document.getElementById("klienti-sticky");
       const tbBottom = sticky ? sticky.getBoundingClientRect().bottom : 82;
+      const containerBottom = container.getBoundingClientRect().bottom;
       const cards = container.querySelectorAll("[id^='client-card-']");
       let last: Client | null = null;
       for (const el of Array.from(cards)) {
@@ -1201,6 +1205,20 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
           const found = filteredRef.current.find(c => c.id === id);
           if (found) last = found;
         } else break;
+      }
+      // Ak je expandovaný klient VIDITEĽNÝ (pod sticky headerom), uprednostni jeho — nie klienta
+      // tesne nad ním ktorý je scrollnutý za header. Inak po scrollToClientCard sticky ukazuje
+      // suseda namiesto expandovaného klienta.
+      const expId = expandedRef.current;
+      if (expId) {
+        const expEl = document.getElementById(`client-card-${expId}`);
+        if (expEl) {
+          const top = expEl.getBoundingClientRect().top;
+          if (top >= tbBottom - 4 && top < containerBottom) {
+            const expClient = filteredRef.current.find(c => c.id === expId);
+            if (expClient) last = expClient;
+          }
+        }
       }
       setFloatingClient(prev => prev?.id === last?.id ? prev : last);
     };

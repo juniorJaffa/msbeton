@@ -577,7 +577,11 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
     if (typeof google !== "undefined" && google.maps?.places) return;
     if (document.querySelector('script[src*="maps.googleapis.com"]')) return;
     const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_KEY}&libraries=places`;
+    // loading=async: Google Maps best-practice (odstraňuje "loaded directly without loading=async" warning)
+    // TODO migrácie (zatiaľ fungujú, 12+ mesiacov do EOL):
+    //   - google.maps.Marker → AdvancedMarkerElement (deprecated feb 2024, neplánovaný EOL)
+    //   - google.maps.DistanceMatrix → routes.RouteMatrix.computeRouteMatrix (deprecated feb 2026)
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_KEY}&libraries=places&loading=async`;
     script.async = true;
     script.defer = true;
     document.head.appendChild(script);
