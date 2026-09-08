@@ -523,6 +523,10 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   const [showDeleted, setShowDeleted] = useState(false);
   const [deleteModal, setDeleteModal] = useState<Client | null>(null);
   const [deleteInput, setDeleteInput] = useState("");
+  const [hardDeleteModal, setHardDeleteModal] = useState<Client | null>(null);
+  const [hardDeleteInput, setHardDeleteInput] = useState("");
+  const [hardDeleteLoading, setHardDeleteLoading] = useState(false);
+  const [hardDeleteError, setHardDeleteError] = useState<string | null>(null);
   const [photoLightbox, setPhotoLightbox] = useState<{ clientId: string; index: number } | null>(null);
   // Fronta nahrávania fotiek per klient — zabráni race condition pri rýchlom nahrávaní viacerých fotiek.
   // Druhé nahrávania počká na dokončenie prvého, potom číta čerstvé dáta (s prvou fotkou).
@@ -1062,16 +1066,27 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     setFloatingClient(prev => prev?.id === deleteModal.id ? null : prev);
     setDeleteModal(null);
   };
-  const hardDelete = async (id: string) => {
-    if (!confirm("Trvalo vymazať? Táto akcia je NEVRATNÁ.")) return;
+  const hardDelete = (id: string) => {
+    const c = clients.find(cl => cl.id === id);
+    if (!c) return;
+    setHardDeleteInput("");
+    setHardDeleteError(null);
+    setHardDeleteModal(c);
+  };
+  const confirmHardDelete = async () => {
+    if (!hardDeleteModal) return;
+    setHardDeleteLoading(true);
+    setHardDeleteError(null);
     try {
-      await adminApi.hardDeleteClient(id);
-      if (expanded === id) setExpanded(null);
-      setFloatingClient(prev => prev?.id === id ? null : prev);
-      // Sync zo servera aby lokálna lista reflektovala zmenu
+      await adminApi.hardDeleteClient(hardDeleteModal.id);
+      if (expanded === hardDeleteModal.id) setExpanded(null);
+      setFloatingClient(prev => prev?.id === hardDeleteModal.id ? null : prev);
+      setHardDeleteModal(null);
       syncFromServer();
     } catch (e) {
-      alert("Chyba pri mazaní: " + (e instanceof Error ? e.message : String(e)));
+      setHardDeleteError(e instanceof Error ? e.message : "Chyba pri mazaní");
+    } finally {
+      setHardDeleteLoading(false);
     }
   };
   const restore = (id: string) => {
@@ -3221,7 +3236,79 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
         );
       })()}
 
-      {/* Delete confirm modal */}
+      {/* Hard delete confirm modal */}
+      {hardDeleteModal && (() => {
+        const hd = hardDeleteModal;
+        const hdName = [hd.firstName, hd.lastName].filter(Boolean).join(" ") || hd.company || hd.loginId || "?";
+        const hdOrders = allOrders.filter(o => o.clientId != null && (o.clientId === hd.loginId || o.clientId === hd.id)).length;
+        const confirmKey = hd.loginId || [hd.firstName, hd.lastName].filter(Boolean).join(" ") || hd.company || "";
+        const inputOk = hardDeleteInput.trim().toLowerCase() === confirmKey.toLowerCase();
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
+              {/* Red header stripe */}
+              <div className="bg-red-600 px-6 pt-5 pb-4 flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                  <Trash2 className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-black text-white text-base leading-tight">Trvalo vymazať klienta?</h3>
+                  <p className="text-red-100 text-sm mt-0.5">{hdName}</p>
+                </div>
+              </div>
+              <div className="p-6">
+                {/* Critical warning */}
+                <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-sm text-red-800">
+                  <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
+                  <span><strong>Nevratná akcia.</strong> Klient bude natrvalo odstránený z databázy. Obnoviť nie je možné.</span>
+                </div>
+                {hdOrders > 0 && (
+                  <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-sm text-amber-800">
+                    <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
+                    <span>Klient má <strong>{hdOrders} objednávok</strong>. Zostanú v systéme ale bez mena klienta.</span>
+                  </div>
+                )}
+                <p className="text-xs text-gray-500 mb-1.5">
+                  Na potvrdenie napíšte <strong className="text-gray-900">{confirmKey}</strong>:
+                </p>
+                <input
+                  type="text"
+                  value={hardDeleteInput}
+                  onChange={e => { setHardDeleteInput(e.target.value); setHardDeleteError(null); }}
+                  onKeyDown={e => e.key === "Enter" && inputOk && !hardDeleteLoading && confirmHardDelete()}
+                  placeholder={confirmKey}
+                  autoFocus
+                  disabled={hardDeleteLoading}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:border-red-500 disabled:opacity-50"
+                />
+                {hardDeleteError && (
+                  <p className="text-xs text-red-600 mb-3 flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {hardDeleteError}
+                  </p>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setHardDeleteModal(null)}
+                    disabled={hardDeleteLoading}
+                    className="flex-1 py-2.5 text-sm font-bold border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 cursor-pointer">
+                    Zrušiť
+                  </button>
+                  <button
+                    onClick={confirmHardDelete}
+                    disabled={!inputOk || hardDeleteLoading}
+                    className={`flex-1 py-2.5 text-sm font-black rounded-lg text-white transition-colors cursor-pointer ${
+                      inputOk && !hardDeleteLoading ? "bg-red-600 hover:bg-red-700 active:bg-red-800" : "bg-red-200 cursor-not-allowed"
+                    }`}>
+                    {hardDeleteLoading ? "Mažem..." : "Trvalo vymazať"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Soft delete confirm modal */}
       {deleteModal && (() => {
         const dm = deleteModal;
         const dmName = [dm.firstName, dm.lastName].filter(Boolean).join(" ") || dm.company || dm.loginId || "?";
