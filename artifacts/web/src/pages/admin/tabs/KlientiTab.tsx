@@ -1173,7 +1173,19 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     setForm(emptyForm); setAdding(false);
     setAddSuccessMsg(clientName);
     setExpanded(newId);
-    scrollAndLock(newId);
+    // iOS Safari fix: scrollTop na fixed kontajneri je nespoľahlivý (8+ pokusov zlyhalo).
+    // Riešenie: prepnúť na "Nové" sort → nový klient ide na vrch zoznamu (za owner/manager).
+    // scrollTop=0 je vždy spoľahlivý — nový klient je viditeľný bez scrollovania.
+    const prevSortMode = sortMode;
+    setSortMode("date_desc");
+    requestAnimationFrame(() => {
+      const container = document.getElementById("admin-content");
+      if (container) container.scrollTop = 0;
+      const newClient = adminData.getClients().find(c => c.id === newId);
+      if (newClient) setFloatingClient(newClient);
+    });
+    // Revert sort po 5s — len ak užívateľ sort medzitým nezmenil
+    setTimeout(() => setSortMode(prev => prev === "date_desc" ? prevSortMode : prev), 5000);
     setTimeout(() => setAddSuccessMsg(null), 5000);
   };
 
