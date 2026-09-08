@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Plus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, ChevronRight, Users, Truck, Eye, EyeOff, RefreshCw, LogIn, ShieldCheck, ShieldOff, Table2, ClipboardList, FileText, Crown, Calculator, ExternalLink, FileSpreadsheet, FileType2, Mail, Phone, PenLine, Fingerprint, ShieldX, AlertTriangle, Info, Smartphone, Heart, GripVertical, ArrowDownUp, SlidersHorizontal, Percent, Building2, Server, Camera, MapPin, Navigation } from "lucide-react";
 import { ClientPriceTable } from "@/components/ClientPriceTable";
 import { ConcreteCalculator } from "@/components/Calculator";
@@ -1145,9 +1145,28 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     }
     setForm(emptyForm); setAdding(false);
     setAddSuccessMsg(clientName);
-    recentlyAddedRef.current = { id: newId, addedAt: Date.now() };
     setExpanded(newId);
-    setTimeout(() => scrollToClientCard(newId, true), 80);
+    // Retry-loop: scroll na nového klienta opakovane počas 1.2s.
+    // Dôvod: syncFromServer (t≈400ms po save) aktualizuje clients state → React re-render →
+    // iOS Safari resetuje scrollTop. Opakované scrollovanie zachytí reset a opraví ho.
+    // scroll-smooth CSS ODSTRÁNENÉ z #admin-content → scrollTop assignment je okamžitý (bez animácie),
+    // takže reset nemôže prerušiť animáciu.
+    // Stops: keď user dotkne obrazovky (touchstart) = chce scrollovať sám.
+    {
+      const id = newId;
+      const container = document.getElementById("admin-content");
+      let stopped = false;
+      const stop = () => { stopped = true; };
+      container?.addEventListener("touchstart", stop, { once: true, passive: true });
+      // Pokusy: 80ms (okamžite po render), 350ms (pred syncFromServer), 750ms (po syncFromServer), 1200ms (safety)
+      [80, 350, 750, 1200].forEach(ms => {
+        setTimeout(() => {
+          if (stopped) return;
+          scrollToClientCard(id, true);
+        }, ms);
+      });
+      setTimeout(() => container?.removeEventListener("touchstart", stop), 1500);
+    }
     setTimeout(() => setAddSuccessMsg(null), 5000);
   };
 
@@ -1206,27 +1225,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   // expandedRef: ref pre onScroll handler (closures nechytajú state, len ref)
   const expandedRef = useRef(expanded);
   expandedRef.current = expanded;
-  // recentlyAddedRef: sleduje posledného pridaného klienta pre re-scroll po syncFromServer
-  const recentlyAddedRef = useRef<{ id: string; addedAt: number } | null>(null);
-  // Re-scroll keď clients sa zmenia — USELAYOUTEFFECT fires SYNCHRONOUSLY pred browser paint.
-  // useEffect (predchádzajúci pokus) fires PO paint — iOS Safari stihol resetovať scrollTop počas paint.
-  // useLayoutEffect: DOM mutácie hotové, layout hotový, ale browser ešte nenakreslil → scrollTop nastavíme
-  // PRED prvým paintom s novými dátami → iOS Safari nemá šancu resetovať.
-  // 3s okno: iba čerstvo pridaný klient (recentlyAddedRef), iba kým je stále expanded.
-  useLayoutEffect(() => {
-    const recent = recentlyAddedRef.current;
-    if (!recent || expandedRef.current !== recent.id) return;
-    if (Date.now() - recent.addedAt > 3000) { recentlyAddedRef.current = null; return; }
-    const container = document.getElementById("admin-content");
-    const targetEl = document.getElementById(`client-card-${recent.id}`);
-    if (!container || !targetEl) return;
-    const sticky = document.getElementById("klienti-sticky");
-    const stickyH = (sticky?.offsetHeight ?? 82) + 8;
-    let offset = 0;
-    let el: HTMLElement | null = targetEl;
-    while (el && el !== container) { offset += el.offsetTop; el = el.offsetParent as HTMLElement | null; }
-    container.scrollTop = Math.max(0, offset - stickyH);
-  }, [clients]); // eslint-disable-line react-hooks/exhaustive-deps
+  // (recentlyAddedRef + useLayoutEffect odstránené — nahradené retry-loop v add())
   useEffect(() => {
     const container = document.getElementById("admin-content");
     if (!container) return;
