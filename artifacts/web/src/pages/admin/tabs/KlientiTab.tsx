@@ -1444,6 +1444,23 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                   </button>
                 </div>
               </div>
+              {/* Koš — soft-deleted klienti — iba superadmin */}
+              {isSuper() && (
+                <div className="flex items-start gap-1.5">
+                  <span className="w-14 shrink-0 text-[9px] font-black uppercase tracking-wider text-gray-400 pt-2">KOŠ</span>
+                  <div className="flex flex-wrap gap-1">
+                    <button onClick={() => setShowDeleted(false)}
+                      className={cn("px-2.5 py-1.5 rounded text-[11px] sm:text-xs font-bold transition-colors", !showDeleted ? "bg-secondary text-white" : "bg-gray-100 text-gray-500 active:bg-gray-200")}>
+                      Aktívni
+                    </button>
+                    <button onClick={() => setShowDeleted(true)}
+                      className={cn("inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-[11px] sm:text-xs font-bold transition-colors", showDeleted ? "bg-red-600 text-white" : "bg-gray-100 text-gray-500 active:bg-gray-200")}>
+                      <Trash2 className="w-3 h-3" /> Koš
+                      <span className="text-[9px] opacity-70">{clients.filter(c => c.isDeleted).length}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
               {hasActiveFilter && (
                 <button onClick={resetFilters} className="text-[10px] font-bold text-red-500 hover:text-red-600 flex items-center gap-1 pt-0.5">
                   <X className="w-3 h-3" /> Zrušiť filtre
