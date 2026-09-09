@@ -1014,6 +1014,14 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const dateBtnCls  = (a: boolean) => `px-2.5 py-1.5 text-[10px] font-bold rounded-full transition-colors cursor-pointer ${a ? "bg-secondary text-white" : "bg-white text-gray-500 border border-gray-200 hover:border-gray-300"}`;
 
   // Kompaktný dropdown pre výber klienta — skaluje na 100+ klientov
+  // Skrátený label dátum filtra — pre chip v collapsed FILTER hlavičke
+  const cashDateLabelShort = cashDateFilter === "dnes" ? "Dnes"
+    : cashDateFilter === "vcera" ? "Včera"
+    : cashDateFilter === "tyzden" ? weekLabel(cashTyzdenOffset)
+    : cashDateFilter === "mesiac" ? `${SK_MONTHS_SHORT[cashMesiacYM.month - 1]} ${cashMesiacYM.year}`
+    : (cashDateFrom || cashDateTo) ? "Vlastný"
+    : "";
+
   // Počty aktívnych filtrov — pre badge v hlavičke
   const activeCash = [
     cashStatusFilter !== "vsetky",
@@ -1309,6 +1317,16 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     setCashKtoFilters([]); setCashClientFilter("vsetci"); setCashClientSearch("");
                     setCashZalohaFilter("vsetky"); setCashExcelFilter("vsetky");
                   }} className="hover:text-red-300 transition-colors leading-none shrink-0 cursor-pointer" title="Vymazať všetky filtre">
+                    <X className="w-2.5 h-2.5" />
+                  </button>
+                </span>
+              )}
+              {/* Dátum chip — viditeľný aj v collapsed stave (vzor ObjednávkyTab) */}
+              {cashDateLabelShort && !cashFilterOpen && (
+                <span className="inline-flex items-center gap-1 bg-secondary/10 text-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
+                  <span>{cashDateLabelShort}</span>
+                  <button type="button" onClick={e => { e.stopPropagation(); setCashDateFilter("tyzden"); setCashTyzdenOffset(0); setCashDateFrom(""); setCashDateTo(""); }}
+                    className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer" title="Resetovať dátum">
                     <X className="w-2.5 h-2.5" />
                   </button>
                 </span>
