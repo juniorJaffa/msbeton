@@ -1745,6 +1745,8 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
   const tabLabel: Record<Order["tab"], string> = { pumpa: "Pumpa", mix: "Mix", vlastnadoprava: "Vl. doprava" };
   // Dátum je "aktívny filter" len keď user zmenil z defaultu (TÝŽDEŇ offset 0 = nie aktívny)
   const dateIsFiltered = quickDate === "dnes" || quickDate === "vcera" || quickDate === "ndni" || quickDate === "mesiac" || (quickDate === "tyzden" && tyzdenOffset !== 0) || (!quickDate && !!(dateFrom || dateTo));
+  // dateLabelShort — rovnaký text ako badge v DÁTUM sub-headeri (pre collapsed row chip)
+  const dateLabelShort = quickDate === "dnes" ? "Dnes" : quickDate === "vcera" ? "Včera" : quickDate === "tyzden" ? weekLabelObjed(tyzdenOffset) : quickDate === "mesiac" ? `${SK_MONTHS_SHORT[quickMY.m - 1]} ${quickMY.y}` : quickDate === "ndni" ? `–${quickDays}d` : (dateFrom || dateTo) ? "Vlastný" : "";
   const activeFilters = [filterStatus !== "vsetky", filterTab !== "vsetky", filterPriceMode !== "vsetky", filterChannel !== "vsetky", filterZaloha !== "vsetky", !!clientIdActive, !!search, dateIsFiltered].filter(Boolean).length;
   const sortedCount = sorted.length;
   const sortedCountLabel = sortedCount === 1 ? "objednávka" : sortedCount >= 2 && sortedCount <= 4 ? "objednávky" : "objednávok";
@@ -1899,6 +1901,16 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                 const wb = initWeekBounds(); setDateFrom(wb.from); setDateTo(wb.to);
                 setNewBadge(0);
               }} className="hover:text-red-300 transition-colors leading-none shrink-0 cursor-pointer" title="Vymazať všetky filtre">
+                <X className="w-2.5 h-2.5" />
+              </button>
+            </span>
+          )}
+          {/* Date chip — viditeľný aj v collapsed stave (zrkadlí DÁTUM sub-header badge) */}
+          {dateLabelShort && !filterOpen && (
+            <span className="inline-flex items-center gap-1 bg-secondary/10 text-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
+              <span>{dateLabelShort}</span>
+              <button type="button" onClick={e => { e.stopPropagation(); setQuickDate("tyzden"); setTyzdenOffset(0); const wb = initWeekBounds(); setDateFrom(wb.from); setDateTo(wb.to); }}
+                className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer" title="Resetovať dátum">
                 <X className="w-2.5 h-2.5" />
               </button>
             </span>
