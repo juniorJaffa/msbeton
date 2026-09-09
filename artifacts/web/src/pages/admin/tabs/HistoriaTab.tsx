@@ -1033,6 +1033,13 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     cashSearch.trim().length > 0,
   ].filter(Boolean).length;
 
+  // Skrátený label dátum filtra — pre chip v collapsed FILTER hlavičke (Zálohy tab)
+  const depDateLabelShort = depDateFilter === "dnes" ? "Dnes"
+    : depDateFilter === "vcera" ? "Včera"
+    : depDateFilter === "tyzden" ? weekLabel(depTyzdenOffset)
+    : depDateFilter === "mesiac" ? `${SK_MONTHS_SHORT[depMesiacYM.month - 1]} ${depMesiacYM.year}`
+    : "";
+
   const activeDep = [
     depDateFilter !== "tyzden",
     depClientFilter !== "vsetci",
@@ -1090,6 +1097,16 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Filter</span>
               {activeDep > 0 && (
                 <span className="bg-secondary text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">{activeDep}</span>
+              )}
+              {/* Dátum chip — viditeľný aj v collapsed stave (vzor ObjednávkyTab) */}
+              {depDateLabelShort && !depFilterOpen && (
+                <span className="inline-flex items-center gap-1 bg-secondary/10 text-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
+                  <span>{depDateLabelShort}</span>
+                  <button type="button" onClick={e => { e.stopPropagation(); setDepDateFilter("tyzden"); setDepTyzdenOffset(0); }}
+                    className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer" title="Resetovať dátum">
+                    <X className="w-2.5 h-2.5" />
+                  </button>
+                </span>
               )}
               <span className="ml-auto text-xs font-bold text-secondary shrink-0">{filteredDepRows.length} záz.</span>
               <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${depFilterOpen ? "rotate-180" : ""}`} />
