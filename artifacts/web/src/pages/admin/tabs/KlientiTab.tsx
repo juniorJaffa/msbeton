@@ -1179,15 +1179,13 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     setForm(emptyForm); setAdding(false);
     setAddSuccessMsg(clientName);
     setExpanded(newId);
-    // Nový klient je predradený (pozícia 0 v clients array) → v Manuál sort je za owner/manager.
-    // scrollTop=0 ho ukáže okamžite — vždy spoľahlivé na iOS Safari aj Chrome.
-    // setTimeout(0) = garantovane po React batched render.
+    // Nový klient je predradený (pozícia 0 v clients array) → v Manuál sort je na pozícii ~6
+    // (za owner/manager/reader/favorite pinmi). targetTop ≈ 350px (nie 15000px ako pred tým).
+    // iOS Safari zvláda malé targetTop hodnoty spoľahlivo na rozdiel od veľkých.
+    // setTimeout(50) = React render + layout settle po setAdding(false) form removal.
     setTimeout(() => {
-      const container = document.getElementById("admin-content");
-      if (container) container.scrollTop = 0;
-      const newClient = adminData.getClients().find(c => c.id === newId);
-      if (newClient) setFloatingClient(newClient);
-    }, 0);
+      scrollToClientCard(newId, true);
+    }, 50);
     setTimeout(() => setAddSuccessMsg(null), 5000);
   };
 
