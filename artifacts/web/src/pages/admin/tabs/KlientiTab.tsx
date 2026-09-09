@@ -1048,12 +1048,16 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     if (!expandClientId) return;
     const c = clients.find(cl => cl.loginId === expandClientId);
     if (c) {
+      // Zaistí viditeľnosť klienta: ak bol aktívny KOŠ filter (showDeleted=true),
+      // karta klienta nie je v DOM → scroll nenájde nič. Reset na normálny zoznam.
+      setShowDeleted(false);
       setExpanded(c.id);
-      // Reset scroll kontajnera pred scrollom na klienta —
-      // admin-content si pamätá pozíciu z predchádzajúceho tabu (napr. Objednávky)
-      const container = document.getElementById("admin-content");
-      if (container) container.scrollTo({ top: 0, behavior: "instant" });
-      scrollToClientCard(c.id, true);
+      // Počkaj na re-render (setShowDeleted + setExpanded musia najprv vyrenderovať kartu do DOM)
+      requestAnimationFrame(() => {
+        const container = document.getElementById("admin-content");
+        if (container) container.scrollTo({ top: 0, behavior: "instant" });
+        scrollToClientCard(c.id, true);
+      });
     }
     onExpanded?.();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1178,12 +1182,13 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     // scrollTop=0 je vždy spoľahlivý — nový klient je viditeľný bez scrollovania.
     const prevSortMode = sortMode;
     setSortMode("date_desc");
-    requestAnimationFrame(() => {
+    // setTimeout(0) = po React batched render (rAF môže prísť pred renderom)
+    setTimeout(() => {
       const container = document.getElementById("admin-content");
       if (container) container.scrollTop = 0;
       const newClient = adminData.getClients().find(c => c.id === newId);
       if (newClient) setFloatingClient(newClient);
-    });
+    }, 0);
     // Revert sort po 5s — len ak užívateľ sort medzitým nezmenil
     setTimeout(() => setSortMode(prev => prev === "date_desc" ? prevSortMode : prev), 5000);
     setTimeout(() => setAddSuccessMsg(null), 5000);
@@ -1579,8 +1584,11 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                   autoComplete="off" className="border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary" />
                 <div className="flex gap-1">
                   <div className="relative flex-1">
-                    <input type={showFormPass ? "text" : "password"} placeholder="Heslo" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })}
-                      autoComplete="new-password" className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary pr-8" />
+                    {/* type="text" + WebkitTextSecurity: iOS nevidí password field → žiadne "Save Password?" dialog */}
+                    <input type="text" placeholder="Heslo" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })}
+                      autoComplete="off"
+                      style={showFormPass ? undefined : { WebkitTextSecurity: "disc" } as React.CSSProperties}
+                      className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-primary pr-8" />
                     <button type="button" onClick={() => setShowFormPass(!showFormPass)} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">
                       {showFormPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -1762,8 +1770,8 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
             {emailStatus === "ok" && <p className="text-xs text-green-600">✓ Email odoslaný</p>}
             {emailStatus === "error" && <p className="text-xs text-red-500">✗ Email sa neodoslal (SMTP nie je nakonfigurované)</p>}
             <div className="flex gap-2">
-              <button onClick={() => setAdding(false)} className="px-4 py-2 bg-gray-100 text-gray-500 text-sm font-bold uppercase tracking-wide">Zrušiť</button>
-              <button onClick={add} disabled={emailStatus === "sending"} className="px-6 py-2 bg-primary text-secondary font-bold text-sm uppercase tracking-wide hover:bg-primary/90 disabled:opacity-60">
+              <button type="button" onClick={() => setAdding(false)} className="px-4 py-2 bg-gray-100 text-gray-500 text-sm font-bold uppercase tracking-wide">Zrušiť</button>
+              <button type="button" onClick={add} disabled={emailStatus === "sending"} className="px-6 py-2 bg-primary text-secondary font-bold text-sm uppercase tracking-wide hover:bg-primary/90 disabled:opacity-60">
                 {emailStatus === "sending" ? "Ukladám…" : "Pridať"}
               </button>
             </div>
