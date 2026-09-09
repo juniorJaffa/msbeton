@@ -590,6 +590,13 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   }, [tablePdfModal]);
   const [search, setSearch] = useState("");
   const [adding, setAdding] = useState(false);
+  // iOS "Save Password?" fix: pred každým zatvorením add-formy vyčisti heslo,
+  // potom setTimeout(0) dá React-u čas renderovať prázdne heslo pred unmountom →
+  // iOS nevidí nenulové password-like pole zaniknúť → žiadny Save Password dialog
+  const closeAddForm = () => {
+    setForm(prev => ({ ...prev, password: "" }));
+    setTimeout(() => setAdding(false), 0);
+  };
   const [clientDetailTab, setClientDetailTab] = useState<Record<string, "detail" | "calc">>({});
   const [sendCredState, setSendCredState] = useState<Record<string, "idle" | "loading" | "ok" | "error">>({});
   const [revokeWebauthnState, setRevokeWebauthnState] = useState<Record<string, "idle" | "loading" | "ok" | "error">>({});
@@ -1176,7 +1183,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
       setEmailStatus(res.ok ? "ok" : "error");
       setTimeout(() => setEmailStatus("idle"), 4000);
     }
-    setForm(emptyForm); setAdding(false);
+    closeAddForm();
     setAddSuccessMsg(clientName);
     setExpanded(newId);
     // Nový klient je predradený (pozícia 0 v clients array) → v Manuál sort je na pozícii ~6
@@ -1471,7 +1478,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                       className={cn("px-2.5 py-1.5 rounded text-[11px] sm:text-xs font-bold transition-colors", !showDeleted ? "bg-secondary text-white" : "bg-gray-100 text-gray-500 active:bg-gray-200")}>
                       Aktívni
                     </button>
-                    <button onClick={() => { setShowDeleted(true); setAdding(false); }}
+                    <button onClick={() => { setShowDeleted(true); closeAddForm(); }}
                       className={cn("inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-[11px] sm:text-xs font-bold transition-colors", showDeleted ? "bg-red-600 text-white" : "bg-gray-100 text-gray-500 active:bg-gray-200")}>
                       <Trash2 className="w-3 h-3" /> Koš
                       <span className="text-[9px] opacity-70">{clients.filter(c => c.isDeleted).length}</span>
@@ -1502,7 +1509,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
           </div>
           <div className="flex items-center justify-end gap-2 w-40 shrink-0">
             {isSuper() && (
-              <button onClick={() => { setShowDeleted(v => !v); setAdding(false); }} title={showDeleted ? "Zobraziť aktívnych" : "Koš — zmazaní klienti"}
+              <button onClick={() => { setShowDeleted(v => !v); closeAddForm(); }} title={showDeleted ? "Zobraziť aktívnych" : "Koš — zmazaní klienti"}
                 className={`flex items-center gap-1 px-2 py-1.5 text-[10px] font-black uppercase tracking-wide border transition-colors ${showDeleted ? "bg-red-600 text-white border-red-600" : "border-red-300 text-red-400 hover:border-red-500 hover:text-red-600"}`}>
                 <Trash2 className="w-3.5 h-3.5" />
                 {showDeleted && <span>KOŠ</span>}
@@ -1533,7 +1540,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
         <div className="bg-white border-2 border-primary shadow-md">
           <div className="bg-primary/10 border-b border-primary/20 px-5 py-3 flex items-center justify-between">
             <span className="font-black text-secondary text-sm uppercase tracking-widest">Pridať klienta</span>
-            <button onClick={() => setAdding(false)} className="text-gray-400 hover:text-red-500"><X className="w-4 h-4" /></button>
+            <button onClick={closeAddForm} className="text-gray-400 hover:text-red-500"><X className="w-4 h-4" /></button>
           </div>
           <div className="p-5 space-y-5">
             {/* Osobné info */}
@@ -1765,7 +1772,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
             {emailStatus === "ok" && <p className="text-xs text-green-600">✓ Email odoslaný</p>}
             {emailStatus === "error" && <p className="text-xs text-red-500">✗ Email sa neodoslal (SMTP nie je nakonfigurované)</p>}
             <div className="flex gap-2">
-              <button type="button" onClick={() => setAdding(false)} className="px-4 py-2 bg-gray-100 text-gray-500 text-sm font-bold uppercase tracking-wide">Zrušiť</button>
+              <button type="button" onClick={closeAddForm} className="px-4 py-2 bg-gray-100 text-gray-500 text-sm font-bold uppercase tracking-wide">Zrušiť</button>
               <button type="button" onClick={add} disabled={emailStatus === "sending"} className="px-6 py-2 bg-primary text-secondary font-bold text-sm uppercase tracking-wide hover:bg-primary/90 disabled:opacity-60">
                 {emailStatus === "sending" ? "Ukladám…" : "Pridať"}
               </button>
