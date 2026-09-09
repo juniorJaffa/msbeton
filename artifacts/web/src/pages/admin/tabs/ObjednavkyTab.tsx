@@ -626,9 +626,17 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
   const statusLabels: Record<string, string> = { nova: "Nová", potvrdena: "Potvrdená", odoslana: "Odoslaná FA", vyuctovana: "Vyúčtovaná", vyplatena: "Vyplatená", zrusena: "Zrušená" };
   const today = new Date(o.createdAt).toLocaleDateString("sk-SK");
   const fmtEurPdf = (n: number | undefined) => n !== undefined ? n.toFixed(2) + " €" : "";
-  // Čiastočná platba zo zálohy — doplatok banner v PDF
-  const isPartialDepPdf = o.depositUsed !== undefined && o.depositUsed > 0 && o.paidAmount !== undefined && o.depositUsed < o.paidAmount - 0.01;
-  const doplatokPdf = isPartialDepPdf ? (o.paidAmount! - o.depositUsed!) : 0;
+  // Záloha/doplatok výpočet pre PDF
+  // depositUsed = záloha balance auto-aplikovaná pri vytvorení objednávky
+  // zalohaPaymentsSum = záloha platby pridané cez PaymentsModal (method="zaloha")
+  // pdfOutstanding = skutočný nedoplatok = total - depositUsed - všetky platby
+  const zalohaPaymentsSum = (o.payments ?? []).filter(p => p.method === "zaloha").reduce((s, p) => s + p.amount, 0);
+  const totalZalohaCredited = (o.depositUsed ?? 0) + zalohaPaymentsSum;
+  const doplatokTotal = Math.max(0, (o.totalSDph ?? 0) - (o.depositUsed ?? 0));
+  const allPaymentsSum = (o.payments ?? []).reduce((s, p) => s + p.amount, 0);
+  const pdfOutstanding = Math.max(0, doplatokTotal - allPaymentsSum);
+  const isPartialDepPdf = totalZalohaCredited > 0.01 && pdfOutstanding > 0.01;
+  const doplatokPdf = pdfOutstanding;
 
   let parsed: { v: number; s: { h: string; rows: { l: string; v: number; o?: number; u?: number; uOrig?: number; uSuffix?: string }[] }[]; fT?: number } | null = null;
   try { if (o.breakdown?.startsWith("{")) parsed = JSON.parse(o.breakdown); } catch { /* */ }
@@ -855,7 +863,7 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
     <div style="font-size:8pt;color:rgba(255,255,255,0.6)">${o.priceMode === "hotovost" ? "Spolu" : "Celkom s DPH"}</div>
     <div style="text-align:right">
       <div style="font-size:15pt;font-weight:bold;color:#EDC531;line-height:1">${fmtEurPdf(o.totalSDph)}</div>
-      ${o.status === "vyplatena" && o.paidAmount !== undefined ? `<div style="font-size:7.5pt;color:rgba(255,255,255,0.7);margin-top:1.5mm">Zaplatené ${fmtEurPdf(o.paidAmount)}${Math.abs(o.paidAmount - o.totalSDph) > 0.01 ? ` <span style="font-weight:bold;color:${o.paidAmount > o.totalSDph ? "#86efac" : "#ef4444"}">${o.paidAmount > o.totalSDph ? `+${(o.paidAmount - o.totalSDph).toFixed(2)} € tringelt` : `${(o.paidAmount - o.totalSDph).toFixed(2)} €`}</span>` : ""}${o.depositUsed !== undefined && o.depositUsed > 0 ? `<span style="margin-left:5px;background:rgba(251,191,36,0.25);color:#fcd34d;border-radius:2px;padding:0 3px;font-weight:bold">💰 záloha ${fmtEurPdf(o.depositUsed)}${o.depositUsed < o.paidAmount - 0.01 ? ` + doplatok ${fmtEurPdf(o.paidAmount - o.depositUsed)}` : ""}</span>` : ""}</div>` : ""}
+      ${o.status === "vyplatena" && o.paidAmount !== undefined ? `<div style="font-size:7.5pt;color:rgba(255,255,255,0.7);margin-top:1.5mm">Zaplatené ${fmtEurPdf(o.paidAmount)}${Math.abs(o.paidAmount - o.totalSDph) > 0.01 ? ` <span style="font-weight:bold;color:${o.paidAmount > o.totalSDph ? "#86efac" : "#ef4444"}">${o.paidAmount > o.totalSDph ? `+${(o.paidAmount - o.totalSDph).toFixed(2)} € tringelt` : `${(o.paidAmount - o.totalSDph).toFixed(2)} €`}</span>` : ""}${o.depositUsed !== undefined && o.depositUsed > 0 ? `<span style="margin-left:5px;background:rgba(251,191,36,0.25);color:#fcd34d;border-radius:2px;padding:0 3px;font-weight:bold">💰 záloha ${fmtEurPdf(o.depositUsed)}${zalohaPaymentsSum > 0.01 ? ` + zo zálohy ${fmtEurPdf(zalohaPaymentsSum)}` : ""}</span>` : ""}</div>` : ""}
     </div>
   </div>
   ${isPartialDepPdf ? `<div style="background:#ea580c;color:#fff;padding:2.5mm 4mm;border-radius:0 0 2px 2px;display:flex;justify-content:space-between;align-items:center">
@@ -980,7 +988,7 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
         <div style="font-size:8pt;color:rgba(255,255,255,0.6)">Zaplatené</div>
         <div style="font-size:11pt;font-weight:bold;color:#fff">${fmtEurPdf(o.paidAmount)}</div>
         ${Math.abs(o.paidAmount - o.totalSDph) > 0.01 ? `<div style="font-size:9pt;font-weight:bold;color:${o.paidAmount > o.totalSDph ? "#86efac" : "#ef4444"}">${o.paidAmount > o.totalSDph ? `+${(o.paidAmount - o.totalSDph).toFixed(2)} € tringelt` : `${(o.paidAmount - o.totalSDph).toFixed(2)} € rozdiel`}</div>` : ""}
-        ${o.depositUsed !== undefined && o.depositUsed > 0 ? `<div style="margin-top:3px;font-size:8pt;background:rgba(251,191,36,0.2);border-radius:3px;padding:2px 5px;color:#fcd34d;font-weight:bold">💰 Záloha: ${fmtEurPdf(o.depositUsed)}${o.depositUsed < o.paidAmount - 0.01 ? ` + doplatok: ${fmtEurPdf(o.paidAmount - o.depositUsed)}` : ""}</div>` : ""}
+        ${o.depositUsed !== undefined && o.depositUsed > 0 ? `<div style="margin-top:3px;font-size:8pt;background:rgba(251,191,36,0.2);border-radius:3px;padding:2px 5px;color:#fcd34d;font-weight:bold">💰 Záloha: ${fmtEurPdf(o.depositUsed)}${zalohaPaymentsSum > 0.01 ? ` + zo zálohy: ${fmtEurPdf(zalohaPaymentsSum)}` : ""}</div>` : ""}
       </div>` : ""}
     </div>
   </div>
@@ -1909,8 +1917,8 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
           {dateLabelShort && !filterOpen && (
             <span className="inline-flex items-center gap-1 bg-secondary/10 text-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
               <span>{dateLabelShort}</span>
-              <button type="button" onClick={e => { e.stopPropagation(); setQuickDate("tyzden"); setTyzdenOffset(0); const wb = initWeekBounds(); setDateFrom(wb.from); setDateTo(wb.to); }}
-                className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer" title="Resetovať dátum">
+              <button type="button" onClick={e => { e.stopPropagation(); setQuickDate(""); setDateFrom(""); setDateTo(""); setTyzdenOffset(0); }}
+                className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer" title="Zrušiť dátum filter">
                 <X className="w-2.5 h-2.5" />
               </button>
             </span>

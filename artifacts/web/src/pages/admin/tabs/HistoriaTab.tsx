@@ -1102,8 +1102,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
               {depDateLabelShort && !depFilterOpen && (
                 <span className="inline-flex items-center gap-1 bg-secondary/10 text-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
                   <span>{depDateLabelShort}</span>
-                  <button type="button" onClick={e => { e.stopPropagation(); setDepDateFilter("tyzden"); setDepTyzdenOffset(0); }}
-                    className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer" title="Resetovať dátum">
+                  <button type="button" onClick={e => { e.stopPropagation(); setDepDateFilter("vsetko"); setDepTyzdenOffset(0); }}
+                    className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer" title="Zrušiť dátum filter">
                     <X className="w-2.5 h-2.5" />
                   </button>
                 </span>
@@ -1342,8 +1342,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
               {cashDateLabelShort && !cashFilterOpen && (
                 <span className="inline-flex items-center gap-1 bg-secondary/10 text-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
                   <span>{cashDateLabelShort}</span>
-                  <button type="button" onClick={e => { e.stopPropagation(); setCashDateFilter("tyzden"); setCashTyzdenOffset(0); setCashDateFrom(""); setCashDateTo(""); }}
-                    className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer" title="Resetovať dátum">
+                  <button type="button" onClick={e => { e.stopPropagation(); setCashDateFilter("vsetko"); setCashTyzdenOffset(0); setCashDateFrom(""); setCashDateTo(""); }}
+                    className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer" title="Zrušiť dátum filter">
                     <X className="w-2.5 h-2.5" />
                   </button>
                 </span>
