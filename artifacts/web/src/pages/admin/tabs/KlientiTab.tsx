@@ -1801,7 +1801,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                   : liftedClientId === c.id ? "border-primary border-2 opacity-50 scale-[0.99] shadow-xl"
                   : c.isOwner ? "bg-amber-50 border-primary/40 border-l-primary" : !c.active ? "bg-white border-gray-200 border-l-red-400 opacity-50" : clientRole(c) === "manager" ? "bg-white border-gray-200 border-l-secondary" : clientRole(c) === "reader" ? "bg-white border-gray-200 border-l-blue-400" : c.favorite ? "bg-white border-gray-200 border-l-rose-400" : "bg-white border-gray-200 border-l-green-500")}>
               {/* Card header */}
-              <div className="flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => { const next = isExpanded ? null : c.id; setExpanded(next); if (next) scrollToClientCard(next, true); }}>
+              <div className={cn("flex items-center gap-2 sm:gap-3 px-2 sm:px-4 cursor-pointer hover:bg-gray-50 transition-colors", isExpanded ? "pt-3 pb-0" : "py-3")} onClick={() => { const next = isExpanded ? null : c.id; setExpanded(next); if (next) scrollToClientCard(next, true); }}>
                 {/* Drag grip + číslo (stacked) — úzky ľavý stĺpec, šetrí šírku */}
                 {canDrag ? (
                   <span className="shrink-0 touch-none flex flex-col items-center justify-center gap-0 -ml-1 px-1 py-1 rounded text-gray-300 hover:text-gray-500 hover:bg-gray-100 active:text-primary cursor-grab active:cursor-grabbing"
