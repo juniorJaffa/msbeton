@@ -1143,7 +1143,9 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
       return;
     }
     const clientName = [form.firstName.trim(), form.lastName.trim()].filter(Boolean).join(" ") || form.company.trim();
-    save([...clients, {
+    // Nový klient PREDRADENÝ (nie appendnutý) → v Manuál poradí ide na vrch zoznamu
+    // (za owner/manager piny). scrollTop=0 ho ukáže okamžite bez prepínania sort.
+    save([{
       id: newId,
       firstName: form.firstName.trim(), lastName: form.lastName.trim(),
       company: form.company.trim(), email: form.email.trim(), phone: form.phone.trim(),
@@ -1163,7 +1165,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
       deliveryZoneId: form.deliveryZoneId || undefined,
       sharedLink: form.sharedLink.trim() || undefined,
       createdAt: new Date().toISOString(),
-    }]);
+    }, ...clients]);
     if (sendRegEmail && form.email.trim()) {
       setEmailStatus("sending");
       const res = await authFetch("/api/admin/send-registration-email", {
@@ -1177,20 +1179,15 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     setForm(emptyForm); setAdding(false);
     setAddSuccessMsg(clientName);
     setExpanded(newId);
-    // iOS Safari fix: scrollTop na fixed kontajneri je nespoľahlivý (8+ pokusov zlyhalo).
-    // Riešenie: prepnúť na "Nové" sort → nový klient ide na vrch zoznamu (za owner/manager).
-    // scrollTop=0 je vždy spoľahlivý — nový klient je viditeľný bez scrollovania.
-    const prevSortMode = sortMode;
-    setSortMode("date_desc");
-    // setTimeout(0) = po React batched render (rAF môže prísť pred renderom)
+    // Nový klient je predradený (pozícia 0 v clients array) → v Manuál sort je za owner/manager.
+    // scrollTop=0 ho ukáže okamžite — vždy spoľahlivé na iOS Safari aj Chrome.
+    // setTimeout(0) = garantovane po React batched render.
     setTimeout(() => {
       const container = document.getElementById("admin-content");
       if (container) container.scrollTop = 0;
       const newClient = adminData.getClients().find(c => c.id === newId);
       if (newClient) setFloatingClient(newClient);
     }, 0);
-    // Revert sort po 5s — len ak užívateľ sort medzitým nezmenil
-    setTimeout(() => setSortMode(prev => prev === "date_desc" ? prevSortMode : prev), 5000);
     setTimeout(() => setAddSuccessMsg(null), 5000);
   };
 
