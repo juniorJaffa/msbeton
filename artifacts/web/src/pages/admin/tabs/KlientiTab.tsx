@@ -527,6 +527,9 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   const [hardDeleteInput, setHardDeleteInput] = useState("");
   const [hardDeleteLoading, setHardDeleteLoading] = useState(false);
   const [hardDeleteError, setHardDeleteError] = useState<string | null>(null);
+  const [purgeKosModal, setPurgeKosModal] = useState(false);
+  const [purgeKosLoading, setPurgeKosLoading] = useState(false);
+  const [purgeKosError, setPurgeKosError] = useState<string | null>(null);
   const [photoLightbox, setPhotoLightbox] = useState<{ clientId: string; index: number } | null>(null);
   // Fronta nahrávania fotiek per klient — zabráni race condition pri rýchlom nahrávaní viacerých fotiek.
   // Druhé nahrávania počká na dokončenie prvého, potom číta čerstvé dáta (s prvou fotkou).
@@ -1130,6 +1133,25 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   const restore = (id: string) => {
     save(clients.map(c => c.id === id ? { ...c, isDeleted: false, deletedAt: undefined, deletedBy: undefined } : c));
   };
+  const confirmPurgeKos = async () => {
+    const purgeable = clients.filter(c =>
+      c.isDeleted &&
+      allOrders.filter(o => o.clientId != null && (o.clientId === c.loginId || o.clientId === c.id)).length === 0
+    );
+    setPurgeKosLoading(true);
+    setPurgeKosError(null);
+    try {
+      for (const c of purgeable) {
+        await adminApi.hardDeleteClient(c.id);
+      }
+      setPurgeKosModal(false);
+      syncFromServer();
+    } catch (e) {
+      setPurgeKosError(e instanceof Error ? e.message : "Chyba pri mazaní");
+    } finally {
+      setPurgeKosLoading(false);
+    }
+  };
   // Vždy odovzdaj deviceLabel → patchClientPriceHistory v saveClients auto-diffuje a loguje zmeny cien/zliav
   const update = (id: string, patch: Partial<Client>) =>
     save(clients.map(c => c.id === id ? { ...c, ...patch } : c), getAdminDeviceLabel() || "admin");
@@ -1514,6 +1536,19 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                 {showDeleted && <span>KOŠ</span>}
               </button>
             )}
+            {isSuper() && showDeleted && (() => {
+              const purgeCount = clients.filter(c =>
+                c.isDeleted &&
+                allOrders.filter(o => o.clientId != null && (o.clientId === c.loginId || o.clientId === c.id)).length === 0
+              ).length;
+              return purgeCount > 0 ? (
+                <button onClick={() => { setPurgeKosModal(true); setPurgeKosError(null); }}
+                  title={`Natrvalo vymazať ${purgeCount} klientov bez objednávok`}
+                  className="flex items-center gap-1 px-2 py-1.5 text-[10px] font-black uppercase tracking-wide border border-red-400 text-red-400 hover:bg-red-600 hover:text-white hover:border-red-600 transition-colors">
+                  <X className="w-3.5 h-3.5" /> Vyčistiť ({purgeCount})
+                </button>
+              ) : null;
+            })()}
             {!readOnly && !showDeleted && (
               <button onClick={() => { setAdding(true); setExpanded(null); }} title="Pridať klienta"
                 className="flex items-center gap-1.5 px-2.5 py-1.5 bg-primary text-secondary font-black text-[10px] hover:bg-primary/90 shrink-0 uppercase tracking-wide">
@@ -3343,6 +3378,58 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                       inputOk && !hardDeleteLoading ? "bg-red-600 hover:bg-red-700 active:bg-red-800" : "bg-red-200 cursor-not-allowed"
                     }`}>
                     {hardDeleteLoading ? "Mažem..." : "Trvalo vymazať"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Purge KOŠ modal */}
+      {purgeKosModal && (() => {
+        const purgeList = clients.filter(c =>
+          c.isDeleted &&
+          allOrders.filter(o => o.clientId != null && (o.clientId === c.loginId || o.clientId === c.id)).length === 0
+        );
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
+              <div className="bg-red-600 px-6 pt-5 pb-4 flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                  <Trash2 className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-black text-white text-base leading-tight">Vyčistiť KOŠ?</h3>
+                  <p className="text-red-100 text-sm mt-0.5">{purgeList.length} klientov bez objednávok</p>
+                </div>
+              </div>
+              <div className="p-6">
+                <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-sm text-red-800">
+                  <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
+                  <span><strong>Nevratná akcia.</strong> Klienti bez objednávok budú natrvalo odstránení z databázy.</span>
+                </div>
+                <div className="max-h-32 overflow-y-auto mb-4 text-xs text-gray-600 space-y-0.5">
+                  {purgeList.map(c => (
+                    <div key={c.id} className="flex items-center gap-1.5 py-0.5 border-b border-gray-100 last:border-0">
+                      <span className="text-gray-400 shrink-0">{c.loginId}</span>
+                      <span>{[c.firstName, c.lastName].filter(Boolean).join(" ") || c.company || "—"}</span>
+                    </div>
+                  ))}
+                </div>
+                {purgeKosError && (
+                  <p className="text-xs text-red-600 mb-3 flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {purgeKosError}
+                  </p>
+                )}
+                <div className="flex gap-2">
+                  <button onClick={() => setPurgeKosModal(false)} disabled={purgeKosLoading}
+                    className="flex-1 py-2.5 text-sm font-bold border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 cursor-pointer">
+                    Zrušiť
+                  </button>
+                  <button onClick={confirmPurgeKos} disabled={purgeKosLoading}
+                    className={`flex-1 py-2.5 text-sm font-black rounded-lg text-white transition-colors cursor-pointer ${purgeKosLoading ? "bg-red-300" : "bg-red-600 hover:bg-red-700 active:bg-red-800"}`}>
+                    {purgeKosLoading ? "Mažem..." : `Vymazať ${purgeList.length}`}
                   </button>
                 </div>
               </div>
