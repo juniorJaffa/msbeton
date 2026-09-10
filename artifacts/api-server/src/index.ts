@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { startAutoCleanupSchedule } from "./lib/autoCleanup";
 import fs from "node:fs";
 
 // Loguj každý start/restart do súboru (viditeľné v histórii aj bez PM2 CLI)
@@ -33,6 +34,7 @@ app.listen(port, (err) => {
 
   logger.info({ port }, "Server listening");
   logStartup("START");
+  startAutoCleanupSchedule();
   // PM2 wait_ready: signalizuje že process je ready pre traffic (graceful reload)
   if (process.send) process.send("ready");
 });
