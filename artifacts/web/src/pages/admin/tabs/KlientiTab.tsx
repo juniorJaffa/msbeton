@@ -1150,9 +1150,9 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
       return;
     }
     const clientName = [form.firstName.trim(), form.lastName.trim()].filter(Boolean).join(" ") || form.company.trim();
-    // Nový klient PREDRADENÝ (nie appendnutý) → v Manuál poradí ide na vrch zoznamu
-    // (za owner/manager piny). scrollTop=0 ho ukáže okamžite bez prepínania sort.
-    save([{
+    // Nový klient APPENDNUTÝ na koniec → v Manuál poradí ide na koniec zoznamu.
+    // scrollToClientCard ho nájde podľa ID bez ohľadu na pozíciu.
+    save([...clients, {
       id: newId,
       firstName: form.firstName.trim(), lastName: form.lastName.trim(),
       company: form.company.trim(), email: form.email.trim(), phone: form.phone.trim(),
@@ -1172,7 +1172,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
       deliveryZoneId: form.deliveryZoneId || undefined,
       sharedLink: form.sharedLink.trim() || undefined,
       createdAt: new Date().toISOString(),
-    }, ...clients]);
+    }]);
     if (sendRegEmail && form.email.trim()) {
       setEmailStatus("sending");
       const res = await authFetch("/api/admin/send-registration-email", {
@@ -1186,9 +1186,8 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     closeAddForm();
     setAddSuccessMsg(clientName);
     setExpanded(newId);
-    // Nový klient je predradený (pozícia 0 v clients array) → v Manuál sort je na pozícii ~6
-    // (za owner/manager/reader/favorite pinmi). targetTop ≈ 350px (nie 15000px ako pred tým).
-    // iOS Safari zvláda malé targetTop hodnoty spoľahlivo na rozdiel od veľkých.
+    // Nový klient je appendnutý (posledný v clients array) → v Manuál sort je na konci.
+    // scrollToClientCard ho nájde podľa ID → autoscroll na koniec zoznamu.
     // setTimeout(50) = React render + layout settle po setAdding(false) form removal.
     setTimeout(() => {
       scrollToClientCard(newId, true);
