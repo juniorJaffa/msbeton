@@ -1208,11 +1208,10 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     setAddSuccessMsg(clientName);
     setExpanded(newId);
     // Nový klient je appendnutý (posledný v clients array) → v Manuál sort je na konci.
-    // scrollToClientCard ho nájde podľa ID → autoscroll na koniec zoznamu.
-    // setTimeout(50) = React render + layout settle po setAdding(false) form removal.
-    setTimeout(() => {
-      scrollToClientCard(newId, true);
-    }, 50);
+    // scrollAndLock ho nájde podľa ID → autoscroll na koniec zoznamu.
+    // scrollAndLock má retry loop (10× 100ms) → element na konci listu sa renderuje async,
+    // jednorazový setTimeout(50) ho nestihne. rAF lock zabraňuje iOS Safari scroll reset.
+    scrollAndLock(newId);
     setTimeout(() => setAddSuccessMsg(null), 5000);
   };
 
