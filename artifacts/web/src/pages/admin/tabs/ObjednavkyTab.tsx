@@ -863,6 +863,7 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
     <div style="font-size:8pt;color:rgba(255,255,255,0.6)">${o.priceMode === "hotovost" ? "Spolu" : "Celkom s DPH"}</div>
     <div style="text-align:right">
       <div style="font-size:15pt;font-weight:bold;color:#EDC531;line-height:1">${fmtEurPdf(o.totalSDph)}</div>
+      ${(o.depositUsed ?? 0) > 0.01 ? `<div style="margin-top:1.5mm"><span style="background:rgba(251,191,36,0.25);color:#fcd34d;border-radius:2px;padding:0 3px;font-size:7pt;font-weight:bold">💰 záloha ${fmtEurPdf(o.depositUsed ?? 0)}${zalohaPaymentsSum > 0.01 ? ` + zo zálohy ${fmtEurPdf(zalohaPaymentsSum)}` : ""}</span></div>` : ""}
     </div>
   </div>
   ${isPartialDepPdf ? `<div style="background:#ea580c;color:#fff;padding:2.5mm 4mm;border-radius:0 0 2px 2px;display:flex;justify-content:space-between;align-items:center">
@@ -982,6 +983,7 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
     <div style="text-align:right">
       <div style="font-size:8pt;color:rgba(255,255,255,0.6)">${o.priceMode === "hotovost" ? "Spolu" : "Celkom s DPH"}</div>
       <div style="font-size:16pt;font-weight:bold;color:#EDC531">${fmtEurPdf(o.totalSDph)}</div>
+      ${(o.depositUsed ?? 0) > 0.01 ? `<div style="margin-top:4px;font-size:8pt;background:rgba(251,191,36,0.2);border-radius:3px;padding:2px 6px;color:#fcd34d;font-weight:bold;display:inline-block">💰 Záloha: ${fmtEurPdf(o.depositUsed ?? 0)}${zalohaPaymentsSum > 0.01 ? ` + zo zálohy: ${fmtEurPdf(zalohaPaymentsSum)}` : ""}</div>` : ""}
     </div>
   </div>
   ${isPartialDepPdf ? `<div style="background:#ea580c;color:#fff;padding:3.5mm 4mm;border-radius:0 0 2px 2px;display:flex;justify-content:space-between;align-items:center">
