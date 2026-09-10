@@ -1141,9 +1141,8 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     setPurgeKosLoading(true);
     setPurgeKosError(null);
     try {
-      for (const c of purgeable) {
-        await adminApi.hardDeleteClient(c.id);
-      }
+      // Jedna batch operácia namiesto N sekvenčných volaní
+      await adminApi.purgeDeletedClients(purgeable.map(c => c.id));
       setPurgeKosModal(false);
       syncFromServer();
     } catch (e) {

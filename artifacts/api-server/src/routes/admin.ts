@@ -697,6 +697,35 @@ router.delete("/clients/:id", requireSuper, async (req, res) => {
   catch (err) { req.log.error({ err }, "Failed to hard-delete client"); res.status(500).json({ error: "Internal server error" }); }
 });
 
+// Batch purge — natrvalo vymaž všetkých soft-deleted klientov bez objednávok (iba superadmin)
+router.post("/clients/purge-deleted", requireSuper, async (req, res) => {
+  try {
+    const rawClients = await getConfig(KEYS.clients);
+    const rawOrders = await getConfig(KEYS.orders);
+    const clients = Array.isArray(rawClients) ? rawClients as Array<Record<string, unknown>> : [];
+    const orders = Array.isArray(rawOrders) ? rawOrders as Array<Record<string, unknown>> : [];
+    const ids = Array.isArray(req.body?.ids) ? (req.body.ids as string[]) : null;
+    const toDelete = clients.filter(c => {
+      if (!c.isDeleted) return false;
+      if (c.isOwner) return false;
+      if (ids && !ids.includes(String(c.id))) return false;
+      const hasOrder = orders.some(o =>
+        o.clientId != null && (o.clientId === c.loginId || o.clientId === c.id)
+      );
+      return !hasOrder;
+    });
+    if (toDelete.length === 0) { res.json({ ok: true, deleted: 0 }); return; }
+    const deleteIds = new Set(toDelete.map(c => String(c.id)));
+    const updated = clients.filter(c => !deleteIds.has(String(c.id)));
+    await setConfig(KEYS.clients, updated);
+    invalidateClientCache();
+    res.json({ ok: true, deleted: toDelete.length });
+  } catch (err) {
+    req.log.error({ err }, "Failed to purge deleted clients");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // Zrušenie všetkých WebAuthn credentials + logu klienta — iba superadmin
 router.delete("/clients/:id/webauthn", requireSuper, async (req, res) => {
   try {
