@@ -863,7 +863,6 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
     <div style="font-size:8pt;color:rgba(255,255,255,0.6)">${o.priceMode === "hotovost" ? "Spolu" : "Celkom s DPH"}</div>
     <div style="text-align:right">
       <div style="font-size:15pt;font-weight:bold;color:#EDC531;line-height:1">${fmtEurPdf(o.totalSDph)}</div>
-      ${o.status === "vyplatena" && o.paidAmount !== undefined ? `<div style="font-size:7.5pt;color:rgba(255,255,255,0.7);margin-top:1.5mm">Zaplatené ${fmtEurPdf(o.paidAmount)}${Math.abs(o.paidAmount - o.totalSDph) > 0.01 ? ` <span style="font-weight:bold;color:${o.paidAmount > o.totalSDph ? "#86efac" : "#ef4444"}">${o.paidAmount > o.totalSDph ? `+${(o.paidAmount - o.totalSDph).toFixed(2)} € tringelt` : `${(o.paidAmount - o.totalSDph).toFixed(2)} €`}</span>` : ""}${o.depositUsed !== undefined && o.depositUsed > 0 ? `<span style="margin-left:5px;background:rgba(251,191,36,0.25);color:#fcd34d;border-radius:2px;padding:0 3px;font-weight:bold">💰 záloha ${fmtEurPdf(o.depositUsed)}${zalohaPaymentsSum > 0.01 ? ` + zo zálohy ${fmtEurPdf(zalohaPaymentsSum)}` : ""}</span>` : ""}</div>` : ""}
     </div>
   </div>
   ${isPartialDepPdf ? `<div style="background:#ea580c;color:#fff;padding:2.5mm 4mm;border-radius:0 0 2px 2px;display:flex;justify-content:space-between;align-items:center">
@@ -983,13 +982,6 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
     <div style="text-align:right">
       <div style="font-size:8pt;color:rgba(255,255,255,0.6)">${o.priceMode === "hotovost" ? "Spolu" : "Celkom s DPH"}</div>
       <div style="font-size:16pt;font-weight:bold;color:#EDC531">${fmtEurPdf(o.totalSDph)}</div>
-      ${o.status === "vyplatena" && o.paidAmount !== undefined ? `
-      <div style="margin-top:4px;border-top:1px solid rgba(255,255,255,0.2);padding-top:4px">
-        <div style="font-size:8pt;color:rgba(255,255,255,0.6)">Zaplatené</div>
-        <div style="font-size:11pt;font-weight:bold;color:#fff">${fmtEurPdf(o.paidAmount)}</div>
-        ${Math.abs(o.paidAmount - o.totalSDph) > 0.01 ? `<div style="font-size:9pt;font-weight:bold;color:${o.paidAmount > o.totalSDph ? "#86efac" : "#ef4444"}">${o.paidAmount > o.totalSDph ? `+${(o.paidAmount - o.totalSDph).toFixed(2)} € tringelt` : `${(o.paidAmount - o.totalSDph).toFixed(2)} € rozdiel`}</div>` : ""}
-        ${o.depositUsed !== undefined && o.depositUsed > 0 ? `<div style="margin-top:3px;font-size:8pt;background:rgba(251,191,36,0.2);border-radius:3px;padding:2px 5px;color:#fcd34d;font-weight:bold">💰 Záloha: ${fmtEurPdf(o.depositUsed)}${zalohaPaymentsSum > 0.01 ? ` + zo zálohy: ${fmtEurPdf(zalohaPaymentsSum)}` : ""}</div>` : ""}
-      </div>` : ""}
     </div>
   </div>
   ${isPartialDepPdf ? `<div style="background:#ea580c;color:#fff;padding:3.5mm 4mm;border-radius:0 0 2px 2px;display:flex;justify-content:space-between;align-items:center">
