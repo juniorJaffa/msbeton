@@ -1813,8 +1813,8 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
         </div>
       )}
 
-      {/* Client cards */}
-      <div className="space-y-px">
+      {/* Client cards — pb-40 zaručí priestor pod poslednou kartou (iOS scroll) */}
+      <div className="space-y-px pb-40">
         {filtered.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">Žiadni klienti.</p>}
         {filtered.map((c, listIdx) => {
           const isExpanded = expanded === c.id;
