@@ -1910,7 +1910,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
                   {!readOnly && (!c.photos || c.photos.length < 3) && (
                     <label
                       onClick={(e) => e.stopPropagation()}
-                      className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white border border-gray-300 hover:border-primary hover:bg-primary/20 flex items-center justify-center cursor-pointer transition-colors group ring-1 ring-white"
+                      className="absolute -bottom-1 -right-1 z-10 w-5 h-5 rounded-full bg-white border border-gray-300 hover:border-primary hover:bg-primary/20 flex items-center justify-center cursor-pointer transition-colors group ring-1 ring-white"
                       title={c.photos && c.photos.length > 0 ? "Pridať ďalšiu fotku" : "Pridať fotku miesta (brána, číslo domu…)"}>
                       <Camera className="w-2.5 h-2.5 text-gray-400 group-hover:text-primary transition-colors" />
                       <input type="file" accept="image/*,image/heic,image/heif" className="hidden"
