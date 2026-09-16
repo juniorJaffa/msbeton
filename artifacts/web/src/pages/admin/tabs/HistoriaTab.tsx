@@ -1345,16 +1345,50 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   </button>
                 </span>
               )}
-              {/* Dátum chip — viditeľný aj v collapsed stave (vzor ObjednávkyTab) */}
-              {cashDateLabelShort && !cashFilterOpen && (
-                <span className="inline-flex items-center gap-1 bg-secondary/10 text-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
-                  <span>{cashDateLabelShort}</span>
-                  <button type="button" onClick={e => { e.stopPropagation(); setCashDateFilter("vsetko"); setCashTyzdenOffset(0); setCashDateFrom(""); setCashDateTo(""); }}
-                    className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer" title="Zrušiť dátum filter">
-                    <X className="w-2.5 h-2.5" />
-                  </button>
-                </span>
-              )}
+              {/* Aktívne filter chipy — viditeľné aj v collapsed stave */}
+              {!cashFilterOpen && (<>
+                {cashDateLabelShort && (
+                  <span className="inline-flex items-center gap-1 bg-secondary/10 text-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
+                    <span>{cashDateLabelShort}</span>
+                    <button type="button" onClick={e => { e.stopPropagation(); setCashDateFilter("vsetko"); setCashTyzdenOffset(0); setCashDateFrom(""); setCashDateTo(""); }}
+                      className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer">
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  </span>
+                )}
+                {cashStatusFilter !== "vsetky" && (
+                  <span className="inline-flex items-center gap-1 bg-secondary/10 text-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
+                    <span>{STATUS_LABEL[cashStatusFilter] ?? cashStatusFilter}</span>
+                    <button type="button" onClick={e => { e.stopPropagation(); setCashStatusFilter("vsetky"); }}
+                      className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer"><X className="w-2.5 h-2.5" /></button>
+                  </span>
+                )}
+                {cashClientFilter !== "vsetci" && (() => {
+                  const c = clientByLoginId.get(cashClientFilter);
+                  const label = c ? (c.firstName || c.lastName ? `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim() : c.company ?? cashClientFilter) : cashClientFilter;
+                  return (
+                    <span className="inline-flex items-center gap-1 bg-secondary/10 text-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
+                      <span>{label}</span>
+                      <button type="button" onClick={e => { e.stopPropagation(); setCashClientFilter("vsetci"); setCashClientSearch(""); }}
+                        className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer"><X className="w-2.5 h-2.5" /></button>
+                    </span>
+                  );
+                })()}
+                {cashZalohaFilter !== "vsetky" && (
+                  <span className="inline-flex items-center gap-1 bg-secondary/10 text-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
+                    <span>{cashZalohaFilter === "zaloha" ? "Zo zálohy" : cashZalohaFilter === "doplatok" ? "Doplatok" : "Nedoplatky"}</span>
+                    <button type="button" onClick={e => { e.stopPropagation(); setCashZalohaFilter("vsetky"); }}
+                      className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer"><X className="w-2.5 h-2.5" /></button>
+                  </span>
+                )}
+                {cashSearch.trim() && (
+                  <span className="inline-flex items-center gap-1 bg-secondary/10 text-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0 max-w-[80px]">
+                    <span className="truncate">"{cashSearch.trim()}"</span>
+                    <button type="button" onClick={e => { e.stopPropagation(); setCashSearch(""); }}
+                      className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer"><X className="w-2.5 h-2.5" /></button>
+                  </span>
+                )}
+              </>)}
               <span className="ml-auto text-xs font-bold text-secondary shrink-0">{cashSummary.count} obj.</span>
               <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${cashFilterOpen ? "rotate-180" : ""}`} />
             </button>
