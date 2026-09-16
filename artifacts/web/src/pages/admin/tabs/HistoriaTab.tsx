@@ -1463,9 +1463,12 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   <button type="button" onClick={() => setSecCashDateOpen(o => !o)}
                     className="w-full bg-gray-50 border-b border-gray-100 px-4 py-1.5 flex items-center gap-2 hover:bg-gray-100 transition-colors cursor-pointer">
                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">Dátum · Excel</span>
-                    {(cashDateFilter !== "vsetko" || !!cashDateFrom || !!cashDateTo || cashExcelFilter !== "vsetky") && (
-                      <span className="bg-secondary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
-                        {[cashDateFilter !== "vsetko" || !!cashDateFrom || !!cashDateTo, cashExcelFilter !== "vsetky"].filter(Boolean).length}
+                    {cashDateLabelShort && (
+                      <span className="bg-secondary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full whitespace-nowrap">{cashDateLabelShort}</span>
+                    )}
+                    {cashExcelFilter !== "vsetky" && (
+                      <span className="bg-green-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                        {cashExcelFilter === "ok" ? "Excel OK" : "Excel?"}
                       </span>
                     )}
                     <div className="ml-auto flex items-center gap-2">
@@ -1504,11 +1507,14 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   <button type="button" onClick={() => setSecCashExtraOpen(o => !o)}
                     className="w-full bg-gray-50 border-b border-gray-100 px-4 py-1.5 flex items-center gap-2 hover:bg-gray-100 transition-colors cursor-pointer">
                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">KTO · Klient</span>
-                    {(cashKtoFilters.length > 0 || cashClientFilter !== "vsetci") && (
-                      <span className="bg-secondary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
-                        {[cashKtoFilters.length > 0, cashClientFilter !== "vsetci"].filter(Boolean).length}
-                      </span>
+                    {cashKtoFilters.length > 0 && (
+                      <span className="bg-secondary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full whitespace-nowrap">KTO {cashKtoFilters.length}</span>
                     )}
+                    {cashClientFilter !== "vsetci" && (() => {
+                      const c = clientByLoginId.get(cashClientFilter);
+                      const label = c ? (c.firstName || c.lastName ? `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim() : c.company ?? cashClientFilter) : cashClientFilter;
+                      return <span className="bg-secondary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full whitespace-nowrap max-w-[100px] truncate">{label}</span>;
+                    })()}
                     <div className="ml-auto flex items-center gap-2">
                       {(cashKtoFilters.length > 0 || cashClientFilter !== "vsetci") && (
                         <button type="button" onClick={e => { e.stopPropagation(); setCashKtoFilters([]); setCashClientFilter("vsetci"); setCashClientSearch(""); }}
