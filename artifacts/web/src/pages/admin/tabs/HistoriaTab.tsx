@@ -969,11 +969,17 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
 
   // Cashflow extras — zálohy klientov, pohľadávky FA, trend dnes vs. minulý týždeň
   const cashflowExtras = useMemo(() => {
-    // Celkový zostatok zálohy všetkých klientov (viazané peniaze)
-    const totalDeposits = liveClients.reduce((s, c) => s + (c.deposit?.balance ?? 0), 0);
+    // Viazané zálohy — ak je klient filter aktívny, zobraz len toho klienta
+    const clientDeposits = cashClientFilter !== "vsetci"
+      ? liveClients.filter(c => c.loginId === cashClientFilter || c.id === cashClientFilter)
+      : liveClients;
+    const totalDeposits = clientDeposits.reduce((s, c) => s + (c.deposit?.balance ?? 0), 0);
 
-    // Pohľadávky: odoslaná + FA (faktúry čakajúce na platbu)
-    const pohladavkyOrders = liveOrders.filter(o => o.status === "odoslana" && o.priceMode === "faktura");
+    // Pohľadávky: odoslaná FA — ak je klient filter aktívny, zobraz len toho klienta
+    const pohladavkyBase = cashClientFilter !== "vsetci"
+      ? liveOrders.filter(o => o.clientId === cashClientFilter)
+      : liveOrders;
+    const pohladavkyOrders = pohladavkyBase.filter(o => o.status === "odoslana" && o.priceMode === "faktura");
     const pohladavky = pohladavkyOrders.reduce((s, o) => s + (o.totalSDph ?? o.totalBezDph ?? 0), 0);
     const pohladavkyCount = pohladavkyOrders.length;
 
@@ -994,7 +1000,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     const trendPct   = weekAgoPay > 10 ? Math.round((todayPay - weekAgoPay) / weekAgoPay * 100) : null;
 
     return { totalDeposits, pohladavky, pohladavkyCount, todayPay, weekAgoPay, trendPct };
-  }, [liveClients, liveOrders]);
+  }, [liveClients, liveOrders, cashClientFilter]);
 
   const orderClients = useMemo(() => {
     // Pre každý clientId ulož najlepšie meno (registrovaný klient > clientName > clientId)
@@ -1026,7 +1032,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   // Počty aktívnych filtrov — pre badge v hlavičke
   const activeCash = [
     cashStatusFilter !== "vsetky",
-    cashDateFilter !== "tyzden" || !!cashDateFrom || !!cashDateTo,
+    cashDateFilter !== "vsetko" || !!cashDateFrom || !!cashDateTo, // "tyzden" je tiež aktívny filter
     cashKtoFilters.length > 0,
     cashClientFilter !== "vsetci",
     cashZalohaFilter !== "vsetky",
@@ -1424,14 +1430,14 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   <button type="button" onClick={() => setSecCashDateOpen(o => !o)}
                     className="w-full bg-gray-50 border-b border-gray-100 px-4 py-1.5 flex items-center gap-2 hover:bg-gray-100 transition-colors cursor-pointer">
                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">Dátum · Excel</span>
-                    {(cashDateFilter !== "tyzden" || cashExcelFilter !== "vsetky") && (
+                    {(cashDateFilter !== "vsetko" || !!cashDateFrom || !!cashDateTo || cashExcelFilter !== "vsetky") && (
                       <span className="bg-secondary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
-                        {[cashDateFilter !== "tyzden", cashExcelFilter !== "vsetky"].filter(Boolean).length}
+                        {[cashDateFilter !== "vsetko" || !!cashDateFrom || !!cashDateTo, cashExcelFilter !== "vsetky"].filter(Boolean).length}
                       </span>
                     )}
                     <div className="ml-auto flex items-center gap-2">
-                      {(cashDateFilter !== "tyzden" || !!cashDateFrom || !!cashDateTo || cashExcelFilter !== "vsetky") && (
-                        <button type="button" onClick={e => { e.stopPropagation(); setCashDateFilter("tyzden"); setCashDateFrom(""); setCashDateTo(""); setCashExcelFilter("vsetky"); }}
+                      {(cashDateFilter !== "vsetko" || !!cashDateFrom || !!cashDateTo || cashExcelFilter !== "vsetky") && (
+                        <button type="button" onClick={e => { e.stopPropagation(); setCashDateFilter("vsetko"); setCashDateFrom(""); setCashDateTo(""); setCashExcelFilter("vsetky"); }}
                           className="w-5 h-5 rounded-full bg-white border border-gray-300 text-gray-400 hover:border-red-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors cursor-pointer shrink-0">
                           <X className="w-2.5 h-2.5" />
                         </button>
@@ -1626,7 +1632,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
               )}
               {/* Záloha */}
               {cashSummary.dep > 0 && (
-                <span className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-black px-2 py-1 rounded-md tabular-nums shrink-0">
+                <span className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-black px-2 py-1 rounded-md tabular-nums shrink-0"
+                  title="Suma zálohy čerpanej z depozitov klientov v týchto objednávkach">
                   <span className="opacity-60 font-normal">záloha</span> {fmtEur(cashSummary.dep, 0)}
                 </span>
               )}
