@@ -830,6 +830,7 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
   <div style="text-align:right">
     <div style="color:#EDC531;font-size:11pt;font-weight:bold;letter-spacing:0.5px">OBJEDNÁVKA</div>
     <div style="font-size:7pt;opacity:0.7;margin-top:1px">${today} · ${platbaLbl}</div>
+    <div style="color:#EDC531;font-size:7.5pt;font-weight:bold;margin-top:2px">${statusLabels[o.status] ?? o.status}</div>
   </div>
 </div>
 <div style="padding:3.5mm 8mm 5mm">
