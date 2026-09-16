@@ -1696,6 +1696,15 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
     });
   const sorted = [...filtered].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
+  // Auto-switch na "všetko" keď klient filter aktívny + týždeň = 0 výsledkov
+  useEffect(() => {
+    if (clientIdActive && quickDate === "tyzden" && sorted.length === 0) {
+      setQuickDate("");
+      setDateFrom("");
+      setDateTo("");
+    }
+  }, [clientIdActive, quickDate, sorted.length]);
+
   const getOrderIsRisk = (o: Order): boolean => {
     if (o.podmienky?.isRisk === true) return true;
     if (o.podmienky?.isRisk === false) return false;
