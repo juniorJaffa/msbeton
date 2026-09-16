@@ -477,14 +477,23 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const [ktoDropOpen,      setKtoDropOpen]      = useState(false);
   const [cashZalohaFilter, setCashZalohaFilter] = useState<"vsetky" | "zaloha" | "doplatok" | "nedoplatok">("vsetky");
   const [cashExcelFilter,  setCashExcelFilter]  = useState<"vsetky" | "ok" | "chyba">("vsetky");
-  const [cashStatusFilter, setCashStatusFilterRaw] = useState<"vsetky" | typeof CASH_STATUSES[number]>(() => {
-    if (initialOrderId) return "vsetky"; // zobraziť všetky statusy aby bola cieľová objednávka viditeľná
-    const saved = localStorage.getItem("msbeton_historia_cashStatus");
-    return (saved && [...CASH_STATUSES, "vsetky"].includes(saved)) ? saved as "vsetky" | typeof CASH_STATUSES[number] : "vsetky";
+  const [cashStatusFilters, setCashStatusFiltersRaw] = useState<string[]>(() => {
+    if (initialOrderId) return []; // zobraziť všetky statusy aby bola cieľová objednávka viditeľná
+    try {
+      const saved = localStorage.getItem("msbeton_historia_cashStatus");
+      if (!saved) return [];
+      // Podpora starého formátu (single string) aj nového (JSON array)
+      if (saved.startsWith("[")) return JSON.parse(saved) as string[];
+      if (saved !== "vsetky" && CASH_STATUSES.includes(saved as typeof CASH_STATUSES[number])) return [saved];
+    } catch { /* ignore */ }
+    return [];
   });
-  const setCashStatusFilter = (v: "vsetky" | typeof CASH_STATUSES[number]) => {
-    setCashStatusFilterRaw(v);
-    localStorage.setItem("msbeton_historia_cashStatus", v);
+  const setCashStatusFilters = (v: string[]) => {
+    setCashStatusFiltersRaw(v);
+    try { localStorage.setItem("msbeton_historia_cashStatus", JSON.stringify(v)); } catch { /* ignore */ }
+  };
+  const toggleCashStatus = (s: string) => {
+    setCashStatusFilters(cashStatusFilters.includes(s) ? cashStatusFilters.filter(x => x !== s) : [...cashStatusFilters, s]);
   };
   const [cashSearch,       setCashSearch]       = useState("");
   const [displayLimit,     setDisplayLimit]     = useState(100);
@@ -526,7 +535,9 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       if (typeof s.savedAt !== "number" || Date.now() - s.savedAt > FILTER_TTL_MS) {
         sessionStorage.removeItem(HIST_FILTER_KEY); return;
       }
-      if (s.cashStatusFilter && s.cashStatusFilter !== "vsetky") setCashStatusFilter(s.cashStatusFilter as string);
+      // Restore cashStatusFilters — nový formát (array) aj starý (string)
+      if (Array.isArray(s.cashStatusFilter)) setCashStatusFilters(s.cashStatusFilter as string[]);
+      else if (s.cashStatusFilter && s.cashStatusFilter !== "vsetky" && CASH_STATUSES.includes(s.cashStatusFilter as typeof CASH_STATUSES[number])) setCashStatusFilters([s.cashStatusFilter as string]);
       if (s.cashDateFilter) setCashDateFilter(s.cashDateFilter as string);
       if (s.cashClientFilter && s.cashClientFilter !== "vsetci") setCashClientFilter(s.cashClientFilter as string);
       if (Array.isArray(s.cashKtoFilters) && s.cashKtoFilters.length > 0) setCashKtoFilters(new Set(s.cashKtoFilters as string[]));
@@ -543,12 +554,12 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     try {
       sessionStorage.setItem(HIST_FILTER_KEY, JSON.stringify({
         savedAt: Date.now(),
-        cashStatusFilter, cashDateFilter, cashClientFilter,
+        cashStatusFilter: cashStatusFilters, cashDateFilter, cashClientFilter,
         cashKtoFilters: [...cashKtoFilters],
         cashZalohaFilter,
       }));
     } catch { /* ignore */ }
-  }, [cashStatusFilter, cashDateFilter, cashClientFilter, cashKtoFilters, cashZalohaFilter]);
+  }, [cashStatusFilters, cashDateFilter, cashClientFilter, cashKtoFilters, cashZalohaFilter]);
   // ─────────────────────────────────────────────────────────────────────
 
   const [secDepDateOpen,   setSecDepDateOpen]    = useState(false);
@@ -859,7 +870,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
         }
         if (cashExcelFilter === "ok" && !o.excelConfirmed) return false;
         if (cashExcelFilter === "chyba" && o.excelConfirmed) return false;
-        if (cashStatusFilter !== "vsetky" && o.status !== cashStatusFilter) return false;
+        if (cashStatusFilters.length > 0 && !cashStatusFilters.includes(o.status)) return false;
         if (cashClientFilter !== "vsetci" && o.clientId !== cashClientFilter) return false;
         if (cashKtoFilters.length > 0 && !cashKtoFilters.includes(deviceToGroupKey.get(o.createdByDevice ?? "") ?? "")) return false;
         // Dátumový filter — custom range má prednosť pred quick tlačidlami
@@ -886,10 +897,10 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       })
       .sort((a, b) => orderLastChanged(b).localeCompare(orderLastChanged(a)));
     return result;
-  }, [liveOrders, cashClientFilter, cashKtoFilters, cashDateFilter, cashDateFrom, cashDateTo, cashMesiacYM, cashTyzdenOffset, cashZalohaFilter, cashExcelFilter, cashStatusFilter, cashSearch, deviceToGroupKey, clientByLoginId]);
+  }, [liveOrders, cashClientFilter, cashKtoFilters, cashDateFilter, cashDateFrom, cashDateTo, cashMesiacYM, cashTyzdenOffset, cashZalohaFilter, cashExcelFilter, cashStatusFilters, cashSearch, deviceToGroupKey, clientByLoginId]);
 
   // Reset displayLimit pri každej zmene filtrov
-  useEffect(() => { setDisplayLimit(100); }, [cashClientFilter, cashKtoFilters, cashDateFilter, cashDateFrom, cashDateTo, cashMesiacYM, cashTyzdenOffset, cashZalohaFilter, cashExcelFilter, cashStatusFilter, cashSearch, showDeleted]);
+  useEffect(() => { setDisplayLimit(100); }, [cashClientFilter, cashKtoFilters, cashDateFilter, cashDateFrom, cashDateTo, cashMesiacYM, cashTyzdenOffset, cashZalohaFilter, cashExcelFilter, cashStatusFilters, cashSearch, showDeleted]);
 
   // Scroll listener — zmena farby column headera pri scrollovaní
   useEffect(() => {
@@ -944,7 +955,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   // Koľko nedoplatok objednávok je skrytých aktívnym filtrom STAV
   // Vyplatená objednávka môže mať nedoplatok (záloha len čiastočne pokryla sumu)
   const nedoplatokHiddenByStatus = useMemo(() => {
-    if (cashZalohaFilter !== "nedoplatok" || cashStatusFilter === "vsetky") return 0;
+    if (cashZalohaFilter !== "nedoplatok" || cashStatusFilters.length === 0) return 0;
     const countWithoutStatus = liveOrders.filter(o => {
       if (o.status === "zmazana") return false;
       // Nedoplatok check (rovnaká logika ako filteredOrders)
@@ -968,7 +979,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       return true;
     }).length;
     return Math.max(0, countWithoutStatus - cashSummary.count);
-  }, [liveOrders, cashZalohaFilter, cashStatusFilter, cashExcelFilter, cashClientFilter, cashKtoFilters, cashDateFilter, cashDateFrom, cashDateTo, cashMesiacYM, cashTyzdenOffset, deviceToGroupKey, cashSummary.count]);
+  }, [liveOrders, cashZalohaFilter, cashStatusFilters, cashExcelFilter, cashClientFilter, cashKtoFilters, cashDateFilter, cashDateFrom, cashDateTo, cashMesiacYM, cashTyzdenOffset, deviceToGroupKey, cashSummary.count]);
 
   // Payout insight — "dnes/včera sa prerozdeľujú peniaze"
   // Detekuje: statusHistory záznamy kde status="vyplatena", zoskupí podľa dňa zmeny (nie createdAt)
@@ -1064,7 +1075,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
 
   // Počty aktívnych filtrov — pre badge v hlavičke
   const activeCash = [
-    cashStatusFilter !== "vsetky",
+    cashStatusFilters.length > 0,
     cashDateFilter !== "vsetko" || !!cashDateFrom || !!cashDateTo, // "tyzden" je tiež aktívny filter
     cashKtoFilters.length > 0,
     cashClientFilter !== "vsetci",
@@ -1370,7 +1381,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   {activeCash}
                   <button type="button" onClick={e => {
                     e.stopPropagation();
-                    setCashStatusFilter("vsetky"); setCashDateFilter("tyzden"); setCashTyzdenOffset(0);
+                    setCashStatusFilters([]); setCashDateFilter("tyzden"); setCashTyzdenOffset(0);
                     setCashDateFrom(""); setCashDateTo(""); setCashSearch("");
                     setCashKtoFilters([]); setCashClientFilter("vsetci"); setCashClientSearch("");
                     setCashZalohaFilter("vsetky"); setCashExcelFilter("vsetky");
@@ -1390,13 +1401,13 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     </button>
                   </span>
                 )}
-                {cashStatusFilter !== "vsetky" && (
-                  <span className="inline-flex items-center gap-1 bg-secondary/10 text-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
-                    <span>{STATUS_LABEL[cashStatusFilter] ?? cashStatusFilter}</span>
-                    <button type="button" onClick={e => { e.stopPropagation(); setCashStatusFilter("vsetky"); }}
+                {cashStatusFilters.map(sf => (
+                  <span key={sf} className="inline-flex items-center gap-1 bg-secondary/10 text-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
+                    <span>{STATUS_LABEL[sf] ?? sf}</span>
+                    <button type="button" onClick={e => { e.stopPropagation(); toggleCashStatus(sf); }}
                       className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer"><X className="w-2.5 h-2.5" /></button>
                   </span>
-                )}
+                ))}
                 {cashClientFilter !== "vsetci" && (() => {
                   const c = clientByLoginId.get(cashClientFilter);
                   const label = c ? (c.firstName || c.lastName ? `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim() : c.company ?? cashClientFilter) : cashClientFilter;
@@ -1449,14 +1460,14 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   <button type="button" onClick={() => setSecCashStavOpen(o => !o)}
                     className="w-full bg-gray-50 border-b border-gray-100 px-4 py-1.5 flex items-center gap-2 hover:bg-gray-100 transition-colors cursor-pointer">
                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">Stav</span>
-                    {cashStatusFilter !== "vsetky" && (
-                      <span className="bg-secondary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
-                        {STATUS_LABEL[cashStatusFilter] ?? cashStatusFilter}
+                    {cashStatusFilters.map(sf => (
+                      <span key={sf} className="bg-secondary text-white text-[8px] font-black px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
+                        {STATUS_LABEL[sf] ?? sf}
                       </span>
-                    )}
+                    ))}
                     <div className="ml-auto flex items-center gap-2">
-                      {cashStatusFilter !== "vsetky" && (
-                        <button type="button" onClick={e => { e.stopPropagation(); setCashStatusFilter("vsetky"); }}
+                      {cashStatusFilters.length > 0 && (
+                        <button type="button" onClick={e => { e.stopPropagation(); setCashStatusFilters([]); }}
                           className="w-5 h-5 rounded-full bg-white border border-gray-300 text-gray-400 hover:border-red-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors cursor-pointer shrink-0">
                           <X className="w-2.5 h-2.5" />
                         </button>
@@ -1466,15 +1477,15 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   </button>
                   {secCashStavOpen && (
                     <div className="px-4 py-2.5 flex flex-wrap gap-1">
-                      <button onClick={() => setCashStatusFilter("vsetky")}
-                        className={`px-2.5 py-1.5 text-[10px] font-bold rounded border transition-all cursor-pointer whitespace-nowrap ${cashStatusFilter === "vsetky" ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"}`}>
+                      <button onClick={() => setCashStatusFilters([])}
+                        className={`px-2.5 py-1.5 text-[10px] font-bold rounded border transition-all cursor-pointer whitespace-nowrap ${cashStatusFilters.length === 0 ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"}`}>
                         Všetky <span className="ml-0.5 opacity-60 text-[9px]">{liveOrders.length}</span>
                       </button>
                       {CASH_STATUSES.map(s => {
                         const cnt = liveOrders.filter(o => o.status === s).length;
-                        const isActive = cashStatusFilter === s;
+                        const isActive = cashStatusFilters.includes(s);
                         return (
-                          <button key={s} onClick={() => setCashStatusFilter(isActive ? "vsetky" : s)}
+                          <button key={s} onClick={() => toggleCashStatus(s)}
                             className={`px-2.5 py-1.5 text-[10px] font-bold rounded border transition-all cursor-pointer whitespace-nowrap ${
                               isActive ? STATUS_ACTIVE[s] ?? "bg-secondary text-white border-secondary"
                                        : `bg-white border-gray-200 ${STATUS_COLOR[s] ?? ""} opacity-80 hover:opacity-100`
@@ -1686,7 +1697,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                 {nedoplatokHiddenByStatus} {nedoplatokHiddenByStatus === 1 ? "objednávka skrytá" : nedoplatokHiddenByStatus < 5 ? "objednávky skryté" : "objednávok skrytých"} filtrom STAV
                 <span className="font-normal opacity-80"> — Vyplatená môže mať nedoplatok (záloha čiastočná)</span>
               </span>
-              <button type="button" onClick={() => setCashStatusFilter("vsetky")}
+              <button type="button" onClick={() => setCashStatusFilters([])}
                 className="ml-auto whitespace-nowrap text-orange-600 font-bold hover:text-orange-800 underline cursor-pointer shrink-0">
                 Zobraziť všetky
               </button>
