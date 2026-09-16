@@ -470,7 +470,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
     setCashDateFilterRaw(v);
     localStorage.setItem("msbeton_historia_cashDate", v);
   };
-  const [cashClientFilter, setCashClientFilter] = useState<string>("vsetci");
+  const [cashClientFilter, setCashClientFilter] = useState<string>(initialClientId ?? "vsetci");
   const [cashClientDrop,   setCashClientDrop]   = useState(false);
   const [cashClientSearch, setCashClientSearch] = useState("");
   const [cashKtoFilters,   setCashKtoFilters]   = useState<string[]>([]);
@@ -518,6 +518,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   const FILTER_TTL_MS = 15 * 60 * 1000;
   // Restore on mount
   useEffect(() => {
+    if (initialClientId) return; // parent poskytol context → nereštaurovať
     try {
       const raw = sessionStorage.getItem(HIST_FILTER_KEY);
       if (!raw) return;
