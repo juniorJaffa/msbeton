@@ -923,7 +923,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
   }, [visibleOrders, displayLimit]);
 
   const cashSummary = useMemo(() => {
-    let dep = 0, total = 0, deletedCount = 0;
+    let dep = 0, total = 0, deletedCount = 0, nedoplatokTotal = 0;
     for (const o of filteredOrders) {
       if (o.status === "zmazana") { deletedCount++; continue; } // zmazané nepočítaj do súhrnu
       if (o.depositUsed) dep += o.depositUsed;
@@ -931,10 +931,44 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
       // fallback na totalBezDph pre staré objednávky bez totalSDph
       const paid = o.totalSDph ?? o.totalBezDph ?? 0;
       if (paid) total += paid;
+      // Nedoplatok — nezaplatený zostatok (záloha môže čiastočne kryť)
+      const depAmt = o.depositUsed ?? 0;
+      const doplatokNeed = Math.max(0, (o.totalSDph ?? 0) - depAmt);
+      const payTotal = (o.payments ?? []).filter((p: { method?: string }) => p.method !== "zaloha").reduce((s: number, p: { amount: number }) => s + p.amount, 0);
+      nedoplatokTotal += Math.max(0, doplatokNeed - payTotal);
     }
     const activeCount = filteredOrders.length - deletedCount;
-    return { count: activeCount, deletedCount, dep, total };
+    return { count: activeCount, deletedCount, dep, total, nedoplatokTotal };
   }, [filteredOrders]);
+
+  // Koľko nedoplatok objednávok je skrytých aktívnym filtrom STAV
+  // Vyplatená objednávka môže mať nedoplatok (záloha len čiastočne pokryla sumu)
+  const nedoplatokHiddenByStatus = useMemo(() => {
+    if (cashZalohaFilter !== "nedoplatok" || cashStatusFilter === "vsetky") return 0;
+    const countWithoutStatus = liveOrders.filter(o => {
+      if (o.status === "zmazana") return false;
+      // Nedoplatok check (rovnaká logika ako filteredOrders)
+      const dep = o.depositUsed ?? 0;
+      const doplatokTotal = Math.max(0, (o.totalSDph ?? 0) - dep);
+      if (doplatokTotal < 0.01) return false;
+      const payTotal = (o.payments ?? []).filter((p: { method?: string }) => p.method !== "zaloha").reduce((s: number, p: { amount: number }) => s + p.amount, 0);
+      if (payTotal >= doplatokTotal - 0.01) return false;
+      // Ostatné filtre (bez status filtra)
+      if (cashExcelFilter === "ok" && !o.excelConfirmed) return false;
+      if (cashExcelFilter === "chyba" && o.excelConfirmed) return false;
+      if (cashClientFilter !== "vsetci" && o.clientId !== cashClientFilter) return false;
+      if (cashKtoFilters.length > 0 && !cashKtoFilters.includes(deviceToGroupKey.get(o.createdByDevice ?? "") ?? "")) return false;
+      const ds = toDateStr(orderLastChanged(o));
+      if (cashDateFrom || cashDateTo) {
+        if (cashDateFrom && ds < cashDateFrom) return false;
+        if (cashDateTo && ds > cashDateTo) return false;
+      } else {
+        if (!passesDate(ds, cashDateFilter, cashMesiacYM, cashTyzdenOffset)) return false;
+      }
+      return true;
+    }).length;
+    return Math.max(0, countWithoutStatus - cashSummary.count);
+  }, [liveOrders, cashZalohaFilter, cashStatusFilter, cashExcelFilter, cashClientFilter, cashKtoFilters, cashDateFilter, cashDateFrom, cashDateTo, cashMesiacYM, cashTyzdenOffset, deviceToGroupKey, cashSummary.count]);
 
   // Payout insight — "dnes/včera sa prerozdeľujú peniaze"
   // Detekuje: statusHistory záznamy kde status="vyplatena", zoskupí podľa dňa zmeny (nie createdAt)
@@ -1326,7 +1360,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
         <div>
           {/* Filtre — sticky collapsible panel (vzor Objednávky) */}
           <div className="sticky top-0 z-20 bg-white border border-gray-200 shadow-sm">
-            <button onClick={() => setCashFilterOpen(o => !o)}
+            <div role="button" tabIndex={0} onClick={() => setCashFilterOpen(o => !o)}
+              onKeyDown={e => e.key === "Enter" && setCashFilterOpen(o => !o)}
               className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-gray-50 transition-colors cursor-pointer">
               <SlidersHorizontal className="w-3.5 h-3.5 text-gray-400 shrink-0" />
               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Filter</span>
@@ -1390,7 +1425,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
               </>)}
               <span className="ml-auto text-xs font-bold text-secondary shrink-0">{cashSummary.count} obj.</span>
               <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${cashFilterOpen ? "rotate-180" : ""}`} />
-            </button>
+            </div>
             {cashFilterOpen && (
               <div className="border-t border-gray-200">
                 {/* HĽADAJ */}
@@ -1641,6 +1676,22 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
               </div>
             )}
           </div>
+          {/* Hint: filter STAV skrýva nedoplatok objednávky (Vyplatená môže mať nedoplatok) */}
+          {nedoplatokHiddenByStatus > 0 && (
+            <div className="mx-4 mb-2 flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-md px-3 py-2 text-[11px]">
+              <svg className="w-3.5 h-3.5 text-orange-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+              <span className="text-orange-700 font-semibold">
+                {nedoplatokHiddenByStatus} {nedoplatokHiddenByStatus === 1 ? "objednávka skrytá" : nedoplatokHiddenByStatus < 5 ? "objednávky skryté" : "objednávok skrytých"} filtrom STAV
+                <span className="font-normal opacity-80"> — Vyplatená môže mať nedoplatok (záloha čiastočná)</span>
+              </span>
+              <button type="button" onClick={() => setCashStatusFilter("vsetky")}
+                className="ml-auto whitespace-nowrap text-orange-600 font-bold hover:text-orange-800 underline cursor-pointer shrink-0">
+                Zobraziť všetky
+              </button>
+            </div>
+          )}
           {/* Cashflow obsah */}
           <div className="space-y-3 mt-3">
 
@@ -1674,6 +1725,13 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                 <span className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-black px-2 py-1 rounded-md tabular-nums shrink-0"
                   title="Suma zálohy čerpanej z depozitov klientov v týchto objednávkach">
                   <span className="opacity-60 font-normal">záloha</span> {fmtEur(cashSummary.dep, 0)}
+                </span>
+              )}
+              {/* Nedoplatok total — zobrazí sa len keď filter Nedoplatky aktívny */}
+              {cashZalohaFilter === "nedoplatok" && cashSummary.nedoplatokTotal > 0.01 && (
+                <span className="inline-flex items-center gap-1 bg-red-50 border border-red-300 text-red-700 text-[10px] font-black px-2 py-1 rounded-md tabular-nums shrink-0"
+                  title="Celkový nezaplatený zostatok zo zobrazených objednávok">
+                  <span className="opacity-70 font-normal">ned.</span> {fmtEur(cashSummary.nedoplatokTotal, 0)}
                 </span>
               )}
               {/* Pohľadávky */}

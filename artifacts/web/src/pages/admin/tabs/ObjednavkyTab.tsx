@@ -1897,7 +1897,8 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
       <div className="sticky top-0 z-20">
       <div className="bg-white border border-gray-200 shadow-sm">
         {/* Compact header — vždy viditeľný, toggle */}
-        <button onClick={() => setFilterOpen(o => !o)}
+        <div role="button" tabIndex={0} onClick={() => setFilterOpen(o => !o)}
+          onKeyDown={e => e.key === "Enter" && setFilterOpen(o => !o)}
           className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-gray-50 transition-colors cursor-pointer">
           <SlidersHorizontal className="w-3.5 h-3.5 text-gray-400 shrink-0" />
           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Filter</span>
@@ -1927,14 +1928,20 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
               </button>
             </span>
           )}
-          {clientIdActive && (
-            <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0 max-w-[140px]">
-              <span className="truncate">Klient: {clientIdActive}</span>
-              <button onClick={e => { e.stopPropagation(); setClientIdActive(null); }} className="hover:text-red-500 transition-colors leading-none shrink-0">
-                <X className="w-2.5 h-2.5" />
-              </button>
-            </span>
-          )}
+          {clientIdActive && (() => {
+            const c = clientMap.get(clientIdActive);
+            const label = c
+              ? (c.firstName || c.lastName ? `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim() : c.company ?? clientIdActive)
+              : clientIdActive;
+            return (
+              <span className="inline-flex items-center gap-1 bg-secondary/10 text-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0 max-w-[140px]">
+                <span className="truncate">{label}</span>
+                <button type="button" onClick={e => { e.stopPropagation(); setClientIdActive(null); }} className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer">
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </span>
+            );
+          })()}
           <span className="ml-auto text-xs font-bold text-secondary shrink-0">{sortedCount} {sortedCountLabel}</span>
           {newBadge > 0 && <span className="relative bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">{newBadge} nových</span>}
           {onGoToHistoria && (
@@ -1945,7 +1952,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
             </button>
           )}
           <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${filterOpen ? "rotate-180" : ""}`} />
-        </button>
+        </div>
         {filterOpen && (
         <div className="border-t border-gray-200">
           {/* HĽADAJ — vždy hore, vždy viditeľný */}
