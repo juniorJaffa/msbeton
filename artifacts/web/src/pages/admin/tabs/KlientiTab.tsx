@@ -592,6 +592,29 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
     return () => document.removeEventListener("keydown", handler);
   }, [tablePdfModal]);
   const [search, setSearch] = useState("");
+
+  // ── Search persistence (sessionStorage, 15-min TTL) ──────────────────
+  const KLIENTI_FILTER_KEY = "msbeton_filter_klienti";
+  const KLIENTI_FILTER_TTL_MS = 15 * 60 * 1000;
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(KLIENTI_FILTER_KEY);
+      if (!raw) return;
+      const s = JSON.parse(raw) as Record<string, unknown>;
+      if (typeof s.savedAt !== "number" || Date.now() - s.savedAt > KLIENTI_FILTER_TTL_MS) {
+        sessionStorage.removeItem(KLIENTI_FILTER_KEY); return;
+      }
+      if (s.search) setSearch(s.search as string);
+    } catch { /* ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // only on mount
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(KLIENTI_FILTER_KEY, JSON.stringify({ savedAt: Date.now(), search }));
+    } catch { /* ignore */ }
+  }, [search]);
+  // ─────────────────────────────────────────────────────────────────────
+
   const [adding, setAdding] = useState(false);
   // iOS "Save Password?" fix: pred každým zatvorením add-formy vyčisti heslo,
   // potom setTimeout(0) dá React-u čas renderovať prázdne heslo pred unmountom →
