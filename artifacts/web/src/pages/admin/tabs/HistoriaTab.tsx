@@ -850,12 +850,11 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
             const doplatokNeed = Math.max(0, (o.totalSDph ?? 0) - totalZaloha);
             if (doplatokNeed < 0.01) return false;
           } else if (cashZalohaFilter === "nedoplatok") {
-            // nedoplatok = záloha čiastočná a doplatok nebol plne uhradený cez payments[]
-            if (dep <= 0) return false;
+            // nedoplatok = nezaplatený zostatok (dep môže byť 0 — FA bez zálohy tiež môže mať nedoplatok)
             const doplatokTotal = Math.max(0, (o.totalSDph ?? 0) - dep);
-            if (doplatokTotal < 0.01) return false;
+            if (doplatokTotal < 0.01) return false; // záloha pokryla všetko → žiadny nedoplatok
             const payTotal = (o.payments ?? []).filter((p: { method?: string }) => p.method !== "zaloha").reduce((s: number, p: { amount: number }) => s + p.amount, 0);
-            if (payTotal >= doplatokTotal - 0.01) return false;
+            if (payTotal >= doplatokTotal - 0.01) return false; // doplatok plne zaplatený
           }
         }
         if (cashExcelFilter === "ok" && !o.excelConfirmed) return false;
