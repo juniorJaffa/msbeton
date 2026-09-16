@@ -2124,7 +2124,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
 
           {/* DÁTUM — collapsible */}
           <div className="border-b border-gray-200">
-            <button type="button" onClick={() => setSecDateOpen(o => !o)}
+            <div role="button" tabIndex={0} onClick={() => setSecDateOpen(o => !o)} onKeyDown={e => e.key === "Enter" && setSecDateOpen(o => !o)}
               className="w-full bg-gray-50 border-b border-gray-100 px-4 py-1.5 flex items-center gap-2 hover:bg-gray-100 transition-colors cursor-pointer">
               <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.14em]">Dátum</span>
               {(quickDate || dateFrom || dateTo) && (
@@ -2141,7 +2141,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                 )}
                 <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-150 ${secDateOpen ? "rotate-180" : ""}`} />
               </div>
-            </button>
+            </div>
             {secDateOpen && (<>
               {/* Rýchle filtry */}
               <div className="px-4 pt-2.5 pb-1.5 flex flex-wrap gap-1.5 items-center">
