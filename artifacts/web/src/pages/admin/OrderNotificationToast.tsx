@@ -134,7 +134,7 @@ export function OrderNotificationToast({ orders, onDismiss, onOpen }: Props) {
                   <div className="px-2.5 py-2 flex items-center gap-1.5" style={{ background: "rgba(255,255,255,0.04)" }}>
                     <Package className="w-3 h-3 text-primary shrink-0" />
                     <div>
-                      <div className="text-white font-black text-sm leading-none">{order.totalQty} m³</div>
+                      <div className="text-white font-black text-sm leading-none">{parseFloat((order.totalQty ?? 0).toFixed(2))} m³</div>
                       <div className="text-white/40 text-[9px] mt-0.5 font-bold uppercase tracking-wide">
                         {tabLabel(order.tab)}
                       </div>
@@ -173,13 +173,15 @@ export function OrderNotificationToast({ orders, onDismiss, onOpen }: Props) {
                 <div className="border-t border-white/8 px-2.5 py-1.5 flex items-center gap-2" style={{ background: "rgba(255,255,255,0.02)" }}>
                   <span className="text-white/30 text-[9px] font-bold uppercase tracking-wide shrink-0">Betón</span>
                   <span className="text-white/75 text-[10px] font-bold truncate">{order.concreteType}</span>
-                  {order.concreteCategory && (() => {
-                    const kg = getKamenivoGroup(order.concreteCategory);
+                  {(() => {
+                    const kg = getKamenivoGroup(order.concreteCategory ?? order.concreteType ?? "");
+                    const hasIcon = kg === 'drvene' || kg === 'riecne';
+                    if (!order.concreteCategory && !hasIcon) return null;
                     return (
                       <span className="text-primary/60 text-[9px] font-bold shrink-0 flex items-center gap-0.5">
                         {kg === 'drvene' && <Mountain className="w-2.5 h-2.5" />}
                         {kg === 'riecne' && <Waves className="w-2.5 h-2.5" />}
-                        · {order.concreteCategory}
+                        {order.concreteCategory && <>· {order.concreteCategory}</>}
                       </span>
                     );
                   })()}
