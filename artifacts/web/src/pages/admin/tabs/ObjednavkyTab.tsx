@@ -915,7 +915,7 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
       <div style="font-size:8pt;opacity:0.6">+421&nbsp;909&nbsp;205&nbsp;205 &nbsp;|&nbsp; info@msbeton.sk &nbsp;|&nbsp; msbeton.sk</div>
     </div>
     <div style="text-align:right;font-size:8pt;opacity:0.65;line-height:1.8">
-      IČO: 55747591<br>DIČ: 2122074603<br>IČ DPH: SK2122074603
+      IČO: 55747591<br>DIČ: 2122074603<br>IČ DPH: SK2122074603<br><span style="opacity:1;color:#EDC531;font-size:8.5pt;font-weight:bold;letter-spacing:0.3px">${statusLabels[o.status] ?? o.status}</span>
     </div>
   </div>
 </div>
@@ -928,7 +928,6 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
     <div style="color:#EDC531;font-size:16pt;font-weight:bold;letter-spacing:1px">OBJEDNÁVKA</div>
     <div style="text-align:right;font-size:8pt;color:#666;line-height:1.6">
       <div>${today}</div>
-      <div style="color:#aaa;font-size:7.5pt">Stav: ${statusLabels[o.status] ?? o.status}</div>
     </div>
   </div>
 
