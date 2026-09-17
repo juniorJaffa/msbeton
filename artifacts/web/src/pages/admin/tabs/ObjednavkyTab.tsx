@@ -914,8 +914,9 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
       <div style="font-size:8pt;opacity:0.7;margin-bottom:1px">Turie 468, 013 12 Turie &nbsp;|&nbsp; Slovenská republika</div>
       <div style="font-size:8pt;opacity:0.6">+421&nbsp;909&nbsp;205&nbsp;205 &nbsp;|&nbsp; info@msbeton.sk &nbsp;|&nbsp; msbeton.sk</div>
     </div>
-    <div style="text-align:right;font-size:8pt;opacity:0.65;line-height:1.8">
-      IČO: 55747591<br>DIČ: 2122074603<br>IČ DPH: SK2122074603<br><span style="opacity:1;color:#EDC531;font-size:8.5pt;font-weight:bold;letter-spacing:0.3px">${statusLabels[o.status] ?? o.status}</span>
+    <div style="text-align:right;line-height:1.8">
+      <div style="font-size:8pt;opacity:0.65">IČO: 55747591<br>DIČ: 2122074603<br>IČ DPH: SK2122074603</div>
+      <div style="color:#EDC531;font-size:8.5pt;font-weight:bold;letter-spacing:0.3px;margin-top:1mm">${statusLabels[o.status] ?? o.status}</div>
     </div>
   </div>
 </div>
