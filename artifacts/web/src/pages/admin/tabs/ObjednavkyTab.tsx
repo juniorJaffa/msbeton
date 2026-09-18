@@ -895,7 +895,7 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
     </div>
     <div style="text-align:right">
       <div style="font-size:11pt;font-weight:bold">${hasDiffPdf && totalPaidPdf > 0.01 ? fmtEurPdf(totalPaidPdf) : fmtEurPdf(o.totalSDph)}</div>
-      ${hasDiffPdf ? `<div style="font-size:6.5pt;margin-top:0.5mm;font-weight:bold;color:${diffPdf > 0 ? "#bbf7d0" : "#fca5a5"}">${diffPdf > 0 ? "+" : ""}${diffPdf.toFixed(2)} €</div>` : ""}
+      ${hasDiffPdf ? `<div style="margin-top:1mm"><span style="display:inline-block;background:${diffPdf > 0 ? "rgba(187,247,208,0.25)" : "#dc2626"};color:#fff;font-size:6pt;font-weight:bold;padding:1px 5px;border-radius:3px">${diffPdf > 0 ? "+" : ""}${diffPdf.toFixed(2)} €</span></div>` : ""}
     </div>
   </div>` : ""}
   <!-- Podpisy + Google QR — zmenšené, stále na A5 -->
@@ -1025,7 +1025,7 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
     </div>
     <div style="text-align:right">
       <div style="font-size:15pt;font-weight:bold">${hasDiffPdf && totalPaidPdf > 0.01 ? fmtEurPdf(totalPaidPdf) : fmtEurPdf(o.totalSDph)}</div>
-      ${hasDiffPdf ? `<div style="font-size:8pt;margin-top:1px;font-weight:bold;color:${diffPdf > 0 ? "#bbf7d0" : "#fca5a5"}">${diffPdf > 0 ? "+" : ""}${diffPdf.toFixed(2)} €</div>` : ""}
+      ${hasDiffPdf ? `<div style="margin-top:1.5mm"><span style="display:inline-block;background:${diffPdf > 0 ? "rgba(187,247,208,0.25)" : "#dc2626"};color:#fff;font-size:7pt;font-weight:bold;padding:1.5px 6px;border-radius:3px">${diffPdf > 0 ? "+" : ""}${diffPdf.toFixed(2)} €</span></div>` : ""}
     </div>
   </div>` : ""}
   </div>
