@@ -1970,7 +1970,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                           <div className="flex items-start gap-2">
                             <span className="text-gray-600 text-[11px] flex-1 min-w-0 pt-[2px]">
                               {o.concreteType && <span className="font-semibold">{o.concreteType}</span>}
-                              {(o.totalQty ?? o.quantity) ? <span className="text-gray-400 ml-1">{o.totalQty ?? o.quantity} m³</span> : null}
+                              {(o.totalQty ?? o.quantity) ? <span className="text-gray-400 ml-1">{parseFloat(((o.totalQty ?? o.quantity) ?? 0).toFixed(2))} m³</span> : null}
                             </span>
                             {(() => {
                               const invoice = o.totalSDph ?? o.totalBezDph;
@@ -2189,7 +2189,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                               </div>
                               <div className="flex items-center gap-1 min-w-0">
                                 <span className="text-gray-600 truncate text-xs font-semibold">
-                                  {o.concreteType}{(o.totalQty ?? o.quantity) ? <span className="font-normal text-gray-400 ml-1">{o.totalQty ?? o.quantity} m³</span> : null}
+                                  {o.concreteType}{(o.totalQty ?? o.quantity) ? <span className="font-normal text-gray-400 ml-1">{parseFloat(((o.totalQty ?? o.quantity) ?? 0).toFixed(2))} m³</span> : null}
                                 </span>
                               </div>
                               {(locality || o.km) && (

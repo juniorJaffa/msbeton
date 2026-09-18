@@ -813,7 +813,7 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
   const platbaLbl = o.priceMode === "hotovost" ? "Hotovosť" : "Faktúra";
   const a5Doruc = [
     `<tr><td style="color:#999;padding:0.5mm 4mm 0.5mm 0;white-space:nowrap">Typ</td><td style="font-weight:bold">${tabLabels[o.tab] ?? o.tab}</td></tr>`,
-    `<tr><td style="color:#999;padding:0.5mm 4mm 0.5mm 0">Množstvo</td><td style="font-weight:bold">${o.totalQty} m³${(o.fillupM3 ?? 0) > 0 ? ` <span style="color:#92400e;font-weight:normal">+${fM3(o.fillupM3)} doťaž.</span>` : ""}</td></tr>`,
+    `<tr><td style="color:#999;padding:0.5mm 4mm 0.5mm 0">Množstvo</td><td style="font-weight:bold">${parseFloat((o.totalQty ?? 0).toFixed(2))} m³${(o.fillupM3 ?? 0) > 0 ? ` <span style="color:#92400e;font-weight:normal">+${fM3(o.fillupM3)} doťaž.</span>` : ""}</td></tr>`,
     o.km ? `<tr><td style="color:#999;padding:0.5mm 4mm 0.5mm 0">Vzdialenosť</td><td>${o.km} km</td></tr>` : "",
     (o.address || o.mapPlusCode || o.mapLocality) ? `<tr><td style="color:#999;padding:0.5mm 4mm 0.5mm 0;vertical-align:top">Adresa</td><td>${o.mapLocality ? `<strong>${o.mapLocality}</strong>${o.address ? "<br>" : ""}` : ""}${o.address ?? ""}${o.mapPlusCode ? `<br><span style="font-family:monospace;font-size:6.5pt;color:#aaa">${o.mapPlusCode}</span>` : ""}</td></tr>` : "",
     effectiveZoneName ? `<tr><td style="color:#999;padding:0.5mm 4mm 0.5mm 0">Doprava</td><td>${effectiveZoneName}${effectiveZoneType !== "standard" ? ` <span style="color:#b58c00;font-weight:700">${effectiveZoneType === "km" ? "(€/km)" : "(€/auto)"}</span>` : ""}</td></tr>` : "",
@@ -969,8 +969,8 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
       <div style="font-size:8pt;font-weight:bold;color:#001D3D;border-bottom:1px solid #eee;padding-bottom:2mm;margin-bottom:3mm">DORUČENIE</div>
       <table style="font-size:8.5pt"><tbody>
         <tr><td style="color:#888;padding:1px 6px 1px 0;width:88px">Typ</td><td style="font-weight:bold">${tabLabels[o.tab] ?? o.tab}</td></tr>
-        <tr><td style="color:#888;padding:1px 6px 1px 0">Množstvo</td><td style="font-weight:bold">${o.totalQty} m³${(o.fillupM3 ?? 0) > 0 ? ` <span style="color:#92400e;font-size:8pt;font-weight:normal">+ ${fM3(o.fillupM3)} m³ doťaženie</span>` : ""}</td></tr>
-        ${(o.fillupM3 ?? 0) > 0 ? `<tr><td style="color:#888;padding:1px 6px 1px 0;vertical-align:top">Doťaženie</td><td style="color:#92400e;font-size:8.5pt">${o.totalQty}&nbsp;m³ → +${fM3(o.fillupM3)}&nbsp;m³ → <strong>${fTgt(o.fillupTarget, o.fillupM3)}&nbsp;m³/auto</strong></td></tr>` : ""}
+        <tr><td style="color:#888;padding:1px 6px 1px 0">Množstvo</td><td style="font-weight:bold">${parseFloat((o.totalQty ?? 0).toFixed(2))} m³${(o.fillupM3 ?? 0) > 0 ? ` <span style="color:#92400e;font-size:8pt;font-weight:normal">+ ${fM3(o.fillupM3)} m³ doťaženie</span>` : ""}</td></tr>
+        ${(o.fillupM3 ?? 0) > 0 ? `<tr><td style="color:#888;padding:1px 6px 1px 0;vertical-align:top">Doťaženie</td><td style="color:#92400e;font-size:8.5pt">${parseFloat((o.totalQty ?? 0).toFixed(2))}&nbsp;m³ → +${fM3(o.fillupM3)}&nbsp;m³ → <strong>${fTgt(o.fillupTarget, o.fillupM3)}&nbsp;m³/auto</strong></td></tr>` : ""}
         ${o.podmienky ? `<tr><td style="color:#888;padding:1px 6px 1px 0;vertical-align:top">Podmienky</td><td style="${o.podmienky.isRisk ? "color:#991b1b" : "color:#92400e"};font-size:8pt;font-weight:600">${o.podmienky.isRisk ? "⚠ Minusové pretaženie" : "★ Pretaženie"}: ${o.podmienky.pumpa > 0 ? `1× Pumpa + ${o.podmienky.mix}× Mix` : `${o.podmienky.trucks}× Mix`} · ∅ ${o.podmienky.m3PerTruck?.toFixed(1) ?? "—"} m³/vozidlo</td></tr>` : ""}
         ${o.km ? `<tr><td style="color:#888;padding:1px 6px 1px 0">Vzdialenosť</td><td>${o.km} km</td></tr>` : ""}
         ${(o.address || o.mapPlusCode || o.mapLocality) ? `<tr><td style="color:#888;padding:1px 6px 1px 0;vertical-align:top">Adresa</td><td>${o.mapLocality ? `<strong>${o.mapLocality}</strong>${o.address ? "<br>" : ""}` : ""}${o.address ?? ""}${o.mapPlusCode ? `<br><span style="font-family:monospace;font-size:7.5pt;color:#aaa">${o.mapPlusCode}</span>` : ""}</td></tr>` : ""}
@@ -2312,7 +2312,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
           <span className="text-white/30 text-[9px]">▸</span>
           <span className="font-bold text-white truncate">{floatingOrder.clientName}</span>
           {floatingOrder.company && <span className="text-white/50 truncate hidden sm:block">{floatingOrder.company}</span>}
-          <span className="text-white/50 shrink-0">{floatingOrder.tab === "pumpa" ? "Pumpa" : floatingOrder.tab === "mix" ? "Mix" : "Vl."} · {floatingOrder.totalQty} m³</span>
+          <span className="text-white/50 shrink-0">{floatingOrder.tab === "pumpa" ? "Pumpa" : floatingOrder.tab === "mix" ? "Mix" : "Vl."} · {parseFloat((floatingOrder.totalQty ?? 0).toFixed(2))} m³</span>
           <span className="text-white/70 font-bold shrink-0 tabular-nums hidden sm:block">{floatingOrder.totalSDph?.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
           <div className="ml-auto flex items-center gap-1.5 shrink-0">
             {/* Záloha badge v floating bare */}
@@ -2418,7 +2418,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                     })()}
                     <div className="flex items-center gap-1.5 flex-wrap text-sm">
                       <span className="font-medium text-gray-600">{o.concreteType.replace(/ – [\d.,]+ €.*/, "")}</span>
-                      <span className="font-bold text-secondary">{o.totalQty} m³</span>
+                      <span className="font-bold text-secondary">{parseFloat((o.totalQty ?? 0).toFixed(2))} m³</span>
                       {o.km ? <span className="text-gray-400">{o.km} km</span> : null}
                     </div>
                     {(o.address || o.mapPlusCode || o.mapLocality) ? (() => {
@@ -2731,14 +2731,14 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
                           </span>
                         </div>
                         <div className="flex gap-2"><span className="text-gray-400 w-24 shrink-0">Množstvo</span>
-                          <span className="font-bold text-gray-800">{o.totalQty} m³{(o.fillupM3 ?? 0) > 0 && <span className="text-[10px] text-amber-600 ml-1 font-normal">(+ {fM3(o.fillupM3)} m³ doťaženie)</span>}</span>
+                          <span className="font-bold text-gray-800">{parseFloat((o.totalQty ?? 0).toFixed(2))} m³{(o.fillupM3 ?? 0) > 0 && <span className="text-[10px] text-amber-600 ml-1 font-normal">(+ {fM3(o.fillupM3)} m³ doťaženie)</span>}</span>
                         </div>
                         {(o.fillupM3 ?? 0) > 0 && (
                           <div className="flex gap-2 items-start">
                             <span className="text-gray-400 w-24 shrink-0 pt-1.5">Doťaženie</span>
                             <div className="bg-amber-50 border border-amber-200 rounded-md px-2.5 py-1.5 flex-1">
                               <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-800">
-                                <span>{o.totalQty} m³</span>
+                                <span>{parseFloat((o.totalQty ?? 0).toFixed(2))} m³</span>
                                 <span className="text-amber-400 font-bold">→</span>
                                 <span className="text-amber-600">+{fM3(o.fillupM3)} m³</span>
                                 <span className="text-amber-400 font-bold">→</span>
