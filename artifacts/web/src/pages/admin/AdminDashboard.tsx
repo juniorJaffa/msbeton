@@ -198,6 +198,21 @@ export default function AdminDashboard() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [historiaFilter, setHistoriaFilter] = useState<{ sub: "zalohy" | "cashflow"; clientId?: string; date?: string; dateFilter?: "dnes" | "vcera" | "tyzden" | "mesiac" | "vsetko"; orderId?: string } | undefined>(undefined);
 
+  const handleClearClientFilter = () => {
+    setGoToOrdersSearch(undefined);
+    setGoToClientId(null);
+    setHistoriaFilter(prev => prev ? { ...prev, clientId: undefined } : undefined);
+    // Vyčisti klient z cross-tab sessionStorage — tab pri remounte by inak obnovil starý filter
+    try {
+      const objRaw = sessionStorage.getItem("msbeton_filter_objednavky");
+      if (objRaw) { const s = JSON.parse(objRaw); delete s.clientIdActive; sessionStorage.setItem("msbeton_filter_objednavky", JSON.stringify(s)); }
+    } catch { /* ignore */ }
+    try {
+      const histRaw = sessionStorage.getItem("msbeton_filter_historia");
+      if (histRaw) { const s = JSON.parse(histRaw); delete s.cashClientFilter; sessionStorage.setItem("msbeton_filter_historia", JSON.stringify(s)); }
+    } catch { /* ignore */ }
+  };
+
   const handleGoToHistoria = (filter: { sub: "zalohy" | "cashflow"; clientId?: string; date?: string; dateFilter?: "dnes" | "vcera" | "tyzden" | "mesiac" | "vsetko"; orderId?: string }) => {
     setHistoriaFilter(filter);
     setTab("historia");
@@ -366,8 +381,8 @@ export default function AdminDashboard() {
             {tab === "sluzby" && <SluzbyTab key={syncKey} onGoToDoprava={() => { setTab("doprava"); window.location.hash = "doprava"; }} scrollToPumpa={sluzbyScrollPumpa} onScrollDone={() => setSluzbyScrollPumpa(false)} />}
             {tab === "doprava" && <DopravaTab key={syncKey} onGoToSluzby={() => { setTab("sluzby"); setSluzbyScrollPumpa(true); window.location.hash = "sluzby"; }} />}
             {tab === "klienti" && <KlientiTab expandClientId={goToClientId} onExpanded={() => setGoToClientId(null)} onGoToOrders={(loginId, focusId) => { setGoToOrdersSearch(loginId); setGoToOrdersFocusId(focusId); setTab("objednavky"); window.location.hash = "objednavky"; }} onGoToBiometria={(loginId) => { setBioFocus(prev => ({ loginId, nonce: (prev?.nonce ?? 0) + 1 })); setTab("server"); window.location.hash = "server"; }} onGoToHistoria={(f) => handleGoToHistoria(f)} />}
-            {tab === "objednavky" && <ObjednavkyTab initialClientId={goToOrdersSearch} focusOrderId={goToOrdersFocusId} onGoToClient={(loginId) => { setGoToOrdersSearch(loginId); setGoToOrdersFocusId(undefined); setTab("klienti"); setGoToClientId(loginId); }} onGoToHistoria={(f) => handleGoToHistoria(f)} />}
-            {tab === "historia" && <HistoriaTab key={`${historiaFilter?.sub}-${historiaFilter?.clientId}-${historiaFilter?.date}-${historiaFilter?.dateFilter}-${historiaFilter?.orderId}`} initialSub={historiaFilter?.sub} initialClientId={historiaFilter?.clientId} initialDate={historiaFilter?.date} initialDateFilter={historiaFilter?.dateFilter} initialOrderId={historiaFilter?.orderId} onGoToClient={(loginId) => { setGoToClientId(loginId); setTab("klienti"); window.location.hash = "klienti"; }} onGoToOrder={(orderId) => { setGoToOrdersSearch(undefined); setGoToOrdersFocusId(orderId); setTab("objednavky"); window.location.hash = "objednavky"; }} />}
+            {tab === "objednavky" && <ObjednavkyTab initialClientId={goToOrdersSearch} focusOrderId={goToOrdersFocusId} onGoToClient={(loginId) => { setGoToOrdersSearch(loginId); setGoToOrdersFocusId(undefined); setTab("klienti"); setGoToClientId(loginId); }} onGoToHistoria={(f) => handleGoToHistoria(f)} onClearClientFilter={handleClearClientFilter} />}
+            {tab === "historia" && <HistoriaTab key={`${historiaFilter?.sub}-${historiaFilter?.clientId}-${historiaFilter?.date}-${historiaFilter?.dateFilter}-${historiaFilter?.orderId}`} initialSub={historiaFilter?.sub} initialClientId={historiaFilter?.clientId} initialDate={historiaFilter?.date} initialDateFilter={historiaFilter?.dateFilter} initialOrderId={historiaFilter?.orderId} onGoToClient={(loginId) => { setGoToClientId(loginId); setTab("klienti"); window.location.hash = "klienti"; }} onGoToOrder={(orderId) => { setGoToOrdersSearch(undefined); setGoToOrdersFocusId(orderId); setTab("objednavky"); window.location.hash = "objednavky"; }} onClearClientFilter={handleClearClientFilter} />}
             {tab === "statistiky" && <StatistikyTab />}
             {tab === "seo" && <SeoTab />}
             {tab === "server" && <ServerTab bioFocus={bioFocus} onOpenClient={(loginId) => { setGoToClientId(loginId); setTab("klienti"); window.location.hash = "klienti"; }} />}

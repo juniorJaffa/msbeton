@@ -27,6 +27,7 @@ interface Props {
   initialOrderId?: string;          // zvýrazni + scrolluj na konkrétnu objednávku
   onGoToClient?: (loginId: string) => void;
   onGoToOrder?:  (orderId: string) => void;
+  onClearClientFilter?: () => void;
 }
 
 type DepositRow =
@@ -441,7 +442,7 @@ function TyzdenStepper({ offset, onChange, onDeselect }: {
   );
 }
 
-export default function HistoriaTab({ initialSub, initialClientId, initialDate, initialDateFilter, initialOrderId, onGoToClient, onGoToOrder }: Props) {
+export default function HistoriaTab({ initialSub, initialClientId, initialDate, initialDateFilter, initialOrderId, onGoToClient, onGoToOrder, onClearClientFilter }: Props) {
   const [sub, setSub] = useState<Sub>(() => {
     if (initialSub) return initialSub;
     const saved = localStorage.getItem("msbeton_historia_sub");
@@ -1417,7 +1418,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   return (
                     <span className="inline-flex items-center gap-1 bg-secondary/10 text-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0 max-w-[200px]">
                       <span className="truncate">{label}</span>
-                      <button type="button" onClick={e => { e.stopPropagation(); setCashClientFilter("vsetci"); setCashClientSearch(""); }}
+                      <button type="button" onClick={e => { e.stopPropagation(); setCashClientFilter("vsetci"); setCashClientSearch(""); onClearClientFilter?.(); }}
                         className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer"><X className="w-2.5 h-2.5" /></button>
                     </span>
                   );
@@ -1564,7 +1565,7 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                     })()}
                     <div className="ml-auto flex items-center gap-2">
                       {(cashKtoFilters.length > 0 || cashClientFilter !== "vsetci") && (
-                        <button type="button" onClick={e => { e.stopPropagation(); setCashKtoFilters([]); setCashClientFilter("vsetci"); setCashClientSearch(""); }}
+                        <button type="button" onClick={e => { e.stopPropagation(); setCashKtoFilters([]); setCashClientFilter("vsetci"); setCashClientSearch(""); onClearClientFilter?.(); }}
                           className="w-5 h-5 rounded-full bg-white border border-gray-300 text-gray-400 hover:border-red-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors cursor-pointer shrink-0">
                           <X className="w-2.5 h-2.5" />
                         </button>

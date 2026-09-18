@@ -1069,7 +1069,7 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
   if (!win) { const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.click(); }
 }
 
-export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClientId, focusOrderId, onGoToHistoria }: { onGoToClient?: (loginId: string) => void; initialSearch?: string; initialClientId?: string; focusOrderId?: string; onGoToHistoria?: (filter: { sub: "zalohy" | "cashflow"; clientId?: string; date?: string; orderId?: string; dateFilter?: string }) => void }) {
+export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClientId, focusOrderId, onGoToHistoria, onClearClientFilter }: { onGoToClient?: (loginId: string) => void; initialSearch?: string; initialClientId?: string; focusOrderId?: string; onGoToHistoria?: (filter: { sub: "zalohy" | "cashflow"; clientId?: string; date?: string; orderId?: string; dateFilter?: string }) => void; onClearClientFilter?: () => void }) {
   const [orders, setOrders] = useState<Order[]>(() => adminData.getOrders());
   const [allCategories, setAllCategories] = useState(() => adminData.getCategories());
   const [allClients, setAllClients] = useState(() => adminData.getClients());
@@ -1145,7 +1145,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
     setFilterChannel("vsetky");
     setFilterZaloha("vsetky");
     setSearch("");
-    setClientIdActive(null);
+    setClientIdActive(null); onClearClientFilter?.();
     setQuickDate("");
     setDateFrom("");
     setDateTo("");
@@ -1982,7 +1982,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
               return (
                 <span className="inline-flex items-center gap-1 bg-secondary/10 text-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0 max-w-[200px]">
                   <span className="truncate">{label}</span>
-                  <button type="button" onClick={e => { e.stopPropagation(); setClientIdActive(null); }}
+                  <button type="button" onClick={e => { e.stopPropagation(); setClientIdActive(null); onClearClientFilter?.(); }}
                     className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer"><X className="w-2.5 h-2.5" /></button>
                 </span>
               );
