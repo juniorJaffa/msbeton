@@ -640,6 +640,16 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
   const nonZalohaSumPdf = allPaymentsSum - zalohaPaymentsSum;
   // Zelený "Vyplatená" bar: keď status=vyplatena ALEBO celý nedoplatok uhradený
   const showVyplatenaBar = o.status === "vyplatena" || (pdfOutstanding < 0.01 && (totalZalohaCredited > 0.01 || nonZalohaSumPdf > 0.01));
+  // Nedoplatok/preplatok — reálne zaplatené vs suma objednávky
+  const totalPaidPdf = (o.depositUsed ?? 0) + allPaymentsSum;
+  const diffPdf = totalPaidPdf - (o.totalSDph ?? 0); // kladné = preplatok, záporné = nedoplatok
+  const hasDiffPdf = Math.abs(diffPdf) > 0.005;
+  // Status farby — zodpovedajú STATUS_ACTIVE_COLORS v UI
+  const statusColorsPdf: Record<string, string> = {
+    nova: "#3b82f6", potvrdena: "#eab308", odoslana: "#16a34a",
+    vyuctovana: "#9333ea", vyplatena: "#0d9488", zrusena: "#ef4444", vybavena: "#4f46e5",
+  };
+  const statusColorPdf = statusColorsPdf[o.status] ?? "#6b7280";
 
   let parsed: { v: number; s: { h: string; rows: { l: string; v: number; o?: number; u?: number; uOrig?: number; uSuffix?: string }[] }[]; fT?: number } | null = null;
   try { if (o.breakdown?.startsWith("{")) parsed = JSON.parse(o.breakdown); } catch { /* */ }
@@ -833,7 +843,7 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
   <div style="text-align:right">
     <div style="color:#EDC531;font-size:11pt;font-weight:bold;letter-spacing:0.5px">OBJEDNÁVKA</div>
     <div style="font-size:7pt;opacity:0.7;margin-top:1px">${today} · ${platbaLbl}</div>
-    <div style="color:#EDC531;font-size:7.5pt;font-weight:bold;margin-top:2px">${statusLabels[o.status] ?? o.status}</div>
+    <div style="margin-top:2px"><span style="display:inline-block;background:${statusColorPdf};color:#fff;font-size:6.5pt;font-weight:bold;padding:1.5px 6px;border-radius:3px;letter-spacing:0.3px">${statusLabels[o.status] ?? o.status}</span></div>
   </div>
 </div>
 <div style="padding:3.5mm 8mm 5mm">
@@ -882,7 +892,10 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
       <div style="font-size:7.5pt;font-weight:bold;letter-spacing:0.3px;text-transform:uppercase">✓ Vyplatená</div>
       ${(totalZalohaCredited > 0.01 || nonZalohaSumPdf > 0.01) ? `<div style="font-size:6pt;opacity:0.85;margin-top:0.5mm">${[totalZalohaCredited > 0.01 ? "záloha " + fmtEurPdf(totalZalohaCredited) : "", nonZalohaSumPdf > 0.01 ? "hotovosť " + fmtEurPdf(nonZalohaSumPdf) : ""].filter(Boolean).join(" · ")}</div>` : ""}
     </div>
-    <div style="font-size:11pt;font-weight:bold">${fmtEurPdf(o.totalSDph)}</div>
+    <div style="text-align:right">
+      <div style="font-size:11pt;font-weight:bold">${fmtEurPdf(o.totalSDph)}</div>
+      ${hasDiffPdf ? `<div style="font-size:6pt;opacity:0.9;margin-top:0.5mm">zaplatené ${fmtEurPdf(totalPaidPdf)} <span style="font-weight:bold;color:${diffPdf > 0 ? "#bbf7d0" : "#fde68a"}">${diffPdf > 0 ? "+" : ""}${diffPdf.toFixed(2)} €</span></div>` : ""}
+    </div>
   </div>` : ""}
   <!-- Podpisy + Google QR — zmenšené, stále na A5 -->
   <div style="display:flex;gap:5mm;margin-top:4mm;align-items:flex-end">
@@ -926,7 +939,7 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
     </div>
     <div style="text-align:right;line-height:1.8">
       <div style="font-size:8pt;opacity:0.65">IČO: 55747591<br>DIČ: 2122074603<br>IČ DPH: SK2122074603</div>
-      <div style="color:#EDC531;font-size:8.5pt;font-weight:bold;letter-spacing:0.3px;margin-top:1mm">${statusLabels[o.status] ?? o.status}</div>
+      <div style="margin-top:1.5mm;text-align:right"><span style="display:inline-block;background:${statusColorPdf};color:#fff;font-size:7.5pt;font-weight:bold;padding:2px 8px;border-radius:3px;letter-spacing:0.4px">${statusLabels[o.status] ?? o.status}</span></div>
     </div>
   </div>
 </div>
@@ -1009,7 +1022,10 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
       <div style="font-size:9pt;font-weight:bold;letter-spacing:0.4px;text-transform:uppercase">✓ Vyplatená</div>
       ${(totalZalohaCredited > 0.01 || nonZalohaSumPdf > 0.01) ? `<div style="font-size:7.5pt;opacity:0.85;margin-top:1px">${[totalZalohaCredited > 0.01 ? "záloha " + fmtEurPdf(totalZalohaCredited) : "", nonZalohaSumPdf > 0.01 ? "hotovosť " + fmtEurPdf(nonZalohaSumPdf) : ""].filter(Boolean).join(" · ")}</div>` : ""}
     </div>
-    <div style="font-size:15pt;font-weight:bold">${fmtEurPdf(o.totalSDph)}</div>
+    <div style="text-align:right">
+      <div style="font-size:15pt;font-weight:bold">${fmtEurPdf(o.totalSDph)}</div>
+      ${hasDiffPdf ? `<div style="font-size:7.5pt;opacity:0.9;margin-top:1px">zaplatené ${fmtEurPdf(totalPaidPdf)} <span style="font-weight:bold;color:${diffPdf > 0 ? "#bbf7d0" : "#fde68a"}">${diffPdf > 0 ? "+" : ""}${diffPdf.toFixed(2)} €</span></div>` : ""}
+    </div>
   </div>` : ""}
   </div>
 
