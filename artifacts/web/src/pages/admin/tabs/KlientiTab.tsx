@@ -613,15 +613,17 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
       if (typeof s.savedAt !== "number" || Date.now() - s.savedAt > KLIENTI_FILTER_TTL_MS) {
         sessionStorage.removeItem(KLIENTI_FILTER_KEY); return;
       }
+      // Ak globalny clear prebehol PO poslednom uložení → ignoruj restore
+      if (typeof s.savedSeq === "number" && (clearSignal ?? 0) > s.savedSeq) return;
       if (s.search) setSearch(s.search as string);
     } catch { /* ignore */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // only on mount
+  }, []); // only on mount — clearSignal je zachytený v closure pri mount
   useEffect(() => {
     try {
-      sessionStorage.setItem(KLIENTI_FILTER_KEY, JSON.stringify({ savedAt: Date.now(), search }));
+      sessionStorage.setItem(KLIENTI_FILTER_KEY, JSON.stringify({ savedAt: Date.now(), search, savedSeq: clearSignal ?? 0 }));
     } catch { /* ignore */ }
-  }, [search]);
+  }, [search, clearSignal]);
   // ─────────────────────────────────────────────────────────────────────
 
   const [adding, setAdding] = useState(false);
