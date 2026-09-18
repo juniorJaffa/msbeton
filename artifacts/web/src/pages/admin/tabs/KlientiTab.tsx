@@ -507,7 +507,7 @@ ${buildTable(dopravaHdr, dopravaRows)}
   if (!win) { const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.click(); }
 }
 
-export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, onGoToBiometria, onGoToHistoria }: { expandClientId?: string | null; onExpanded?: () => void; onGoToOrders?: (loginId: string, focusOrderId?: string) => void; onGoToBiometria?: (loginId?: string) => void; onGoToHistoria?: (filter: { sub: "zalohy" | "cashflow"; clientId?: string }) => void }) {
+export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, onGoToBiometria, onGoToHistoria, clearSignal, onClearClientFilter }: { expandClientId?: string | null; onExpanded?: () => void; onGoToOrders?: (loginId: string, focusOrderId?: string) => void; onGoToBiometria?: (loginId?: string) => void; onGoToHistoria?: (filter: { sub: "zalohy" | "cashflow"; clientId?: string }) => void; clearSignal?: number; onClearClientFilter?: () => void }) {
   const [clients, setClients] = useState<Client[]>(adminData.getClients());
   const [zones] = useState(() => adminData.getDelivery());
   const [pZones] = useState(() => adminData.getTransportZones());
@@ -593,8 +593,17 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   }, [tablePdfModal]);
   const [search, setSearch] = useState("");
 
-  // ── Search persistence (sessionStorage, 15-min TTL) ──────────────────
+  // ── Global clear signal — keď iný tab zruší klient filter, vyčisti aj tu ─
   const KLIENTI_FILTER_KEY = "msbeton_filter_klienti";
+  const isInitialClearMount = useRef(true);
+  useEffect(() => {
+    if (isInitialClearMount.current) { isInitialClearMount.current = false; return; }
+    setSearch("");
+    try { sessionStorage.removeItem(KLIENTI_FILTER_KEY); } catch { /* ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clearSignal]);
+
+  // ── Search persistence (sessionStorage, 15-min TTL) ──────────────────
   const KLIENTI_FILTER_TTL_MS = 15 * 60 * 1000;
   useEffect(() => {
     try {
@@ -1443,7 +1452,7 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
             <input placeholder="Hľadať klienta..." value={search} onChange={e => setSearch(e.target.value)}
               className="w-full bg-gray-50 text-secondary placeholder:text-gray-400 px-4 py-2.5 pr-9 text-sm focus:outline-none rounded border border-gray-200 focus:border-primary" />
             {search && (
-              <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors" aria-label="Vyčistiť hľadanie">
+              <button onClick={() => { setSearch(""); onClearClientFilter?.(); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors" aria-label="Vyčistiť hľadanie">
                 <X className="w-4 h-4" />
               </button>
             )}
