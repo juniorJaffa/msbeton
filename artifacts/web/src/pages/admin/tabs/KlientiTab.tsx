@@ -593,19 +593,17 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
   }, [tablePdfModal]);
   const [search, setSearch] = useState("");
 
-  // ── Global clear signal — keď iný tab zruší klient filter, vyčisti aj tu ─
+  // ── Search persistence + global clear (sessionStorage, 15-min TTL) ──────
   const KLIENTI_FILTER_KEY = "msbeton_filter_klienti";
-  const isInitialClearMount = useRef(true);
-  useEffect(() => {
-    if (isInitialClearMount.current) { isInitialClearMount.current = false; return; }
-    setSearch("");
-    try { sessionStorage.removeItem(KLIENTI_FILTER_KEY); } catch { /* ignore */ }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clearSignal]);
-
-  // ── Search persistence (sessionStorage, 15-min TTL) ──────────────────
   const KLIENTI_FILTER_TTL_MS = 15 * 60 * 1000;
   useEffect(() => {
+    // clearSignal > 0: globálny clear → vymaž search aj sessionStorage
+    if ((clearSignal ?? 0) > 0) {
+      setSearch("");
+      try { sessionStorage.removeItem(KLIENTI_FILTER_KEY); } catch { /* ignore */ }
+      return;
+    }
+    // clearSignal = 0: normálna restore logika pri mountnutí
     try {
       const raw = sessionStorage.getItem(KLIENTI_FILTER_KEY);
       if (!raw) return;
@@ -613,19 +611,14 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
       if (typeof s.savedAt !== "number" || Date.now() - s.savedAt > KLIENTI_FILTER_TTL_MS) {
         sessionStorage.removeItem(KLIENTI_FILTER_KEY); return;
       }
-      // Ak globalny clear prebehol PO poslednom uložení → ignoruj restore
-      // savedSeq chýba v starých dátach → považuj za 0 (vždy podlieha clears)
-      const savedSeq = typeof s.savedSeq === "number" ? s.savedSeq : 0;
-      if ((clearSignal ?? 0) > savedSeq) return;
       if (s.search) setSearch(s.search as string);
     } catch { /* ignore */ }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // only on mount — clearSignal je zachytený v closure pri mount
+  }, [clearSignal]); // re-runs on mount AND keď clearSignal zmení (aj keď tab nie je aktívny → po mount chytí nový signal)
   useEffect(() => {
     try {
-      sessionStorage.setItem(KLIENTI_FILTER_KEY, JSON.stringify({ savedAt: Date.now(), search, savedSeq: clearSignal ?? 0 }));
+      sessionStorage.setItem(KLIENTI_FILTER_KEY, JSON.stringify({ savedAt: Date.now(), search }));
     } catch { /* ignore */ }
-  }, [search, clearSignal]);
+  }, [search]);
   // ─────────────────────────────────────────────────────────────────────
 
   const [adding, setAdding] = useState(false);
