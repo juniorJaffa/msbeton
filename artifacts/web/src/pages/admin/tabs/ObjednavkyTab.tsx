@@ -2169,7 +2169,7 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
               )}
               <div className="ml-auto flex items-center gap-2">
                 {(quickDate || dateFrom || dateTo) && (
-                  <button type="button" onClick={e => { e.stopPropagation(); setQuickDate("tyzden"); setTyzdenOffset(0); const wb = initWeekBounds(); setDateFrom(wb.from); setDateTo(wb.to); }}
+                  <button type="button" onClick={e => { e.stopPropagation(); setQuickDate(""); setDateFrom(""); setDateTo(""); setTyzdenOffset(0); }}
                     className="w-5 h-5 rounded-full bg-white border border-gray-300 text-gray-400 hover:border-red-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors cursor-pointer shrink-0">
                     <X className="w-2.5 h-2.5" />
                   </button>
@@ -2180,6 +2180,12 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
             {secDateOpen && (<>
               {/* Rýchle filtry */}
               <div className="px-4 pt-2.5 pb-1.5 flex flex-wrap gap-1.5 items-center">
+                <button onClick={() => { setQuickDate(""); setDateFrom(""); setDateTo(""); setTyzdenOffset(0); }}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
+                    !quickDate && !dateFrom && !dateTo ? "bg-secondary text-white border-secondary" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
+                  }`}>
+                  Všetko
+                </button>
                 {(["dnes", "vcera"] as const).map((preset, i) => (
                   <button key={preset} onClick={() => applyQuickDate(preset)}
                     className={`px-3 py-1.5 text-xs font-bold rounded-sm border transition-all ${
