@@ -614,7 +614,9 @@ export default function KlientiTab({ expandClientId, onExpanded, onGoToOrders, o
         sessionStorage.removeItem(KLIENTI_FILTER_KEY); return;
       }
       // Ak globalny clear prebehol PO poslednom uložení → ignoruj restore
-      if (typeof s.savedSeq === "number" && (clearSignal ?? 0) > s.savedSeq) return;
+      // savedSeq chýba v starých dátach → považuj za 0 (vždy podlieha clears)
+      const savedSeq = typeof s.savedSeq === "number" ? s.savedSeq : 0;
+      if ((clearSignal ?? 0) > savedSeq) return;
       if (s.search) setSearch(s.search as string);
     } catch { /* ignore */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
