@@ -893,8 +893,8 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
       ${(totalZalohaCredited > 0.01 || nonZalohaSumPdf > 0.01) ? `<div style="font-size:6pt;opacity:0.85;margin-top:0.5mm">${[totalZalohaCredited > 0.01 ? "záloha " + fmtEurPdf(totalZalohaCredited) : "", nonZalohaSumPdf > 0.01 ? "hotovosť " + fmtEurPdf(nonZalohaSumPdf) : ""].filter(Boolean).join(" · ")}</div>` : ""}
     </div>
     <div style="text-align:right">
-      <div style="font-size:11pt;font-weight:bold">${fmtEurPdf(o.totalSDph)}</div>
-      ${hasDiffPdf ? `<div style="font-size:6pt;opacity:0.9;margin-top:0.5mm">zaplatené ${fmtEurPdf(totalPaidPdf)} <span style="font-weight:bold;color:${diffPdf > 0 ? "#bbf7d0" : "#fde68a"}">${diffPdf > 0 ? "+" : ""}${diffPdf.toFixed(2)} €</span></div>` : ""}
+      <div style="font-size:11pt;font-weight:bold">${hasDiffPdf && totalPaidPdf > 0.01 ? fmtEurPdf(totalPaidPdf) : fmtEurPdf(o.totalSDph)}</div>
+      ${hasDiffPdf && totalPaidPdf > 0.01 ? `<div style="font-size:6.5pt;margin-top:0.5mm;font-weight:bold;color:${diffPdf > 0 ? "#bbf7d0" : "#fde68a"}">${diffPdf > 0 ? "+" : ""}${diffPdf.toFixed(2)} €</div>` : ""}
     </div>
   </div>` : ""}
   <!-- Podpisy + Google QR — zmenšené, stále na A5 -->
@@ -1023,8 +1023,8 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
       ${(totalZalohaCredited > 0.01 || nonZalohaSumPdf > 0.01) ? `<div style="font-size:7.5pt;opacity:0.85;margin-top:1px">${[totalZalohaCredited > 0.01 ? "záloha " + fmtEurPdf(totalZalohaCredited) : "", nonZalohaSumPdf > 0.01 ? "hotovosť " + fmtEurPdf(nonZalohaSumPdf) : ""].filter(Boolean).join(" · ")}</div>` : ""}
     </div>
     <div style="text-align:right">
-      <div style="font-size:15pt;font-weight:bold">${fmtEurPdf(o.totalSDph)}</div>
-      ${hasDiffPdf ? `<div style="font-size:7.5pt;opacity:0.9;margin-top:1px">zaplatené ${fmtEurPdf(totalPaidPdf)} <span style="font-weight:bold;color:${diffPdf > 0 ? "#bbf7d0" : "#fde68a"}">${diffPdf > 0 ? "+" : ""}${diffPdf.toFixed(2)} €</span></div>` : ""}
+      <div style="font-size:15pt;font-weight:bold">${hasDiffPdf && totalPaidPdf > 0.01 ? fmtEurPdf(totalPaidPdf) : fmtEurPdf(o.totalSDph)}</div>
+      ${hasDiffPdf && totalPaidPdf > 0.01 ? `<div style="font-size:8pt;margin-top:1px;font-weight:bold;color:${diffPdf > 0 ? "#bbf7d0" : "#fde68a"}">${diffPdf > 0 ? "+" : ""}${diffPdf.toFixed(2)} €</div>` : ""}
     </div>
   </div>` : ""}
   </div>
