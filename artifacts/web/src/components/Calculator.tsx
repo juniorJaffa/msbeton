@@ -775,11 +775,12 @@ export function ConcreteCalculator({ clientOverride }: { clientOverride?: import
           const dist = a.county ?? a.state_district ?? "";
           const localityStr = [loc, dist].filter(Boolean).join(", ");
           setMapLocality(localityStr);
-          // Adresa: locality ako čistý fallback (display_name je príliš dlhý)
-          const addr = localityStr || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-          setMapGeocodedAddress(addr);
-          setAddress(addr);
-          if (addressInputRef.current) addressInputRef.current.value = addr;
+          // Adresa: iba locality — GPS coords ako fallback nenastavuj (SMS by zobrazilo coords namiesto mapPlusCode)
+          setMapGeocodedAddress(localityStr);
+          if (localityStr) {
+            setAddress(localityStr);
+            if (addressInputRef.current) addressInputRef.current.value = localityStr;
+          }
         } catch (err) {
           if (myReqId === reverseGeocodeReqIdRef.current) {
             mapLog("nominatim_exception", { error: String(err) });
