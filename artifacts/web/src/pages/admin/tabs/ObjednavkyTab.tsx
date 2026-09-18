@@ -641,9 +641,10 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
   // Zelený "Vyplatená" bar: keď status=vyplatena ALEBO celý nedoplatok uhradený
   const showVyplatenaBar = o.status === "vyplatena" || (pdfOutstanding < 0.01 && (totalZalohaCredited > 0.01 || nonZalohaSumPdf > 0.01));
   // Nedoplatok/preplatok — reálne zaplatené vs suma objednávky
-  const totalPaidPdf = (o.depositUsed ?? 0) + allPaymentsSum;
+  // Primárny zdroj: o.paidAmount (rovnaký ako UI karta); fallback: payments[] + depositUsed
+  const totalPaidPdf = o.paidAmount ?? ((o.depositUsed ?? 0) + allPaymentsSum);
   const diffPdf = totalPaidPdf - (o.totalSDph ?? 0); // kladné = preplatok, záporné = nedoplatok
-  const hasDiffPdf = Math.abs(diffPdf) > 0.005;
+  const hasDiffPdf = totalPaidPdf > 0.01 && Math.abs(diffPdf) > 0.005;
   // Status farby — zodpovedajú STATUS_ACTIVE_COLORS v UI
   const statusColorsPdf: Record<string, string> = {
     nova: "#3b82f6", potvrdena: "#eab308", odoslana: "#16a34a",
@@ -894,7 +895,7 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
     </div>
     <div style="text-align:right">
       <div style="font-size:11pt;font-weight:bold">${hasDiffPdf && totalPaidPdf > 0.01 ? fmtEurPdf(totalPaidPdf) : fmtEurPdf(o.totalSDph)}</div>
-      ${hasDiffPdf && totalPaidPdf > 0.01 ? `<div style="font-size:6.5pt;margin-top:0.5mm;font-weight:bold;color:${diffPdf > 0 ? "#bbf7d0" : "#fde68a"}">${diffPdf > 0 ? "+" : ""}${diffPdf.toFixed(2)} €</div>` : ""}
+      ${hasDiffPdf ? `<div style="font-size:6.5pt;margin-top:0.5mm;font-weight:bold;color:${diffPdf > 0 ? "#bbf7d0" : "#fca5a5"}">${diffPdf > 0 ? "+" : ""}${diffPdf.toFixed(2)} €</div>` : ""}
     </div>
   </div>` : ""}
   <!-- Podpisy + Google QR — zmenšené, stále na A5 -->
@@ -1024,7 +1025,7 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
     </div>
     <div style="text-align:right">
       <div style="font-size:15pt;font-weight:bold">${hasDiffPdf && totalPaidPdf > 0.01 ? fmtEurPdf(totalPaidPdf) : fmtEurPdf(o.totalSDph)}</div>
-      ${hasDiffPdf && totalPaidPdf > 0.01 ? `<div style="font-size:8pt;margin-top:1px;font-weight:bold;color:${diffPdf > 0 ? "#bbf7d0" : "#fde68a"}">${diffPdf > 0 ? "+" : ""}${diffPdf.toFixed(2)} €</div>` : ""}
+      ${hasDiffPdf ? `<div style="font-size:8pt;margin-top:1px;font-weight:bold;color:${diffPdf > 0 ? "#bbf7d0" : "#fca5a5"}">${diffPdf > 0 ? "+" : ""}${diffPdf.toFixed(2)} €</div>` : ""}
     </div>
   </div>` : ""}
   </div>
