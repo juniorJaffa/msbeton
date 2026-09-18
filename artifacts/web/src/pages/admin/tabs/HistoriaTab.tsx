@@ -1390,15 +1390,18 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   </button>
                 </span>
               )}
-              {/* Aktívne filter chipy — viditeľné aj v collapsed stave */}
-              {!cashFilterOpen && (<>
+              <span className="ml-auto text-xs font-bold text-secondary shrink-0">{cashSummary.count} obj.</span>
+              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${cashFilterOpen ? "rotate-180" : ""}`} />
+            </div>
+            {/* Chips — druhý riadok, scrollovateľný horizontálne (fix pretekania na iPhone SX 375px) */}
+            {!cashFilterOpen && (cashDateLabelShort || cashStatusFilters.length > 0 || cashClientFilter !== "vsetci" || cashZalohaFilter !== "vsetky" || cashSearch.trim()) && (
+              <div className="border-t border-gray-100 py-1.5 flex gap-1.5 overflow-x-auto" style={{ scrollbarWidth: 'none', paddingLeft: 16, paddingRight: 16 }}
+                   onClick={e => e.stopPropagation()}>
                 {cashDateLabelShort && (
                   <span className="inline-flex items-center gap-1 bg-secondary/10 text-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
                     <span>{cashDateLabelShort}</span>
                     <button type="button" onClick={e => { e.stopPropagation(); setCashDateFilter("vsetko"); setCashTyzdenOffset(0); setCashDateFrom(""); setCashDateTo(""); }}
-                      className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer">
-                      <X className="w-2.5 h-2.5" />
-                    </button>
+                      className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer"><X className="w-2.5 h-2.5" /></button>
                   </span>
                 )}
                 {cashStatusFilters.map(sf => (
@@ -1412,8 +1415,8 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   const c = clientByLoginId.get(cashClientFilter);
                   const label = c ? (c.firstName || c.lastName ? `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim() : c.company ?? cashClientFilter) : cashClientFilter;
                   return (
-                    <span className="inline-flex items-center gap-1 bg-secondary/10 text-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
-                      <span>{label}</span>
+                    <span className="inline-flex items-center gap-1 bg-secondary/10 text-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0 max-w-[200px]">
+                      <span className="truncate">{label}</span>
                       <button type="button" onClick={e => { e.stopPropagation(); setCashClientFilter("vsetci"); setCashClientSearch(""); }}
                         className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer"><X className="w-2.5 h-2.5" /></button>
                     </span>
@@ -1427,16 +1430,14 @@ export default function HistoriaTab({ initialSub, initialClientId, initialDate, 
                   </span>
                 )}
                 {cashSearch.trim() && (
-                  <span className="inline-flex items-center gap-1 bg-secondary/10 text-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0 max-w-[80px]">
+                  <span className="inline-flex items-center gap-1 bg-secondary/10 text-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0 max-w-[120px]">
                     <span className="truncate">"{cashSearch.trim()}"</span>
                     <button type="button" onClick={e => { e.stopPropagation(); setCashSearch(""); }}
                       className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer"><X className="w-2.5 h-2.5" /></button>
                   </span>
                 )}
-              </>)}
-              <span className="ml-auto text-xs font-bold text-secondary shrink-0">{cashSummary.count} obj.</span>
-              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${cashFilterOpen ? "rotate-180" : ""}`} />
-            </div>
+              </div>
+            )}
             {cashFilterOpen && (
               <div className="border-t border-gray-200">
                 {/* HĽADAJ */}

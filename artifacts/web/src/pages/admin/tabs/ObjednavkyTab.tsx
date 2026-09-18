@@ -1935,30 +1935,6 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
               </button>
             </span>
           )}
-          {/* Date chip — viditeľný aj v collapsed stave (zrkadlí DÁTUM sub-header badge) */}
-          {dateLabelShort && !filterOpen && (
-            <span className="inline-flex items-center gap-1 bg-secondary/10 text-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
-              <span>{dateLabelShort}</span>
-              <button type="button" onClick={e => { e.stopPropagation(); setQuickDate(""); setDateFrom(""); setDateTo(""); setTyzdenOffset(0); }}
-                className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer" title="Zrušiť dátum filter">
-                <X className="w-2.5 h-2.5" />
-              </button>
-            </span>
-          )}
-          {clientIdActive && (() => {
-            const c = clientMap.get(clientIdActive);
-            const label = c
-              ? (c.firstName || c.lastName ? `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim() : c.company ?? clientIdActive)
-              : clientIdActive;
-            return (
-              <span className="inline-flex items-center gap-1 bg-secondary/10 text-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0 max-w-[140px]">
-                <span className="truncate">{label}</span>
-                <button type="button" onClick={e => { e.stopPropagation(); setClientIdActive(null); }} className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer">
-                  <X className="w-2.5 h-2.5" />
-                </button>
-              </span>
-            );
-          })()}
           <span className="ml-auto text-xs font-bold text-secondary shrink-0">{sortedCount} {sortedCountLabel}</span>
           {newBadge > 0 && <span className="relative bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">{newBadge} nových</span>}
           {onGoToHistoria && (
@@ -1970,6 +1946,32 @@ export default function ObjednavkyTab({ onGoToClient, initialSearch, initialClie
           )}
           <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${filterOpen ? "rotate-180" : ""}`} />
         </div>
+        {/* Chips — druhý riadok, scrollovateľný horizontálne (fix pretekania na iPhone SX 375px) */}
+        {!filterOpen && (dateLabelShort || clientIdActive) && (
+          <div className="border-t border-gray-100 py-1.5 flex gap-1.5 overflow-x-auto" style={{ scrollbarWidth: 'none', paddingLeft: 16, paddingRight: 16 }}
+               onClick={e => e.stopPropagation()}>
+            {dateLabelShort && (
+              <span className="inline-flex items-center gap-1 bg-secondary/10 text-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
+                <span>{dateLabelShort}</span>
+                <button type="button" onClick={e => { e.stopPropagation(); setQuickDate(""); setDateFrom(""); setDateTo(""); setTyzdenOffset(0); }}
+                  className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer"><X className="w-2.5 h-2.5" /></button>
+              </span>
+            )}
+            {clientIdActive && (() => {
+              const c = clientMap.get(clientIdActive);
+              const label = c
+                ? (c.firstName || c.lastName ? `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim() : c.company ?? clientIdActive)
+                : clientIdActive;
+              return (
+                <span className="inline-flex items-center gap-1 bg-secondary/10 text-secondary text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0 max-w-[200px]">
+                  <span className="truncate">{label}</span>
+                  <button type="button" onClick={e => { e.stopPropagation(); setClientIdActive(null); }}
+                    className="hover:text-red-500 transition-colors leading-none shrink-0 cursor-pointer"><X className="w-2.5 h-2.5" /></button>
+                </span>
+              );
+            })()}
+          </div>
+        )}
         {filterOpen && (
         <div className="border-t border-gray-200">
           {/* HĽADAJ — vždy hore, vždy viditeľný */}
