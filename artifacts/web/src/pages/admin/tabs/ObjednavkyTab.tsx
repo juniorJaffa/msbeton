@@ -637,6 +637,9 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
   const pdfOutstanding = Math.max(0, doplatokTotal - allPaymentsSum);
   const isPartialDepPdf = totalZalohaCredited > 0.01 && pdfOutstanding > 0.01;
   const doplatokPdf = pdfOutstanding;
+  const nonZalohaSumPdf = allPaymentsSum - zalohaPaymentsSum;
+  // Zelený "Vyplatená" bar: keď status=vyplatena ALEBO celý nedoplatok uhradený
+  const showVyplatenaBar = o.status === "vyplatena" || (pdfOutstanding < 0.01 && (totalZalohaCredited > 0.01 || nonZalohaSumPdf > 0.01));
 
   let parsed: { v: number; s: { h: string; rows: { l: string; v: number; o?: number; u?: number; uOrig?: number; uSuffix?: string }[] }[]; fT?: number } | null = null;
   try { if (o.breakdown?.startsWith("{")) parsed = JSON.parse(o.breakdown); } catch { /* */ }
@@ -874,6 +877,13 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
     </div>
     <div style="font-size:12pt;font-weight:bold">${fmtEurPdf(doplatokPdf)}</div>
   </div>` : ""}
+  ${showVyplatenaBar ? `<div style="background:#16a34a;color:#fff;padding:2.5mm 4mm;display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <div style="font-size:7.5pt;font-weight:bold;letter-spacing:0.3px;text-transform:uppercase">✓ Vyplatená</div>
+      ${(totalZalohaCredited > 0.01 || nonZalohaSumPdf > 0.01) ? `<div style="font-size:6pt;opacity:0.85;margin-top:0.5mm">${[totalZalohaCredited > 0.01 ? "záloha " + fmtEurPdf(totalZalohaCredited) : "", nonZalohaSumPdf > 0.01 ? "hotovosť " + fmtEurPdf(nonZalohaSumPdf) : ""].filter(Boolean).join(" · ")}</div>` : ""}
+    </div>
+    <div style="font-size:11pt;font-weight:bold">${fmtEurPdf(o.totalSDph)}</div>
+  </div>` : ""}
   <!-- Podpisy + Google QR — zmenšené, stále na A5 -->
   <div style="display:flex;gap:5mm;margin-top:4mm;align-items:flex-end">
     <div style="flex:1;display:flex;gap:4mm">
@@ -993,6 +1003,13 @@ function exportOrderPDF(o: Order, clientMap: Map<string, ReturnType<typeof admin
       <div style="font-size:7.5pt;opacity:0.8;margin-top:1px">na mieste alebo doplniť zálohu</div>
     </div>
     <div style="font-size:15pt;font-weight:bold">${fmtEurPdf(doplatokPdf)}</div>
+  </div>` : ""}
+  ${showVyplatenaBar ? `<div style="background:#16a34a;color:#fff;padding:3.5mm 4mm;border-radius:0 0 2px 2px;display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <div style="font-size:9pt;font-weight:bold;letter-spacing:0.4px;text-transform:uppercase">✓ Vyplatená</div>
+      ${(totalZalohaCredited > 0.01 || nonZalohaSumPdf > 0.01) ? `<div style="font-size:7.5pt;opacity:0.85;margin-top:1px">${[totalZalohaCredited > 0.01 ? "záloha " + fmtEurPdf(totalZalohaCredited) : "", nonZalohaSumPdf > 0.01 ? "hotovosť " + fmtEurPdf(nonZalohaSumPdf) : ""].filter(Boolean).join(" · ")}</div>` : ""}
+    </div>
+    <div style="font-size:15pt;font-weight:bold">${fmtEurPdf(o.totalSDph)}</div>
   </div>` : ""}
   </div>
 
